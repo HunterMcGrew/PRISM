@@ -9,7 +9,7 @@ Date: 2026-09-07
 
 Two asks arrived together (issue #488): an author persona should re-read its
 diff before each commit, and lint and the formatter check should hold a push
-that would fail them. The shipping flow (`.prism/references/shipping-flow.md`)
+that would fail them. The shipping flow (`references/shipping-flow.md`)
 already prescribed lint and format in prose as its first step, unenforced;
 nothing prescribed a cleanup read at all. ADR-0072 had measured that a prose
 announcement habituates, so a prose-only answer was known to decay.

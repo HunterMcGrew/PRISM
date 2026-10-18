@@ -1,8 +1,8 @@
 # QA Test Planning
 
-Reference material for manual QA test plans — the craft, not the mechanics. Reese is the primary reader; other skills (Briar reviewing QA artifacts, Clove writing tests that mirror QA coverage) can reference this doc when they need the vocabulary.
+Reference material for manual QA test plans — the craft, not the mechanics. It is maintainer reference for whoever shapes or reviews QA plans, and `prism-qa-plan` does not load it at run time, because its route fires on the skill's own path. Other skills (self-review of QA artifacts, implementation that mirrors QA coverage) can cite it when they need the vocabulary.
 
-The mechanics of Reese's skill — mode detection, per-mode workflows, the authors-ship closing — live in `.claude/skills/prism-qa-test-plan/SKILL.md`. This doc holds the things that don't change regardless of which mode Reese is running: how a good test plan reads, what techniques to reach for, what regression signals to watch.
+The mechanics of the QA skill — mode detection, per-mode workflows, the authors-ship closing — live in `.claude/skills/prism-qa-plan/SKILL.md`. This doc holds the things that don't change regardless of which mode the skill is running: how a good test plan reads, what techniques to reach for, what regression signals to watch.
 
 ---
 

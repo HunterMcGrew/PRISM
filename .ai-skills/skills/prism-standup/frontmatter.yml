@@ -1,0 +1,8 @@
+name: prism-standup
+description: >
+  Composes a four-section Slack standup (Project, Yesterday, Today, Blockers)
+  from your GitHub PR activity plus two prompts, then posts it through a
+  connected Slack MCP after you confirm, or returns a pasteable block. Reads
+  its format from `.prism/templates/standup-summary.md`. Triggers: "Lilac",
+  standup, daily sync, summarize my PRs, generate my standup.
+argument-hint: "[time period, e.g. 'since Friday', 'this week']"

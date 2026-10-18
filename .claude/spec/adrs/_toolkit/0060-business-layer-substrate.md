@@ -62,5 +62,5 @@ It has a sustained identity, a voice, and a "How X thinks" lens; a human switche
 - [ADR-0014](./0014-plan-section-ownership.md) — section ownership; applied to the strategy doc for multi-persona reads/writes.
 - [ADR-0047](./0047-plans-are-preserved-at-close.md) — durable-artifact preservation; the strategy doc is durable working memory, not a disposable scratch file.
 - `.prism/rules/branch-plan.md` — the single-file-with-sections shape the strategy doc mirrors.
-- `.ai-skills/skills/prism-standup-summary/shared.md` — Lilac's Slack-MCP-as-host-capability precedent for the "orchestrate over, don't vendor" rule.
+- `prism-standup-summary/shared.md` — Lilac's Slack-MCP-as-host-capability precedent for the "orchestrate over, don't vendor" rule.
 - `.prism/rules/lazy-artifacts.md` — `.prism/business/` and `strategy.md` are created on first write, not seeded.

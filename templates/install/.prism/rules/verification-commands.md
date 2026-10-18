@@ -104,12 +104,12 @@ When Winston populates this file during onboarding, he records the team's enviro
 
 ## Retro evidence sources (`.ai-skills/config.json#retroEvidence`)
 
-A sibling block to the commands above — Iris's retro charter (`prism-retro` step-02) reads it to know which execution-record sources exist for this team, so the retro's charter-coverage table degrades honestly instead of assuming GitHub + CI everywhere.
+A sibling block to the commands above — Iris's retro charter (the retro skill) reads it to know which execution-record sources exist for this team, so the retro's charter-coverage table degrades honestly instead of assuming GitHub + CI everywhere.
 
 | Key | Meaning |
 | --- | --- |
 | `ci.present` / `ci.system` | Whether this team runs CI and which system. Absent or `false` renders charter item 6 (test-passing / CI record) as `not configured for this team`. |
-| `prPlatform` | Platform hosting PRs/reviews (`github`, `gitlab`, `bitbucket`, ...). Drives how step-02 fetches PR review threads. |
+| `prPlatform` | Platform hosting PRs/reviews (`github`, `gitlab`, `bitbucket`, ...). Drives how the retro skill fetches PR review threads. |
 | `testCommand` | The team's test command, referenced when reading CI conclusions. |
 | `dodGates` | The gates that define "done" for this team (types, lint, tests, build, coverage, ...). |
 

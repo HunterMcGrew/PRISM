@@ -9,7 +9,7 @@
 		"_toolkit/ticket-workflows.md",
 		"_toolkit/closing-messages.md"
 	],
-	".claude/skills/prism-qa-test-plan/**": "_toolkit/qa-test-planning.md",
+	".claude/skills/prism-qa-plan/**": "_toolkit/qa-test-planning.md",
 	".claude/skills/prism-pr-review/**": "_toolkit/eric-review-modes.md",
 	".prism/templates/**": [
 		"guides/writing-a-plan.md",
@@ -19,7 +19,6 @@
 		"guides/writing-a-rule.md",
 		"_toolkit/spec-editing.md"
 	],
-	".prism/skills/**": "_toolkit/skills-ecosystem.md",
 	".prism/architect/**": [
 		"guides/writing-an-architect-doc.md",
 		"_toolkit/spec-editing.md"

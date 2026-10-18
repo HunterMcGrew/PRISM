@@ -27,7 +27,7 @@ When a reviewer runs against a branch with no PR open yet, the reviewer routes b
 
 - Positive: the happy path ships without a redundant confirmation step. The user asks for implementation; implementation includes shipping.
 - Positive: the author/reviewer separation stays clean. Review remains adversarial because the reviewer has no shipping stake.
-- Negative: authors must know the shipping mechanics. The shared reference at `.prism/references/shipping-flow.md` documents the flow in one place; each skill points at it.
+- Negative: authors must know the shipping mechanics. The shared reference at `references/shipping-flow.md` documents the flow in one place; each skill points at it.
 - Neutral: if a branch has no PR open when a reviewer is invoked, there's an extra route-back hop. Acceptable — it's rare and preserves the separation.
 
 ## Per-User Overrides
@@ -40,7 +40,7 @@ git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit false   # opt out (ma
 git config --global --unset ${PROJECT_LOWERCASE}.pauseBeforeCommit # reset (prompts again on next ship)
 ```
 
-The shipping flow (see `.prism/references/shipping-flow.md`) reads this value before every commit and branches:
+The shipping flow (see `references/shipping-flow.md`) reads this value before every commit and branches:
 
 - `true` — announce the commit subject, wait for the user to say "ship it" before committing. Specific files or a full diff shown on request.
 - `false` — commit directly; same as the team default.
@@ -64,5 +64,5 @@ If a second per-user override emerges, write a new ADR that generalizes the mech
 
 - `.prism/plans/4.7-skill-audit-strategy.md` § Round 10 — the three-question framework
 - `.prism/plans/thr-1631.md` — the implementation of this pattern across Clove, Eli, Sage, Reese, Briar, and AGENTS.md
-- `.prism/references/shipping-flow.md` — shared shipping mechanics
+- `references/shipping-flow.md` — shared shipping mechanics
 - `AGENTS.md § 0` — the one-line summary in the auto-routing section

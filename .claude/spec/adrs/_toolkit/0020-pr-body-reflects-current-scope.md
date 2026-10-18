@@ -39,7 +39,7 @@ The PR body describes current scope, not PR-open scope. Two agents enforce this 
 
 - `.prism/rules/pr-description.md` — documents the sync invariant and section ownership.
 - `.prism/rules/git-conventions.md` — squash-merge policy; the load-bearing reason the body must be current at merge time.
-- `.prism/references/shipping-flow.md` — Clove's enforcement point.
+- `references/shipping-flow.md` — Clove's enforcement point.
 - `.claude/skills/prism-architect/SKILL.md` — Winston's enforcement point.
 - `.prism/templates/pr-description.md` — section structure; callout for squash-merge context.
 - ADR-0009 (AC Required, Synced to Ticket System) — the precedent sync pattern.

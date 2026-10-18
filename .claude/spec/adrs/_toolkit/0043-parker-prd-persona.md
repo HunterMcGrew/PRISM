@@ -66,5 +66,5 @@ The stakes-calibration mechanism from Phase 1.5e (`hobby` / `internal` / `launch
 - [ADR-0041](./0041-theo-architect-doc-walker.md) — Theo's micro-file step machine reference implementation.
 - [ADR-0042](./0042-ren-refactor-scout.md) — Ren's parallel implementation Parker mirrors.
 - Phase 1.5e — stakes-calibration reference doc, `[ASSUMPTION]` discipline.
-- [`.prism/references/stakes-calibration.md`](../../references/stakes-calibration.md) — three-level table.
-- [`.prism/references/micro-file-step-machine.md`](../../references/micro-file-step-machine.md) — step-machine pattern.
+- [`references/stakes-calibration.md`](../../references/stakes-calibration.md) — three-level table.
+- [`references/micro-file-step-machine.md`](../../references/micro-file-step-machine.md) — step-machine pattern.

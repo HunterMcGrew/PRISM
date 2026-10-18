@@ -6,7 +6,7 @@
  * matching the patterns in use across the current manifest:
  *   - Exact path (no wildcards, no trailing slash): `.prism/SPEC.md`
  *   - Directory prefix (trailing slash, no wildcards):
- *     `.claude/skills/prism-qa-test-plan/`
+ *     `.claude/skills/prism-qa-plan/`
  *   - Glob: `**` matches across path segments; `*` matches within a single
  *     segment. Every other regex metacharacter is escaped to a literal,
  *     `?` included — the route language is the two star forms and nothing

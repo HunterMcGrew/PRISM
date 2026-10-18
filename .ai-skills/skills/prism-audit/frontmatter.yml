@@ -1,0 +1,10 @@
+name: prism-audit
+description: >
+  Audits the `.prism/` surface for stale content: gives each plan Decision a
+  verdict (live, archive-candidate, overdue-archive, open-stale), classifies
+  lessons, flags ADRs and architect docs that have drifted, and writes a
+  report to `.prism/audits/`. Also has an explicit-only lane that classifies
+  git worktrees GREEN, RED, or YELLOW and clears the GREEN set on one batch
+  confirmation. Explicit invocation only. Triggers: "Zoe", weekly audit, audit
+  the prism surface, what's stale, what can we archive, clean up worktrees.
+argument-hint: "[audit | classify lessons | review open decisions | worktrees | <surface>]"

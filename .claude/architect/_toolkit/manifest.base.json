@@ -1,5 +1,5 @@
 {
-	".claude/skills/prism-qa-test-plan/": "_toolkit/qa-test-planning.md",
+	".claude/skills/prism-qa-plan/": "_toolkit/qa-test-planning.md",
 	".prism/SPEC.md": [
 		"_toolkit/spec-editing.md",
 		"guides/writing-a-rule.md"
@@ -38,7 +38,6 @@
 		"_toolkit/plan-authoring.md",
 		"_toolkit/audit-workflow.md"
 	],
-	".prism/skills/**": "_toolkit/skills-ecosystem.md",
 	".ai-skills/skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md",
@@ -46,7 +45,7 @@
 		"_toolkit/closing-messages.md"
 	],
 	".ai-skills/skills/prism-pr-review/**": "_toolkit/eric-review-modes.md",
-	".ai-skills/skills/prism-surface-audit/**": "_toolkit/worktree-hygiene.md",
+	".ai-skills/skills/prism-audit/**": "_toolkit/worktree-hygiene.md",
 	"scripts/ai-skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md"

@@ -99,13 +99,13 @@ Two opt-in gates ride the hook runtime. `hooks.commitCleanupPass` holds the firs
 
 ## Retro evidence sources (`.ai-skills/config.json#retroEvidence`)
 
-A sibling block to `commands.*` — Iris's retro charter (`prism-retro` step-02) reads it to know which execution-record sources exist for this team, so the retro's charter-coverage table degrades honestly instead of assuming GitHub + CI everywhere.
+A sibling block to `commands.*` — Iris's retro charter (the retro skill) reads it to know which execution-record sources exist for this team, so the retro's charter-coverage table degrades honestly instead of assuming GitHub + CI everywhere.
 
 | Key | Meaning |
 | --- | --- |
 | `ci.present` / `ci.system` | Whether this team runs CI and which system. Absent or `false` renders charter item 6 as `not configured for this team`. |
-| `prPlatform` | Platform hosting PRs/reviews (`github`, `gitlab`, `bitbucket`, ...). Drives how step-02 fetches PR review threads for charter items 4/5. |
+| `prPlatform` | Platform hosting PRs/reviews (`github`, `gitlab`, `bitbucket`, ...). Drives how the retro skill fetches PR review threads for charter items 4/5. |
 | `testCommand` | The team's test command, referenced when reading CI conclusions. |
-| `dodGates` | The gates that define "done" for this team (types, lint, tests, build, coverage, ...) — informs which charter items step-02 expects evidence for. |
+| `dodGates` | The gates that define "done" for this team (types, lint, tests, build, coverage, ...) — informs which charter items the retro skill expects evidence for. |
 
 Atlas populates this block during onboarding (the retro-evidence question set) and proposes defaults from stack detection (`.github/workflows/` → `ci.present: true, system: "github-actions"`; a GitHub remote → `prPlatform: "github"`; `commands.test` → `testCommand`). The `prism-onboard` skill carries the interactive flow.

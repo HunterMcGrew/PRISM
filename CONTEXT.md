@@ -174,7 +174,7 @@ This is distinct from the five-tier **spec hierarchy** in `.prism/SPEC.md` (Cons
 
 ## Zoe verdict
 
-A per-Decision classification Zoe (`prism-surface-audit`) issues during her cadence audit, written as a sub-bullet directly on a plan's `## Decisions` entry. Exactly one verdict applies per Decision, in increasing severity: `open-stale` < `archive-candidate` < `overdue-archive`, plus `live` for decisions still in effect. The verdict carries a date and a one-line reason (the evidence trail). Owned by `.prism/architect/_toolkit/audit-workflow.md`.
+A per-Decision classification Zoe (`prism-audit`) issues during her cadence audit, written as a sub-bullet directly on a plan's `## Decisions` entry. Exactly one verdict applies per Decision, in increasing severity: `open-stale` < `archive-candidate` < `overdue-archive`, plus `live` for decisions still in effect. The verdict carries a date and a one-line reason (the evidence trail). Owned by `.prism/architect/_toolkit/audit-workflow.md`.
 
 - `live` — still in effect; no action.
 - `archive-candidate` — no longer load-bearing; candidate for promotion or archival.

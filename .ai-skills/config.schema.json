@@ -223,7 +223,7 @@
 		},
 		"retroEvidence": {
 			"type": "object",
-			"description": "Per-team execution-record sources for Iris's retro charter (prism-retro step-02). Populated by Atlas's retro-evidence onboarding question set. A source this block marks absent renders in the retro's charter-coverage table as 'not configured for this team', distinct from a configured-but-unreachable-this-run source — so the coverage table degrades honestly on teams without CI or without a GitHub-hosted PR platform.",
+			"description": "Per-team execution-record sources for Iris's retro charter (the retro skill). Populated by Atlas's retro-evidence onboarding question set. A source this block marks absent renders in the retro's charter-coverage table as 'not configured for this team', distinct from a configured-but-unreachable-this-run source — so the coverage table degrades honestly on teams without CI or without a GitHub-hosted PR platform.",
 			"properties": {
 				"ci": {
 					"type": "object",
@@ -239,7 +239,7 @@
 				},
 				"prPlatform": {
 					"type": "string",
-					"description": "Platform hosting PRs/reviews. Drives how step-02 fetches PR review threads for charter items 4/5. Open string — not limited to GitHub.",
+					"description": "Platform hosting PRs/reviews. Drives how the retro skill fetches PR review threads for charter items 4/5. Open string — not limited to GitHub.",
 					"examples": ["github", "gitlab", "bitbucket"]
 				},
 				"testCommand": {
@@ -249,7 +249,7 @@
 				},
 				"dodGates": {
 					"type": "array",
-					"description": "The gates that define 'done' for this team (types, lint, tests, build, coverage, etc.) — informs which charter items step-02 can expect evidence for.",
+					"description": "The gates that define 'done' for this team (types, lint, tests, build, coverage, etc.) — informs which charter items the retro skill can expect evidence for.",
 					"items": { "type": "string" },
 					"examples": [["types", "crossref-lint", "tests", "build"]]
 				}

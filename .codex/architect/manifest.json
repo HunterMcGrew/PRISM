@@ -1,5 +1,5 @@
 {
-	".claude/skills/prism-qa-test-plan/": "_toolkit/qa-test-planning.md",
+	".claude/skills/prism-qa-plan/": "_toolkit/qa-test-planning.md",
 	".claude/skills/prism-pr-review/": "_toolkit/eric-review-modes.md",
 	".prism/SPEC.md": [
 		"_toolkit/spec-editing.md",
@@ -40,7 +40,6 @@
 		"_toolkit/audit-workflow.md"
 	],
 	".prism/business/**": "_toolkit/business-layer.md",
-	".prism/skills/**": "_toolkit/skills-ecosystem.md",
 	".ai-skills/skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md",
@@ -104,7 +103,7 @@
 	"scripts/ai-skills/lib/cli-entry.ts": "_toolkit/npm-packaging.md",
 	"scripts/ai-skills/bundle.ts": "_toolkit/npm-packaging.md",
 	"scripts/ai-skills/worktree-classify.ts": "_toolkit/worktree-hygiene.md",
-	".ai-skills/skills/prism-surface-audit/**": "_toolkit/worktree-hygiene.md",
+	".ai-skills/skills/prism-audit/**": "_toolkit/worktree-hygiene.md",
 	".prism/architect/manifest.json": "_toolkit/hook-runtime.md",
 	".prism/.sync-manifest.json": "_toolkit/consumer-sync-flow.md",
 	"umbrellas": [

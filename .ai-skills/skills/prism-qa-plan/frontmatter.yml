@@ -1,0 +1,10 @@
+name: prism-qa-plan
+description: >
+  Writes manual Pass/Fail QA checklists in tester-facing English for a release,
+  a sprint or PR group, a single PR, or a bug-fix retest, and separately grades
+  a plan's acceptance criteria against the branch diff with per-criterion
+  verdicts and typed evidence (AC verification). Picks the shape from prompt
+  words, input shape, and ticket labels. Triggers: "Reese", QA plan, release
+  checklist, verify this fix, retest, what should QA test, verify the AC,
+  grade the AC.
+argument-hint: "a tag range, PR number(s), PR URL, branch name, compare URL, or a plan path to grade its AC"

@@ -53,7 +53,7 @@ Each plan section has designated readers and writers. This prevents conflicts an
 
 See `.prism/templates/acceptance-criteria.md` for the full reference.
 
-Every criterion carries a **stable ID** (`AC-1`, `AC-2`…) and a falsifiable **Evidence sub-bullet** tagged `machine` or `human` — the gradeability bar. This turns the AC into a grading instrument: Reese's executed AC Verification walks criteria by ID and grades each against its Evidence. The bar's authoring rules (falsifiable-not-merely-runnable, positive controls on absence-evidence, behavioral evidence for behavioral criteria, the two-verifier standard) live in the template; the verdict semantics Reese grades against live at `.prism/references/qa-test-plan/verdict-contract.md`. On tracker sync, the ID prefix and Evidence sub-bullets are stripped — the tracker AC stays stakeholder-facing.
+Every criterion carries a **stable ID** (`AC-1`, `AC-2`…) and a falsifiable **Evidence sub-bullet** tagged `machine` or `human` — the gradeability bar. This turns the AC into a grading instrument: Reese's executed AC Verification walks criteria by ID and grades each against its Evidence. The bar's authoring rules (falsifiable-not-merely-runnable, positive controls on absence-evidence, behavioral evidence for behavioral criteria, the two-verifier standard) live in the template; the verdict semantics Reese grades against live at `.prism/references/qa-plan/verdict-contract.md`. On tracker sync, the ID prefix and Evidence sub-bullets are stripped — the tracker AC stays stakeholder-facing.
 
 **Behavioral criteria** use Gherkin `Given / When / Then`:
 
