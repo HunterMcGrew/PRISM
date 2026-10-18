@@ -42,7 +42,8 @@ A ticket is ready when the next skill can start without questions. Name every ga
 - **Criteria and blockers.** Acceptance criteria exist or can be derived (a DX ticket's are always "None for this ticket."), and no blocker or dependency is open. Flag blocked-by and blocking tickets, since a blocking ticket's priority rises.
 - **Estimate set before the branch exists:** 1 for one file, 2 for two or three files in one system, 3 for several files or a shared component, 5 for multiple systems, and 8 means consider splitting. Default to 1, and take the user's number without pushback.
 - **Priority, when unset,** follows reach × severity × frequency plus business cost. Cite the reasoning ("High: every site, manual workaround"). Accept the user's override without re-arguing.
-- **Description.** Whenever you write one, keep every section heading of the type's template and put "Not Applicable" under any that does not apply, so a later skill never meets a missing section.
+- **Placement.** For a ticket in Triage or Backlog, say whether it is ready to move to Todo or the current cycle, or what is missing first.
+- **Description.** A bug description keeps every heading of the bug-report template, with "Not Applicable" under any that does not apply, so a later skill never meets a missing section. Features open with an objective and scope bullets. Improvement and DX tickets read "Currently X. This change makes it Y because Z."
 
 ## Bug tickets
 
@@ -59,7 +60,7 @@ For "I found a bug" or "file a ticket": get the type, collect its required field
 - **Ask "Ready to start work on this?"** before touching anything local, and list what is still open.
 - **Stop on a dirty tree.** Show it and ask whether to stash, commit, or discard.
 - **Create the branch** from the ticket's `branchName`, or per `.prism/rules/git-conventions.md` § Branch Naming. Run `git fetch origin`. If `origin/<branch>` exists, switch to it and pull. Otherwise run `git switch -c <branch> origin/main`, never from the current branch, which carries unrelated commits.
-- **Assign** an unassigned ticket to the authenticated user. Ask before taking one assigned to someone else.
+- **Assign** the authenticated user to an unassigned ticket. Assignment is a tracker write, so it goes through the gate below, and a ticket assigned to someone else needs an explicit yes.
 - **Re-check the branch** before handing off. A wrong or dirty branch carries into every later skill.
 
 ## Tracker writes
