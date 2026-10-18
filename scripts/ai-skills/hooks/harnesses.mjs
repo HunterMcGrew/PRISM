@@ -36,11 +36,11 @@
  * (the Codex row below), which relaxes the live-probe bar ADR-0074 set rather
  * than meeting it (ADR-0077). The asymmetry that makes this safe is that an
  * unrecognized envelope fails open, so shipping one ahead of a probe cannot
- * make things worse. A deny is the one output shape that changes what the user's tool
- * does, so a genuinely guessed envelope either fails silently or blocks a
- * write with a message the host never renders. Returning `null` makes "the
- * gate does not reach Cursor" a property of the code rather than a sentence
- * in a doc (ADR-0072).
+ * make things worse. A deny is the one output shape that changes what the
+ * user's tool does, so a genuinely guessed envelope either fails silently or
+ * blocks a write with a message the host never renders. Returning `null`
+ * makes "the gate does not reach Cursor" a property of the code rather than a
+ * sentence in a doc (ADR-0072).
  *
  * @typedef {Object} HarnessSpec
  * @property {Record<string, "read"|"write"|"search"|"shell">} toolKinds
