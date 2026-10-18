@@ -315,4 +315,4 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 
 ## Going deeper
 
-The full skill behavior for each persona lives in its skill file. The routing table — which intent maps to which persona — is in [AGENTS.md](../AGENTS.md) § Skill Auto-Routing. The skill authoring model (what stays in the skill body vs. what lives in references) is documented in [ADR-0045](../.prism/spec/adrs/_toolkit/0045-skill-content-disclosure-model.md).
+The full skill behavior for each persona lives in its skill file. The routing table — which intent maps to which persona — is in [AGENTS.md](../AGENTS.md) § Skill Auto-Routing. The skill authoring model (what a skill is, and the tests that keep it function-shaped) is documented in [ADR-0080](../.prism/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md).
