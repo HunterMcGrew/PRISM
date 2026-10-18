@@ -39,18 +39,19 @@ is missing gets skipped in the edge case it was written for.
 
 **The `prism-*` prefix belongs to PRISM.** Every skill PRISM ships is named
 `prism-<something>`, with one exception: `tdd` keeps the bare name it shipped
-under. Every update rewrites those directories from the current
-roster. A skill of yours that borrows the prefix is at risk of being
-overwritten or swept as an orphan.
+under. Every update rewrites those directories from the current roster. A skill
+of yours that borrows the prefix, or is named `tdd`, is at risk of being
+overwritten or swept as an orphan, because the render writes every roster ID.
 
 Your own skills use your own prefix — your team name, your product, anything
-that is not `prism-`. Two things follow from that, and both are protections
-rather than restrictions:
+that is neither `prism-` nor `tdd`. Two things follow from that, and both are
+protections rather than restrictions:
 
 - **PRISM never writes outside its own namespace.** Your skills are not
   rendered, not updated, and not removed by an update.
-- **Ownership is decidable from the name alone.** Nobody has to keep a list or
-  check a marker to know whose skill a directory holds.
+- **Ownership is decidable from the name.** `prism-*` and the one bare ID `tdd`
+  are PRISM's. Nobody has to check a marker to know whose skill a directory
+  holds.
 
 When you want to change how a PRISM persona behaves in your repo, adjust it
 through the configuration and anchor points the install exposes, rather than by
