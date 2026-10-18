@@ -12,8 +12,7 @@
  * would under-load it on every session that doesn't happen to touch a
  * matching glob. This is the default Atlas proposes during the question
  * flow, not a silent final answer; see
- * `.prism/references/onboarding/question-flow.md` § Generated-rule load
- * confirmation.
+ * the `prism-onboard` skill's "Confirm, generate, write" section.
  *
  * Skip-if-exists posture and `force: true` override match the
  * code-standards generator. Frameworks not in `FRAMEWORK_TEMPLATES` are

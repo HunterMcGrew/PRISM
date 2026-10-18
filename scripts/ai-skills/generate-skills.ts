@@ -111,7 +111,7 @@ function applyAnchorsThenTokens(
  * defaults to the cheaper tier.
  */
 export const CLAUDE_AGENT_MODEL_DEFAULTS = new Map<string, string>([
-	["prism-architect", "opus"],
+	["prism-plan", "opus"],
 ]);
 const DEFAULT_CLAUDE_AGENT_MODEL = "sonnet";
 

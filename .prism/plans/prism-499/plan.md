@@ -206,7 +206,18 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 5. **Drop stale tracking.** Removed the three build-lane entries from `OVER_CAP_ALLOWLIST` and the five `literal-allowlist.json` entries that exempted the old skill's THR-1881 citation, which the thinned body no longer carries.
 6. **Leave the review skills to PR 6.** Their bodies already name the build skills by their new IDs, and `prism-self-review` no longer names an architect doc by path, so this PR makes no edit to either review skill.
 
-### PRs 8–11
+### PR 8 — Flow entry
+
+All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, `measureSkillLoad` reports 120 lines or fewer for `prism-start-ticket` and `prism-onboard`, and a `git grep` for `prism-architect`, `prism-ticket-start`, `prism-onboarding`, `references/architect/`, and `references/ticket-start/` returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/` and its generated copies under `.claude/`, `.codex/`, and `.cursor/`, and `CHANGELOG.md`.
+
+1. **Rename three skills.** `prism-architect` became `prism-plan`, `prism-ticket-start` became `prism-start-ticket`, and `prism-onboarding` became `prism-onboard`, in the skill directories, `roles.json`, frontmatter `name`, the `opus` pin in `generate-skills.ts` and the test that asserts it, the `.ai-skills/skills/prism-onboard/**` manifest route, `verify-manifest-coverage.ts`, `bootstrap-from-claude.ts`, `docs/` (`personas.md`, `parameterization.md`, `getting-started.md`, `adopting-into-existing-repos.md`), `CONTEXT.md`, `templates/install/AGENTS.md.tmpl`, the test fixtures and temp-directory prefixes that carried the old IDs, `skills-ecosystem.md` and `closing-messages.md`, the Atlas architect docs, and every rule that named them. The `.prism/references/architect/` directory became `.prism/references/plan/`, with its curated seed twin and the `seed-curation.json` key moved to match.
+2. **Rename `prism-plan` and change nothing else.** See Decision: `prism-plan` is a rename. It keeps its plan logic and its allowlist entry, now at 1108 lines under `main`'s measurement.
+3. **Thin `prism-start-ticket` and `prism-onboard` to the four tests.** See Decision: What the flow-entry skills kept. They load 116 and 55 lines.
+4. **Delete the references the two skills no longer load.** See Decision: Why each flow-entry reference could go. That covers `.prism/references/ticket-start/` and `.prism/references/onboarding/` with their seed twins, and the `.prism/references/onboarding/**` manifest route.
+5. **Re-point the surviving citations.** `prd-decompose.md` names the create path of `prism-start-ticket`, the PRD clarity rubric lists its own vague words, the three rule generators and `verification-commands.md` name `prism-onboard`, `triple-gated-adr-criterion.md` points at `references/plan/plan-mode.md`, and ADRs 0034, 0045, and 0065 lose the `.ai-skills/skills/` prefix on their links to the renamed skills so `crossref-lint` stops resolving them, as PR 3 did for the conductor. The Atlas architect doc drops its "Batch 2" and question-number references.
+6. **Fix the allowlist.** Removed the `prism-ticket-start` and `prism-onboarding` entries, renamed `prism-architect` to `prism-plan`, and set `prism-user-stories` to 704, which is what its closure measures once the create-path reference is gone. Removed the `question-flow.md` entry from `literal-allowlist.json`.
+
+### PRs 9–11
 
 Each PR's tasks are written into this section when its branch is cut, so a task list never runs ahead of the code it describes. The rules every one of those PRs follows are recorded under `## Decisions`.
 
@@ -347,6 +358,31 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 - **Always-on rules edited in PR 7.** The edits are renames and re-points, and nothing else in them changed: `.prism/rules/skill-routing.md` (the two routing rows, with its curated twin and `templates/install/AGENTS.md.tmpl`), `.prism/rules/context-reuse.md` (citation list), `.prism/rules/design-governance.md` (who runs it), `.prism/rules/branch-plan.md` (the plan-lookup skill list), and `.prism/rules/code-standards.md` (the pointer to the implementation skill, reworded to "builds inside the same local frame" since its Scope discipline section is gone). Each has a seed twin that the build or the sweep updated to match.
 
+- **What the flow-entry skills kept.** Each line survives because a gate, a rule, or another skill reads it. The rest of the old bodies failed the policy test: voice, greetings, "How X Thinks" lenses, batteries, generic ticket and onboarding method, restated rules, and the Sol-era verdicts (`needs-human`, `needs-replan`, `blocked`).
+  - **`prism-start-ticket`:** works with whatever tracker the session has and asks for the basics when there is none; takes the type from the label (`bug`, `feature`, `improvement`, `DX`) and asks when none matches; the Definition of Ready (problem not solution, bounded scope, criteria and blockers, an estimate before the branch exists, priority by impact, status placement for Triage and Backlog tickets, every bug-template section present); the bug path (scaffold from `bug-report.md`, blast radius before priority, hand off to `prism-implement`); the create path with status placement and the stop after creating; the follow-up vehicle choice and scope-fit gate from `followup-scope.md`; the branch from `origin/${DEFAULT_BRANCH}` per `git-conventions.md` § Branch Naming, the dirty-tree stop, and assignment; the confirmation gate on every tracker write, with its skip-for-session override; the AC sync that strips ids and Evidence; the handoff by type; the `domain-context` anchor; and "Nora" as a trigger.
+  - **`prism-onboard`:** the init, adopt, onboard sequence; the install-context table; the five-mode walk with resume first; the confirmation stop after the survey; one question per turn saved with `markStepComplete`; the question order with the asset survey and sweep (for first-contact, and for init-bootstrapped with asset signals), documentation, and retro evidence; skip-if-exists with its reason string; the `load:` confirmation; the config written only on an explicit yes through `writeOnboardingConfig`; regeneration in place of an anchor step; the closing summary; and "Atlas" as a trigger. The body points at `runRuleGenerators`, `writeOnboardingConfig`, and `ONBOARDING_STEPS` instead of restating what they do.
+  - **Judgment calls.**
+    - **Cycle View and Duplicate Finder are cut.** Cycle View is a tracker query sorted into buckets, which the model builds unprompted, and Duplicate Finder's 50/30/20 title, label, and description weights with trigram scoring replace the model's own comparison with a cruder one. The one policy in them, no change without confirmation, is the tracker-write gate. `prism-plan` lost its Cycle View handoff for the same reason.
+    - **The S1 to S4 scale, the priority tier definitions, the "tomorrow test," INVEST, and the splitting strategies are cut.** The bug template names Critical, High, Medium, and Low, the tiers restated tracker priorities, and the rest is method the model holds. The vague-word list stays as one clause, and the PRD clarity rubric now lists its own words instead of citing the cut section.
+    - **`bug-report.md` is cited and the other templates are not.** It costs 62 of `prism-start-ticket`'s 116 lines and is the scaffold format. `ticket-types.md` and `acceptance-criteria.md` would put the skill over the cap, so the four types, the DX rule, and the strip rule are one clause each.
+    - **The `compatibility:` frontmatter no longer names Linear,** since the skill works with any tracker the session has.
+    - **`ONBOARDING_STEPS` has no `retro-evidence` step,** although the old question flow told Atlas to save one, and `markStepComplete` throws on a name it does not know. The body saves that set under `documentation-setup`. Adding the step is a code change this PR does not make.
+
+- **Why each flow-entry reference could go.** A reference is cut when it fails the policy test and nothing else needs it.
+  - **`ticket-start/assessment-frameworks.md`:** its own header says the model already holds the frameworks. The PRISM-specific parts (Definition of Ready, the estimate scale, the impact formula, blast radius) are lines in the skill.
+  - **`ticket-start/create-path.md` and `sync-ac.md`:** the create flow and the AC sync are sections of the skill, and the follow-up gate is `followup-scope.md`. `prd-decompose.md` named the create path and now names the skill.
+  - **`ticket-start/mode-cycle-view.md` and `mode-duplicate-finder.md`:** see the judgment call above.
+  - **`onboarding/modes.md`:** the mode walk and the first-install step set are in the skill, and the seeding rationale stays in the Atlas architect doc.
+  - **`onboarding/question-flow.md`:** the question order, the documentation and retro-evidence sets, the survey, the sweep, and the `load:` confirmation are in the skill. The three rule generators named it in their JSDoc and now name the skill.
+  - **`onboarding/output-contract.md`:** its file lists restated what `writeOnboardingConfig` and `runRuleGenerators` do, and the closing summary is one sentence.
+  - **Kept for other skills:** `plan-lookup.md`, `architect-context.md`, `structural-remedies.md`, and the three files that moved to `references/plan/`, all of which `prism-plan` still loads.
+
+- **`prism-plan` is a rename.** Its plan logic stays whole until the phase-2 plan skill replaces it, so the only cuts are the Sol-era verdict words (each became "ask the user," "stop and tell the user," or a follow-up per `followup-scope.md`), the Cycle View handoff, and the persona names of skills that this stack has already renamed, which became skill IDs. Persona names of skills renamed in later PRs stay until their lanes. The description drops "senior software architect" and keeps the "Winston" trigger.
+
+- **Allowlist maxes for this PR come from the loaded-lines rules on `main`.** `measureSkillLoad` counts a skill's own files and cited architect docs, and this branch carries the same copy now that it has absorbed `main`. Under it `prism-plan` loads 1108 lines, `prism-user-stories` 704, and the two thinned skills 116 and 55. The test is an exact ratchet, so every entry must equal its measured total.
+
+- **Always-on rules edited in PR 8.** The edits are renames and re-points, plus one corrected startup-step number in `context-reuse.md`, and nothing else in them changed: `.prism/rules/skill-routing.md` (the two routing rows and the onboarding line, with its curated twin and `templates/install/AGENTS.md.tmpl`), `.prism/rules/context-reuse.md` (citation list and the `prism-plan` startup step), `.prism/rules/architect-doc-verification.md`, `.prism/rules/design-governance.md`, `.prism/rules/followup-scope.md` (who runs it), `.prism/rules/implementation-task-detail.md`, and `.prism/rules/verification-commands.md` (the pointer to the onboarding flow). Each has a seed twin that the build or the sweep updated to match.
+
 ---
 
 ## Sessions
@@ -368,6 +404,10 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-shared-core]: Cut `skill-core.md` and `session-close.md` and added the loaded-lines check with a shrink-only allowlist; see Decision: The shared skill core is cut, not thinned.
 - 2026-10-17 [huntermcgrew/prism-499-review-lane]: Renamed Briar and Eric to `prism-self-review` and `prism-pr-review`, thinned each to the four tests (56 and 109 loaded lines), and deleted ten reference files. The PR reviewer now leaves the PR in draft; see Decision: What the review skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: Renamed Clove and Eli to `prism-implement` and `prism-docs`, thinned both and `prism-design` to the four tests (58, 113, and 32 loaded lines), and deleted the `code-dev`, `documentation`, and `pixel` references; see Decision: What the build skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-flow-entry]: Renamed Winston, Nora, and Atlas to `prism-plan` (rename only), `prism-start-ticket`, and `prism-onboard`, and thinned the last two to 116 and 55 loaded lines. Deleted eight reference files and moved `references/architect/` to `references/plan/`; see Decision: What the flow-entry skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-flow-entry]: Self-review pass 1 fixes. The asset survey and sweep now run for init-bootstrapped repos with asset signals, and the onboard and start-ticket bodies say what the agent does where the APIs lack it.
+- 2026-10-18 [huntermcgrew/prism-499-flow-entry]: Self-review pass 2 fix. The onboard Close marks every step complete, skipped or not, so a finished run does not resume.
+- 2026-10-18 [huntermcgrew/prism-499-flow-entry]: PR review pass 1 fixes. `closing-messages.md` no longer claims every skill has a `## Next persona` section, onboard asks before overwriting an unparseable config or state, and start-ticket says exactly which plan sections it writes.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: Self-review pass 1 fixes. Restored the domain-context anchor and the commit-pause preference, added the doc-root route note to `compatibility.md`, and reworded the audit-workflow reflex line, the anchor-substitution example, and the stale pointers; see Decision: A non-`docs/` doc root needs its own manifest route.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: PR review pass 1 fixes. Widened the Zoe-verdict clause in `prism-implement`, restored the doc-conventions read and the docs PR title policy, and reworded the UI-gap handoff as a recommendation; the six findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-review-lane]: Self-review pass 1 fixes. Brought `prism-skill-forge` onto the four tests, restored the coverage rule, smells, AC proposal, and domain anchor in the review skills, and fixed stale persona wording in `CONTEXT.md` and the roster.
@@ -399,6 +439,70 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 ---
 
 ## Review Issues
+
+### PR 8: init-bootstrapped shadows the asset survey and sweep
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-onboard/shared.md:23`
+- **Problem:** the survey and sweep were "first-contact only", but init-bootstrapped shadows first-contact and `adopt` writes the sync manifest, so an established repo on the init, adopt, onboard path never reached them.
+- **Fixed in:** mode 2 now runs both when asset signals are present, and the question order says "First-contact, or init-bootstrapped with asset signals".
+
+### PR 8: dead pointer to the placement test
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-onboard/shared.md:36`
+- **Problem:** `.prism/SPEC.md` does not hold the placement test.
+- **Fixed in:** the body names the test from the writing-a-rule guide in prose, with no backticked path, which would add the guide's lines to the cap.
+
+### PR 8: onboard states behavior the APIs lack
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-onboard/shared.md:40,46,47,54`
+- **Problem:** `writeOnboardingConfig` has no `retroEvidence` field, `runRuleGenerators` takes no `load` input, no generator emits a "generator error" skip, and `nextIncompleteStep` could not reach `null` because five steps were never marked.
+- **Fixed in:** the body now says the agent merges `retroEvidence` into the config after the write, edits `load:` in the frontmatter after generation, catches and reports a generator error, and marks `stack-detection`, `rule-generation`, `anchor-substitution`, `config-write`, and `build-verify`. The code gaps stay open as follow-ups.
+
+### PR 8: description-template rule has no referent outside bugs
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-start-ticket/shared.md:18`
+- **Problem:** "every section heading of the type's template" names a template only bugs have.
+- **Fixed in:** the rule is scoped to the bug-report template, and features, improvements, and DX get their one-line shapes.
+
+### PR 8: priority and placement review is documented but not in the body
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/skills-ecosystem.md:35`
+- **Problem:** the roster and `ticket-workflows.md` say the start-ticket skill reviews priority and triage placement for existing tickets, and the thinned body only placed status on create.
+- **Fixed in:** the Definition of Ready has a one-clause placement check for Triage and Backlog tickets.
+
+### PR 8: self-assignment is ambiguous against the write gate
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-start-ticket/shared.md:36`
+- **Problem:** the Branch section assigned silently while the gate listed assignment as a write.
+- **Fixed in:** the bullet says assignment is a tracker write that goes through the gate.
+
+### PR 8: stale Decision text and workflow order
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/plan.md:382`
+- **Problem:** the allowlist Decision called `main`'s `measureSkillLoad` stricter than this branch's copy, but the two are now identical, and `_toolkit/onboarding.md` § Workflow order wrote the config before generating rules.
+- **Fixed in:** the Decision states that the copies match and the ratchet is exact, and the workflow order is confirm, generate, write.
+
+### PR 8: untouched onboarding steps leave the run resumable forever
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-onboard/shared.md:54`
+- **Problem:** `initialState` seeds all `ONBOARDING_STEPS` as pending, and steps that are never asked (Linear steps on a `github-issues` repo, the survey and sweep outside their modes, a blank Slack channel, fields `init` wrote) stay pending, so `nextIncompleteStep` never returns `null` and the next run takes Resume.
+- **Fixed in:** Close says to mark every step complete when it finishes or is seeded, skipped, or not applicable. The generator fallback now runs the exported `RULE_GENERATORS` one at a time, the Close summary lists discovery decisions whenever the sweep ran, and the Decision lists the survey and sweep for init-bootstrapped with asset signals.
 
 ### Audit-workflow doc overstated who carries the Zoe-verdict reflex
 
@@ -447,6 +551,38 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - **File:** `.ai-skills/skills/prism-implement/shared.md:18`
 - **Problem:** it dropped the old option to make the call and keep going, and no skill invokes another.
 - **Suggested fix:** recommend `prism-design` to the user, or make the call and record it in `## Decisions`. The plan-skill handoff is worded the same way. Fixed in: the PR 7 review-fix commit.
+
+### PR 8: closing-messages claims a `## Next persona` section no skill has
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/closing-messages.md:69`
+- **Problem:** the doc said every persona's `shared.md` has a `## Next persona` section that cites it, and the thinned skills have none.
+- **Fixed in:** the doc now says each skill names its next skill in its own closing or handoff text and this doc holds the routing table. Line 49 and the install twin agree. The lesson is in `.prism/lessons.md`.
+
+### PR 8: onboard overwrites an unparseable config or state file without asking
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-onboard/shared.md:20`
+- **Problem:** the old body warned before overwriting a config that fails to parse. A write over one drops hand-added fields, and `loadState` throws on a corrupt state file.
+- **Fixed in:** Mode says to report a parse failure and ask before overwriting the config or restarting the state.
+
+### PR 8: start-ticket overstates what it does not write
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-start-ticket/shared.md:1`
+- **Problem:** "writes no code, plan, or stories" contradicts the AC Sync Log row and `plan-authoring.md`, which lists the skill as a writer of `## Goal` and bug AC. `docs/personas.md` and `docs/workflow.md` said it initializes or sets up the plan.
+- **Fixed in:** the body names what it does not write (code, stories, and plan sections beyond `## Goal`, bug AC, and the AC Sync Log), and both docs drop the plan-setup claim.
+
+### PR 8: the Parker doc says the clarity rubric cites Nora's list
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/ai-skills/parker.md:48`
+- **Problem:** the rubric now lists its own vague words.
+- **Fixed in:** the line says so.
 
 ## PR Readiness
 

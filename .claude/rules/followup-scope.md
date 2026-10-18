@@ -93,8 +93,8 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 
 ## Who runs this rule
 
-- **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
-- **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
+- **Nora** (`prism-start-ticket`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
+- **Winston** (`prism-plan`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
 - **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 - **`prism-review-loop`** — carries a stricter disposition: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. Its own Ledger set is this section's set plus two loop-local additions — the PR body and the readiness line the loop itself emits. See its § Review surfaces.

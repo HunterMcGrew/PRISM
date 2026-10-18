@@ -16,7 +16,7 @@ A ticket in PRISM moves through five phases: start, plan, implement, review, and
 
 When you're ready to start a ticket, say: "Nora, start PRISM-1234." or "Start this ticket."
 
-Nora reads the ticket, confirms scope, and sets up the branch and plan file. The plan file becomes the shared memory for everyone who touches the ticket.
+Nora reads the ticket, confirms scope, and sets up the branch. The plan file that the later steps build up becomes the shared memory for everyone who touches the ticket.
 
 **Nora hands off to:** Winston (if architectural planning is needed) or Clove (if the path is already clear).
 

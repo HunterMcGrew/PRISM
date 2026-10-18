@@ -1,12 +1,12 @@
 {
 	"skills": [
 		{
-			"id": "prism-architect",
+			"id": "prism-plan",
 			"persona": "Winston",
 			"routing": "auto"
 		},
 		{
-			"id": "prism-onboarding",
+			"id": "prism-onboard",
 			"persona": "Atlas",
 			"routing": "auto"
 		},
@@ -61,7 +61,7 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-ticket-start",
+			"id": "prism-start-ticket",
 			"persona": "Nora",
 			"routing": "auto"
 		},

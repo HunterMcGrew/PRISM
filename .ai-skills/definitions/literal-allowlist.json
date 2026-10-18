@@ -245,10 +245,6 @@
 			"reason": "Linear MCP sanitizer gotchas are tracker-specific facts, useful verbatim to Linear consumers"
 		},
 		{
-			"path": "templates/install/.prism/references/onboarding/question-flow.md",
-			"reason": "the onboarding question offers Linear as one of the supported ticket systems"
-		},
-		{
 			"path": ".claude/architect/_toolkit/output-guards.md",
 			"reason": "doc explains the Thrive-literal guard and must name the literals it checks for"
 		},

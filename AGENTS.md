@@ -851,7 +851,7 @@ The pattern is "read once, refer many" — not "read every step."
 
 ## Architect-context routing is diff-blind
 
-Architect-context routing keys on the working diff (`prism-architect` startup step 4 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. Before editing any path, match it against `manifest.json` and read every doc its routes name. When a task names a specific existing doc or directory, match that target path too, since it may sit outside the diff entirely.
+Architect-context routing keys on the working diff (`prism-plan` startup step 3 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. Before editing any path, match it against `manifest.json` and read every doc its routes name. When a task names a specific existing doc or directory, match that target path too, since it may sit outside the diff entirely.
 
 A `PostToolUse` hook backs this up. It fires on `Read` in Claude Code and on shell reads in Codex, which has no read tool. When a read path matches a manifest route, the hook names each still-unread architect doc by path, once per session and not again. It announces rather than blocks — reading the named doc is still yours to do.
 
@@ -861,14 +861,14 @@ The announcement has a mechanical enforcer behind it. A `PreToolUse` arm denies 
 
 This rule is referenced by every PRISM skill's reflex-bullets section:
 
-- prism-architect (Winston)
+- prism-plan (Winston)
 - prism-implement (Clove)
 - prism-pr-review (Eric)
 - prism-self-review (Briar)
 - prism-docs (Eli)
 - prism-design (Pixel)
 - prism-qa-test-plan (Reese)
-- prism-ticket-start (Nora)
+- prism-start-ticket (Nora)
 - prism-user-stories (Mira)
 - prism-changelog (Sage)
 - prism-standup-summary (Lilac)
@@ -1044,8 +1044,8 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 
 ## Who runs this rule
 
-- **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
-- **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
+- **Nora** (`prism-start-ticket`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
+- **Winston** (`prism-plan`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
 - **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 - **`prism-review-loop`** — carries a stricter disposition: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. Its own Ledger set is this section's set plus two loop-local additions — the PR body and the readiness line the loop itself emits. See its § Review surfaces.
@@ -1456,9 +1456,9 @@ When a user works without invoking a specific skill, detect what they're doing a
 | User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
 | -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
-| Architecture or design questions       | **Winston** (`prism-architect`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
+| Architecture or design questions       | **Winston** (`prism-plan`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
 | Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
-| Starting a ticket                      | **Nora** (`prism-ticket-start`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
+| Starting a ticket                      | **Nora** (`prism-start-ticket`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
 | Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
 | Self-reviewing the current branch      | **Briar** (`prism-self-review`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
 | UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
@@ -1496,7 +1496,7 @@ These personas route on their name or an explicit trigger phrase only — never 
 
 ## Onboarding intent routing
 
-- When the user says "onboard this repo", "set up PRISM here", "configure PRISM for my team", "Atlas onboard", or any first-install / re-onboarding phrase, invoke `prism-onboarding` (Atlas). Atlas detects the stack, generates per-team rules, writes `.ai-skills/config.json`, and populates stub anchors. Runs once per team install or on stack change.
+- When the user says "onboard this repo", "set up PRISM here", "configure PRISM for my team", "Atlas onboard", or any first-install / re-onboarding phrase, invoke `prism-onboard` (Atlas). Atlas detects the stack, generates per-team rules, writes `.ai-skills/config.json`, and populates stub anchors. Runs once per team install or on stack change.
 
 ## Utility skills
 

@@ -91,11 +91,7 @@
 	"scripts/ai-skills/lib/anchor-substitute.ts": "_toolkit/anchor-substitution.md",
 	"scripts/ai-skills/lib/rule-generators/**": "_toolkit/rule-generation.md",
 	"scripts/ai-skills/lib/stack-detect.ts": "_toolkit/stack-detection.md",
-	".ai-skills/skills/prism-onboarding/**": [
-		"_toolkit/onboarding.md",
-		"onboarding.md"
-	],
-	".prism/references/onboarding/**": [
+	".ai-skills/skills/prism-onboard/**": [
 		"_toolkit/onboarding.md",
 		"onboarding.md"
 	],

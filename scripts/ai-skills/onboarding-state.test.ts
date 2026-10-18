@@ -29,7 +29,7 @@ async function withTempRepo<T>(
 	build: (repoRoot: string) => Promise<T>
 ): Promise<T> {
 	const tempRoot = await fs.mkdtemp(
-		path.join(os.tmpdir(), "prism-onboarding-state-")
+		path.join(os.tmpdir(), "prism-onboard-state-")
 	);
 	try {
 		return await build(tempRoot);

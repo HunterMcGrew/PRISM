@@ -110,7 +110,7 @@ The bad version leaves: which Tailwind classes? Which principles justify which c
 
 ## Who runs this rule
 
-- **Winston** (`prism-architect`) — applies the bar when authoring `## Implementation Tasks` in plan mode. The bar is a baseline for every task Winston writes.
+- **Winston** (`prism-plan`) — applies the bar when authoring `## Implementation Tasks` in plan mode. The bar is a baseline for every task Winston writes.
 - **Pixel** (`prism-design`) — applies the bar when authoring mode 2 saved mock specs. Mode 1 inline sketches and mode 3 HTML mocks are exempt.
 - **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — flag tasks or specs that fail the bar during self-review and PR review.
 

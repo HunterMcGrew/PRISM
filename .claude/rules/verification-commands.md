@@ -117,4 +117,4 @@ A sibling block to `commands.*` — Iris's retro charter (`prism-retro` step-02)
 | `testCommand` | The team's test command, referenced when reading CI conclusions. |
 | `dodGates` | The gates that define "done" for this team (types, lint, tests, build, coverage, ...) — informs which charter items step-02 expects evidence for. |
 
-Atlas populates this block during onboarding (the retro-evidence question set) and proposes defaults from stack detection (`.github/workflows/` → `ci.present: true, system: "github-actions"`; a GitHub remote → `prPlatform: "github"`; `commands.test` → `testCommand`). See `.prism/references/onboarding/question-flow.md` § Question order for the interactive flow.
+Atlas populates this block during onboarding (the retro-evidence question set) and proposes defaults from stack detection (`.github/workflows/` → `ci.present: true, system: "github-actions"`; a GitHub remote → `prPlatform: "github"`; `commands.test` → `testCommand`). The `prism-onboard` skill carries the interactive flow.

@@ -157,7 +157,7 @@ Report:
 
 1. The absolute path to the handoff file.
 2. The one-line start for the next session, e.g.:
-   > New chat → `/prism-architect` → "continue from <path>"
+   > New chat → `/prism-plan` → "continue from <path>"
 3. Any defaults picked in Steps 0–2 that the user should confirm or redirect
    before opening the new chat — one line per default.
 

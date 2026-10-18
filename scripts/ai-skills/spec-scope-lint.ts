@@ -305,7 +305,7 @@ function stripLedgerSections(planText: string): string {
  * body under `.ai-skills/skills/**` shares its basenames (`shared.md`,
  * `claude.md`, `codex.md`, `cursor.md`) with every other skill's same-named
  * files, so basename alone can't tell one skill's body from another's — the
- * discriminator there is the skill directory name itself (`prism-architect`),
+ * discriminator there is the skill directory name itself (`prism-plan`),
  * which still satisfies the `## Decisions` escape hatch (a Decision naming
  * any path inside that directory contains the substring). Directory rather
  * than directory-plus-basename: a skill body is its `shared.md` plus a

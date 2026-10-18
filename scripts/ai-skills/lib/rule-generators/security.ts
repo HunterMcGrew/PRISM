@@ -11,8 +11,7 @@
  * applies regardless of which file is being touched, so it is always-on by
  * default rather than path-scoped. This is the default Atlas proposes during
  * the question flow, not a silent final answer; see
- * `.prism/references/onboarding/question-flow.md` § Generated-rule load
- * confirmation.
+ * the `prism-onboard` skill's "Confirm, generate, write" section.
  *
  * Skip-if-exists is the default posture (matches the code-standards
  * generator); `force: true` overwrites. Each section opens with its own

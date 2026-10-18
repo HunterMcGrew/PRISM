@@ -70,7 +70,7 @@ That second case is the deliberate escape hatch: if you want to keep a seeded `A
 
 ## Skill-prefix rules and how consumer-owned skills coexist
 
-Every skill PRISM generates uses the `prism-` prefix — `prism-implement`, `prism-architect`, and so on. This is the whole coexistence mechanism for skills: PRISM only ever regenerates or deletes files under that prefix, marked with its own generated-file marker. A skill you or another toolkit already installed under any other name — an org-specific prefix like `acme-code-review`, or a fully custom name — is invisible to PRISM's sync. It's never read, never overwritten, never deleted.
+Every skill PRISM generates uses the `prism-` prefix — `prism-implement`, `prism-plan`, and so on. This is the whole coexistence mechanism for skills: PRISM only ever regenerates or deletes files under that prefix, marked with its own generated-file marker. A skill you or another toolkit already installed under any other name — an org-specific prefix like `acme-code-review`, or a fully custom name — is invisible to PRISM's sync. It's never read, never overwritten, never deleted.
 
 If you're adopting PRISM alongside skills from another toolkit that also uses hyphenated names, the only collision risk is a skill actually named `prism-<something>` that you authored yourself. PRISM's cleanup pass only deletes a `prism-*` directory if it also carries PRISM's managed-file marker — a hand-authored `prism-*` skill without that marker is left alone, but it's still worth avoiding the prefix for your own skills to keep the namespace unambiguous.
 

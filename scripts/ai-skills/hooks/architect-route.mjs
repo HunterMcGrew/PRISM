@@ -4,8 +4,8 @@
 /**
  * Read-triggered architect-context routing (ADR-0071).
  *
- * Architect-context routing keys on the working diff — `prism-architect`
- * startup step 4 matches the diff against `.prism/architect/manifest.json`.
+ * Architect-context routing keys on the working diff — `prism-plan`
+ * startup step 3 matches the diff against `.prism/architect/manifest.json`.
  * A prompt-driven task carries an unrelated diff (or none at all), so the
  * target path's own architect doc never loads through that route. `Read` is
  * a strict precondition for `Edit` in every host that gates on it, so a hook

@@ -112,7 +112,7 @@ To add a new tech-stack value: edit the enum in `.ai-skills/config.schema.json`,
 Some things look tokenizable but aren't:
 
 - **Persona names** (Winston, Clove, Eric, etc.) — durable brand. Same across all teams.
-- **Skill IDs** (`prism-architect`, `prism-implement`, etc.) — hardcoded `prism-` prefix. The plumbing.
+- **Skill IDs** (`prism-plan`, `prism-implement`, etc.) — hardcoded `prism-` prefix. The plumbing.
 - **File paths** in personas' instructions (e.g. `.prism/rules/writing-voice.md`) — same across all teams.
 
 If you're tempted to tokenize one of these, write an ADR first. The fewer tokens, the easier the substitution layer is to reason about.
@@ -168,7 +168,7 @@ One tradeoff is worth naming. If the reviewer (Eric) and the workers run the sam
 
 1. Extend the enum in the schema (`linear | jira | github`).
 2. Add the new provider's required fields under `ticketSystem` (e.g. `jira.baseUrl`, `jira.projectKey`).
-3. Update Nora's skill (`.ai-skills/skills/prism-ticket-start/`) to dispatch on `kind`.
+3. Update Nora's skill (`.ai-skills/skills/prism-start-ticket/`) to dispatch on `kind`.
 4. Update ADR-0009 to reference the new provider.
 
 Until a real second provider lands, the abstraction is structural-only — the schema and substitution layer accept the shape; the implementation is Linear-only.

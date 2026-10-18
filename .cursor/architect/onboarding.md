@@ -1,12 +1,12 @@
 # Onboarding Architecture (Atlas)
 
-Architect context for how Atlas (`prism-onboarding`) decides what flow to run when a consumer invokes onboarding. The load-bearing piece is the **mode taxonomy** — the small set of states a repo can be in, the file fingerprints that distinguish them, and the rule that routes each fingerprint to the right flow. Future work that touches detection, adds a cold-bootstrap path, or changes config seeding needs to start here, because getting the routing wrong silently runs the wrong flow (re-prompting a team that already answered, or skipping setup a fresh repo still needs).
+Architect context for how Atlas (`prism-onboard`) decides what flow to run when a consumer invokes onboarding. The load-bearing piece is the **mode taxonomy** — the small set of states a repo can be in, the file fingerprints that distinguish them, and the rule that routes each fingerprint to the right flow. Future work that touches detection, adds a cold-bootstrap path, or changes config seeding needs to start here, because getting the routing wrong silently runs the wrong flow (re-prompting a team that already answered, or skipping setup a fresh repo still needs).
 
-Canonical source for the behavior is `.ai-skills/skills/prism-onboarding/shared.md` (mirrored to `.claude/`, `.codex/`, `.cursor/` by `pnpm prism:build`). This doc records the *why* behind that prose so it survives edits to it.
+Canonical source for the behavior is `.ai-skills/skills/prism-onboard/shared.md` (mirrored to `.claude/`, `.codex/`, `.cursor/` by `pnpm prism:build`). This doc records the *why* behind that prose so it survives edits to it.
 
 ## The mode taxonomy
 
-Atlas runs in one of these modes. Mode selection happens once at session start, in Batch 2 step 7, after Batch 1 has read the two fingerprint files. Mode determines both the opening message and the flow shape.
+Atlas runs in one of these modes. Mode selection happens once at session start, after the config and state files and the asset signals have been read. Mode determines both the opening message and the flow shape.
 
 | Mode | `config.json` | `onboarding-state.json` | What runs |
 | --- | --- | --- | --- |
@@ -39,9 +39,9 @@ The mode walk is an **ordered** list, and the order is the contract. Each branch
 When `prism init` has bootstrapped a config, Atlas runs the **first-install step set** — survey → remaining questions → rule generation → config write → output regeneration (anchor content renders as part of this step, per ADR-0075) — with a seed-and-skip overlay on the question order:
 
 - **Seed `init`-collected fields; skip the prompt when present and non-empty.** `init` writes `project`, `ticketPrefix`, `ticketSystem.kind` (plus `teamKey`/`workspace` when present), `github.owner`, `github.repo`, and `slackChannel` when provided. For each of these, treat the on-disk value as the answer and do not re-prompt. Surface the seeded values in the survey so the user can correct one before continuing — seeding is not silent.
-- **Re-detect `techStack`; never seed it from config.** `init` writes `techStack` from `detectStack`, but Atlas always re-runs `detectStack` (Batch 1 probe 4) rather than carrying the stored value — consistent with first-install, and correct if the repo's stack changed between `init` and onboarding.
+- **Re-detect `techStack`; never seed it from config.** `init` writes `techStack` from `detectStack`, but Atlas always re-runs `detectStack` rather than carrying the stored value — consistent with first-install, and correct if the repo's stack changed between `init` and onboarding.
 - **Collect only what `init` leaves empty.** `init` writes `productDomain: ""`, `existingStandards: []`, and no `documentation` block. Atlas still prompts for product domain, existing engineering standards, and documentation setup, then runs the generators (`runRuleGenerators`). Anchor content renders from the written config at output regeneration — Atlas runs no separate anchor step.
-- **Respect the ticket-system gate from Q4 on Q5.** The Linear team-key prompt (Q5) only fires for Linear users. A `github-issues` repo has an empty `linearTeam` and skips Q5 entirely — the seeding overlay does not change this gate; it inherits first-install's behavior.
+- **Respect the ticket-system gate on the team key.** The Linear team-key prompt only fires for Linear users. A `github-issues` repo has an empty `linearTeam` and skips it entirely — the seeding overlay does not change this gate; it inherits first-install's behavior.
 - **Pass seeded fields through unchanged on write.** `writeOnboardingConfig` writes the assembled config (seeded + newly collected); a seeded field is never reset to a default. Skip-if-exists still governs generated rule files.
 
 init-bootstrapped does not force first-contact behavior and does not suppress it. If a repo was `init`-bootstrapped *and* carries established assets, both the seed-from-config overlay and the first-contact additions apply.

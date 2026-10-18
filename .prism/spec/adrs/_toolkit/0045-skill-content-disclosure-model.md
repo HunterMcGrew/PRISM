@@ -61,4 +61,4 @@ The operational, author-facing form of this decision was [`.prism/rules/skill-au
 - [ADR-0033](./0033-implementation-task-detail.md) — cross-LLM portability, the tension the portability consequence names.
 - [`.prism/rules/skill-authoring.md`](../../rules/skill-authoring.md) — the author-facing rule that operationalized this ADR before ADR-0080 replaced it.
 - [`.prism/rules/lazy-artifacts.md`](../../rules/lazy-artifacts.md) — related: references are created on first write, never seeded empty.
-- `prism-architect` (`.ai-skills/skills/prism-architect/shared.md` + `.prism/references/architect/`) — the worked precedent: voice/lens/router/DoD pinned, modes externalized behind triggers.
+- `prism-architect` (`prism-architect/shared.md` + `.prism/references/architect/`) — the worked precedent: voice/lens/router/DoD pinned, modes externalized behind triggers.

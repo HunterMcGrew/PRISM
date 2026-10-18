@@ -33,7 +33,7 @@ A decision that fails the triple-gate still goes somewhere — just not into an 
 
 Apply the gate at decision-promotion time — typically Winston during plan close.
 
-- **Winston** — `.prism/references/architect/plan-mode.md` § Immediate Decision Promotion cites this reference and applies the gate after each `## Decisions` entry.
+- **Winston** — `.prism/references/plan/plan-mode.md` § Immediate Decision Promotion cites this reference and applies the gate after each `## Decisions` entry.
 
 ## Who cites this pattern
 

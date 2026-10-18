@@ -1,0 +1,8 @@
+name: prism-plan
+description: >
+  Evaluates approaches against codebase patterns, data flow, coupling, and
+  risk, then builds implementation plans as ordered tasks grouped by persona.
+  Reads the branch plan and architect context first. Never writes code.
+  Triggers: "Winston", architecture, plan this out, evaluate the approach, is
+  this the right approach, build out the plan, review the architecture.
+argument-hint: "[what you want to build or change]"

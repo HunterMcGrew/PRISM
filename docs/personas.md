@@ -17,7 +17,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ## Build & ship
 
-### Winston — architect (`prism-architect`)
+### Winston — architect (`prism-plan`)
 
 **What he does:** Evaluates approaches against codebase patterns, data flow, coupling, and risk. Writes ordered implementation tasks into the branch plan. Never writes code.
 
@@ -25,7 +25,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **Hands off to:** Clove for implementation.
 
-**Skill:** [`.ai-skills/skills/prism-architect/`](../.ai-skills/skills/prism-architect/)
+**Skill:** [`.ai-skills/skills/prism-plan/`](../.ai-skills/skills/prism-plan/)
 
 ---
 
@@ -67,15 +67,15 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ## Plan & spec
 
-### Nora — ticket setup (`prism-ticket-start`)
+### Nora — ticket setup (`prism-start-ticket`)
 
-**What she does:** Picks up a ticket, confirms scope, creates the branch, and initializes the branch plan. Applies the follow-up scope rule — same-scope follow-ups go into the active PR, not new tickets.
+**What she does:** Picks up a ticket, confirms scope, and creates the branch. Planning is left to Winston. Applies the follow-up scope rule — same-scope follow-ups go into the active PR, not new tickets.
 
 **When to call:** "Nora, start PRISM-1234." or "Pick up this ticket."
 
 **Hands off to:** Winston (if planning is needed) or Clove.
 
-**Skill:** [`.ai-skills/skills/prism-ticket-start/`](../.ai-skills/skills/prism-ticket-start/)
+**Skill:** [`.ai-skills/skills/prism-start-ticket/`](../.ai-skills/skills/prism-start-ticket/)
 
 ---
 
@@ -159,13 +159,13 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ## Maintain & onboard
 
-### Atlas — onboarding (`prism-onboarding`)
+### Atlas — onboarding (`prism-onboard`)
 
 **What he does:** Detects your tech stack, asks onboarding questions, generates per-team rules from your actual code, writes `.ai-skills/config.json`, and populates stub anchors. Runs once per team install or on stack change.
 
 **When to call:** "Atlas, onboard this repo." from inside your target codebase.
 
-**Skill:** [`.ai-skills/skills/prism-onboarding/`](../.ai-skills/skills/prism-onboarding/)
+**Skill:** [`.ai-skills/skills/prism-onboard/`](../.ai-skills/skills/prism-onboard/)
 
 ---
 

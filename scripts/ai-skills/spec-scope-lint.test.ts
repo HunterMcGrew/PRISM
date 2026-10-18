@@ -282,7 +282,7 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a shared basename men
 		false
 	);
 	assert.equal(
-		isUnrelatedToTicket(".ai-skills/skills/prism-architect/shared.md", planText),
+		isUnrelatedToTicket(".ai-skills/skills/prism-plan/shared.md", planText),
 		true
 	);
 });
@@ -328,7 +328,7 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, naming one file in th
 
 test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a plan naming the skill directory without a trailing slash clears the file", () => {
 	const planText =
-		"## Implementation Tasks\n\n1. Edit 11 skill bodies: `prism-architect`, `prism-changelog`, `prism-implement`.\n";
+		"## Implementation Tasks\n\n1. Edit 11 skill bodies: `prism-plan`, `prism-changelog`, `prism-implement`.\n";
 	assert.equal(
 		isUnrelatedToTicket(".ai-skills/skills/prism-changelog/shared.md", planText),
 		false
@@ -362,11 +362,11 @@ test("isUnrelatedToTicket: a discriminator mentioned only inside a Ledger sectio
 		"",
 		"### Some prior finding",
 		"",
-		"- **Fixed in:** touched `.ai-skills/skills/prism-architect/shared.md` as part of the fix.",
+		"- **Fixed in:** touched `.ai-skills/skills/prism-plan/shared.md` as part of the fix.",
 		"",
 	].join("\n");
 	assert.equal(
-		isUnrelatedToTicket(".ai-skills/skills/prism-architect/shared.md", planText),
+		isUnrelatedToTicket(".ai-skills/skills/prism-plan/shared.md", planText),
 		true
 	);
 });
@@ -718,7 +718,7 @@ test("skill-body basename collision: naming one skill's shared.md in the plan do
 			);
 			await writeFile(
 				tempRoot,
-				".ai-skills/skills/prism-architect/shared.md",
+				".ai-skills/skills/prism-plan/shared.md",
 				"Body.\n"
 			);
 		},
@@ -727,14 +727,14 @@ test("skill-body basename collision: naming one skill's shared.md in the plan do
 				tempRoot,
 				[
 					".ai-skills/skills/prism-review-loop/shared.md",
-					".ai-skills/skills/prism-architect/shared.md",
+					".ai-skills/skills/prism-plan/shared.md",
 				],
 				branchName
 			);
 			assert.equal(deriveExitCode(result.violations), 1);
 			assert.deepEqual(result.violations, [
 				{
-					path: ".ai-skills/skills/prism-architect/shared.md",
+					path: ".ai-skills/skills/prism-plan/shared.md",
 					planPath: ".prism/plans/prism-9010.md",
 				},
 			]);
@@ -808,26 +808,26 @@ test("Ledger-only-mention fixture: a discriminator recorded only in a fix-in not
 					"",
 					"### A prior finding",
 					"",
-					"- **Fixed in:** also touched `.ai-skills/skills/prism-architect/shared.md` while fixing this.",
+					"- **Fixed in:** also touched `.ai-skills/skills/prism-plan/shared.md` while fixing this.",
 					"",
 				].join("\n")
 			);
 			await writeFile(
 				tempRoot,
-				".ai-skills/skills/prism-architect/shared.md",
+				".ai-skills/skills/prism-plan/shared.md",
 				"Body.\n"
 			);
 		},
 		async (tempRoot) => {
 			const result = await evaluateSpecScopeLint(
 				tempRoot,
-				[".ai-skills/skills/prism-architect/shared.md"],
+				[".ai-skills/skills/prism-plan/shared.md"],
 				branchName
 			);
 			assert.equal(deriveExitCode(result.violations), 1);
 			assert.deepEqual(result.violations, [
 				{
-					path: ".ai-skills/skills/prism-architect/shared.md",
+					path: ".ai-skills/skills/prism-plan/shared.md",
 					planPath: ".prism/plans/prism-9012.md",
 				},
 			]);
