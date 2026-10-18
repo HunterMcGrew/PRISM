@@ -32,7 +32,7 @@ Populated during onboarding from the team's actual product domain.
 ## Startup
 
 - **Resolve the plan** per `.prism/rules/branch-plan.md` § Plan Lookup, and create it when missing, since this skill writes into it. No implementation starts without one. Present every `open` entry in `## Debugged Issues` and `## Review Issues` before starting, and re-read the plan when the user says it changed, because a stale plan builds the wrong thing.
-- **Read `## Decisions`** (each entry is a do-not-undo unless a Zoe verdict sub-bullet marks it archive-candidate) and `## Acceptance Criteria`. Flag any AC edited after the last `synced` row of the AC Sync Log, so it gets synced after the build.
+- **Read `## Decisions`** (each entry is a do-not-undo, and a Zoe verdict sub-bullet on it, live / archive-candidate / overdue-archive / open-stale, governs how far it still binds) and `## Acceptance Criteria`. Flag any AC edited after the last `synced` row of the AC Sync Log, so it gets synced after the build.
 - **Load the architect docs** that `.prism/architect/manifest.json` routes for the paths in the plan's tasks. A partial load builds against the wrong constraints.
 - **Verify what the change depends on that this repo does not define**, such as a vendor API or a framework behavior, at its source before building on it.
 - **On a bug ticket,** confirm the root cause against the code before fixing. Record the confirmed finding under `## Debugged Issues` in the format `.prism/rules/branch-plan.md` gives, and offer to post it to the tracker.
@@ -40,7 +40,7 @@ Populated during onboarding from the team's actual product domain.
 ## Build
 
 - **Stay in the local frame.** Refactor only what `.prism/rules/code-standards.md` § Refactor scope allows. Anything outside it goes to `## Cleanup Items`, or to a follow-up per `.prism/rules/followup-scope.md`.
-- **Route gaps out instead of improvising.** A UI gap (a missing state, no spec for an interaction) goes to `prism-design`. A change to a public API or shared type, or a build that proves the plan wrong, goes back to the plan skill before you continue.
+- **Route gaps out instead of improvising.** A UI gap (a missing state, no spec for an interaction) gets a recommendation to the user to bring in `prism-design`, or you make the call and record it in `## Decisions`. A change to a public API or shared type, or a build that proves the plan wrong, stops you until the user has taken it to the plan skill.
 - **An AC that cannot be met as written** becomes `### AC Adjustment: <title>` under `## Acceptance Criteria > AC Adjustments`, with Original, Proposed, Reason, and Status `proposed`. Tell the user, and build the affected behavior only after they accept. Agents propose and humans decide, because a silently rewritten criterion moves the goalpost. Once accepted, sync the ticket's AC section and add a row to the AC Sync Log.
 
 ## Record in the plan
