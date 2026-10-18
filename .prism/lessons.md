@@ -516,7 +516,7 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 **Why:** 2026-10-17 — PR 3 of the PRISM-499 stack had absorbed PR 2 at an earlier head. PR 2 then took three more review fixes and squash-merged. Absorbing that squash with `-X ours` kept PR 3's older copies of four PR 2 files, which reverted the fixes. `prism:check` stayed green, because the old code and the old tests agreed. Self-review caught it by diffing the squash's files against `main`.
 
-**How to apply:** Before a lower PR squashes, merge its final head into every branch above it. After any `-X ours` absorb, run `git diff origin/main HEAD -- <file>` for every file the squash touched, and confirm it shows only the branch's own edits.
+**How to apply:** Before a lower PR squashes, merge its final head into every branch above it. After any `-X ours` absorb, run `git diff origin/main HEAD -- <file>` for every file the squash touched, and confirm it shows only the branch's own edits. Resolve each conflict hunk by hunk, never with `git checkout --theirs <file>` or `--ours <file>`: those replace the whole file and drop the other side's non-conflicting edits. On 2026-10-18 that dropped PR 10's `docs/ai-skills/parker.md` rewrite while absorbing PR 9, and only PR review caught it.
 
 ## A claim about every skill's sections goes false when a thinning cuts the section
 
