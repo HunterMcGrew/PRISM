@@ -511,3 +511,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-09-07 (issue #488) — the git-gates test fixture removed its temp repo right after the timeout case and hit `EBUSY: resource busy or locked, rmdir` about one run in three on Windows; the killed `node -e "setTimeout(…)"` child had not released the directory yet.
 
 **How to apply:** a fixture that spawns a process with `timeout` and then removes the directory it ran in passes `maxRetries`/`retryDelay` to `fs.rm`; a bare `fs.rm` is a flake waiting for the CI Windows leg.
+
+## `git merge -X ours origin/main` on a stacked branch can silently revert the lower PR's late review fixes
+
+**Why:** 2026-10-17 — PR 3 of the PRISM-499 stack had absorbed PR 2 at an earlier head. PR 2 then took three more review fixes and squash-merged. Absorbing that squash with `-X ours` kept PR 3's older copies of four PR 2 files, which reverted the fixes. `prism:check` stayed green, because the old code and the old tests agreed. Self-review caught it by diffing the squash's files against `main`.
+
+**How to apply:** Before a lower PR squashes, merge its final head into every branch above it. After any `-X ours` absorb, run `git diff origin/main HEAD -- <file>` for every file the squash touched, and confirm it shows only the branch's own edits.

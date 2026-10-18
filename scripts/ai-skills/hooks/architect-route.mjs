@@ -746,8 +746,9 @@ export function formatUmbrellaReason(relativePath, headings, routes, currentText
  * The acknowledgement is saved before the reason is returned, so the retry of
  * the same edit finds it and passes. A save that fails returns `null` instead:
  * a deny with no recorded acknowledgement would deny every retry, which turns
- * a speed bump into a wall with no way through. Every heading the deny names
- * is acknowledged at once, because the writer is shown all of them.
+ * a speed bump into a wall with no way through. Every new heading in the
+ * edit is acknowledged at once, including those the deny counts in its
+ * `and N more` tail rather than naming, so one retry clears the whole edit.
  *
  * @param {string} repoRoot
  * @param {string} scopeId

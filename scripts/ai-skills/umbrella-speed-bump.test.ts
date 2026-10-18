@@ -166,6 +166,15 @@ test("extractPatchAddedText: reads only the added lines of the named file's sect
 	assert.equal(extractPatchAddedText(patch, "c.md"), "");
 });
 
+test("extractPatchAddedText: a Move to or End of File line stays inside the section", () => {
+	const patch =
+		"*** Begin Patch\n*** Update File: a.md\n*** Move to: b.md\n@@\n+## Added after move\n" +
+		"*** End of File\n@@\n+## Added after end marker\n*** Delete File: c.md\n*** End Patch\n";
+
+	assert.equal(extractPatchAddedText(patch, "a.md"), "## Added after move\n## Added after end marker");
+	assert.equal(extractPatchAddedText(patch, "c.md"), "");
+});
+
 // --- The reserved manifest key ---
 
 test("listManifestRoutes leaves out the umbrellas key, and listManifestUmbrellas keeps only its strings", () => {
@@ -318,6 +327,19 @@ test("an acknowledgement in one file does not clear the same heading in another"
 			await runPreToolUseArm("claude", HARNESSES.claude, claudeEdit(repoRoot, UMBRELLA_PATH))
 		);
 		assert.match(reason ?? "", /to `\.prism\/architect\/_toolkit\/big\.md`, an umbrella doc that loads on src\/\*\*\./);
+	});
+});
+
+test("one deny acknowledges every new heading in the edit, so one retry passes", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedUmbrellaRepo(repoRoot);
+		const headings = ["## One", "## Two", "## Three", "## Four"].join("\n\n");
+		const edit = claudeEdit(repoRoot, RULE_PATH, headings);
+
+		const reason = denyReason(await runPreToolUseArm("claude", HARNESSES.claude, edit));
+		assert.match(reason ?? "", /"## One", "## Two", "## Three", and 1 more/);
+		assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, edit), null);
+		assert.equal((await loadRouteState(repoRoot, "session-1")).umbrellaAcks?.length, 4);
 	});
 });
 
