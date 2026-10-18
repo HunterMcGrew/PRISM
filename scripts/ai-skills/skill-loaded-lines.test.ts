@@ -1,12 +1,13 @@
 /**
  * Holds every skill to the 120-line cap on what a run reads: the body plus
- * the reference, step, and `load: skill` rule files it cites, followed
- * transitively.
+ * the reference, step, template, and `load: skill` rule files it cites,
+ * followed transitively.
  *
  * Skills over the cap today are listed in `OVER_CAP_ALLOWLIST` with the change
- * that thins them. The list only shrinks: a listed skill that comes in under
- * the cap fails until its entry is removed, so the list cannot sit stale and
- * hide a regression behind an entry nobody needs.
+ * that thins them and the size they may not grow past. The list only shrinks:
+ * a listed skill that comes in under the cap fails until its entry is removed,
+ * and a listed skill that grows past its recorded size fails too, so an entry
+ * can neither go stale nor hide a regression.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -22,34 +23,41 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 
 const LOADED_LINE_CAP = 120;
 
-const OVER_CAP_ALLOWLIST: Record<string, string> = {
-	"prism-code-review-self": "PRISM-499 PR 6, review lane",
-	"prism-code-review-pr": "PRISM-499 PR 6, review lane",
-	"prism-code-dev": "PRISM-499 PR 7, build lane",
-	"prism-documentation": "PRISM-499 PR 7, build lane",
-	"prism-design": "PRISM-499 PR 7, build lane",
-	"prism-ticket-start": "PRISM-499 PR 8, flow entry",
-	"prism-onboarding": "PRISM-499 PR 8, flow entry",
-	"devils-advocate": "PRISM-499 PR 9, utilities",
-	"prism-skill-forge": "PRISM-499 PR 9, utilities",
-	"prism-handoff": "PRISM-499 PR 9, utilities",
-	"prism-retro": "PRISM-499 PR 10, cadence and release",
-	"prism-surface-audit": "PRISM-499 PR 10, cadence and release",
-	"prism-changelog": "PRISM-499 PR 10, cadence and release",
-	"prism-standup-summary": "PRISM-499 PR 10, cadence and release",
-	"prism-qa-test-plan": "PRISM-499 PR 10, cadence and release",
-	"prism-prd": "PRISM-499 PR 10, cadence and release",
-	"prism-customer-success": "PRISM-499 PR 11, business",
-	"prism-data": "PRISM-499 PR 11, business",
-	"prism-finance": "PRISM-499 PR 11, business",
-	"prism-founder": "PRISM-499 PR 11, business",
-	"prism-legal": "PRISM-499 PR 11, business",
-	"prism-market-research": "PRISM-499 PR 11, business",
-	"prism-recruiting": "PRISM-499 PR 11, business",
-	"prism-sales": "PRISM-499 PR 11, business",
-	"prism-architect": "replaced by the phase-2 plan skill; its plan logic stays until then",
-	"prism-user-stories": "folds into the phase-2 intent skill",
-	"prism-review-loop": "replaced by REVIEW.md and the phase-3 review runners",
+const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
+	"prism-code-review-self": { thinnedBy: "PRISM-499 PR 6, review lane", max: 731 },
+	"prism-code-review-pr": { thinnedBy: "PRISM-499 PR 6, review lane", max: 954 },
+	"prism-code-dev": { thinnedBy: "PRISM-499 PR 7, build lane", max: 845 },
+	"prism-documentation": { thinnedBy: "PRISM-499 PR 7, build lane", max: 1116 },
+	"prism-design": { thinnedBy: "PRISM-499 PR 7, build lane", max: 599 },
+	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 926 },
+	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 380 },
+	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
+	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 254 },
+	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
+	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 717 },
+	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 356 },
+	"prism-changelog": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 698 },
+	"prism-standup-summary": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 810 },
+	"prism-qa-test-plan": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 994 },
+	"prism-prd": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 902 },
+	"prism-customer-success": { thinnedBy: "PRISM-499 PR 11, business", max: 252 },
+	"prism-data": { thinnedBy: "PRISM-499 PR 11, business", max: 263 },
+	"prism-finance": { thinnedBy: "PRISM-499 PR 11, business", max: 262 },
+	"prism-founder": { thinnedBy: "PRISM-499 PR 11, business", max: 266 },
+	"prism-legal": { thinnedBy: "PRISM-499 PR 11, business", max: 267 },
+	"prism-market-research": { thinnedBy: "PRISM-499 PR 11, business", max: 256 },
+	"prism-marketing": { thinnedBy: "PRISM-499 PR 11, business", max: 234 },
+	"prism-recruiting": { thinnedBy: "PRISM-499 PR 11, business", max: 265 },
+	"prism-sales": { thinnedBy: "PRISM-499 PR 11, business", max: 262 },
+	"prism-architect": {
+		thinnedBy: "replaced by the phase-2 plan skill; its plan logic stays until then",
+		max: 828,
+	},
+	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 731 },
+	"prism-review-loop": {
+		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
+		max: 380,
+	},
 };
 
 async function listSkillIds(): Promise<string[]> {
@@ -86,13 +94,22 @@ test("every skill not on the allowlist loads 120 lines or fewer", async () => {
 	assert.deepEqual(over, [], `Over the ${LOADED_LINE_CAP}-line cap. Cut content rather than moving it into a cited file.`);
 });
 
-test("every allowlisted skill exists and is still over the cap", async () => {
+test("every allowlisted skill exists, is still over the cap, and has not grown", async () => {
 	const ids = new Set(await listSkillIds());
-	const stale = Object.keys(OVER_CAP_ALLOWLIST).filter(
-		(id) => !ids.has(id) || measureSkillLoad(repoRoot, id).totalLines <= LOADED_LINE_CAP
-	);
+	const stale = Object.entries(OVER_CAP_ALLOWLIST).flatMap(([id, { max }]) => {
+		if (!ids.has(id)) {
+			return [`${id}: no such skill`];
+		}
 
-	assert.deepEqual(stale, [], "Remove these allowlist entries: the skill is gone or now fits the cap.");
+		const total = measureSkillLoad(repoRoot, id).totalLines;
+		if (total <= LOADED_LINE_CAP) {
+			return [`${id}: now ${total} lines, so remove its entry`];
+		}
+
+		return total > max ? [`${id}: grew to ${total} lines, past its recorded ${max}`] : [];
+	});
+
+	assert.deepEqual(stale, []);
 });
 
 // --- The measurement ---
@@ -103,29 +120,40 @@ test("countLines counts a final unterminated line and nothing for an empty file"
 	assert.equal(countLines("a\nb"), 2);
 });
 
-test("listCitedFiles re-anchors a climbing link at the repo root and finds a bare step name", async () => {
+test("listCitedFiles resolves a platform-tree link, a section-suffixed span, and a bare step name", async () => {
 	await withTempRepo(async (root) => {
-		await writeRepoFile(root, ".prism/references/shared.md", "# Shared\n");
+		await writeRepoFile(root, ".prism/references/shipping.md", "# Shipping\n");
+		await writeRepoFile(root, ".prism/references/frameworks.md", "# Frameworks\n");
 		await writeRepoFile(root, ".prism/skills/prism-x/step-01-start.md", "# Step\n");
 		await writeRepoFile(
 			root,
 			".ai-skills/skills/prism-x/shared.md",
-			"Read [`shared.md`](../../../.prism/references/shared.md), then `step-01-start.md`.\n"
+			"Ship per [`shipping.md`](../../references/shipping.md). " +
+				"See `.prism/references/frameworks.md § Severity`. Then `step-01-start.md`.\n"
 		);
 
 		assert.deepEqual(
 			listCitedFiles(root, ".ai-skills/skills/prism-x/shared.md", ".prism/skills/prism-x").sort(),
-			[".prism/references/shared.md", ".prism/skills/prism-x/step-01-start.md"]
+			[
+				".prism/references/frameworks.md",
+				".prism/references/shipping.md",
+				".prism/skills/prism-x/step-01-start.md",
+			]
 		);
 	});
 });
 
-test("measureSkillLoad follows citations transitively and counts only load: skill rules", async () => {
+test("measureSkillLoad follows citations transitively and counts templates and only load: skill rules", async () => {
 	await withTempRepo(async (root) => {
 		await writeRepoFile(root, ".prism/rules/always.md", "---\nload: always\n---\n\nAlways.\n");
 		await writeRepoFile(root, ".prism/rules/on-skill.md", "---\nload: skill\n---\n\nOn skill.\n");
+		await writeRepoFile(root, ".prism/templates/report.md", "# Report\n");
 		await writeRepoFile(root, ".prism/skills/prism-x/step-02-next.md", "One.\nTwo.\n");
-		await writeRepoFile(root, ".prism/skills/prism-x/step-01-start.md", "Then `step-02-next.md`.\n");
+		await writeRepoFile(
+			root,
+			".prism/skills/prism-x/step-01-start.md",
+			"Then `step-02-next.md`, using `.prism/templates/report.md`.\n"
+		);
 		await writeRepoFile(
 			root,
 			".ai-skills/skills/prism-x/shared.md",
@@ -139,7 +167,8 @@ test("measureSkillLoad follows citations transitively and counts only load: skil
 			".prism/rules/on-skill.md",
 			".prism/skills/prism-x/step-01-start.md",
 			".prism/skills/prism-x/step-02-next.md",
+			".prism/templates/report.md",
 		]);
-		assert.equal(load.totalLines, 2 + 5 + 1 + 2);
+		assert.equal(load.totalLines, 2 + 5 + 1 + 2 + 1);
 	});
 });
