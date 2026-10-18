@@ -17,7 +17,7 @@ PRISM itself is a single-audience product (`audience: developer-user`, `keepsDev
 
 **Single-audience teams** (`keepsDevDocs: false`) have one doc tree under `documentation.location`. All docs — feature guides, setup instructions, reference material — live in a single tree organized by topic. PRISM's own docs are this shape.
 
-**Split-audience teams** (`keepsDevDocs: true`) maintain two parallel trees: one for user-facing guides and one for developer-facing docs. A common arrangement is `docs/content/user/` and `docs/content/dev/` — but the actual paths come from the team's onboarding configuration, not from a PRISM default. The dev-doc template applies only when `keepsDevDocs: true`.
+**Split-audience teams** (`keepsDevDocs: true`) maintain two parallel trees: one for user-facing guides and one for developer-facing docs. A common arrangement is `docs/content/user/` and `docs/content/dev/` — but the actual paths come from the team's onboarding configuration, not from a PRISM default. The dev-doc template (`.prism/references/dev-doc-template.md`) applies only when `keepsDevDocs: true`.
 
 The split is a team choice configured during onboarding, not a mandate. When in doubt, read `documentation.keepsDevDocs` before creating any new doc file.
 
