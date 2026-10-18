@@ -14,8 +14,9 @@ import { compileMatcher } from "./hooks/lib/match.mjs";
  * Globs (relative to `.prism/`) for the files PRISM owns and the update flow is
  * allowed to overwrite.
  *
- * Skill ownership convention: PRISM owns the `prism-*` skill IDs and the update
- * flow regenerates only those. Consumer-authored skills use the org token from
+ * Skill ownership convention: PRISM owns the `prism-*` skill IDs, plus the bare
+ * IDs in `PRISM_BARE_SKILL_IDS`, and the update flow regenerates only those.
+ * Consumer-authored skills use the org token from
  * `.ai-skills/config.json` (e.g. `acme-<role>`) or a `custom-<role>` prefix and
  * are consumer-owned — the sync never regenerates them. The skill source dirs
  * live outside `.prism/`, so they are not in these globs; the convention is the
@@ -31,6 +32,18 @@ export const PRISM_OWNED_GLOBS = [
   "spec/**",
   "SPEC.md",
 ] as const;
+
+/**
+ * Bare skill IDs PRISM ships outside the `prism-` prefix. `tdd` keeps the name
+ * it shipped under, so eject and the ship-closure roots must treat it as
+ * PRISM's even though a prefix check would not.
+ */
+const PRISM_BARE_SKILL_IDS: readonly string[] = ["tdd"];
+
+/** True for a skill ID PRISM owns: any `prism-*` ID or a listed bare ID. */
+export function checkIsPrismSkillId(skillId: string): boolean {
+  return skillId.startsWith("prism-") || PRISM_BARE_SKILL_IDS.includes(skillId);
+}
 
 /**
  * Globs (relative to `.prism/`) for consumer-owned files the update flow never

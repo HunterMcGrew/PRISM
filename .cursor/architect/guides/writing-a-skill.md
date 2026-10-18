@@ -38,38 +38,40 @@ is missing gets skipped in the edge case it was written for.
 ## Namespace ownership
 
 **The `prism-*` prefix belongs to PRISM.** Every skill PRISM ships is named
-`prism-<something>`, and every update rewrites those directories from the
-current roster. A skill of yours that borrows the prefix is at risk of being
-overwritten or swept as an orphan.
+`prism-<something>`, with one exception: `tdd` keeps the bare name it shipped
+under. Every update rewrites those directories from the current roster. A skill
+of yours that borrows the prefix, or is named `tdd`, is at risk of being
+overwritten or swept as an orphan, because the render writes every roster ID.
 
 Your own skills use your own prefix — your team name, your product, anything
-that is not `prism-`. Two things follow from that, and both are protections
-rather than restrictions:
+that is neither `prism-` nor `tdd`. Two things follow from that, and both are
+protections rather than restrictions:
 
 - **PRISM never writes outside its own namespace.** Your skills are not
   rendered, not updated, and not removed by an update.
-- **Ownership is decidable from the name alone.** Nobody has to keep a list or
-  check a marker to know whose skill a directory holds.
+- **Ownership is decidable from the name.** `prism-*` and the one bare ID `tdd`
+  are PRISM's. Nobody has to check a marker to know whose skill a directory
+  holds.
 
 When you want to change how a PRISM persona behaves in your repo, adjust it
 through the configuration and anchor points the install exposes, rather than by
 editing the rendered skill body — a rendered body is regenerated on the next
 update, and the edit disappears with it.
 
-## Where `prism-skill-forge` fits
+## Where `prism-forge-skill` fits
 
-`prism-skill-forge` is the utility that scaffolds skills. It runs in two modes:
+In the PRISM toolkit repo, `prism-forge-skill` scaffolds skills in canonical
+source under `.ai-skills/skills/`, in two modes:
 
-- **Create** — scaffolds a new skill from scratch with the layout above already
-  in place, so a new skill starts consistent with the roster instead of
-  converging on it later.
-- **Migrate** — takes a skill that only exists as generated platform output and
-  decomposes it back into canonical source, which is what makes it maintainable
-  rather than a one-time paste.
+- **Create** — scaffolds a new skill with the layout above already in place, so
+  it starts consistent with the roster.
+- **Migrate** — decomposes a skill that exists only as generated platform output
+  back into canonical source, so it is maintainable rather than a one-time paste.
 
-Reach for it when you are adding a persona or bringing an existing one under
-management. Editing generated output directly is the failure mode both modes
-exist to prevent.
+Editing generated output directly is the failure mode both modes exist to
+prevent. A consumer repo has no canonical source and no build: hand-write a
+`SKILL.md` into each host's skill dir under your own prefix, and an update
+never rewrites it.
 
 ---
 

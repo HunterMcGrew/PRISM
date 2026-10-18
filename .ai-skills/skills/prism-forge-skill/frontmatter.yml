@@ -1,0 +1,9 @@
+name: prism-forge-skill
+description: >
+  Scaffolds a new PRISM skill from scratch, or migrates an existing platform
+  skill into canonical source. Create mode writes frontmatter.yml, shared.md,
+  and the roles.json entry. Migrate mode decomposes a generated .claude,
+  .cursor, or .agents SKILL.md, or a .codex agent .toml, back into source. Both
+  end with pnpm prism:build. Triggers: create skill, scaffold skill, new skill,
+  add persona, migrate skill, decompose skill, import skill.
+argument-hint: "[create | migrate] [skill id or source path]"

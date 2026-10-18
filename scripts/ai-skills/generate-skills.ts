@@ -1,7 +1,7 @@
 /**
  * Root-agnostic persona-skill generation.
  *
- * Renders the `prism-*` skill roster (Claude / Codex / Cursor SKILL.md bodies,
+ * Renders the PRISM skill roster (Claude / Codex / Cursor SKILL.md bodies,
  * the Codex agent `.toml` adapters, the Claude agent `.md` definitions, and the
  * Codex config file), writes the managed marker into every generated skill dir,
  * and prunes orphaned skill dirs and agent files whose source no longer exists.

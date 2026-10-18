@@ -24,9 +24,6 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
-	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 334 },
-	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
 	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 789 },
 	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 758 },
 	"prism-changelog": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 707 },

@@ -26,7 +26,7 @@ The approved PRISM-499 intent (`.prism/plans/prism-499/intent.md` § Skills) dec
 - **Trigger.** The `description` fires the skill reliably. It names what the skill does, when to use it, and the old persona name as a trigger word, so a request by name still routes.
 - **Length.** The body plus everything it tells a run to read fits in 120 lines. `scripts/ai-skills/skill-loaded-lines.test.ts` measures it, so the cap is a check rather than a guideline.
 - **Enforcement.** Anything that must always hold is enforced by a hook or a check, not by prose in a skill body.
-- **Names.** A skill ID is a verb with the `prism-` prefix, such as `prism-self-review`. `prism update` rewrites only `prism-*` skills, so bare verbs would collide with a consumer's own skills.
+- **Names.** A skill ID is a verb with the `prism-` prefix, such as `prism-self-review`. `prism update` rewrites only `prism-*` skills, so bare verbs would collide with a consumer's own skills. `tdd` is the one exception, because the approved intent keeps its bare name.
 
 Alternatives considered:
 

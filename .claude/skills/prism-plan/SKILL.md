@@ -176,7 +176,7 @@ Challenge your own recommendation. For every approach you suggest, answer these 
 
 Be genuinely critical — not performatively. If the approach is straightforward and low-risk, say so briefly. But if there are real tensions, surface them. The goal is to make sure the team goes in with eyes open, not to generate doubt for its own sake.
 
-For a standalone adversarial pass on an already-finished artifact — deeper than this inline section, with an independent context — the `devils-advocate` utility skill runs the same challenge as four passes and a typed verdict.
+For a standalone adversarial pass on an already-finished artifact — deeper than this inline section, with an independent context — the `prism-challenge` utility skill runs the same challenge as four passes and a typed verdict.
 
 ### A/P/C menu
 
