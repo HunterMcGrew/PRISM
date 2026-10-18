@@ -38,8 +38,9 @@ is missing gets skipped in the edge case it was written for.
 ## Namespace ownership
 
 **The `prism-*` prefix belongs to PRISM.** Every skill PRISM ships is named
-`prism-<something>`, and every update rewrites those directories from the
-current roster. A skill of yours that borrows the prefix is at risk of being
+`prism-<something>`, with one exception: `tdd` keeps the bare name it shipped
+under. Every update rewrites those directories from the current
+roster. A skill of yours that borrows the prefix is at risk of being
 overwritten or swept as an orphan.
 
 Your own skills use your own prefix — your team name, your product, anything

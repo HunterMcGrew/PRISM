@@ -222,9 +222,9 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, `measureSkillLoad` reports 120 lines or fewer for all four skills, and a `git grep` for `devils-advocate`, `prism-skill-forge`, and `skill-forge` returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/` and its generated copies under `.claude/`, `.codex/`, and `.cursor/`, and `CHANGELOG.md`.
 
 1. **Rename two skills.** `devils-advocate` became `prism-challenge` and `prism-skill-forge` became `prism-forge-skill`, in the skill directories, `roles.json`, frontmatter `name`, `docs/personas.md`, `docs/ai-skills/migrate-skill.md`, the `prism-plan` and `prism-onboard` sentences that named them, `install-layout.md`, `skills-ecosystem.md`, `writing-a-skill.md` (with their curated or mirrored seed twins), the routing rule's utility section (with its twin), and a comment in `routing-coverage.test.ts`. Every old trigger phrase stays in the description and the routing rule, so "devil's advocate" and "create skill" still route. `prism-handoff` and `tdd` keep their IDs.
-2. **Thin the three over the cap.** See Decision: What the utility skills kept. `prism-challenge` loads 38 lines (was 123), `prism-forge-skill` 30 (was 334), and `prism-handoff` 47 (was 174). `tdd` was already 53 and loads 52.
-3. **State the `tdd` exception.** ADR-0080 § Decision (Names) and `skill-authoring.md` § Names each gained one clause saying `tdd` keeps its bare ID. The `prism-` verb rule applies wherever a skill is renamed, and `tdd` is not renamed.
-4. **Fix the description-shape pointer.** The forge skill pointed at a `writing-a-skill.md` section that does not exist. It now states the shape inline and points at `skill-authoring.md` § Description field shape, which does exist.
+2. **Thin the three over the cap.** See Decision: What the utility skills kept. `prism-challenge` loads 38 lines (was 123), `prism-forge-skill` 112 (was 334, counting the 81-line writing guide it cites), and `prism-handoff` 47 (was 174). `tdd` was already 53 and loads 52.
+3. **State the `tdd` exception.** ADR-0080 § Decision (Names) and `skill-authoring.md` § Names each gained one clause saying `tdd` keeps its bare ID because the approved intent keeps its name, and `writing-a-skill.md` § Namespace ownership and `install-layout.md` say PRISM owns `tdd` too. `eject.ts` and `ship-closure.ts` now key on `checkIsPrismSkillId` (`ownership.ts`, which lists `PRISM_BARE_SKILL_IDS`), with a test each. See Decision: A bare PRISM skill ID is owned in code.
+4. **Fix the description-shape pointer.** The forge skill pointed at a `writing-a-skill.md` section that does not exist. It now states the shape inline, and does not point at `skill-authoring.md`, which consumers do not receive.
 5. **Cut the Sol-era words.** `prism-forge-skill` lost `needs-replan` and `needs-human` (each became "ask the user" or "stop and tell the user"), and `tdd` lost "under dispatch" and "report-back".
 6. **No reference file existed to delete.** See Decision: No utility reference could go.
 7. **Fix the allowlist.** Removed the `devils-advocate`, `prism-skill-forge`, and `prism-handoff` entries from `OVER_CAP_ALLOWLIST`.
@@ -401,12 +401,15 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - **`prism-handoff`:** the flush into `## Decisions`, `## History`, `## Debugged Issues`, and `## Review Issues` before writing, so the document holds only session residue; scope filter and target prefix; the unique temp path with its explicit separator join and the `.prism/handoffs/` fallback; the seven sections; neutral prose with secrets redacted; `(unverified)` on claims asserted from memory; the report; and the read-side contract (open the given path, never scan the directory, the plan wins a conflict).
   - **`tdd`:** unchanged apart from two edits. It was already 53 lines, so the cap did not call for a cut. The persona preamble became one line, and the dispatch clause now says to name the seam in the closing message. Absorbing the planned `testing` skill is phase 2.
 
-- **No utility reference could go.** None of the four skills cited a `.prism/references/` file, a step file, or a template, so there was no reference to delete and no seed twin, `seed-curation.json` key, or manifest route to remove. The one cited file was `writing-a-skill.md`, an architect doc the manifest already routes on `.ai-skills/skills/**`, so naming it by path charged 81 lines to the forge skill for a document its run loads anyway. The body now says "the writing-a-skill guide" and the cap stops counting it. The description-shape pointer goes to `skill-authoring.md`, a `load: paths` rule, which the cap does not charge.
+- **No utility reference could go.** None of the four skills cited a `.prism/references/` file, a step file, or a template, so there was no reference to delete and no seed twin, `seed-curation.json` key, or manifest route to remove. The one cited file is `writing-a-skill.md`, an architect doc, and the forge skill cites it by path (81 lines, 112 loaded). The manifest does not route it on `.ai-skills/skills/**`: `.prism/architect/manifest.json` and `_toolkit/manifest.base.json` route only the spec-editing, skills-ecosystem, ticket-workflows, and closing-messages docs there, the install stub has no such route, and only the generated `.claude/skills/**` mirror routes the guide. An earlier draft dropped the citation on the opposite claim and shipped a forge skill that never told its run to read the guide. The description shape is stated inline, since `skill-authoring.md` is `excluded` from the consumer seed.
 
 - **What the utility skills cut on purpose.** These behaviors had no line that a gate, rule, or other skill reads, so they are gone and not lost by accident.
   - **`prism-handoff`:** the "20+ messages" invocation condition, which contradicted the same paragraph's rule against counted proxies, and the unrecognized-target escape that named AGENTS.md routing (now: resume in the same session and say so under `## Focus`).
   - **`prism-forge-skill`:** the Procedure A to D scaffolds (their escapes were Sol-era verdicts), the persona-versus-utility explanation (ADR-0046 holds it), the ordered "run" summary, and the batteries. Domain overlap with an existing skill is now one sentence that asks the user whether to extend it.
   - **`prism-challenge`:** the "utility, not a persona" paragraph, since ADR-0080 removes voice from every skill, and the persona-by-persona lists.
+
+- **A bare PRISM skill ID is owned in code.** `tdd` is rendered and refreshed for consumers: `refreshPlatformSkills` in `update.ts` renders every skill under `.ai-skills/skills/` and cleans up by marker, not by prefix. Two places keyed on `prism-` alone, so `tdd` survived `prism eject` and `ship-closure` never walked its body. `ownership.ts` now exports `PRISM_BARE_SKILL_IDS` (`tdd`) and `checkIsPrismSkillId`, `eject.ts` and `ship-closure.ts` use it, and each has a test. The marker check in eject still protects a consumer's own unmarked `tdd`.
+  - **Alternatives considered:** keying on the `roles.json` IDs. Rejected as larger: eject runs in a consumer repo with no PRISM source to read, so it needs a constant anyway.
 
 - **Always-on rules edited in PR 9.** `.prism/rules/skill-routing.md` is the one `load: always` rule this PR edits, with its curated twin. The edit renames the two utility bullets (`prism-forge-skill`, `prism-challenge`), keeps every trigger phrase, and drops the "a named character would be tempted to perform skepticism" clause, which described the persona the skill no longer has in either form. `.prism/rules/skill-authoring.md` (`load: paths`) gained one clause in § Names saying `tdd` keeps its bare ID, and ADR-0080 gained the same clause in its Names bullet. Nothing else in them changed.
 
@@ -434,7 +437,8 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-18 [huntermcgrew/prism-499-flow-entry]: Renamed Winston, Nora, and Atlas to `prism-plan` (rename only), `prism-start-ticket`, and `prism-onboard`, and thinned the last two to 115 and 55 loaded lines. Deleted eight reference files and moved `references/architect/` to `references/plan/`; see Decision: What the flow-entry skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: Self-review pass 1 fixes. Restored the domain-context anchor and the commit-pause preference, added the doc-root route note to `compatibility.md`, and reworded the audit-workflow reflex line, the anchor-substitution example, and the stale pointers; see Decision: A non-`docs/` doc root needs its own manifest route.
 - 2026-10-18 [huntermcgrew/prism-499-review-lane]: Self-review pass 1 fixes. Brought `prism-skill-forge` onto the four tests, restored the coverage rule, smells, AC proposal, and domain anchor in the review skills, and fixed stale persona wording in `CONTEXT.md` and the roster.
-- 2026-10-18 [huntermcgrew/prism-499-utilities]: Renamed `devils-advocate` and `prism-skill-forge` to `prism-challenge` and `prism-forge-skill`, thinned them and `prism-handoff` to 38, 30, and 47 loaded lines, and stated the `tdd` ID exception in ADR-0080 and `skill-authoring.md`. No utility reference existed to delete; see Decision: What the utility skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-utilities]: Renamed `devils-advocate` and `prism-skill-forge` to `prism-challenge` and `prism-forge-skill`, thinned them and `prism-handoff` to 38, 112, and 47 loaded lines, and stated the `tdd` ID exception in ADR-0080 and `skill-authoring.md`. No utility reference existed to delete; see Decision: What the utility skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 1 fixes. The forge skill cites the writing guide by path again (112 loaded lines), migrate mode regained three facts, and `tdd` is owned in `eject.ts` and `ship-closure.ts`; see Decision: A bare PRISM skill ID is owned in code.
 
 ---
 
@@ -463,6 +467,38 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 ---
 
 ## Review Issues
+
+### Forge skill claimed a manifest route that does not exist
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-forge-skill/shared.md:6`
+- **Problem:** the body and the Decision "No utility reference could go" said the manifest routes `writing-a-skill.md` on `.ai-skills/skills/**`. It does not, so the run was never told to read the guide.
+- **Fixed in:** the forge skill cites `.prism/architect/guides/writing-a-skill.md` by path again (112 loaded lines), and the Decision states the real routing.
+
+### Forge description-shape pointer reached an excluded rule
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-forge-skill/shared.md:7`
+- **Problem:** the pointer to `skill-authoring.md` led to a rule consumers never receive, and the line told a new skill to list "the old persona name".
+- **Fixed in:** the pointer is dropped and the old-name clause applies only to a renamed or replaced persona.
+
+### Migrate mode lost three facts
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-forge-skill/shared.md:13`
+- **Problem:** the thinned body dropped that the `bootstrap-from-claude.ts` helpers are module-private, that existing canonical source is never overwritten, and that a persona also generates a Claude agent definition.
+- **Fixed in:** one clause each, including the verify step.
+
+### The `tdd` ID exception was stated inconsistently and not enforced
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/rules/skill-authoring.md:37`
+- **Problem:** ADR-0080 and `skill-authoring.md` gave different reasons, `writing-a-skill.md` and `install-layout.md` said PRISM owns only `prism-*`, and `eject.ts` and `ship-closure.ts` keyed on the prefix alone.
+- **Fixed in:** one reason in both places, the exception named in the guide and `install-layout.md` (with its twin), and both scripts keyed on `checkIsPrismSkillId` with tests. See Decision: A bare PRISM skill ID is owned in code.
 
 ## PR Readiness
 

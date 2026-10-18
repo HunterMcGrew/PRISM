@@ -368,6 +368,30 @@ test("runEject never deletes a prism-prefixed skill without the managed marker, 
 	});
 });
 
+test("runEject removes a marker-confirmed bare PRISM skill and keeps one without the marker", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+
+		await writeMarkedSkillDir(consumerRepoRoot, ".claude/skills", "tdd");
+		await writeFile(consumerRepoRoot, ".cursor/skills/tdd/SKILL.md", "# hand-authored\n");
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(await fileExists(path.join(consumerRepoRoot, ".claude/skills/tdd")), false);
+		assert.equal(await fileExists(path.join(consumerRepoRoot, ".cursor/skills/tdd")), true);
+		assert.equal(
+			report.skillOutcomes.find((o) => o.path.includes(".cursor/skills/tdd"))?.action,
+			"skipped-no-marker"
+		);
+	});
+});
+
 test("runEject removes a marker-confirmed prism-* Claude agent .md adapter and skips one without the header", async () => {
 	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
 		await writeConsumerManifest(consumerContentRoot, {});

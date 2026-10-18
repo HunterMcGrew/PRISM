@@ -50,7 +50,7 @@ import {
 	resolveConsumerRoot,
 } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
-import { classifyPath } from "./ownership";
+import { checkIsPrismSkillId, classifyPath } from "./ownership";
 import {
 	loadSyncManifest,
 	SYNC_MANIFEST_FILENAME,
@@ -70,9 +70,6 @@ import {
 	readFileIfExists,
 	removeDeletedManagedSkills,
 } from "./utils";
-
-/** Prefix that marks a skill/agent-adapter name as a PRISM-projected candidate for removal. */
-const PRISM_SKILL_PREFIX = "prism-";
 
 /** The subset of `FileAction` that `applyDeletedFile`'s delete-path branches can produce. */
 const DELETE_PATH_ACTIONS = new Set(["no-op", "removed", "removed-with-backup"]);
@@ -304,7 +301,7 @@ async function collectSkillDirOutcomes(
 
 		const entryPath = path.join(outputRoot, entry.name);
 
-		if (!entry.name.startsWith(PRISM_SKILL_PREFIX)) {
+		if (!checkIsPrismSkillId(entry.name)) {
 			keepIds.add(entry.name);
 			outcomes.push({ path: entryPath, action: "skipped-not-prism" });
 			continue;
@@ -356,7 +353,7 @@ async function collectAgentFileOutcomes(
 
 		const skillId = entry.name.slice(0, -extension.length);
 
-		if (!entry.name.startsWith(PRISM_SKILL_PREFIX)) {
+		if (!checkIsPrismSkillId(skillId)) {
 			keepIds.add(skillId);
 			continue;
 		}
