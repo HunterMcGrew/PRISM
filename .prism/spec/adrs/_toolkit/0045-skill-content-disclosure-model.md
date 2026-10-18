@@ -1,11 +1,12 @@
 ---
 Number: 0045
 Title: Skill Content Disclosure Model
-Status: accepted
+Status: superseded
 Date: 2026-05-26
+Superseded-by: 0080
 ---
 
-> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Ren, Theo, and the debugger are retired, so the examples that name them below no longer apply. The disclosure model stands.
+> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Ren, Theo, and the debugger are retired, so the examples that name them below no longer apply.
 
 ## Context
 
@@ -43,7 +44,7 @@ Supporting invariants:
 - **Reference home.** Skill-specific references live at `.prism/references/<skill>/<topic>.md`; genuinely shared cross-skill references live at `.prism/references/` top-level. The build mirrors `.prism/references/` (sub-dirs included) into each platform's `references/`. Triggers link the canonical `../../../.prism/references/<skill>/<topic>.md`.
 - **Wrap a lens in a step when a judgment must fire every run.** A lens that's present but not placed fires only when the run's reasoning path happens to reach it. To make a judgment reliable, give it a deterministic placement — a gate, a forcing question, a DoD item — rather than hoping the path lands there. Winston's premise gate is the precedent: "how to think," delivered as "when to think it."
 
-The operational, author-facing form of this decision lives in [`.prism/rules/skill-authoring.md`](../../rules/skill-authoring.md).
+The operational, author-facing form of this decision was [`.prism/rules/skill-authoring.md`](../../rules/skill-authoring.md), which now carries [ADR-0080](./0080-skills-are-function-shaped-and-held-to-four-tests.md).
 
 ## Consequences
 
@@ -58,6 +59,6 @@ The operational, author-facing form of this decision lives in [`.prism/rules/ski
 
 - [ADR-0035](./0035-rule-loading-tiers.md) — the rule-loading taxonomy. Owns "tier"; this ADR uses "level"/"stage" for content disclosure to avoid colliding the two vocabularies.
 - [ADR-0033](./0033-implementation-task-detail.md) — cross-LLM portability, the tension the portability consequence names.
-- [`.prism/rules/skill-authoring.md`](../../rules/skill-authoring.md) — the author-facing rule that operationalizes this ADR.
+- [`.prism/rules/skill-authoring.md`](../../rules/skill-authoring.md) — the author-facing rule that operationalized this ADR before ADR-0080 replaced it.
 - [`.prism/rules/lazy-artifacts.md`](../../rules/lazy-artifacts.md) — related: references are created on first write, never seeded empty.
 - `prism-architect` (`.ai-skills/skills/prism-architect/shared.md` + `.prism/references/architect/`) — the worked precedent: voice/lens/router/DoD pinned, modes externalized behind triggers.

@@ -21,12 +21,12 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-code-review-pr",
+			"id": "prism-pr-review",
 			"persona": "Eric",
 			"routing": "auto"
 		},
 		{
-			"id": "prism-code-review-self",
+			"id": "prism-self-review",
 			"persona": "Briar",
 			"routing": "auto"
 		},

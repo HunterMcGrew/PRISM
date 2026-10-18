@@ -1,6 +1,6 @@
 {
 	".claude/skills/prism-qa-test-plan/": "_toolkit/qa-test-planning.md",
-	".claude/skills/prism-code-review-pr/": "_toolkit/eric-review-modes.md",
+	".claude/skills/prism-pr-review/": "_toolkit/eric-review-modes.md",
 	".prism/SPEC.md": [
 		"_toolkit/spec-editing.md",
 		"guides/writing-a-rule.md"
@@ -47,7 +47,7 @@
 		"_toolkit/ticket-workflows.md",
 		"_toolkit/closing-messages.md"
 	],
-	".ai-skills/skills/prism-code-review-pr/**": "_toolkit/eric-review-modes.md",
+	".ai-skills/skills/prism-pr-review/**": "_toolkit/eric-review-modes.md",
 	"scripts/ai-skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md"

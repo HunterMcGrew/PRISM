@@ -20,8 +20,8 @@ The bar applies to both author-side authoring and reviewer-side gating. Authors 
 ## Who runs this rule
 
 - **Winston** (`prism-architect`) — runs the triage at startup when the diff includes architect docs, and surfaces diverged/missing claims as Structural Concerns in evaluate-mode output.
-- **Eric** (`prism-code-review-pr`) — auto-trips into source-verification mode for PR-side review on doc-class diffs.
-- **Briar** (`prism-code-review-self`) — same auto-trip on the self-review side, before the PR opens.
+- **Eric** (`prism-pr-review`) — auto-trips into source-verification mode for PR-side review on doc-class diffs.
+- **Briar** (`prism-self-review`) — same auto-trip on the self-review side, before the PR opens.
 
 Eric's and Briar's hooks share phrasing — the bar reads identically across author-side and reviewer-side surfaces.
 

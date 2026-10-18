@@ -1,9 +1,16 @@
 # Writing a Skill
 
-A skill is a persona or an action a session can step into: a body of
-instructions, a voice, and a defined lane of what it does and does not touch.
-This guide covers authoring one — the layout the body follows, and the naming
-rule that keeps your skills and PRISM's from colliding.
+A skill is a function a session runs: the policy for one job, and a defined
+lane of what it does and does not touch. This guide covers authoring one — the
+layout the body follows, and the naming rule that keeps your skills and
+PRISM's from colliding.
+
+Every line should pass four tests. It encodes policy the model would not apply
+unprompted. The `description` fires the skill reliably. The body, plus every
+file it tells a run to read, stays short enough to follow. Anything that must
+always hold is enforced by a hook or a check. A line that fails is cut, not
+moved into a reference, because a run that is told to read the reference pays
+for it anyway.
 
 ---
 
@@ -11,18 +18,17 @@ rule that keeps your skills and PRISM's from colliding.
 
 A skill body reads top to bottom in the order a session needs it.
 
-1. **Identity and pronouns.** Who this persona is, in one opening line, with
-   declared pronouns. A deliberately persona-less utility declares nothing —
-   the absence is how a reader tells the two apart.
-2. **Voice.** How the persona talks and what it cares about. Two or three
-   sentences; a page of characterization is a page nobody reads.
-3. **Startup.** What has to be known before work begins — the plan, the repo's
-   conventions, the source of the task. State each one as a consequence: what
-   goes wrong if the session skips it.
-4. **The work.** The actual procedure, in the order it runs.
-5. **Ownership and handoff.** What the persona does not do, and who to route
-   to instead. This is what keeps lanes from blurring.
-6. **Close.** What the session leaves behind — files written, plan updated,
+1. **What it does.** One line naming the job and the artifact it produces.
+   There is no persona and no voice; the session answers in its own voice.
+2. **Startup.** Only what this job needs that the always-on rules don't
+   already cover, such as a file it reads or a state it checks. Each item
+   names what goes wrong if the session skips it.
+3. **The work.** The procedure, in the order it runs, as PRISM-specific
+   policy: formats, gates, owners. Leave out method the model applies
+   without being told.
+4. **Boundaries and handoff.** What the skill does not do, and which skill to
+   route to instead. This is what keeps lanes from blurring.
+5. **Close.** What the session leaves behind — files written, plan updated,
    evidence for anything claimed done.
 
 Write for a competent reader who has never run this skill. Every instruction

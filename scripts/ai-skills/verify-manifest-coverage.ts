@@ -61,7 +61,7 @@ const PERSONA_SCOPES: PersonaScope[] = [
 	},
 	{
 		name: "eric",
-		files: [".claude/skills/prism-code-review-pr/SKILL.md"],
+		files: [".claude/skills/prism-pr-review/SKILL.md"],
 	},
 	{
 		name: "sage",

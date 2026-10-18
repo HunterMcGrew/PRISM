@@ -24,15 +24,13 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-code-review-self": { thinnedBy: "PRISM-499 PR 6, review lane", max: 973 },
-	"prism-code-review-pr": { thinnedBy: "PRISM-499 PR 6, review lane", max: 1072 },
 	"prism-code-dev": { thinnedBy: "PRISM-499 PR 7, build lane", max: 902 },
 	"prism-documentation": { thinnedBy: "PRISM-499 PR 7, build lane", max: 1512 },
 	"prism-design": { thinnedBy: "PRISM-499 PR 7, build lane", max: 830 },
 	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 998 },
 	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 452 },
 	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
-	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 364 },
+	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 334 },
 	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
 	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 789 },
 	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 758 },
@@ -56,7 +54,7 @@ const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 824 },
 	"prism-review-loop": {
 		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
-		max: 380,
+		max: 306,
 	},
 };
 

@@ -86,12 +86,12 @@ Agent-authored PRs open as draft. The platform-level "you cannot merge a draft" 
 
 | PR type | Author | Flip path |
 | --- | --- | --- |
-| Code | Clove | Eric flips ready in his Phase 4 batch D label pipeline when state #3 (`confidence:high` or `confidence:needs-judgment`) fires. |
+| Code | Clove | The PR-review skill leaves it in draft. The main session flips it ready when the merge conditions in `git-conventions.md` § Who merges hold, or the human flips it. |
 | Docs | Eli | No agent reviewer. The human flips ready before merging. |
 | Changelog | Sage | No agent reviewer. The human flips ready before merging. |
 | QA checklist | Reese | No agent reviewer. The human flips ready before merging. |
 
-**Why:** Code PRs have an agent reviewer (Eric) who can flip ready with confidence. Doc/changelog/checklist PRs don't — the draft state stays until a human reviews. The platform enforces the gate either way.
+**Why:** the review labels feed the merge condition, so the flip belongs at the merge gate and not inside the review pass. Doc/changelog/checklist PRs have no agent reviewer, so the draft state stays until a human reviews. The platform enforces the gate either way.
 
 ## Release PR ownership (Sage / Reese)
 

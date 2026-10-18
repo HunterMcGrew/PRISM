@@ -268,7 +268,7 @@ A persona that writes plan content but does not own the branch's code lane, such
 - Stage only the plan file: `git add <plan-path>`.
 - Verify the staged set before committing: `git diff --cached --name-only` must print exactly that one path. Anything else — abort, leave the tree alone, and report the unexpected paths in chat.
 - Commit with `chore: <persona> plan record for <ticket-id>` per `git-conventions.md` § Commit Messages.
-- Push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — per `worktree-mode.md` § Push from detached HEAD; a plain `git push origin HEAD` fails from detached HEAD.
+- Push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — because a plain `git push origin HEAD` fails from detached HEAD.
 - The exception covers the plan file only. It never extends to source, docs, config, or lockfiles — those stay the author's lane.
 
 ---
@@ -476,7 +476,7 @@ The inline tag on `Root cause` and the explicit `Confidence` field carry the sam
 
 ## Review Issues
 
-Add entries here via the code-review-self or code-review-pr skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
+Add entries here via the `prism-self-review` or `prism-pr-review` skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
 
 ### <short issue title>
 
@@ -523,7 +523,7 @@ Dead code, debug artifacts, stray comments found during review.
 
 ## PR Readiness
 
-Living checklist — updated every time `code-review-self` runs. Reflects current state.
+Living checklist — updated every time `prism-self-review` runs. Reflects current state.
 
 - [ ] No critical or major issues
 - [ ] Types correct — no `any`, no unsafe `as`
@@ -756,7 +756,7 @@ For the implementation-mode framing of the same rule, see `.claude/skills/prism-
 
 When removing or renaming a concept — a function, type, config key, rule section, anything other code or docs reference — sweep every reference by searching the tree for the old name. Compiler errors and the diff are not the sweep: the compiler only sees code it type-checks, and the diff only shows files you already touched. The reference you missed lives in a file the change never opened — docs, templates, string literals, generated mirrors, sibling configs.
 
-**Why:** a removal that leaves dangling references ships a claim that the concept still exists, and every later reader pays for the confusion. Diff-bounded review can't catch it either — the unfixed file never appears in the diff — so the author's tree-wide search is the only gate that sees the whole repo (the reviewer-side check lives in `.prism/references/review-frameworks.md` § Structural Scan Items).
+**Why:** a removal that leaves dangling references ships a claim that the concept still exists, and every later reader pays for the confusion. Diff-bounded review can't catch it either — the unfixed file never appears in the diff — so the author's tree-wide search is the only gate that sees the whole repo (the reviewer-side check lives in the `prism-self-review` and `prism-pr-review` skills).
 
 A changed *behavior* has the same reach as a rename but no token to grep. When a fix changes a documented predicate — a safety condition, a validation rule, a state-transition guard — the prose describing it elsewhere shares no symbol with the code, so no search surfaces it, and the drift stays invisible until a reader acts on the stale description. Reconcile every prose home of the predicate in the same review pass as the code change, especially always-on docs whose readers can reintroduce by hand the exact bug the code just closed. This is distinct from mirror sync: `pnpm prism:build` keeps a rule's mirrors byte-identical to their source but cannot detect that the source's *meaning* drifted from the code it specifies. thrive#2196 is the concrete case: a worktree classifier's GREEN predicate was hardened to a commit-containment check while the rule describing it still read the looser pre-fix version, live for a full review pass until PR review caught the mismatch.
 
@@ -863,8 +863,8 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 - prism-architect (Winston)
 - prism-code-dev (Clove)
-- prism-code-review-pr (Eric)
-- prism-code-review-self (Briar)
+- prism-pr-review (Eric)
+- prism-self-review (Briar)
 - prism-documentation (Eli)
 - prism-design (Pixel)
 - prism-qa-test-plan (Reese)
@@ -1046,7 +1046,7 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 
 - **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
 - **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
-- **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
+- **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 - **`prism-review-loop`** — carries a stricter disposition: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. Its own Ledger set is this section's set plus two loop-local additions — the PR body and the readiness line the loop itself emits. See its § Review surfaces.
 
@@ -1457,10 +1457,10 @@ When a user works without invoking a specific skill, detect what they're doing a
 | -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Writing or modifying code              | **Clove** (`prism-code-dev`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
 | Architecture or design questions       | **Winston** (`prism-architect`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
-| Reviewing a PR                         | **Eric** (`prism-code-review-pr`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
+| Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
 | Starting a ticket                      | **Nora** (`prism-ticket-start`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
 | Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
-| Self-reviewing the current branch      | **Briar** (`prism-code-review-self`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
+| Self-reviewing the current branch      | **Briar** (`prism-self-review`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
 | UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
 | QA test plans and bug-fix verification | **Reese** (`prism-qa-test-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
 | Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
@@ -1492,7 +1492,7 @@ These personas route on their name or an explicit trigger phrase only — never 
 
 ## Built-in skill overrides
 
-- When the user says "review pr", "review #<number>", "review pull request", or any PR review phrase, invoke `prism-code-review-pr` (Eric) — not the built-in `/review` skill. The built-in `/review` doesn't understand this project's conventions, architect context, or plan system.
+- When the user says "review pr", "review #<number>", "review pull request", or any PR review phrase, invoke `prism-pr-review` (Eric) — not the built-in `/review` skill. The built-in `/review` doesn't understand this project's conventions, architect context, or plan system.
 
 ## Onboarding intent routing
 

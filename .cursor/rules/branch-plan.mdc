@@ -175,7 +175,7 @@ A persona that writes plan content but does not own the branch's code lane, such
 - Stage only the plan file: `git add <plan-path>`.
 - Verify the staged set before committing: `git diff --cached --name-only` must print exactly that one path. Anything else — abort, leave the tree alone, and report the unexpected paths in chat.
 - Commit with `chore: <persona> plan record for <ticket-id>` per `git-conventions.md` § Commit Messages.
-- Push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — per `worktree-mode.md` § Push from detached HEAD; a plain `git push origin HEAD` fails from detached HEAD.
+- Push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — because a plain `git push origin HEAD` fails from detached HEAD.
 - The exception covers the plan file only. It never extends to source, docs, config, or lockfiles — those stay the author's lane.
 
 ---
@@ -383,7 +383,7 @@ The inline tag on `Root cause` and the explicit `Confidence` field carry the sam
 
 ## Review Issues
 
-Add entries here via the code-review-self or code-review-pr skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
+Add entries here via the `prism-self-review` or `prism-pr-review` skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
 
 ### <short issue title>
 
@@ -430,7 +430,7 @@ Dead code, debug artifacts, stray comments found during review.
 
 ## PR Readiness
 
-Living checklist — updated every time `code-review-self` runs. Reflects current state.
+Living checklist — updated every time `prism-self-review` runs. Reflects current state.
 
 - [ ] No critical or major issues
 - [ ] Types correct — no `any`, no unsafe `as`
