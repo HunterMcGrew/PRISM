@@ -1,7 +1,10 @@
 /**
- * Resolves the live plan a branch owns, per `.prism/rules/branch-plan.md`
- * § Plan Lookup: a ticket id parsed from the branch name, then `<id>.md`,
- * then `epic-<id>.md`, then a `## Ticket` field scan across every plan. When
+ * Resolves the live plan a branch owns: a ticket id parsed from the branch
+ * name, then a plan folder's `<id>/plan.md`, then the flat tiers of
+ * `.prism/rules/branch-plan.md` § Plan Lookup — `<id>.md`, `epic-<id>.md`,
+ * and a `## Ticket` field scan across every flat plan. The rule does not yet
+ * name the folder tier; it is checked first because a ticket with a plan
+ * folder keeps its live plan there. When
  * the branch carries no ticket-id-shaped token at all — a plan-first branch,
  * cut before Nora files a ticket per that same rule's step 5 — falls back to
  * matching an unfiled plan by filename slug instead of returning null.
@@ -151,8 +154,9 @@ async function findUnfiledPlanBySlug(
 }
 
 /**
- * Scans every plan directly under `.prism/plans/` (the directory carries no
- * subdirectories) for a `## Ticket` field whose content names `ticketId`.
+ * Scans every flat plan directly under `.prism/plans/` (plan folders are
+ * resolved by their own tier first) for a `## Ticket` field whose content
+ * names `ticketId`.
  * Returns the first match's repo-root-relative POSIX path, or null.
  */
 async function findPlanByTicketField(
@@ -199,6 +203,14 @@ export async function resolveLivePlan(
 	const ticketId = extractTicketId(branchName);
 	if (!ticketId) {
 		return findUnfiledPlanBySlug(branchName, repoRoot);
+	}
+
+	// A plan folder holds the ticket's `intent.md`, `spec.md`, and `plan.md`.
+	// It is checked first because a ticket that has one keeps its live plan
+	// there, and a stray flat file of the same id would otherwise shadow it.
+	const folderPath = path.join(".prism", "plans", ticketId, "plan.md");
+	if (await pathExists(path.join(repoRoot, folderPath))) {
+		return folderPath.split(path.sep).join("/");
 	}
 
 	const directPath = path.join(".prism", "plans", `${ticketId}.md`);

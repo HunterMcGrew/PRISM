@@ -1,7 +1,8 @@
 /**
  * Regression suite for the shared live-plan resolver.
  *
- * Exercises every fallback tier — direct `<id>.md`, `epic-<id>.md`, the
+ * Exercises every fallback tier — a plan folder's `<id>/plan.md`, direct
+ * `<id>.md`, `epic-<id>.md`, the
  * `## Ticket` field scan, and the unfiled-plan-by-slug tier for branches with
  * no ticket-id-shaped token — plus `extractTicketId`'s branch-name parsing,
  * against temp trees built per test, following the
@@ -92,6 +93,41 @@ test("resolveLivePlan: resolves the direct <id>.md tier", async () => {
 			assert.equal(
 				await resolveLivePlan(branchName, tempRoot),
 				".prism/plans/prism-1001.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: a plan folder's plan.md wins over a flat plan of the same id", async () => {
+	const branchName = "someone/prism-1002-ai-native-sdlc";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/plans/prism-1002/plan.md", "# Plan: prism-1002\n");
+			await writeFile(tempRoot, ".prism/plans/prism-1002/intent.md", "# Intent\n");
+			await writeFile(tempRoot, ".prism/plans/prism-1002.md", "# Plan: prism-1002 (flat)\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/prism-1002/plan.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: a plan folder with no plan.md falls through to the flat tier", async () => {
+	const branchName = "someone/prism-1003-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/plans/prism-1003/intent.md", "# Intent\n");
+			await writeFile(tempRoot, ".prism/plans/prism-1003.md", "# Plan: prism-1003\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/prism-1003.md"
 			);
 		}
 	);
