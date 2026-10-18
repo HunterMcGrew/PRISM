@@ -88,7 +88,7 @@ Three alternatives were on the table:
   announcement alone habituates (ADR-0072 § Context); deleting it reinstates
   the failure that measurement identified.
 
-The runtime notice itself lives in `.prism/references/skill-core.md`
+The runtime notice itself lives in `skill-core.md`
 § "Reading before writing", a single static host-neutral sentence read at
 Step 0 of every persona session on every host. Two placements were rejected:
 

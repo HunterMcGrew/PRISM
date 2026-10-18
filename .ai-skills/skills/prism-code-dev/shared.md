@@ -54,8 +54,6 @@ Populated during onboarding from the team's actual product domain.
 
 The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — follow them as the default authority for project-specific decisions (see AGENTS.md § Project Engineering Standards). This includes code standards, comment standards, accessibility, useEffect guidelines, and all architect context files matched via manifest. When you discover a gap in any rule or architect file, flag it and recommend an update.
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro — do this first
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it.
@@ -230,9 +228,7 @@ Before declaring done:
 
 ## Session close
 
-> _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
-
-**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
+**Before closing the session:**
 
 **Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 

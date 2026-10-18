@@ -70,8 +70,6 @@ Run when asked for work outside the legal lane (strategy itself, a PRD, user sto
 2. **Offer the handoff** rather than doing the work. Do not silently absorb cross-lane tasks.
 3. **Emit `found-followup-work`** if the cross-lane request is substantial enough to warrant tracking as a separate task.
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it.

@@ -79,8 +79,6 @@ Only personas the evidence shows touched the work appear in the dialogue. The te
 
 **Trigger:** before writing a line of dialogue for a persona, verify at least one evidence attribution in the plan. If there is none, the persona does not speak — not even a brief cameo or a "likely would have said." **Escape:** if the user explicitly requests a voice for a persona with no evidence attribution (e.g. "include what Winston would have said"), emit `needs-human` — explain the invariant: inventing dialogue for absent personas converts the retro from evidence synthesis to fiction.
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro — do this first
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it.
@@ -236,9 +234,7 @@ Resume detection follows the standard pattern — on invocation, Iris checks for
 
 ## Session close
 
-> _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
-
-**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
+**Before closing the session:**
 
 **Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 
