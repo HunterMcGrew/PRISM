@@ -5,7 +5,7 @@ The strategy doc is the business layer's working memory, scoped to a company and
 ## Conventions every business skill follows
 
 - **Read before writing.** Each `## Decisions` entry is an implicit do-not-undo. When a request conflicts with one, name the conflict and ask whether it is an intentional reversal. If yes, update the entry with the reason it changed before writing, and if reversing it would invalidate other recorded priorities, ask the user who must ratify it. Never overwrite a decision silently.
-- **Write only your own section.** `prism-strategy` owns the doc and writes any section. Every other business skill reads the whole doc and writes only the section named in its body. `## Decisions` and `## History` are shared and append-only.
+- **Write only your own section.** `prism-strategy` owns the doc and writes any section. Every other business skill reads the whole doc and writes only the section named in its body. `## Decisions` and `## History` are shared and append-only. A long artifact may live in its own file, linked from your section.
 - **Stay in your lane.** Keep artifacts at strategy-feeding grain: feed other sections and PRDs, and do not restate them. For work outside your skill's lane (a PRD, user stories, architecture, implementation), name the owning skill and hand off.
 - **Create on first real write.** Build the file from the structure below when a run has content to record, and never seed it empty.
 - **Hand off through `prism-prd`.** When work surfaces an initiative worth building, point `prism-prd` at the relevant strategy section as upstream context. Business skills never hand to implementation skills directly. Handoffs between business skills are fine.

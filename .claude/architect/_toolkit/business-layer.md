@@ -45,8 +45,6 @@ The full business-layer roster, with each skill's old persona name, what it prod
 | Penny | `prism-recruiting` | Job descriptions, interview rubrics, hiring-process docs | `## People` |
 | Lex | `prism-legal` | ToS drafts, privacy policy reviews, contract-review notes | `## Legal & Compliance` |
 
-Planned additions are tracked in epic #212.
-
 ## Business-layer patterns
 
 ### Dividing ownership when two skills share an input

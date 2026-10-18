@@ -532,6 +532,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Renamed Zoe, Lilac, and Reese to `prism-audit`, `prism-standup`, and `prism-qa-plan`, and thinned them with Iris, Sage, and Parker to 54, 57, 49, 94, 56, and 62 loaded lines. Deleted the retro and PRD step trees, the changelog, standup, and QA references, `shipping-flow.md`, `stakes-calibration.md`, and `micro-file-step-machine.md`; see Decision: What the cadence and release skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-business]: Renamed Vera and Tess to `prism-strategy` and `prism-metrics`, and thinned all nine business skills to 85 to 92 loaded lines (from 306 to 339). The shared conventions moved into a thinned strategy template that every skill cites; see Decision: What the business skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-business]: Briar pass 1 fixes. Every business skill now reads the strategy template unconditionally, the out-of-lane and grain guards live in its conventions, and `## Research` and `## Finance` are named everywhere; the three findings are under `## Review Issues`.
+- 2026-10-18 [huntermcgrew/prism-499-business]: Eric pass 1 fixes. Removed the closed-epic sentence from `business-layer.md` and moved the long-artifact allowance into the template convention every business skill reads; the two findings are under `## Review Issues`.
 
 ---
 
@@ -752,6 +753,22 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - **File:** `.ai-skills/skills/prism-sales/shared.md:5`
 - **Problem:** `prism-sales` and `prism-marketing` said "the research section", the two descriptions said "research/finance section", and the market-research and finance Handoff lines said "the research/finance section", after the Decision named both.
 - **Fixed in:** each now says `## Research` or `## Finance`.
+
+### PR 11: business-layer.md pointed at a closed epic
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/business-layer.md:48`
+- **Problem:** "Planned additions are tracked in epic #212" named an epic that closed on 2026-06-19, in the doc and its seed twin.
+- **Fixed in:** the sentence is gone. "Rules for adding a new business skill" covers additions.
+
+### PR 11: long-artifact allowance kept by one skill only
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/templates/business-strategy.md:8`
+- **Problem:** the old market-research, marketing, sales, customer-success, and legal bodies let a long artifact live in its own file, but the new bodies and the template said only "write only your own section", and `prism-recruiting` alone kept the clause.
+- **Fixed in:** the "Write only your own section" convention says a long artifact may live in its own file, linked from the section, and `prism-recruiting`'s local copy is dropped.
 
 ## PR Readiness
 
