@@ -17,7 +17,7 @@ Probe for `<repo-root>/scripts/ai-skills/`. Present means toolkit context (a PRI
 
 ## Mode
 
-Read `.ai-skills/config.json`, `.ai-skills/registry/onboarding-state.json`, and the asset signals in parallel, then take the first match:
+Read `.ai-skills/config.json`, `.ai-skills/registry/onboarding-state.json`, and the asset signals in parallel. If the config or the state file fails to parse, say so and ask before overwriting the config or restarting the state, because a write over an unparseable config drops its hand-added fields and `loadState` throws on a corrupt state file. Then take the first match:
 
 1. **Resume.** The state file has incomplete steps, so continue at `nextIncompleteStep`. This comes first so a half-finished run is not read as a reconfigure.
 2. **init-bootstrapped.** Config exists and the state file does not, since only `init` writes a config without state. Seed `project`, `ticketPrefix`, `ticketSystem`, `github`, and `slackChannel` from it and show them so the user can correct one. Re-detect `techStack` and never seed it. Ask only what `init` leaves empty: product domain, existing standards, documentation, and retro evidence. It does not suppress first-contact: when asset signals are present, run the asset survey and discovery sweep as well, since `adopt` has already written the sync manifest that mode 4 keys on.

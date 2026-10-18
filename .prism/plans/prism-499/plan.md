@@ -437,6 +437,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-18 [huntermcgrew/prism-499-flow-entry]: Renamed Winston, Nora, and Atlas to `prism-plan` (rename only), `prism-start-ticket`, and `prism-onboard`, and thinned the last two to 116 and 55 loaded lines. Deleted eight reference files and moved `references/architect/` to `references/plan/`; see Decision: What the flow-entry skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-flow-entry]: Self-review pass 1 fixes. The asset survey and sweep now run for init-bootstrapped repos with asset signals, and the onboard and start-ticket bodies say what the agent does where the APIs lack it.
 - 2026-10-18 [huntermcgrew/prism-499-flow-entry]: Self-review pass 2 fix. The onboard Close marks every step complete, skipped or not, so a finished run does not resume.
+- 2026-10-18 [huntermcgrew/prism-499-flow-entry]: PR review pass 1 fixes. `closing-messages.md` no longer claims every skill has a `## Next persona` section, onboard asks before overwriting an unparseable config or state, and start-ticket says exactly which plan sections it writes.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: Self-review pass 1 fixes. Restored the domain-context anchor and the commit-pause preference, added the doc-root route note to `compatibility.md`, and reworded the audit-workflow reflex line, the anchor-substitution example, and the stale pointers; see Decision: A non-`docs/` doc root needs its own manifest route.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: PR review pass 1 fixes. Widened the Zoe-verdict clause in `prism-implement`, restored the doc-conventions read and the docs PR title policy, and reworded the UI-gap handoff as a recommendation; the six findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-review-lane]: Self-review pass 1 fixes. Brought `prism-skill-forge` onto the four tests, restored the coverage rule, smells, AC proposal, and domain anchor in the review skills, and fixed stale persona wording in `CONTEXT.md` and the roster.
@@ -583,6 +584,38 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - **File:** `.ai-skills/skills/prism-implement/shared.md:18`
 - **Problem:** it dropped the old option to make the call and keep going, and no skill invokes another.
 - **Suggested fix:** recommend `prism-design` to the user, or make the call and record it in `## Decisions`. The plan-skill handoff is worded the same way. Fixed in: the PR 7 review-fix commit.
+
+### PR 8: closing-messages claims a `## Next persona` section no skill has
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/closing-messages.md:69`
+- **Problem:** the doc said every persona's `shared.md` has a `## Next persona` section that cites it, and the thinned skills have none.
+- **Fixed in:** the doc now says each skill names its next skill in its own closing or handoff text and this doc holds the routing table. Line 49 and the install twin agree. The lesson is in `.prism/lessons.md`.
+
+### PR 8: onboard overwrites an unparseable config or state file without asking
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-onboard/shared.md:20`
+- **Problem:** the old body warned before overwriting a config that fails to parse. A write over one drops hand-added fields, and `loadState` throws on a corrupt state file.
+- **Fixed in:** Mode says to report a parse failure and ask before overwriting the config or restarting the state.
+
+### PR 8: start-ticket overstates what it does not write
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-start-ticket/shared.md:1`
+- **Problem:** "writes no code, plan, or stories" contradicts the AC Sync Log row and `plan-authoring.md`, which lists the skill as a writer of `## Goal` and bug AC. `docs/personas.md` and `docs/workflow.md` said it initializes or sets up the plan.
+- **Fixed in:** the body names what it does not write (code, stories, and plan sections beyond `## Goal`, bug AC, and the AC Sync Log), and both docs drop the plan-setup claim.
+
+### PR 8: the Parker doc says the clarity rubric cites Nora's list
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/ai-skills/parker.md:48`
+- **Problem:** the rubric now lists its own vague words.
+- **Fixed in:** the line says so.
 
 ### Forge skill claimed a manifest route that does not exist
 

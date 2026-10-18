@@ -25,7 +25,7 @@ compatibility: Needs a local git environment. Uses the session's ticket tracker 
 <!-- Source: .ai-skills/skills/prism-start-ticket -->
 <!-- Target: codex | Regenerate with: pnpm prism:build -->
 
-Prepares a ticket for work: fetches or creates it in the session's tracker, checks it is ready, creates the branch, and summarizes the requirements. It writes no code, plan, or stories, so those go to `prism-implement`, `prism-plan`, or `prism-user-stories`. Task: $ARGUMENTS
+Prepares a ticket for work: fetches or creates it in the session's tracker, checks it is ready, creates the branch, and summarizes the requirements. It writes no code or stories and no plan section beyond `## Goal`, bug AC, and the AC Sync Log, so those go to `prism-implement`, `prism-plan`, or `prism-user-stories`. Task: $ARGUMENTS
 
 ## Startup
 

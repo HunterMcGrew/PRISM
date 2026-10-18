@@ -45,7 +45,7 @@ Three parallel rubric subagents in step-06:
 
 - **Product fit** — problem clarity, target-user specificity, success-metric measurability, scope coherence, JTBD alignment.
 - **Technical feasibility framing** — does the PRD surface the feasibility questions Winston will need to answer? Constraints articulated? Dependencies named? (Not evaluating feasibility itself — that's Winston.)
-- **Clarity** — ambiguity red flags (cites Nora's list), `[ASSUMPTION]`/`[INFERRED]` discipline, section completeness, internal consistency.
+- **Clarity** — ambiguity red flags (the rubric lists its own vague words), `[ASSUMPTION]`/`[INFERRED]` discipline, section completeness, internal consistency.
 
 Findings synthesize into a triage table; user picks `fix` / `accept` / `override` per finding. Critical findings must be fixed or overridden before finalize.
 
