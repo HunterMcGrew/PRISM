@@ -25,8 +25,8 @@ import { runPostToolUseArm, runPreToolUseArm } from "./hooks/hook.mjs";
 import { extractPatchAddedText, HARNESSES } from "./hooks/harnesses.mjs";
 import {
 	compileMatcher,
-	manifestRoutes,
-	manifestUmbrellas,
+	listManifestRoutes,
+	listManifestUmbrellas,
 } from "./hooks/lib/match.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -149,6 +149,13 @@ test("extractNewHeadings: a file being created counts every heading it carries",
 	assert.deepEqual(extractNewHeadings("# Rule\n\n## One\n\n## Two\n", ""), ["## One", "## Two"]);
 });
 
+test("extractNewHeadings: a tilde fence and a longer backtick fence both hide their contents", () => {
+	const edit =
+		"~~~\n## Inside tildes\n~~~\n\n````md\n```\n## Inside nested\n```\n````\n\n## Outside\n";
+
+	assert.deepEqual(extractNewHeadings(edit, ""), ["## Outside"]);
+});
+
 test("extractPatchAddedText: reads only the added lines of the named file's section", () => {
 	const patch =
 		"*** Begin Patch\n*** Update File: a.md\n@@\n ## Context\n-## Removed\n+## Added to a\n" +
@@ -161,12 +168,12 @@ test("extractPatchAddedText: reads only the added lines of the named file's sect
 
 // --- The reserved manifest key ---
 
-test("manifestRoutes leaves out the umbrellas key, and manifestUmbrellas keeps only its strings", () => {
+test("listManifestRoutes leaves out the umbrellas key, and listManifestUmbrellas keeps only its strings", () => {
 	const manifest = { "src/**": "a.md", umbrellas: [".prism/rules/*.md", 7] };
 
-	assert.deepEqual(manifestRoutes(manifest), [["src/**", "a.md"]]);
-	assert.deepEqual(manifestUmbrellas(manifest), [".prism/rules/*.md"]);
-	assert.deepEqual(manifestUmbrellas({ umbrellas: "not a list" }), []);
+	assert.deepEqual(listManifestRoutes(manifest), [["src/**", "a.md"]]);
+	assert.deepEqual(listManifestUmbrellas(manifest), [".prism/rules/*.md"]);
+	assert.deepEqual(listManifestUmbrellas({ umbrellas: "not a list" }), []);
 });
 
 test("every umbrella entry in PRISM's live manifest matches at least one tracked file", async () => {
@@ -176,7 +183,7 @@ test("every umbrella entry in PRISM's live manifest matches at least one tracked
 	const trackedFiles = execFileSync("git", ["ls-files"], { cwd: prismRepoRoot, encoding: "utf8" })
 		.split("\n")
 		.filter(Boolean);
-	const umbrellas = manifestUmbrellas(manifest);
+	const umbrellas = listManifestUmbrellas(manifest);
 
 	assert.ok(umbrellas.length > 0, "the live manifest names at least one umbrella");
 	const dead = umbrellas.filter(
@@ -198,6 +205,13 @@ test("formatUmbrellaReason: a rule file's wording follows its load key", () => {
 		formatUmbrellaReason(RULE_PATH, ["## New"], [], "# No frontmatter\n"),
 		/a rule file that loads in every session\./
 	);
+});
+
+test("formatUmbrellaReason: an umbrella doc no route delivers says so instead of naming routes", () => {
+	const reason = formatUmbrellaReason(UMBRELLA_PATH, ["## New"], [], "");
+
+	assert.match(reason, /an umbrella doc no route delivers yet\./);
+	assert.doesNotMatch(reason, /costs every session that reaches those routes/);
 });
 
 test("formatUmbrellaReason: an umbrella doc's wording names its routes, capped with a tail", () => {
@@ -349,6 +363,55 @@ test("codex: a multi-file patch charges a heading only to the file that gains it
 			JSON.stringify({ session_id: "session-1", cwd: repoRoot, tool_name: "apply_patch", tool_input: { command: patch } })
 		);
 		assert.equal(result, null);
+	});
+});
+
+test("a rule file being created is described by the load key its new content declares", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedUmbrellaRepo(repoRoot);
+		const newRule = path.join(repoRoot, ".prism", "rules", "fresh.md");
+
+		const reason = denyReason(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				JSON.stringify({
+					session_id: "session-1",
+					cwd: repoRoot,
+					tool_name: "Write",
+					tool_input: { file_path: newRule, content: "---\nload: paths\npaths:\n  - src/**\n---\n\n# Fresh\n\n## Scope\n" },
+				})
+			)
+		);
+		assert.match(reason ?? "", /a rule file that loads whenever its `paths` match\./);
+	});
+});
+
+test("an umbrella no route matches still meets the speed bump", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedUmbrellaRepo(repoRoot);
+		const manifestPath = path.join(repoRoot, ".prism", "architect", "manifest.json");
+		const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+		manifest.umbrellas.push("notes/wide.md");
+		await fs.writeFile(manifestPath, JSON.stringify(manifest, null, "\t"), "utf8");
+		await writeRepoFile(repoRoot, "notes/wide.md", "# Wide\n\n## Existing\n");
+
+		const reason = denyReason(
+			await runPreToolUseArm("claude", HARNESSES.claude, claudeEdit(repoRoot, "notes/wide.md"))
+		);
+		assert.match(reason ?? "", /to `notes\/wide\.md`, an umbrella doc no route delivers yet\./);
+	});
+});
+
+test("codex: an Edit, not only an apply_patch, meets the speed bump", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedUmbrellaRepo(repoRoot);
+		const payload = JSON.parse(claudeEdit(repoRoot, RULE_PATH));
+
+		const reason = denyReason(
+			await runPreToolUseArm("codex", HARNESSES.codex, JSON.stringify(payload))
+		);
+		assert.equal(reason, RULE_REASON);
 	});
 });
 

@@ -35,8 +35,8 @@ import path from "node:path";
 
 import {
 	compileMatcher,
-	manifestRoutes,
-	manifestUmbrellas,
+	listManifestRoutes,
+	listManifestUmbrellas,
 } from "./lib/match.mjs";
 
 /**
@@ -246,7 +246,7 @@ export function matchDocsForPath(manifest, relativePath) {
 	const docs = [];
 	const seen = new Set();
 
-	for (const [pattern, docOrDocs] of manifestRoutes(manifest)) {
+	for (const [pattern, docOrDocs] of listManifestRoutes(manifest)) {
 		if (!resolveMatcher(pattern)(relativePath)) {
 			continue;
 		}
@@ -606,14 +606,12 @@ export async function resolveArchitectNag(
 
 // --- Umbrella-section speed bump ---
 
-/** Where the always-on wording keys from, and where its pointer leads. */
+// A path under one of these gets the rule wording, keyed on its `load:` key.
 const RULE_DIR_PREFIXES = [".prism/rules/", ".prism/custom/rules/"];
 const PLACEMENT_POINTER =
 	".prism/architect/guides/writing-an-architect-doc.md § Where new content goes";
 const BREVITY_POINTER =
 	".prism/rules/writing-voice.md § Keep it short enough to be read";
-
-/** How many headings and routes a deny names before it switches to an `and N more` tail. */
 const HEADINGS_SHOWN = 3;
 const ROUTES_SHOWN = 4;
 
@@ -621,8 +619,12 @@ const ROUTES_SHOWN = 4;
  * Returns the `##` to `######` heading lines an edit adds to a file, trimmed,
  * in order, without duplicates. A heading the file already carries is not
  * new, which covers an edit that repeats one as surrounding context. A `#`
- * line is a document's title and never counts. A line inside a fenced code
- * block in the edit text is quoted text, not structure, so it is skipped.
+ * line is a document's title and never counts.
+ *
+ * A line inside a fenced code block in the edit text is quoted text, not
+ * structure, so it is skipped. Fence tracking is best effort: it sees only
+ * the edit text, so an `Edit` whose `new_string` opens mid-fence reads its
+ * closing fence as an opening one and can miss a heading after it.
  *
  * @param {string} editText
  * @param {string} currentText
@@ -632,15 +634,23 @@ export function extractNewHeadings(editText, currentText) {
 	const existing = new Set(currentText.split("\n").map((line) => line.trim()));
 	/** @type {string[]} */
 	const headings = [];
-	let inFence = false;
+	/** @type {string | null} */
+	let openFence = null;
 
 	for (const rawLine of editText.split("\n")) {
 		const line = rawLine.trim();
-		if (line.startsWith("```")) {
-			inFence = !inFence;
+		const fence = /^(`{3,}|~{3,})/.exec(line)?.[1];
+		if (fence !== undefined) {
+			// A fence closes only on a run of the same character at least as long
+			// as the one that opened it, so a ``` line inside a ```` block is text.
+			if (openFence === null) {
+				openFence = fence;
+			} else if (fence[0] === openFence[0] && fence.length >= openFence.length) {
+				openFence = null;
+			}
 			continue;
 		}
-		if (inFence || !/^#{2,6}\s+\S/.test(line)) {
+		if (openFence !== null || !/^#{2,6}\s+\S/.test(line)) {
 			continue;
 		}
 		if (!existing.has(line) && !headings.includes(line)) {
@@ -672,7 +682,7 @@ function findDocRoutes(manifest, relativePath) {
 		return [];
 	}
 
-	return manifestRoutes(manifest)
+	return listManifestRoutes(manifest)
 		.filter(([, value]) => (Array.isArray(value) ? value : [value]).includes(doc))
 		.map(([pattern]) => pattern);
 }
@@ -719,9 +729,12 @@ export function formatUmbrellaReason(relativePath, headings, routes, currentText
 		return `You're adding ${headingList} to \`${relativePath}\`, ${describeRuleLoad(currentText)}. Name the files this section governs. If it applies whichever file is being touched, retry this edit unchanged. If not, put it in a routed architect doc, per ${PLACEMENT_POINTER}, and keep what stays short, per ${BREVITY_POINTER}.`;
 	}
 
-	const routeList =
-		routes.length > 0 ? joinCapped(routes, ROUTES_SHOWN) : "no route yet";
-	return `You're adding ${headingList} to \`${relativePath}\`, an umbrella doc that loads on ${routeList}. A section here costs every session that reaches those routes. Name the files this section governs. If it applies to every file those routes reach, retry this edit unchanged. If not, put it in the topic doc that owns the subject or a new doc with its own route, per ${PLACEMENT_POINTER}.`;
+	const placement = `put it in the topic doc that owns the subject or a new doc with its own route, per ${PLACEMENT_POINTER}`;
+	if (routes.length === 0) {
+		return `You're adding ${headingList} to \`${relativePath}\`, an umbrella doc no route delivers yet. Name the files this section governs. If it belongs to the whole area this doc covers, retry this edit unchanged. If not, ${placement}.`;
+	}
+
+	return `You're adding ${headingList} to \`${relativePath}\`, an umbrella doc that loads on ${joinCapped(routes, ROUTES_SHOWN)}. A section here costs every session that reaches those routes. Name the files this section governs. If it applies to every file those routes reach, retry this edit unchanged. If not, ${placement}.`;
 }
 
 /**
@@ -747,7 +760,7 @@ export async function resolveUmbrellaSpeedBump(repoRoot, scopeId, edits) {
 	}
 
 	const manifest = await loadManifest(repoRoot);
-	const umbrellaMatchers = manifestUmbrellas(manifest).map(resolveMatcher);
+	const umbrellaMatchers = listManifestUmbrellas(manifest).map(resolveMatcher);
 	if (umbrellaMatchers.length === 0) {
 		return null;
 	}
@@ -794,7 +807,9 @@ export async function resolveUmbrellaSpeedBump(repoRoot, scopeId, edits) {
 			relativePath,
 			unacked,
 			findDocRoutes(manifest, relativePath),
-			currentText
+			// A file being created has no `load:` key on disk yet, so read the one
+			// the new content declares.
+			currentText === "" ? editText : currentText
 		);
 	}
 

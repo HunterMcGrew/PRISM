@@ -1,7 +1,8 @@
 /**
  * Regression suite for the shared live-plan resolver.
  *
- * Exercises every fallback tier — direct `<id>.md`, `epic-<id>.md`, the
+ * Exercises every fallback tier — a plan folder's `<id>/plan.md`, direct
+ * `<id>.md`, `epic-<id>.md`, the
  * `## Ticket` field scan, and the unfiled-plan-by-slug tier for branches with
  * no ticket-id-shaped token — plus `extractTicketId`'s branch-name parsing,
  * against temp trees built per test, following the

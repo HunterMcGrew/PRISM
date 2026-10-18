@@ -55,12 +55,8 @@ export function compileMatcher(pattern) {
 	return (filePath) => regex.test(filePath);
 }
 
-/**
- * The one manifest key that is not a route. Its value lists the umbrella docs
- * and rule globs the write gate's speed bump watches, as repo-relative
- * patterns, so a reader that treated it as a route would match the literal
- * path `umbrellas` and report every entry as a dead route.
- */
+// The one manifest key that is not a route. Its entries are repo-relative
+// patterns, so a reader that treated it as a route would report each as dead.
 export const UMBRELLAS_KEY = "umbrellas";
 
 /**
@@ -72,7 +68,7 @@ export const UMBRELLAS_KEY = "umbrellas";
  * @param {Record<string, unknown>} manifest
  * @returns {[string, string | string[]][]}
  */
-export function manifestRoutes(manifest) {
+export function listManifestRoutes(manifest) {
 	return /** @type {[string, string | string[]][]} */ (
 		Object.entries(manifest).filter(([key]) => key !== UMBRELLAS_KEY)
 	);
@@ -87,7 +83,7 @@ export function manifestRoutes(manifest) {
  * @param {Record<string, unknown>} manifest
  * @returns {string[]}
  */
-export function manifestUmbrellas(manifest) {
+export function listManifestUmbrellas(manifest) {
 	const value = manifest[UMBRELLAS_KEY];
 	return Array.isArray(value)
 		? value.filter((entry) => typeof entry === "string")

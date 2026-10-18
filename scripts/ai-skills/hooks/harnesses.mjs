@@ -110,9 +110,10 @@ export function extractPatchFilePaths(command) {
 
 /**
  * The proposed text of an `Edit` (`new_string`) or a `Write` (`content`).
- * Cursor's spelling is a guess from its documented tool shapes, so its row
- * also tries `contents`. A wrong guess yields `""`, which finds no heading
- * and lets the edit pass, the same direction every other failure here takes.
+ * `contents` is a guess at Cursor's spelling. Every row tries it, because a
+ * field a host never sends costs nothing. A wrong guess yields `""`, which
+ * finds no heading and lets the edit pass, the same direction every other
+ * failure here takes.
  *
  * @param {HookPayload} payload
  * @returns {string}
