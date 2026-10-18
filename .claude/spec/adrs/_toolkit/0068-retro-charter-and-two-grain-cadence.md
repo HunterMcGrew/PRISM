@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-07-06
 ---
 
+> Amended by [ADR-0078](./0078-main-session-holds-merge-authority-and-the-conductor-is-retired.md): Sol is retired, so clause (c) and every Sol dispatch path below no longer apply. The charter, the two grains, and the plan-close gate stand.
+
 ## Context
 
 The operator posed a six-item retro charter: (1) did we do what we said we'd do, (2) were there issues or bottlenecks, (3) actionable improvements, (4) did we follow code standards, (5) did we do anything wrong, (6) are the tests passing (read as: what did the CI record show). An evaluation against this charter surfaced two defects and a design gap.

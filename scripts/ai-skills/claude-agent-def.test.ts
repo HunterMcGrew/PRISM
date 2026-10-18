@@ -1,7 +1,7 @@
 /**
  * Regression suite for the Claude agent-definition emitter. Catches:
  *   - frontmatter shape (name / description / model)
- *   - per-skill model defaults (opus for conductor + architect, sonnet otherwise)
+ *   - per-skill model defaults (opus for the architect, sonnet otherwise)
  *   - the generated SKILL.md body riding after the frontmatter
  *   - token substitution applied to the description
  *   - the emitter loop skips utility skills (one agent def per persona, none per utility)
@@ -54,13 +54,7 @@ test("buildClaudeAgentMarkdown emits name, description, and model frontmatter", 
 	assert.ok(output.includes("Skill content here."), "body must ride along");
 });
 
-test("conductor and architect default to opus; other personas to sonnet", () => {
-	const conductor = buildClaudeAgentMarkdown({
-		claudeSkillMarkdown: "body",
-		description: "Sol.",
-		skillId: "prism-conductor",
-		tokenMap: new Map(),
-	});
+test("the architect defaults to opus; other personas to sonnet", () => {
 	const architect = buildClaudeAgentMarkdown({
 		claudeSkillMarkdown: "body",
 		description: "Winston.",
@@ -74,13 +68,11 @@ test("conductor and architect default to opus; other personas to sonnet", () => 
 		tokenMap: new Map(),
 	});
 
-	assert.equal(parseModelFromFrontmatter(conductor), "opus");
 	assert.equal(parseModelFromFrontmatter(architect), "opus");
 	assert.equal(parseModelFromFrontmatter(worker), "sonnet");
 });
 
 test("the model-defaults map names only the strong-tier personas", () => {
-	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.get("prism-conductor"), "opus");
 	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.get("prism-architect"), "opus");
 	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.has("prism-code-dev"), false);
 });

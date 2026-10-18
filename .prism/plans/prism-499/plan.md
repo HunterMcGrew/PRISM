@@ -148,7 +148,22 @@ Tasks run in order. Each one compiles on its own, and task 7 verifies all of the
    - `docs/ai-skills/compatibility.md` § "Hook-based enforcement reaches Claude Code and Codex": add one paragraph. `.ai-skills/docs/compatibility.md` carries no hook content, so it is left alone. It says the speed bump ships in new installs' stub manifest, that an existing install opts in by adding the `umbrellas` key by hand, and that Cursor has no speed bump.
    - Verify with `pnpm prism:check`.
 
-### PRs 3–11
+### PR 3 — Delete Sol
+
+All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, and a `git grep` for `Sol`, `prism-conductor`, and `conductorMayMerge` over tracked and untracked files returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/`, and `CHANGELOG.md`.
+
+1. **Delete the conductor.** Removed `.ai-skills/skills/prism-conductor/` and the whole `.prism/skills/prism-conductor/` tree (lib, steps), `docs/ai-skills/conductor.md`, the `roles.json` entry, the `prism-conductor` model pin in `scripts/ai-skills/generate-skills.ts`, the `.prism/skills/prism-conductor/**` route in `.prism/architect/manifest.json` and in `_toolkit/manifest.base.json` plus its seed twin, and the conductor-state block in `.gitignore`. The ADR entries in `seed-curation.json` stay, because the ADR files stay. `pnpm prism:build` removed the generated agent, skill, and Codex adapters.
+2. **Resolve the tests that cited conductor files.** See Decision: Test dispositions for PR 3.
+3. **Cut the dispatch contract from the surviving skills.** Removed the "When dispatched by Sol" section and the closing "return the verdict" sentence from every persona `shared.md` that carried them, and Nora's whole "In-loop decision-box mode" section. Cut § Reporting back from `skill-core.md`, § Worker emit pre-filter from `followup-scope.md`, the Orchestration personas section and every Sol mention from `skills-ecosystem.md` (and its curated twin), the Sol clauses in `branch-plan.md`, `worktree-mode.md` (and its twin), `skill-routing.md` (and its twin), `stakes-calibration.md` (the autonomy-ceiling section existed only for Sol), `plan-authoring.md`, `consumer-sync-flow.md`, the retro skill and its step-02, Reese's `verdict-contract.md` and `mode-ac-verification.md`, and both copies of the skill-authoring guide (the externalization example is now `prism-retro`). References that pointed at the removed `report-back.md` and the pre-filter are rewritten to plain "flag it as follow-up work" wording.
+4. **Move merge authority to the main session.** Renamed `features.conductorMayMerge` to `features.mainSessionMayMerge` in `.ai-skills/config.json`, `config.schema.json`, `scripts/ai-skills/lib/onboarding-config.ts`, its test, `docs/parameterization.md`, and `onboarding/modes.md`. Rewrote `git-conventions.md` § Who merges (and the seed twin by build) so the main session may squash-merge when the flag is true, the review loop is clean, and the PR has no `review:has-minors` label. A reviewer persona or subagent never merges. The `modelTiers` schema and docs keep their keys and lose their Sol wording, because the review loop still reads `modelTiers.overrides`.
+5. **Write the ADR.** `.prism/spec/adrs/_toolkit/0078-main-session-holds-merge-authority-and-the-conductor-is-retired.md`, indexed in the ADR README and classified `excluded` in `seed-curation.json`.
+6. **Mark the retired ADRs.** Superseded by ADR-0078, with `Status: superseded`, `Superseded-by: 0078`, and the README row updated: 0048, 0049, 0050, 0051, 0052, 0053, 0054, 0055, 0056, 0061, 0066, and 0069. ADR-0067 was already superseded by the enforcement-floor revert and is left alone apart from the path edit below. ADR-0068 and ADR-0073 carry an amendment note. See Decision: Superseded versus amended ADRs. In ADRs 0048 to 0056, 0067, and 0069, links to the deleted conductor files lose their `.prism/skills/` or `.ai-skills/skills/` prefix so `crossref-lint` stops resolving them, and nothing else in those bodies changes.
+7. **Clean the human docs.** Removed Sol from `README.md`, `SECURITY.md`, `docs/personas.md`, `docs/publishing-prism.md` (the conductor-state leak-audit pattern), and `docs/workflow.md`. `CHANGELOG.md` history is untouched. The `AGENTS.md` mentions sat in the generated rule block and went with the rule edits.
+8. **Drop stale ship-closure tracking.** Removed the four `SHIP_CLOSURE_TRACKED_DANGLING_REFS` entries that nothing reaches any more (ADRs 0055, 0067, 0069, 0072), as `ship-closure.ts` instructs.
+
+Retired ADRs, as AC-2 requires this PR to list them: 0048, 0049, 0050, 0051, 0052, 0053, 0054, 0055, 0056, 0061, 0066, 0069.
+
+### PRs 4–11
 
 Each PR's tasks are written into this section when its branch is cut, so a task list never runs ahead of the code it describes. The rules every one of those PRs follows are recorded under `## Decisions`.
 
@@ -168,6 +183,19 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - **Old persona names stay in each renamed persona skill's `description` as trigger words.** "Briar" keeps routing to `prism-self-review`. Consumers' orphan cleanup removes the old directories on the next `prism update`, per `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution.
 
 - **Merge authority moves to the main session under a renamed flag.** `features.conductorMayMerge` becomes `features.mainSessionMayMerge`. The old name describes an actor PR 3 deletes, so keeping it would point every reader at a persona that no longer exists. A new ADR supersedes ADR-0066 and records that the main session squash-merges PRISM's own PRs once the review loop is clean with no `review:has-minors` label. PR 3 also updates `config.schema.json` and the onboarding-config passthrough. A consumer who set the old flag loses nothing, because without Sol nothing read it. Consumers keep the human merge gate because the new flag defaults to absent.
+
+- **Test dispositions for PR 3.** A test that only guards conductor files is deleted, and a test that guards something alive keeps its assertion with the conductor part dropped.
+  - **Deleted:** `verdict-enum-parity.test.ts` (read `report-back.md`, the conductor `claude.md`, `conductor.md`, and the schema quoted in `skill-core.md`), `phase-chain-parity.test.ts` (read the conductor's `step-04-dispatch.md` and `goal-state.md`), and `phase-completeness-gate.test.ts` (read `step-05-route.md` and `step-10-report.md`). Every file they assert on is gone.
+  - **Kept, conductor assertions dropped:** `claude-agent-def.test.ts` now asserts that the architect defaults to opus and other personas to sonnet, because the model map is still alive for the architect.
+  - **Kept, fixture renamed:** `spec-scope-lint.test.ts` used `prism-conductor` as an example skill directory for the discriminator tests. It now uses `prism-example-skill`, so the tests no longer depend on any real skill that a later PR deletes or renames.
+  - **Kept, flag renamed:** `onboarding-config.test.ts` asserts that an unknown `features` field survives a reconfigure, using the new flag name. `literal-guard.test.ts` swapped a Sol sentence in a fixture string for an Iris one.
+
+- **Superseded versus amended ADRs.** An ADR whose whole decision describes the conductor, or the delivery of its authority, is superseded. An ADR whose decision stands minus one clause is amended with a note.
+  - **Superseded:** 0048 to 0056 (conductor design), 0061 and 0066 (Sol's merge authority and its flag), and 0069 (ratification as a Sol pipeline stage, plus its rule against gates on Sol's report-back channel).
+  - **Amended:** 0068 loses its Sol auto-dispatch clause, and 0073 loses the autonomy-ceiling axis, but the retro charter and the `quick` / `reviewed` / `strict` rename stand.
+  - **Left alone:** 0067 (already superseded by the floor revert), 0063 (lists `conductor-state*.json` among files that must never publish, a historical list), 0064 (cites 0061 as history), and 0072 (cites 0067 and 0069 as history).
+
+- **The `needs-fix` / `needs-replan` / `found-followup-work` vocabulary survives in persona prose and in `session-orientation.md` and `skill-core.md` § Orientation.** Its only defined consumer was Sol. The per-lane rewrites in PRs 5 to 11 retire it with each skill, and PR 5 rewrites `skill-core.md`. Cutting it now would rewrite skill logic the stack replaces later. The vocabulary is dead until then, not harmful.
 
 - **Each stack branch absorbs the squash below it with `git merge -X ours origin/main`.** This is the user's instruction for this stack.
   - **Root cause:** after a lower PR squash-merges, `main` holds its changes as one commit while the next branch still holds them as several. That is the squash-upstream trap `.prism/rules/git-conventions.md` § Keeping a Branch Current describes.
@@ -202,6 +230,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc]: Recorded the phase-1 baseline and the stack plan.
 - 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc]: Self-review pass 1 fixes. Rewrote the PR 2 tasks to the shipped design and added the folder tier to `resolveLivePlan`.
 - 2026-10-17 [huntermcgrew/prism-499-umbrella-speed-bump]: Shipped the umbrella speed bump per PR 2 tasks 1–8. The new `hook-runtime.md` section is a `###` under `## Write gate`, since it is part of the write gate.
+- 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Deleted Sol and the conductor tree, moved merge authority to the main session as `features.mainSessionMayMerge`, and wrote ADR-0078. Superseded ADRs 0048 to 0056, 0061, 0066, and 0069 and amended 0068 and 0073.
 
 ---
 

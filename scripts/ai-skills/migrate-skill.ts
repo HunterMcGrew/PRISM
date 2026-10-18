@@ -291,7 +291,7 @@ export function unescapeTomlMultiline(value: string): string {
  * 3. For consumers: strip a leading `prism-` prefix (if present) and re-prefix
  *    with the org token in lowercase. When no org token is set, use `custom`.
  *
- * Resolved per Sol's ruling (2026-06-16): honor the config `org` token
+ * Resolved 2026-06-16: honor the config `org` token
  * verbatim; `--id` always overrides. Do not force explicit `--id` for
  * `prism-*` IDs from a repo whose org token is `prism`.
  */

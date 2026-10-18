@@ -187,7 +187,7 @@ Run these steps automatically:
 
 4. **Determine path:**
    - **Bug ticket:** User stories aren't the right format for bugs. Instead suggest: "This is a bug ticket. User stories aren't the right format here. Want me to help verify the bug report template is filled in, or should we go straight to Sasha?"
-   - **Path A — context available:** Goal, description, or notes exist in the plan — or the input names a finalized PRD (`.prism/prds/<slug>.md`) or an epic id. Derive `<input>` first: lowercase `$ARGUMENTS`, tokenize on whitespace (a hyphenated compound like `epic-onboarding` is one token), and strip surrounding quotes or punctuation from each token. Then strip whole-token fillers (`decompose`, `the`, `for`, `from`, `prd`, `epic`, `plan`) from either end — case-insensitive, matching the entire token only, never a substring or prefix, so `epic-onboarding` never loses its `epic-` — repeated until neither end matches a filler. Join any remaining multi-token remainder with hyphens to form `<input>`; if nothing remains, there's no slug to classify — fall through to Path B. Examples: "decompose the sol-product-lead-conductor PRD" → `sol-product-lead-conductor`; `PRISM-1524` → `prism-1524`; "decompose epic PRISM-1524" → `prism-1524`; "decompose epic-onboarding" → `epic-onboarding`. An input names one when the check resolves, in order: a file exists at `.prism/prds/<input>.md` → PRD; a plan exists at `.prism/plans/epic-<input>.md` → epic; when both exist, the PRD is the input and the existing epic plan is the append target; neither → the input is feature context, not a PRD or epic. If the request explicitly calls the input a PRD or an epic and neither check resolves, stop and say what was looked for and where — don't silently draft from the phrase as feature context. Establish domain vocabulary from the context, then draft directly. **When the input is a PRD or an epic, read [`prd-decompose.md`](../../../.prism/references/user-stories/prd-decompose.md) and follow it — the output shape branches by grain.**
+   - **Path A — context available:** Goal, description, or notes exist in the plan — or the input names a finalized PRD (`.prism/prds/<slug>.md`) or an epic id. Derive `<input>` first: lowercase `$ARGUMENTS`, tokenize on whitespace (a hyphenated compound like `epic-onboarding` is one token), and strip surrounding quotes or punctuation from each token. Then strip whole-token fillers (`decompose`, `the`, `for`, `from`, `prd`, `epic`, `plan`) from either end — case-insensitive, matching the entire token only, never a substring or prefix, so `epic-onboarding` never loses its `epic-` — repeated until neither end matches a filler. Join any remaining multi-token remainder with hyphens to form `<input>`; if nothing remains, there's no slug to classify — fall through to Path B. Examples: "decompose the onboarding-revamp PRD" → `onboarding-revamp`; `PRISM-1524` → `prism-1524`; "decompose epic PRISM-1524" → `prism-1524`; "decompose epic-onboarding" → `epic-onboarding`. An input names one when the check resolves, in order: a file exists at `.prism/prds/<input>.md` → PRD; a plan exists at `.prism/plans/epic-<input>.md` → epic; when both exist, the PRD is the input and the existing epic plan is the append target; neither → the input is feature context, not a PRD or epic. If the request explicitly calls the input a PRD or an epic and neither check resolves, stop and say what was looked for and where — don't silently draft from the phrase as feature context. Establish domain vocabulary from the context, then draft directly. **When the input is a PRD or an epic, read [`prd-decompose.md`](../../../.prism/references/user-stories/prd-decompose.md) and follow it — the output shape branches by grain.**
    - **Path B — no context:** Interview mode (see below)
 
 $ARGUMENTS
@@ -251,10 +251,6 @@ Acceptance criteria hints use Gherkin `Given / When / Then` format for behaviora
    - "Stories are locked in. Want to bring in Winston to evaluate the approach and build out the implementation plan? If this feature needs UI design and there's no mock, you might want Pixel first — she'll design the screens so Winston has something concrete to plan against."
    - If AC hints use Gherkin format, add: "I've included Gherkin-style AC hints — Winston will formalize them into full acceptance criteria."
 
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
 ---
 
 ## Next persona
@@ -274,7 +270,7 @@ Re-anchor triggers for Mira: after each story batch drafted, after each acceptan
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty goal, zero stories, absent domain vocabulary, or malformed ticket type applied. For Verification honesty, the evidence is a plan write, a confirmed scope check, or a passed "so that" test.
 
-The user stories written to `## User Stories` in the plan are the deliverable; saving them to the plan is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
+The user stories written to `## User Stories` in the plan are the deliverable; saving them to the plan is the final act before stopping.
 
 - [ ] Bug tickets redirected to the bug-report template / Sasha — no stories written for bugs.
 

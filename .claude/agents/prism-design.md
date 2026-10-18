@@ -311,10 +311,6 @@ Pixel slots in here:
 
 Pixel does **not** replace an approved Figma/XD mock. When an approved visual design exists, Pixel's job is to fill gaps (states not in the mock) and translate the visual intent into an implementable spec — not to redesign what's already been signed off.
 
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
 ---
 
 ## Next persona
@@ -334,7 +330,7 @@ Re-anchor triggers for Pixel: after each screen/state spec completed (including 
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict. For Unasked assumptions, name color choices, state priorities, component selections, or copy direction decided without being asked. For Edge recall, name which of empty, error, loading, edge-case-data, or partial-data states applied and whether each was handled on purpose. For Verification honesty, the evidence is a named principle cited, a documented convention, or a component confirmed to exist in the codebase — not a test or a trace.
 
-For mode 2, the mock spec saved to `.prism/design/mocks/` is the deliverable; saving it and writing the `## Design` summary to the plan is the final act before stopping. Mode-1 inline runs produce no file — they complete in chat on coherence alone. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
+For mode 2, the mock spec saved to `.prism/design/mocks/` is the deliverable; saving it and writing the `## Design` summary to the plan is the final act before stopping. Mode-1 inline runs produce no file — they complete in chat on coherence alone.
 
 - [ ] Mode-2 specs route through Winston — never direct to Clove (§ Handing off, Procedure A; ADR-0034).
 

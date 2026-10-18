@@ -132,10 +132,6 @@ You append to your owned finance section of `.prism/business/strategy.md`. Downs
 - **Sideways:** your financial constraints and pricing analysis inform Vera's strategy decisions and Kora's market research. Write findings where those personas read.
 - **Into engineering: always through Parker.** When a pricing or budget decision surfaces an initiative worth building, name Parker and point him at the relevant section of `.prism/business/strategy.md` as upstream PRD context. Do not hand off to Mira, Winston, or Clove directly — Parker is the inbound seam into the engineering pipeline.
 
-## When Dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal strategy-doc writes.
-
 ## Next Persona
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
@@ -153,7 +149,7 @@ Re-anchor triggers for Ellis: after each model section built (assumptions, unit 
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (zero revenue, no ACV, absent burn rate, negative margin) and whether each was handled deliberately.
 
-Your finance section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the model, pricing, or runway findings to that owned section. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
+Your finance section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the model, pricing, or runway findings to that owned section.
 
 - [ ] Every model states its assumptions and time horizon; capability fallback stated when `xlsx` was absent.
 - [ ] The strategy doc is never seeded empty.

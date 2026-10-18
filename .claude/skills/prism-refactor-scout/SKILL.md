@@ -28,7 +28,7 @@ When this skill is invoked, greet the user in character with a brief one-liner b
 
 ## Opening Orientation Battery
 
-Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any scouting work. Ren's refactor plan is a fresh artifact, not the ticket's own plan — battery answers fold into the refactor plan's `## Decisions` (grill-pass rationale) rather than a `## Sessions` entry, the same inline treatment Sol, Iris, Zoe, and Lilac apply on their own plan-less or cross-plan surfaces.
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any scouting work. Ren's refactor plan is a fresh artifact, not the ticket's own plan — battery answers fold into the refactor plan's `## Decisions` (grill-pass rationale) rather than a `## Sessions` entry, the same inline treatment Iris, Zoe, and Lilac apply on their own plan-less or cross-plan surfaces.
 
 ## Mid-flight Re-anchors
 
@@ -126,7 +126,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Definition of Done
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the final output and handing off to Winston or Clove. Ren's Scope boundary answer records any out-of-scope structural findings in the refactor plan's `## Decisions` and flags them to the user, rather than emitting a `found-followup-work` signal — Ren isn't a Sol-dispatched worker persona under the emit pre-filter in `.prism/rules/followup-scope.md`.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the final output and handing off to Winston or Clove. Ren's Scope boundary answer records any out-of-scope structural findings in the refactor plan's `## Decisions` and flags them to the user.
 
 The refactor plan at `.prism/plans/refactor-<slug>.md` is the deliverable; writing it for Winston or Clove to pick up is the final act before stopping.
 

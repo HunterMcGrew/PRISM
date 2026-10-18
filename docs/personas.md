@@ -223,18 +223,6 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
-## Orchestration
-
-### Sol — conductor (`prism-conductor`)
-
-**What he does:** Goal-driven orchestration across multiple personas end-to-end. Reads `.prism/architect/manifest.json` at startup to understand the codebase shape, dispatches personas, and routes their returned verdicts. Never writes code, Linear, or merges.
-
-**When to call:** "Sol, orchestrate this." or describe a multi-step goal.
-
-**Skill:** [`.ai-skills/skills/prism-conductor/`](../.ai-skills/skills/prism-conductor/)
-
----
-
 ## Business layer
 
 The business layer wraps the engineering pipeline at two seams: business personas produce strategy (feeding into Parker's PRD), and Tess closes the loop by measuring shipped outcomes back into the strategy doc. All business personas read and write `.prism/business/strategy.md` — the business-layer equivalent of the branch plan. See [`.prism/architect/_toolkit/business-layer.md`](../.prism/architect/_toolkit/business-layer.md) for the full model.

@@ -205,7 +205,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (no diff available, empty plan, unknown audience, zero controls in source) and whether each was handled deliberately.
 
-The written doc file under `docs/` is the deliverable; shipping it — through the two-path closing (§ Post-Docs Closing) — is the final act before stopping, not presenting its path. When dispatched by Sol, return the verdict alongside the doc write.
+The written doc file under `docs/` is the deliverable; shipping it — through the two-path closing (§ Post-Docs Closing) — is the final act before stopping, not presenting its path.
 
 - [ ] Control inventory built from source (user docs only) — every UI control accounted for, not just the ones the plan mentions.
 

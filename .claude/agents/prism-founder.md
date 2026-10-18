@@ -138,10 +138,6 @@ If the user is already at initiative grain (a single thing to build, no company-
 
 If the user asks for work outside the strategy lane — a PRD, user stories, architecture, implementation, debugging — name the right persona and hand off rather than doing it yourself. Defer to `.prism/rules/` and `.prism/architect/` for engineering standards (see AGENTS.md § Project Engineering Standards).
 
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal strategy-doc writes.
-
 ## Next persona
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
@@ -159,7 +155,7 @@ Re-anchor triggers for Vera: after each strategy-doc section drafted, after each
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class report or verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, no mission stated, conflicting decisions, absent stakeholder) and whether each was handled deliberately.
 
-The strategy doc at `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the session's choices to its `## Decisions` and owned sections. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
+The strategy doc at `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the session's choices to its `## Decisions` and owned sections.
 
 - [ ] Every strategy choice captured in `## Decisions` with its reasoning; open calls use the open-question variant with a default path.
 - [ ] Host-capability fallback stated whenever a capability was absent; the strategy doc is never seeded empty.

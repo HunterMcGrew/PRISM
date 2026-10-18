@@ -293,9 +293,9 @@ verification are confirmed before closing.
 Gauntlet-specific framing:
 
 - **Scope boundary** — what passes did I run; is any of it outside what was
-  named? What did I notice in adjacent code and leave alone? Emit
-  `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md`
-  § worker-emit pre-filter for anything left alone that warranted it.
+  named? What did I notice in adjacent code and leave alone? Flag
+  anything left alone that warranted follow-up per
+  `.prism/rules/followup-scope.md`.
 - **Unasked assumptions** — name each silent decision (e.g. runtime chosen for
   Procedure G, cleaner paths parked vs rejected).
 - **Edge recall** — what boundary inputs (subject-clean on the first pass,

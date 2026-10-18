@@ -155,10 +155,8 @@ Handoff-specific framing:
 
 - **Scope boundary** — what did the handoff doc include; is any of it outside
   what was named in the arguments? What did you notice in adjacent open threads
-  and exclude? If adjacent work should be tracked but was left out, emit a
-  `found-followup-work` signal per followup-scope.md § worker-emit pre-filter
-  (this utility runs in the active persona's voice, so the signal is attributed
-  to that persona's lane).
+  and exclude? If adjacent work should be tracked but was left out, flag
+  it as follow-up work per followup-scope.md.
 - **Unasked assumptions** — name each silent decision in `## Focus` so the next
   session sees them explicitly.
 - **Edge recall** — did the session involve empty states, absent files, missing

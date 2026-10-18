@@ -34,7 +34,7 @@ import type { OnboardingConfig } from "./onboarding-types";
  * shape — keep the two in sync when fields are added.
  *
  * The write path preserves any fields present in the existing file that are
- * not in this type (e.g. `features.conductorMayMerge` set manually after
+ * not in this type (e.g. `features.mainSessionMayMerge` set manually after
  * install) — a reconfigure run never silently drops unknown fields.
  */
 export interface PrismOnDiskConfig {
@@ -309,7 +309,7 @@ export function validateOnDiskConfig(config: PrismOnDiskConfig): void {
  * list), so a second invocation with the same `OnboardingConfig` produces a
  * byte-identical file. Idempotency is part of the contract; tests assert it.
  *
- * Unknown fields in the existing `config.json` (e.g. `features.conductorMayMerge`
+ * Unknown fields in the existing `config.json` (e.g. `features.mainSessionMayMerge`
  * set manually after install) are read and re-emitted after the known fields,
  * so a reconfigure run never silently drops them.
  */
@@ -345,7 +345,7 @@ export async function writeOnboardingConfig(
 /**
  * Reads the existing `config.json` (if any) and returns any top-level keys
  * not present in `ORDERED_TOP_LEVEL_KEYS`. These are fields set manually after
- * install (e.g. `features.conductorMayMerge`) that the write path should
+ * install (e.g. `features.mainSessionMayMerge`) that the write path should
  * preserve across reconfigure runs.
  *
  * Returns an empty object when the file is absent, unreadable, or not valid JSON.
@@ -392,7 +392,7 @@ async function readUnknownFields(targetPath: string): Promise<Record<string, unk
  *
  * Unknown fields (fields absent from `ORDERED_TOP_LEVEL_KEYS`) are appended
  * after all known fields in sorted key order, so a reconfigure run preserves
- * manually-set fields like `features.conductorMayMerge`.
+ * manually-set fields like `features.mainSessionMayMerge`.
  */
 function serializeConfig(config: PrismOnDiskConfig, unknownFields: Record<string, unknown> = {}): string {
 	const orderedTopLevel = ORDERED_TOP_LEVEL_KEYS;

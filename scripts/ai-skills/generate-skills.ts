@@ -106,13 +106,11 @@ function applyAnchorsThenTokens(
 /**
  * Default dispatch-model tier per persona agent definition.
  *
- * The conductor (Sol) and the architect (Winston) run on the strong model —
- * Sol is the dispatcher and Winston is the plan-readiness firewall, the two
- * roles the conductor tiering table never lets run cheap. Every other persona
- * defaults to the cheaper tier and escalates only on a stall signal at runtime.
+ * The architect (Winston) runs on the strong model because he is the
+ * plan-readiness firewall, a role that should not run cheap. Every other persona
+ * defaults to the cheaper tier.
  */
 export const CLAUDE_AGENT_MODEL_DEFAULTS = new Map<string, string>([
-	["prism-conductor", "opus"],
 	["prism-architect", "opus"],
 ]);
 const DEFAULT_CLAUDE_AGENT_MODEL = "sonnet";
@@ -203,8 +201,7 @@ export function buildCodexAgentToml({
 /**
  * Builds a Claude Code agent definition — YAML frontmatter (`name`,
  * `description`, `model`) followed by the generated Claude SKILL.md body — so a
- * dispatched persona loads its full persona at spawn under the conductor's
- * tiering table. The `model` is the per-persona default from
+ * persona loads its full persona when spawned as a subagent. The `model` is the per-persona default from
  * CLAUDE_AGENT_MODEL_DEFAULTS, falling back to the cheaper worker tier.
  */
 export function buildClaudeAgentMarkdown({

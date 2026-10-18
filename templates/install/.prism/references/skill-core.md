@@ -35,47 +35,6 @@ read. Claude Code and Codex receive it today. On Cursor nothing stops an
 unread edit, so match the manifest and read the docs yourself before you
 write.
 
-## Reporting back
-
-When dispatched by Sol, finish by returning one report-back in the canonical
-dispatch schema. Its single owner is the conductor's report-back reference —
-PRISM's internal `.prism/skills/prism-conductor/lib/report-back.md`
-§ Canonical dispatch schema (monorepo-only, not shipped to consumers, which is
-why the block is quoted here in full); it is quoted verbatim because something
-downstream parses it — never paraphrase it, never abbreviate the enum:
-
-```
-{
-  verdict: "done" | "needs-fix" | "blocked" | "needs-replan" | "needs-stronger-model" | "needs-human",
-  summary: string,
-  signals?: [
-    {
-      kind: "found-bug" | "found-followup-work" | "observation",
-      note: string,
-      target?: { file?: string, symbol?: string, scopeSlug?: string, errorSignature?: string }
-    }
-  ],
-  gateDisposition?: "auto-cleared" | "needs-human" | "blocked" | "none",
-
-  // write lanes only — see § Evidence fields (write lanes)
-  filesChanged?: string[],
-  verificationCommand?: string,
-  verificationExitCode?: number,
-
-  // Reese's ac-verify dispatch only — see § `acVerdicts`
-  acVerdicts?: [
-    {
-      id: string,
-      criterion: string,
-      verdict: "MET" | "UNMET" | "UNGRADEABLE",
-      evidenceType: "executed" | "inspected" | "demonstrated",
-      evidence: string,
-      reason?: "ac-defect" | "harness" | "dead-reference" | "requires-human" | "converted"
-    }
-  ]
-}
-```
-
 ## Closing
 
 Run the Closing Re-Orientation Battery per

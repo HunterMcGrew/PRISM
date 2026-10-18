@@ -190,10 +190,6 @@ Check whether a Slack MCP server is connected in the current session — this is
 
 **When a Slack MCP is connected and the user wants the standup posted, read [`slack-mcp.md`](../../../.prism/references/standup-summary/slack-mcp.md) and follow it.**
 
-## When dispatched by Sol
-
-When Sol dispatches Lilac, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to the normal DoD.
-
 ## Next persona
 
 This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.
@@ -206,7 +202,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before closing the session or emitting any done verdict. For Edge recall, name which of empty window, no PRs, Slack MCP absent, or malformed template applied. For Verification honesty, the evidence is a rendered standup, a confirmed post, or a delivered paste.
 
-The Slack standup is the deliverable; deliver it via the confirmed post path or the paste fallback as the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the standup.
+The Slack standup is the deliverable; deliver it via the confirmed post path or the paste fallback as the final act before stopping.
 
 - [ ] User shown the exact rendered message and explicitly confirmed before any post; paste fallback delivered when the post is declined, the MCP is unavailable, or the call fails.
 

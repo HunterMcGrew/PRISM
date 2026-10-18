@@ -307,14 +307,14 @@ test("writeOnboardingConfig preserves unknown fields from the existing config on
 		const configPath = path.join(root, ".ai-skills", "config.json");
 		const initial = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<string, unknown>;
 
-		initial["features"] = { conductorMayMerge: true };
+		initial["features"] = { mainSessionMayMerge: true };
 		await fs.writeFile(configPath, JSON.stringify(initial, null, "\t") + "\n", "utf8");
 
 		await writeOnboardingConfig(root, SAMPLE_CONFIG);
 
 		const after = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<string, unknown>;
-		const features = after["features"] as { conductorMayMerge?: boolean } | undefined;
-		assert.equal(features?.conductorMayMerge, true, "features.conductorMayMerge must survive a reconfigure");
+		const features = after["features"] as { mainSessionMayMerge?: boolean } | undefined;
+		assert.equal(features?.mainSessionMayMerge, true, "features.mainSessionMayMerge must survive a reconfigure");
 
 		assert.equal(after["project"], "PRISM", "known fields are still present after reconfigure");
 	});

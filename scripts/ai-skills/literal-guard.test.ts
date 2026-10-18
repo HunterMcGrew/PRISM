@@ -153,12 +153,12 @@ test("seed literal guard flags a hardcoded Linear literal", async () => {
 	});
 });
 
-test("seed literal guard allows legitimate framework references (Sol, Iris, ADR-NNNN)", async () => {
+test("seed literal guard allows legitimate framework references (Iris, ADR-NNNN)", async () => {
 	await withTempRoot(async (repoRoot, platformRoot) => {
 		await writeOutput(
 			platformRoot,
 			"architect/foo.md",
-			"Sol dispatches Iris per ADR-0047. Use linear easing for progress indicators only.\n"
+			"Iris closes a plan per ADR-0047. Use linear easing for progress indicators only.\n"
 		);
 
 		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);

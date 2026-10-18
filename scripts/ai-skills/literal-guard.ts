@@ -37,8 +37,8 @@ const LEFTOVER_TOKEN_PATTERN = /\$\{[A-Z][A-Z0-9_]*\}/;
 /**
  * Dogfooding literals that must never reach a consumer's `.prism/`. The de-
  * thriving set (`Thrive`/`TracTru`/`THR-`/`thrive.`) plus PRISM's own ticket
- * refs (`PRISM-NNN`) and the migration meta-reference (`de-thriving`). `Sol`,
- * `Iris`, `ADR-NNNN` are deliberately absent — they are legitimate framework
+ * refs (`PRISM-NNN`) and the migration meta-reference (`de-thriving`). `Iris`,
+ * `ADR-NNNN` are deliberately absent — they are legitimate framework
  * content that ships to consumers. `Linear` is included because the install
  * seed must stay tracker-neutral; files that legitimately name Linear (the
  * onboarding tracker choice, Linear-specific gotchas) are carried on the

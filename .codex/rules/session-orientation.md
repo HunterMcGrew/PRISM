@@ -27,7 +27,7 @@ The opening battery's answers don't stay in the transcript — they compress to 
 
 Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
 
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
+1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Flag anything left alone that warranted follow-up per `.prism/rules/followup-scope.md`.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
 3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?

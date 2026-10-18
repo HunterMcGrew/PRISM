@@ -74,7 +74,6 @@ The tier system is built so rules load at the right scope rather than all at onc
 | **Lilac** | Generating a standup summary |
 | **Sage** | Generating a changelog between releases |
 | **Zoe** | Running a cadence audit to surface stale decisions and open plans |
-| **Sol** | Goal-driven orchestration across multiple personas end-to-end |
 
 See [personas.md](./personas.md) for what each persona owns, what it needs, and what it hands off.
 

@@ -15,7 +15,6 @@ This is not a default-on procedure. A persona that operates on the current branc
 ## Who uses this reference
 
 - **Eric** (`prism-code-review-pr`) — runs the worktree procedure when invoked in worktree mode. The mode-selection logic and the procedure itself live in the skill source; this reference defines the isolation invariant and the cleanup contract the procedure must satisfy.
-- **Sol** (`prism-conductor`) — creates one worktree per fleet lane so parallel lanes stay isolated, bound to the same cleanup contract (remove on success, error, or interruption). The fleet scheduler that allocates and tears down lane worktrees lives in `.prism/skills/prism-conductor/lib/fleet.md`; this reference defines the isolation invariant it satisfies.
 
 Future personas that need isolated checkouts load this reference the same way.
 
@@ -28,8 +27,6 @@ A persona switches to worktree mode in any of three conditions:
 - **The user explicitly requests it** — a `--worktree` flag or "review in worktree" phrasing in the invocation. The explicit request overrides any default; the persona enters worktree mode regardless of branch state.
 
 If none of these apply, the persona stays in its default mode (typically in-branch) and skips this reference entirely.
-
-Sol is the fleet case: a fleet run dispatches several lanes that each edit a different branch in parallel, so Sol gives **one worktree per fleet lane** to keep the lanes from stomping each other’s checkout. A single-lane pipeline run needs no worktree — it uses the current checkout, exactly like a persona working its own branch.
 
 ## Worktree lifecycle
 

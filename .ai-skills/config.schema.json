@@ -195,9 +195,9 @@
 			"type": "object",
 			"description": "Feature flags. Read by specific personas only; not surfaced during init or onboarding. Set manually after install.",
 			"properties": {
-				"conductorMayMerge": {
+				"mainSessionMayMerge": {
 					"type": "boolean",
-					"description": "When true, Sol (the Conductor) may merge PRs when the Briar→Eric review loop is clean. Absent or false by default — merge remains a human responsibility. Read only by Sol; never mentioned in init or onboarding output."
+					"description": "When true, the main session may squash-merge a PR once the review loop came back clean and the PR carries no `review:has-minors` label. Absent or false by default — merge remains a human responsibility. Never mentioned in init or onboarding output."
 				}
 			}
 		},
@@ -257,16 +257,16 @@
 		},
 		"modelTiers": {
 			"type": "object",
-			"description": "Optional per-persona model selection for Sol's conductor dispatches. Maps PRISM's abstract tiers (top / worker, defined in prism-conductor shared.md) to this runtime's concrete model names, plus optional per-persona overrides. Read by Sol to seed each lane's goal-state `models` map; absent means the conductor uses its run-wide default model for every dispatch. Model-name strings are examples only — a consumer on a non-Claude runtime supplies that runtime's model identifiers.",
+			"description": "Optional per-persona model selection. Maps PRISM's abstract tiers (top / worker) to this runtime's concrete model names, plus optional per-persona overrides such as pinning the PR reviewer to a different model family than the workers. Model-name strings are examples only — a consumer on a non-Claude runtime supplies that runtime's model identifiers.",
 			"properties": {
 				"top": {
 					"type": "string",
-					"description": "Model for the top tier (Sol, Winston, Eric, and any escalated worker).",
+					"description": "Model for the top tier (Winston, Eric, and any escalated worker).",
 					"examples": ["opus", "gpt-5"]
 				},
 				"worker": {
 					"type": "string",
-					"description": "Model for the worker tier (Clove, Sasha, Briar, and other default worker personas).",
+					"description": "Model for the worker tier (Clove, Briar, and other default worker personas).",
 					"examples": ["sonnet", "gpt-5-mini"]
 				},
 				"overrides": {

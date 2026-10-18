@@ -44,7 +44,7 @@ On config write, seeded fields pass through unchanged. Skip-if-exists still gove
 
 `.ai-skills/config.json` already exists. Atlas reads the prior config, displays each field with its current value, and asks "which fields do you want to change?" Only the fields the user names are re-prompted; the rest carry over. After updates, Atlas writes the new config and re-runs the rule generators and anchor substitution. Skip-if-exists still applies — hand-edits survive unless the user explicitly passes `--force`.
 
-**Hidden fields:** `features.conductorMayMerge` is never shown during reconfigure display — it is a hidden, default-off capability read only by Sol. If set manually, the value is preserved through the read-merge-preserve write path without being echoed.
+**Hidden fields:** `features.mainSessionMayMerge` is never shown during reconfigure display — it is a hidden, default-off capability the main session reads at merge time. If set manually, the value is preserved through the read-merge-preserve write path without being echoed.
 
 The AC format offer (`acceptance-criteria.md`) does not re-fire on reconfigure runs.
 

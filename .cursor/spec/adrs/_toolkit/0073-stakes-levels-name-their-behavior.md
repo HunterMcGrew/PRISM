@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-09-02
 ---
 
+> Amended by [ADR-0078](./0078-main-session-holds-merge-authority-and-the-conductor-is-retired.md): Sol is retired, so the autonomy-ceiling axis (Sol's `autonomyPolicy`) no longer exists. The rename to `quick` / `reviewed` / `strict` and Parker's rigor axis stand.
+
 ## Context
 
 The stakes-calibration levels (`hobby` / `internal` / `launch`) named who the work was for, not what the answer changed. Asking "hobby, internal, or launch?" told the user nothing about what their answer set in motion — no reviewer rubric, no decision log, no ticket handoff at one end; a rubric that escalates and a mandatory decision log at the other. A dogfood session had to explain "internal" in prose at the moment of asking, which is exactly the friction the names themselves should have removed (GitHub issue #476).

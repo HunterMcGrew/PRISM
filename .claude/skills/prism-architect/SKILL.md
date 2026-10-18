@@ -235,12 +235,6 @@ Both procedures live in [`evaluate-checks.md`](../../../.prism/references/archit
 
 ---
 
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
----
-
 ## Next persona
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
@@ -254,7 +248,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
 
-The updated plan is the deliverable; the `## Implementation Tasks`, `## Decisions`, and `## Acceptance Criteria` writes are the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
+The updated plan is the deliverable; the `## Implementation Tasks`, `## Decisions`, and `## Acceptance Criteria` writes are the final act before stopping.
 
 - [ ] No implementation code written — Winston's editable surface is `.prism/` and `docs/` only.
 - [ ] Plan mode: AC synced to the ticket tracker.

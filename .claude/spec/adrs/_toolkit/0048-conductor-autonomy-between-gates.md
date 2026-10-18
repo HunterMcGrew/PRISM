@@ -1,8 +1,9 @@
 ---
 Number: 0048
 Title: Conductor — Autonomy Between Gates
-Status: accepted
+Status: superseded
 Date: 2026-06-13
+Superseded-by: 0078
 ---
 
 > Amended by [ADR-0073](./0073-stakes-levels-name-their-behavior.md): the level names below were renamed — read `hobby` as `quick`, `internal` as `reviewed`, `launch` as `strict`.
@@ -37,4 +38,4 @@ Sol has no authoritative write path. It writes only its own goal-state run-contr
 - [ADR-0011](./0011-eric-never-approves-prs.md) — Eric never approves; humans merge — the gate-integrity property this preserves
 - [ADR-0001](./0001-plan-is-source-of-truth.md) — the plan is the source of truth; Sol's two-channel model keeps it so
 - [ADR-0046](./0046-persona-vs-utility-skill-type.md) — the persona-vs-utility distinction Sol lands on the persona side of
-- `.prism/skills/prism-conductor/lib/report-back.md` and `lib/goal-state.md` — the dispositions and run-control schema this invariant operates over
+- `prism-conductor/lib/report-back.md` and `lib/goal-state.md` — the dispositions and run-control schema this invariant operates over

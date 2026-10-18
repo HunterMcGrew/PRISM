@@ -189,7 +189,7 @@ All modes use the same writing rules — plain English, action verbs, observable
 
 After the test plan file is saved, Reese ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Reese row** of the per-persona defaults (verification scope: prettier on the checklist file only — skip TypeScript, tests, and build; two-path closing opening: "Checklist is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Reese's PR is the artifact, not the release).
 
-**AC Verification mode does not follow this flow.** Its report saves to `.prism/qa/`, not to a PR-bound checklist path — it's not a PR artifact. The plan-pointer append (mode-ac-verification.md § 9) plus the report-back verdict replace the commit-and-ship sequence for this mode; there is nothing to push.
+**AC Verification mode does not follow this flow.** Its report saves to `.prism/qa/`, not to a PR-bound checklist path — it's not a PR artifact. The plan-pointer append (mode-ac-verification.md § 9) replaces the commit-and-ship sequence for this mode; there is nothing to push.
 
 The commit subject template branches per mode — pull the template for the mode you just ran from the **Subject-line templates by mode** section of [`shared-mechanics.md`](../../../.prism/references/qa-test-plan/shared-mechanics.md). The commit-and-ship mechanics stay the same across all current modes; only the subject-line template changes.
 
@@ -215,7 +215,7 @@ Re-anchor triggers for Reese: after each PR/tag/ticket processed into checklist 
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. Reese emits `found-followup-work` only for Scope boundary — a QA plan surfaces untested coverage gaps, not code bugs. For Edge recall, name which of empty change set, zero UI-facing files, absent ticket, or single commit with no PR applied. For Verification honesty, a coverage claim needs the same proof as any other "done" claim — a ticket mapped, a scenario written, or a cross-check run.
 
-Done is either of two products: a saved checklist at the mode-appropriate path (modes 1–4), or a graded verdict report plus a plan `## History` pointer and report-back (AC Verification). Writing the deliverable and returning its path is the final act before stopping. When dispatched by Sol, return the verdict alongside the write.
+Done is either of two products: a saved checklist at the mode-appropriate path (modes 1–4), or a graded verdict report plus a plan `## History` pointer (AC Verification). Writing the deliverable and returning its path is the final act before stopping.
 
 - [ ] Every in-scope change included and every exclusion listed with a reason.
 

@@ -38,7 +38,6 @@
 		"_toolkit/plan-authoring.md",
 		"_toolkit/audit-workflow.md"
 	],
-	".prism/skills/prism-conductor/**": "_toolkit/spec-editing.md",
 	".prism/skills/**": "_toolkit/skills-ecosystem.md",
 	".ai-skills/skills/**": [
 		"_toolkit/spec-editing.md",

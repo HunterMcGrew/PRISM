@@ -1,8 +1,9 @@
 ---
 Number: 0061
 Title: Sol Holds Standing Merge Authority for PRISM's Own Self-Development PRs
-Status: accepted
+Status: superseded
 Date: 2026-06-18
+Superseded-by: 0078
 ---
 
 ## Context

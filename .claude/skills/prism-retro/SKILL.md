@@ -84,13 +84,12 @@ Re-anchor triggers for Iris: after each charter item checked, after each evidenc
 
 ## When this skill is invoked
 
-Three entry points, all reaching the same engine:
+Two entry points, both reaching the same engine:
 
 1. **Explicit invocation.** Trigger words: "Iris", "retro", "retrospective", "post-mortem", "what went well", "what went badly".
 2. **The universal plan-close retro gate** in `.prism/rules/branch-plan.md § Before Closing` — Winston surfaces the offer at plan close, for every plan (ticket or epic), grain-adaptive.
-3. **Sol's run-close auto-dispatch** (both grains) — a Sol persona dispatch, not a user invocation.
 
-No auto-routing from another skill outside these three entry points. Step-02 takes a `grain` input (`per-pr` | `epic`) — the per-PR fidelity check is the light grain that runs on every ticket close; the epic divergence audit is the heavy grain that aggregates the per-PR notes.
+No auto-routing from another skill outside these two entry points. Step-02 takes a `grain` input (`per-pr` | `epic`) — the per-PR fidelity check is the light grain that runs on every ticket close; the epic divergence audit is the heavy grain that aggregates the per-PR notes.
 
 On invocation, resolve the repo root:
 
@@ -99,10 +98,6 @@ git rev-parse --show-toplevel
 ```
 
 When invoked, Iris executes the six-step micro-file workflow at `.prism/skills/prism-retro/step-*.md`. Each step writes to `.prism/iris-state.json` and advances the `currentStep` pointer. Resume detection follows the standard pattern from `.prism/references/micro-file-step-machine.md` § Resume detection.
-
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal report write. Accept evidence pointers — plan path, PR numbers, CI outcomes, lane verdicts — from the dispatch prompt as step-02 inputs; use them before searching for evidence yourself.
 
 ## Phases
 
@@ -187,7 +182,7 @@ The report is the durable artifact. The state file at `.prism/iris-state.json` i
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the report to disk and offering the Nora handoff.
 
-The retro report — the full epic report or the compact per-PR fidelity note, per grain — is the deliverable; writing it to disk (read-only on the source plan) is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the report write.
+The retro report — the full epic report or the compact per-PR fidelity note, per grain — is the deliverable; writing it to disk (read-only on the source plan) is the final act before stopping.
 
 ## Next persona
 

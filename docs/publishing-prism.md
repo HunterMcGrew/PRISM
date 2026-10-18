@@ -71,7 +71,7 @@ pnpm run prism:check
 
 ### Step 3 — Run the leak audit
 
-This step is the most important gate before any publish. The npm tarball is world-readable and permanent. PRISM's operational tree — plans, lessons, audit reports, retro notes, conductor state — lives in directories that must never ship to consumers.
+This step is the most important gate before any publish. The npm tarball is world-readable and permanent. PRISM's operational tree — plans, lessons, audit reports, retro notes — lives in directories that must never ship to consumers.
 
 The `files` field in `package.json` is an inclusion allowlist, so only named paths ship. But verify before trusting:
 
@@ -83,7 +83,7 @@ npm pack
 tar tzf huntermcgrew-prism-*.tgz | sort > /tmp/prism-tarball-contents.txt
 
 # Assert zero operational-tree paths leaked
-grep -E 'prism/(plans|audits|retros|prds|changelogs|archived)/|prism/lessons\.md|conductor-state|audit-state\.json' /tmp/prism-tarball-contents.txt && echo "LEAK DETECTED — STOP" || echo "CLEAN — no operational tree in tarball"
+grep -E 'prism/(plans|audits|retros|prds|changelogs|archived)/|prism/lessons\.md|audit-state\.json' /tmp/prism-tarball-contents.txt && echo "LEAK DETECTED — STOP" || echo "CLEAN — no operational tree in tarball"
 ```
 
 The grep must print `CLEAN — no operational tree in tarball`. If it prints `LEAK DETECTED`, stop. Do not publish. Check the `files` array in `package.json` and remove the offending path.
@@ -98,7 +98,7 @@ Open `/tmp/prism-tarball-contents.txt` and read through it. Confirm:
 - `templates/install/` is present — including `templates/install/.claude/settings.json`
 - `.ai-skills/skills/`, `.ai-skills/definitions/roles.json`, `.ai-skills/definitions/paths.json`, `.ai-skills/config.json` are present
 - `scripts/` is **not** present (build-time only)
-- No files from `.prism/plans/`, `.prism/audits/`, `.prism/retros/`, `.prism/prds/`, `.prism/changelogs/`, `.prism/archived/`, `.prism/lessons.md`, or any `conductor-state*.json` or `audit-state.json`
+- No files from `.prism/plans/`, `.prism/audits/`, `.prism/retros/`, `.prism/prds/`, `.prism/changelogs/`, `.prism/archived/`, `.prism/lessons.md`, or `audit-state.json`
 
 This human review is the last gate before an immutable publish. Take the extra two minutes.
 
