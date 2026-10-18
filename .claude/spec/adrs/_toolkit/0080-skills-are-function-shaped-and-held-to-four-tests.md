@@ -39,7 +39,7 @@ Alternatives considered:
 - **Positive:** a renamed skill still routes by its old persona name.
 - **Negative:** persona voice and continuity in conversation are gone. A user who liked talking to "Briar" now talks to `prism-self-review`, which answers in the session's own voice.
 - **Negative:** the "How X Thinks" lenses are cut. Where one carried a judgment the model would not make unprompted, the judgment has to survive as a plain policy line or be lost. The lane PRs that thin each skill make that call one skill at a time, and a reviewer can only check it by reading what was cut.
-- **Negative:** three skills stay over the cap until their replacements land: the plan writer, the user-story writer, and the review loop. The check allowlists them by name.
+- **Negative:** a skill stays over the cap until the change that thins it lands. The check allowlists every skill still over the cap by name, with that change, and each lane PR removes its entries as it lands. The plan writer, the user-story writer, and the review loop stay allowlisted until their phase-2 and phase-3 replacements.
 - **Neutral:** utility skills ([ADR-0046](./0046-persona-vs-utility-skill-type.md)) keep their type. With voice gone from personas, the difference between the two types now shows only in routing and in agent-adapter generation.
 
 ## References
