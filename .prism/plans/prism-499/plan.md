@@ -204,7 +204,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 3. **Delete the references the skills no longer load.** See Decision: Why each build reference could go. That covers `.prism/references/code-dev/`, `.prism/references/documentation/`, and `.prism/references/pixel/` with their seed twins, and `prism-design/lib/`.
 4. **Re-point the surviving citations.** `code-standards.md` (and its twin) no longer points at the removed "Scope discipline" and "Drive-by refactoring" sections, `closing-messages.md` (and its twin) points at `prism-design`'s `## Handoff`, and `branch-plan.md` (and its twin) names `implement` in the plan-lookup list. The `rules/implementation-task-detail.md` citation of `prism-design` § States still resolves, because the skill keeps a `## States` section.
 5. **Drop stale tracking.** Removed the three build-lane entries from `OVER_CAP_ALLOWLIST` and the five `literal-allowlist.json` entries that exempted the old skill's THR-1881 citation, which the thinned body no longer carries.
-6. **Fix a PR 6 side effect.** `prism-self-review` named `documentation.md` by path, which the loaded-lines rule in PR 5 charges in full. It now says "the documentation architect doc", which keeps the skill at 56 lines.
+6. **Leave the review skills to PR 6.** Their bodies already name the build skills by their new IDs, and `prism-self-review` no longer names an architect doc by path, so this PR makes no edit to either review skill.
 
 ### PRs 8–11
 
@@ -369,6 +369,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-review-lane]: Renamed Briar and Eric to `prism-self-review` and `prism-pr-review`, thinned each to the four tests (56 and 109 loaded lines), and deleted ten reference files. The PR reviewer now leaves the PR in draft; see Decision: What the review skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: Renamed Clove and Eli to `prism-implement` and `prism-docs`, thinned both and `prism-design` to the four tests (58, 113, and 32 loaded lines), and deleted the `code-dev`, `documentation`, and `pixel` references; see Decision: What the build skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-build-lane]: Self-review pass 1 fixes. Restored the domain-context anchor and the commit-pause preference, added the doc-root route note to `compatibility.md`, and reworded the audit-workflow reflex line, the anchor-substitution example, and the stale pointers; see Decision: A non-`docs/` doc root needs its own manifest route.
+- 2026-10-18 [huntermcgrew/prism-499-build-lane]: PR review pass 1 fixes. Widened the Zoe-verdict clause in `prism-implement`, restored the doc-conventions read and the docs PR title policy, and reworded the UI-gap handoff as a recommendation; the six findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-review-lane]: Self-review pass 1 fixes. Brought `prism-skill-forge` onto the four tests, restored the coverage rule, smells, AC proposal, and domain anchor in the review skills, and fixed stale persona wording in `CONTEXT.md` and the roster.
 
 ---
@@ -398,6 +399,54 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 ---
 
 ## Review Issues
+
+### Audit-workflow doc overstated who carries the Zoe-verdict reflex
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/audit-workflow.md:169`
+- **Problem:** the doc said every skill that acts on Decisions states the reflex, but `prism-implement` handled only `archive-candidate` and the review skills carry no verdict language.
+- **Suggested fix:** widen the `prism-implement` clause to all four verdicts and name exactly `prism-architect`, `prism-surface-audit`, and `prism-implement` in the doc and its twin. Fixed in: the PR 7 review-fix commit.
+
+### `prism-docs` dropped the read side of the doc-conventions doc
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-docs/shared.md:9`
+- **Problem:** the old startup read a consumer's documentation-conventions doc, and the thinned startup only wrote to it.
+- **Suggested fix:** add a prose clause, with no backticked path, to read it when it exists. Fixed in: the PR 7 review-fix commit.
+
+### Docs PRs lost their title and body policy
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-docs/shared.md:26`
+- **Problem:** nothing in the skill's closure cited the PR description rule.
+- **Suggested fix:** one sentence stating the title (the commit subject) and the body (reasoning and ticket link, no file list or AC). Fixed in: the PR 7 review-fix commit.
+
+### PR 7 Task 6 described an edit this PR does not make
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/plan.md:207`
+- **Problem:** the task claimed a `prism-self-review` change and a 56-line count, and the diff carries neither.
+- **Suggested fix:** state that the review skills are left to PR 6. Fixed in: the PR 7 review-fix commit.
+
+### Callout wording in the user doc template did not match the architect doc
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/references/user-doc-template.md:86`
+- **Problem:** it said the architect doc's Callouts section says when to use each type, but that section gives count guidance and points to the callouts reference.
+- **Suggested fix:** reword both mentions to say count guidance. Fixed in: the PR 7 review-fix commit.
+
+### "A UI gap goes to `prism-design`" read as an invocation
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-implement/shared.md:18`
+- **Problem:** it dropped the old option to make the call and keep going, and no skill invokes another.
+- **Suggested fix:** recommend `prism-design` to the user, or make the call and record it in `## Decisions`. The plan-skill handoff is worded the same way. Fixed in: the PR 7 review-fix commit.
 
 ## PR Readiness
 
