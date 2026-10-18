@@ -87,7 +87,7 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 
 ### Phase 1 result
 
-Measured on `main` at `594f08d4` on 2026-10-18, after all eleven stack PRs merged. The script that took the baseline, run unchanged against `8ef1df0d`, reproduces the Skills table above exactly (7,084 body and 20,189 loaded), so the columns compare.
+Measured on `main` at `594f08d4` on 2026-10-18, after all eleven stack PRs merged. The after-run uses the Body and Loaded measurement the baseline used, and that measurement run against `8ef1df0d` reproduces the Body and Loaded columns above exactly (7,084 and 20,189), so the columns compare. Closure was not re-measured.
 
 Two definitions of Loaded appear, and they differ:
 
@@ -142,7 +142,7 @@ Four skills were deleted, not thinned: Sol, Sasha, Ren, and Theo carried 804 bod
 | `.md` files under `.prism/references/` | 70 | 16 |
 | `.md` files under `.prism/skills/` | 59 | 0 |
 
-Canonical gives the same three skills over the cap. The largest skill outside them loads 119 lines under Canonical (`prism-forge-skill`). Phase 1 did not rewrite the always-on rules, so that figure moved only where a deletion or rename reached a rule.
+Canonical gives the same three skills over the cap. The largest skill outside them loads 119 lines under Canonical (`prism-forge-skill`). Phase 1 did not rewrite the always-on rules, so the always-on line count moved only where a deletion or rename reached a rule.
 
 ---
 
@@ -323,6 +323,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - **`prism-plan`, `prism-user-stories`, and `prism-review-loop` stay over the 120-line cap through phase 1.** Winston is renamed to `prism-plan` with his plan logic intact. Mira and the review loop keep their names. Their replacements land in phase 2 (`intent`, the plan-folder writer) and phase 3 (`REVIEW.md` and the review runners). Thinning them now would cut logic nothing yet replaces. The loaded-lines check lists all three on its allowlist with this reason.
 
 - **The 120-line cap is enforced by a check, not by review.** PR 5 adds a test that measures loaded lines the way § Baseline § Method defines them. It fails when any skill not on its allowlist is over. Each lane PR removes its skills from the allowlist, so the allowlist shrinks one PR at a time and cannot regrow without a visible diff. Without a check the cap is prose, and the intent's enforcement test says prose does not hold.
+  - The cap gates on `measureSkillLoad`, which follows citations transitively and also counts cited templates, architect docs, and `lib/` files, so it reads higher than the baseline's Loaded column. See § Phase 1 result.
 
 - **Old persona names stay in each renamed persona skill's `description` as trigger words.** "Briar" keeps routing to `prism-self-review`. Consumers' orphan cleanup removes the old directories on the next `prism update`, per `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution.
 
@@ -608,6 +609,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-10-18 [huntermcgrew/prism-499-business]: Briar pass 1 fixes. Every business skill now reads the strategy template unconditionally, the out-of-lane and grain guards live in its conventions, and `## Research` and `## Finance` are named everywhere; the three findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-business]: Eric pass 1 fixes. Removed the closed-epic sentence from `business-layer.md` and moved the long-artifact allowance into the template convention every business skill reads; the two findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Recorded the phase-1 result against the baseline (29 skills, 1,870 body lines, 2,518 loaded, 3 over the cap) and ticked AC-2 to AC-7. AC-1 stays unticked because 7 dated QA and research records still name Sol, Sasha, or the retired skill IDs.
+- 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Widened AC-1's grep exclusions to the QA and research records and the generated ADR copies, accepted by Hunter, and ticked AC-1 on a 0-file result. Fixed four self-review Minors in § Phase 1 result and the cap Decision.
 
 ---
 
@@ -615,9 +617,9 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 ### Non-behavioral
 
-- [ ] **AC-1** No live file references Sol, Sasha, Ren, or Theo by name or skill ID. The only exceptions are the superseded ADRs that recorded their decisions, the ADRs that supersede them, and the 1.0.0 migration note.
-  - Evidence (machine): a `git grep` for each name and ID, excluding plans, lessons, retros, audits, archived history, `.prism/spec/adrs/`, and the migration note, returns no file. The same grep with no exclusions returns at least one file, which proves the pattern matches.
-  - Result (2026-10-18, `594f08d4`): Not met as written. With the stated exclusions the grep returns 7 files: six dated reports under `.prism/qa/` and `.prism/research/opus5-port-evidence.md`, which name `prism-conductor`, `prism-debugger`, or Sasha. The same grep with no exclusions returns 128 files, so the pattern matches. No live skill, rule, doc, script, or test names any of the four, and the generated copies of the excluded ADRs under `.claude/`, `.codex/`, and `.cursor/` are excluded like the ADRs. The PR 3 and PR 4 checks already treat `.prism/qa/` and `.prism/research/` as history, so the criterion needs an adjustment, accepted by a human, that names them before it can be ticked.
+- [x] **AC-1** No live file references Sol, Sasha, Ren, or Theo by name or skill ID. The only exceptions are the superseded ADRs that recorded their decisions, the ADRs that supersede them, and the 1.0.0 migration note.
+  - Evidence (machine): a `git grep` for each name and ID, excluding plans, lessons, retros, audits, archived history, `.prism/qa/`, `.prism/research/`, `.prism/spec/adrs/` and its generated copies under `.claude/`, `.codex/`, and `.cursor/`, and the migration note, returns no file. The same grep with no exclusions returns at least one file, which proves the pattern matches.
+  - Result (2026-10-18, `594f08d4`): Met. With the exclusions widened per AC Adjustment: AC-1 excludes the QA and research records, the grep returns 0 files. The same grep with no exclusions returns 128 files, so the pattern matches. No migration note exists yet, so that exclusion matched nothing.
 - [x] **AC-2** Each ADR whose decision a deletion retires carries `Status: superseded` and names its successor.
   - Evidence (machine): PR 3 and PR 4 each list their retired ADRs in their own tasks, and `grep` finds `Status: superseded` and a successor in each one listed.
   - Result (2026-10-18, `594f08d4`): Met. All 14 ADRs the plan lists as retired (0048 to 0056, 0061, 0066, and 0069 by PR 3, 0041 and 0042 by PR 4) carry `Status: superseded`, and each names `Superseded-by: 0078` or `0079`.
@@ -639,6 +641,14 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - [x] **AC-7** Given the same edit on Cursor, When the hook runs, Then the edit passes and the docs name the gap.
   - Evidence (machine): the Cursor test asserts `runPreToolUseArm` returns `null`. A `grep` finds the limitation in `hook-runtime.md`.
   - Result (2026-10-18, `594f08d4`): Met. The Cursor test ("the edit passes, because Cursor has no deny envelope or write tool listed") passes, and `hook-runtime.md` § Umbrella-section speed bump says Cursor has no speed bump, for the same reason it has no write gate.
+
+### AC Adjustments
+
+#### AC Adjustment: AC-1 excludes the QA and research records
+- **Original:** AC-1's grep excludes plans, lessons, retros, audits, archived history, `.prism/spec/adrs/`, and the migration note.
+- **Proposed:** the grep also excludes `.prism/qa/`, `.prism/research/`, and the generated ADR copies under `.claude/`, `.codex/`, and `.cursor/`.
+- **Reason:** those paths are history records, not live files. The stack's PR 3 to PR 11 sweeps already treated them as history, and the ADR copies are byte copies of the excluded `.prism/spec/adrs/`. Without them the grep returned six QA reports and one research file, and no live file.
+- **Status:** `accepted` by Hunter on 2026-10-18, in chat.
 
 ---
 
