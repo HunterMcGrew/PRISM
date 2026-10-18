@@ -17,10 +17,14 @@ import path from "node:path";
 
 const BODY_FILES = ["shared.md", "claude.md"];
 
-// A cited file in one of these areas is read by the run that cites it.
-// Architect docs are left out because the manifest routes them by path
-// whatever skill runs, and always-on rules load in every session.
-const LOADED_AREAS = [".prism/references/", ".prism/skills/", ".prism/templates/"];
+// A cited file in one of these areas is procedure the run follows, so the
+// files it cites in turn are read too.
+const FOLLOWED_AREAS = [".prism/references/", ".prism/skills/", ".ai-skills/skills/"];
+
+// A cited file in one of these areas is read when the body names it, but its
+// own links are see-also context rather than steps, so they are not followed.
+// A manifest-routed architect doc that no body names is not charged here.
+const LEAF_AREAS = [".prism/templates/", ".prism/architect/"];
 
 const RULES_AREA = ".prism/rules/";
 
@@ -87,12 +91,13 @@ export function listCitedFiles(
 }
 
 /**
- * Measures one skill: its body, plus the transitive closure of the reference,
- * step, template, and `load: skill` rule files the body cites.
+ * Measures one skill: its body, plus every reference, step, skill-source,
+ * template, architect-doc, and `load: skill` rule file the body cites.
  *
- * The closure is followed rather than the body's direct citations alone,
+ * Citations are followed through references, step files, and skill sources,
  * because a skill that cites one step file which cites the next would
- * otherwise count only the first.
+ * otherwise count only the first. Templates, architect docs, and rules are
+ * counted where cited and not followed further.
  */
 export function measureSkillLoad(repoRoot: string, skillId: string): SkillLoad {
 	const skillDir = `.ai-skills/skills/${skillId}`;
@@ -106,9 +111,14 @@ export function measureSkillLoad(repoRoot: string, skillId: string): SkillLoad {
 	while (queue.length > 0) {
 		const next = queue.shift() as string;
 		for (const cited of listCitedFiles(repoRoot, next, `.prism/skills/${skillId}`)) {
-			if (!counted.has(cited) && checkCountsTowardLoad(repoRoot, cited)) {
+			if (counted.has(cited) || bodyFiles.includes(cited)) {
+				continue;
+			}
+			if (FOLLOWED_AREAS.some((area) => cited.startsWith(area))) {
 				counted.add(cited);
 				queue.push(cited);
+			} else if (checkIsLeafCitation(repoRoot, cited)) {
+				counted.add(cited);
 			}
 		}
 	}
@@ -146,9 +156,9 @@ function countFileLines(repoRoot: string, relativePath: string): number {
 	return countLines(readFileSync(path.join(repoRoot, relativePath), "utf8"));
 }
 
-/** True when a cited file counts toward the skill's load. */
-function checkCountsTowardLoad(repoRoot: string, relativePath: string): boolean {
-	if (LOADED_AREAS.some((area) => relativePath.startsWith(area))) {
+/** True when a cited file counts toward the skill's load but is not followed further. */
+function checkIsLeafCitation(repoRoot: string, relativePath: string): boolean {
+	if (LEAF_AREAS.some((area) => relativePath.startsWith(area))) {
 		return true;
 	}
 
