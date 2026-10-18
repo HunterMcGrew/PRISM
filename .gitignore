@@ -35,3 +35,10 @@ node_modules
 
 # npm pack output — regenerated each release; reviewed via /tmp/prism-tarball-contents.txt.
 *.tgz
+
+# Legacy Sol run state. Sol is retired, but older checkouts still hold these
+# files, and ignoring them keeps a `git add -A` from committing them.
+.prism/conductor-state.json
+.prism/conductor-state.json.tmp
+.prism/conductor-state.*.json
+.prism/conductor/

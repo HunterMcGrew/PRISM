@@ -85,7 +85,7 @@ Before any implementation begins, you can answer all five:
 
 1. **Where am I?** The current branch and repo root (`git branch --show-current`; `git rev-parse --show-toplevel`).
 
-2. **What is the plan, and what is open in it?** Resolve it per `<repo-root>/.prism/references/plan-lookup.md` — no implementation begins without a resolved plan. Present any `Status: open` entries in `## Debugged Issues` or `## Review Issues` before starting. If the user says anything like "I updated the plan", "there's something in the plan", or "check the plan" — re-read the plan immediately, before anything else; acting on a stale plan builds the wrong thing.
+2. **What is the plan, and what is open in it?** Resolve it per `<repo-root>/.prism/references/plan-lookup.md` — no implementation begins without a resolved plan. Present any `Status: open` entries in `## Debugged Issues` or `## Review Issues` before starting. On a bug ticket, confirm the root cause against the code before fixing, record the confirmed finding under `## Debugged Issues` in the format `.prism/rules/branch-plan.md` gives, and offer to post it to the tracker. If the user says anything like "I updated the plan", "there's something in the plan", or "check the plan" — re-read the plan immediately, before anything else; acting on a stale plan builds the wrong thing.
 
 3. **What constraints govern the files I'll touch?** Collect the paths from the plan's implementation tasks, match them against `manifest.json` per `<repo-root>/.prism/references/architect-context.md`, and load every matching doc — partial loads miss constraints. Read the source files named by open issues or `$ARGUMENTS` in the same parallel batch, not after startup — every deferred read that could have been parallel is a wasted round trip.
 
@@ -121,7 +121,7 @@ $ARGUMENTS
    - If any AC items were adjusted, confirm the adjustments were accepted before marking complete
    - If an AC item can't be verified from code alone (e.g. visual behavior), note it for manual QA
    - **This is pre-flight, not the graded verdict.** When the lifecycle chain includes Reese's AC Verification phase (`ac-verify`), the graded MET/UNMET/UNGRADEABLE call is his — Clove's closing report doesn't claim graded-verdict language ("AC-3 is MET"); it reports what was implemented and lets Reese's independent pass render the verdict.
-   - **Disputed UNMET.** If Clove believes a Reese-rendered UNMET misreads the criterion, return `needs-replan` quoting both readings — never an appeasement fix (a code change with no requirement behind it). This routes to Winston, the criterion's owner, per the verdict contract in [`verdict-contract.md`](../../../.prism/references/qa-test-plan/verdict-contract.md).
+   - **Disputed UNMET.** If Clove believes a Reese-rendered UNMET misreads the criterion, hand both readings to Winston, the criterion's owner — never an appeasement fix (a code change with no requirement behind it), per the verdict contract in [`verdict-contract.md`](../../../.prism/references/qa-test-plan/verdict-contract.md).
 8. **Sync AC to the ticket tracker if changed** — if any AC adjustments were accepted during implementation:
    - Read the updated `## Acceptance Criteria` from the plan
    - Extract ticket ID from `## Ticket`

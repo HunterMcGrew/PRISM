@@ -162,7 +162,7 @@ For each ticket or epic:
 
 ## Landing a plan-only commit
 
-A persona that writes plan content but does not own the branch's code lane — a reviewer, a diagnostician — lands its own plan-file commit: stage the plan file alone, commit it, push it. This is a narrow, machine-checkable exception to "authors ship, reviewers review" (`skill-routing.md` § Authors ship, reviewers review), and it is scoped by the *file set*, not by judgment: if the staged set contains anything other than the one plan file, the exception does not apply and the persona stops.
+A persona that writes plan content but does not own the branch's code lane, such as a reviewer, lands its own plan-file commit: stage the plan file alone, commit it, push it. This is a narrow, machine-checkable exception to "authors ship, reviewers review" (`skill-routing.md` § Authors ship, reviewers review), and it is scoped by the *file set*, not by judgment: if the staged set contains anything other than the one plan file, the exception does not apply and the persona stops.
 
 **Why:** a review record that exists only in a torn-down worktree is not a durable plan entry — it defeats `## Review Issues` and `## PR Readiness` as the ticket's working memory. In the 2026-07-20 run a reviewer's plan write was stranded three times (twice committed-but-unpushed, once uncommitted in a worktree) and needed manual recovery each time. Having a separate session land the record was considered and rejected: it re-institutionalizes exactly the manual recovery that failed three times, and it leaves a standalone reviewer session with no landing path at all.
 
