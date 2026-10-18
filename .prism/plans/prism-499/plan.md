@@ -29,7 +29,7 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 - **Loaded** is body plus every `.md` under `.prism/references/` or `.prism/skills/` the body cites by markdown link or backticked path. This is the number the intent's 120-line cap applies to.
 - **Closure** follows the same citations transitively through those files. It is context, not a target, and it depends on how a citation is parsed: a second parser gave 891 for `prism-review-loop` against this one's 914.
 - Architect docs are not counted per skill, because they load by manifest route whatever skill is running. A `load: always` rule is counted once, as always-on content. A `load: skill` rule the body cites counts against that skill's Loaded lines, because it loads only when that skill runs. Without that, content moved into a `load: skill` rule would leave the cap's view. No `load: skill` rule is cited from a skill body today, so the numbers below don't change.
-- PR 5's loaded-lines test becomes the canonical measurement. It has to reproduce the Loaded column below before it gates anything.
+- PR 5's loaded-lines test becomes the canonical measurement. As built, it gates on `measureSkillLoad`, which follows citations transitively and counts cited templates, architect docs, and `lib/` files, so it reads higher than the Loaded column below; see § Phase 1 result.
 
 ### Skills
 
