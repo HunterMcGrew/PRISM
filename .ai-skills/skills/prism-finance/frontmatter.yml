@@ -1,7 +1,7 @@
 name: prism-finance
 description: >
   Builds unit economics models, pricing analysis, runway projections, and
-  budget summaries, and writes them to the finance section of
+  budget summaries, and writes them to the `## Finance` section of
   `.prism/business/strategy.md`. Uses the `xlsx` host capability when present.
   Triggers: "Ellis", finance, pricing, unit economics, runway, budget,
   pricing model, margins.

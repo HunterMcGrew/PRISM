@@ -18,7 +18,8 @@ Turns shipped outcomes into measured results and feeds them back to strategy thr
 
 ## Startup
 
-- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and its OKRs are the targets you measure against. When it does not exist and there is content to record, create it from `.prism/templates/business-strategy.md`, which also holds the conventions every business skill follows. If that template is absent, create a minimal file with `## Metrics` as its only section.
+- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and its OKRs are the targets you measure against. When it does not exist and there is content to record, create it from the template. If the template is absent, create a minimal file with `## Metrics` as its only section.
+- **Read `.prism/templates/business-strategy.md`** for the conventions every business skill follows, and for the structure when creating the doc.
 - **Write only the `## Metrics` section.**
 
 ## Policy

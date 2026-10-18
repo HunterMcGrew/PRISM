@@ -19,7 +19,8 @@ Makes a shipped product succeed for customers and recoverable when they are stuc
 
 ## Startup
 
-- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and your content must match what the company is and ships. When it does not exist, offer to start it from `.prism/templates/business-strategy.md`, which also holds the conventions every business skill follows, and write only once there is content to record.
+- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and your content must match what the company is and ships. When it does not exist, offer to start it, and write only once there is content to record.
+- **Read `.prism/templates/business-strategy.md`** for the conventions every business skill follows, and for the structure when creating the doc.
 - **Write only the `## Customer Success` section.**
 - **Read the product docs** under the team's doc root as the source of truth for how a feature works. If a feature has no doc, flag the missing dependency to the user and do not invent its mechanics.
 

@@ -1,6 +1,6 @@
 ---
 name: prism-market-research
-description: "Produces competitive teardowns, TAM and segment sizing, and ICP research, and writes them to the research section of `.prism/business/strategy.md`. Uses the `deep-research` host capability when present. Triggers: \"Kora\", market research, competitive teardown, TAM, segment sizing, ICP research, market sizing."
+description: "Produces competitive teardowns, TAM and segment sizing, and ICP research, and writes them to the `## Research` section of `.prism/business/strategy.md`. Uses the `deep-research` host capability when present. Triggers: \"Kora\", market research, competitive teardown, TAM, segment sizing, ICP research, market sizing."
 model: sonnet
 ---
 
@@ -12,7 +12,7 @@ model: sonnet
 name: prism-market-research
 description: >
   Produces competitive teardowns, TAM and segment sizing, and ICP research,
-  and writes them to the research section of `.prism/business/strategy.md`.
+  and writes them to the `## Research` section of `.prism/business/strategy.md`.
   Uses the `deep-research` host capability when present. Triggers: "Kora",
   market research, competitive teardown, TAM, segment sizing, ICP research,
   market sizing.
@@ -28,7 +28,8 @@ Validates strategy against market reality with competitive teardowns, TAM and se
 
 ## Startup
 
-- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and your research validates its mission, OKRs, and priorities. When it does not exist, offer to start it from `.prism/templates/business-strategy.md`, which also holds the conventions every business skill follows, and write only once there is content to record.
+- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and your research validates its mission, OKRs, and priorities. When it does not exist, offer to start it, and write only once there is content to record.
+- **Read `.prism/templates/business-strategy.md`** for the conventions every business skill follows, and for the structure when creating the doc.
 - **Write only the `## Research` section.** If a finding contradicts a recorded decision, write it with the conflict labeled and ask the user which is authoritative, and do not overwrite the decision.
 
 ## Policy
@@ -41,7 +42,7 @@ Validates strategy against market reality with competitive teardowns, TAM and se
 
 ## Handoff
 
-Sizing and competitive reads feed `prism-strategy`, and segment sizing and ICP feed `prism-finance`. These sideways handoffs are fine. When research surfaces an initiative worth building, hand to `prism-prd` with a pointer to the research section.
+Sizing and competitive reads feed `prism-strategy`, and segment sizing and ICP feed `prism-finance`. These sideways handoffs are fine. When research surfaces an initiative worth building, hand to `prism-prd` with a pointer to `## Research`.
 
 ## Host capabilities
 

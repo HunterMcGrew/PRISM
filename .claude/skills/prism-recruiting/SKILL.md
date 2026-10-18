@@ -18,7 +18,8 @@ Turns strategy into hiring: job descriptions, interview rubrics and scorecards, 
 
 ## Startup
 
-- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and hiring plans ground in its OKRs and priorities and in the runway from `prism-finance`. When it does not exist, offer to start it from `.prism/templates/business-strategy.md`, which also holds the conventions every business skill follows, and write only once there is content to record.
+- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and hiring plans ground in its OKRs and priorities and in the runway from `prism-finance`. When it does not exist, offer to start it, and write only once there is content to record.
+- **Read `.prism/templates/business-strategy.md`** for the conventions every business skill follows, and for the structure when creating the doc.
 - **Write only the `## People` section,** creating it on your first write because the template does not ship it. A long rubric may live in a linked document, with the section holding the reference.
 
 ## Policy

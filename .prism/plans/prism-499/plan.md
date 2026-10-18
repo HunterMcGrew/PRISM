@@ -246,8 +246,8 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, `measureSkillLoad` reports 120 lines or fewer for all nine skills, and a `git grep` for `prism-founder` and `prism-data` returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/`, and `CHANGELOG.md`.
 
 1. **Rename two skills.** `prism-founder` became `prism-strategy` and `prism-data` became `prism-metrics`, in the skill directories, `roles.json`, frontmatter `name`, the `skills-ecosystem.md` roster and `business-layer.md` (with their seed twins), the two routing rows in `skill-routing.md` (with its curated twin), `docs/personas.md`, and a comment in `crossref-lint.ts`. The other seven keep their IDs. Every description keeps the old persona name as a trigger word, and every routing trigger phrase is unchanged.
-2. **Thin all nine to the four tests.** See Decision: What the business skills kept. They load 89 (`prism-strategy`, was 338), 86 (`prism-market-research`, was 328), 88 (`prism-finance`, was 334), 89 (`prism-marketing`, was 306), 90 (`prism-sales`, was 334), 86 (`prism-metrics`, was 335), 90 (`prism-customer-success`, was 324), 85 (`prism-recruiting`, was 337), and 92 (`prism-legal`, was 339). Each count is a body of 23 to 30 lines plus the 62-line strategy template every skill cites.
-3. **Thin the strategy template.** See Decision: The strategy template carries the shared conventions. It went from 125 lines to 62, and its seed twin follows by build.
+2. **Thin all nine to the four tests.** See Decision: What the business skills kept. They load 91 (`prism-strategy`, was 338), 88 (`prism-market-research`, was 328), 90 (`prism-finance`, was 334), 91 (`prism-marketing`, was 306), 92 (`prism-sales`, was 334), 88 (`prism-metrics`, was 335), 92 (`prism-customer-success`, was 324), 87 (`prism-recruiting`, was 337), and 94 (`prism-legal`, was 339). Each count is a body of 24 to 31 lines plus the 63-line strategy template every skill cites.
+3. **Thin the strategy template.** See Decision: The strategy template carries the shared conventions. It went from 125 lines to 63, and its seed twin follows by build.
 4. **No reference file existed to delete.** See Decision: Why nothing was deleted. The nine skills cited only the template, the closing-messages architect doc, and ADRs, so there is no seed twin, `seed-curation.json` key, manifest route, or `literal-allowlist.json` entry to remove.
 5. **Re-point the surviving citations.** `business-layer.md` (and its seed twin) now names the skills by ID, points to the template for the shared conventions instead of the old anchor skill's body, lists the `## Research` and `## Finance` sections, and states the disclaimer pattern and the skill-shape rule as they now are.
 6. **Fix the tracking.** Removed the nine business entries from `OVER_CAP_ALLOWLIST`, which now holds exactly `prism-plan`, `prism-user-stories`, and `prism-review-loop`, and the `SHIP_CLOSURE_TRACKED_DANGLING_REFS` entries for ADRs 0014, 0043, and 0060, which no skill cites any more.
@@ -480,7 +480,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
   - **`prism-recruiting`:** headcount checked against OKRs and runway first; outcomes before requirements; rubric dimensions as observable signals; the neutral-voice fallback; the `## People` section created on first write.
   - **`prism-legal`:** the disclaimer section first and as the first line of every artifact; jurisdiction before substance; the missing-context path that marks the output as assumption-based and ends with a counsel recommendation; risks flagged and never conclusions; plain language; engineering-scope constraints written to `## Legal & Compliance` before the `prism-prd` handoff; the `deep-research` fallback folded into the counsel recommendation.
 
-- **The strategy template carries the shared conventions.** All nine skills restated the same five rules (read before writing and reconcile, write only your own section, create on first write, hand off through `prism-prd`, and the host-capability pattern), and all nine cite the template, which is the only file they load. The conventions now live in the template once, and each skill adds only what is its own. The template went from 125 lines to 62.
+- **The strategy template carries the shared conventions.** All nine skills restated the same rules (read before writing and reconcile, write only your own section, stay in your lane and at strategy-feeding grain, create on first write, hand off through `prism-prd`, and the host-capability pattern), and all nine cite the template, which is the only file they load. The conventions now live in the template once, and each skill adds only what is its own. The template went from 125 lines to 63. Every skill reads it unconditionally in its Startup, because the conventions apply when the doc already exists too.
   - **Cut:** the purpose and file-location prose (the single-file-with-sections decision is business-layer rule 1), the section-ownership prose, the "Required Workflow" list that the conventions replace, and the Metrics note about a future data persona, which is stale now that `prism-metrics` exists.
   - **Alternatives considered:** each skill citing the old template and keeping its own conventions, which left every skill over the cap, because the 125-line template alone exceeds it; and only `prism-strategy` citing the template, which would have changed how the other eight create the doc when it is absent. Neither fits the intent's "strategy-doc flow is unchanged".
   - **Chosen approach:** one template, conventions on top, structure below, cited by all nine.
@@ -494,6 +494,8 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
   - **`prism-customer-success` lost the `byo`/`configuration`/`blocks` category names.** They described one team's doc tree, and the skill now says "the team's doc root".
   - **`prism-sales` no longer routes a multi-stakeholder evaluation to a `needs-replan`.** It says to raise the case with the user, since no skill re-sequences runs any more.
   - **The verdict vocabulary survives only in `prism-plan`, `prism-user-stories`, and `prism-review-loop`.** All three are on the allowlist for later phases.
+
+- **Out-of-lane and grain guards moved into the template, not cut.** Seven bodies had an out-of-lane clause and the eight non-strategy bodies a "strategy-feeding grain, do not restate other sections" clause. Every skill now reads the template, so one "Stay in your lane" convention there carries both, and `prism-legal` keeps its own handoff sentence.
 
 - **Always-on rules edited in PR 11.** `.prism/rules/skill-routing.md` is the one `load: always` rule this PR edits, with its curated twin and the generated block in `AGENTS.md`. The edit renames the two routing-row IDs (`prism-strategy` and `prism-metrics`) and changes nothing else. Every trigger phrase, including "Vera" and "Tess", is unchanged.
 
@@ -529,6 +531,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 2 fixes. A test ties `roles.json` IDs to `checkIsPrismSkillId`, and the stale `prism-*` prose in `eject.ts`, `generate-skills.ts`, and `consumer-sync-flow.md` now says PRISM-owned.
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Renamed Zoe, Lilac, and Reese to `prism-audit`, `prism-standup`, and `prism-qa-plan`, and thinned them with Iris, Sage, and Parker to 54, 57, 49, 94, 56, and 62 loaded lines. Deleted the retro and PRD step trees, the changelog, standup, and QA references, `shipping-flow.md`, `stakes-calibration.md`, and `micro-file-step-machine.md`; see Decision: What the cadence and release skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-business]: Renamed Vera and Tess to `prism-strategy` and `prism-metrics`, and thinned all nine business skills to 85 to 92 loaded lines (from 306 to 339). The shared conventions moved into a thinned strategy template that every skill cites; see Decision: What the business skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-business]: Briar pass 1 fixes. Every business skill now reads the strategy template unconditionally, the out-of-lane and grain guards live in its conventions, and `## Research` and `## Finance` are named everywhere; the three findings are under `## Review Issues`.
 
 ---
 
@@ -725,6 +728,30 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - **File:** `.prism/plans/prism-499/plan.md:404`
 - **Problem:** the Decision gave the writing guide as 81 lines, and it is now 82.
 - **Fixed in:** the Decision keeps "112 loaded" and drops the guide's own count.
+
+### PR 11: shared conventions reached only when the doc was absent
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-market-research/shared.md:5`
+- **Problem:** eight skills cited the strategy template only inside "when it does not exist, offer to start it from the template", so on the normal path (the doc exists) nothing sent the run to the conventions: reconcile before overwriting, host-capability detection, and no direct handoff to implementation skills. `prism-strategy` had the same gap.
+- **Fixed in:** all nine Startup sections have an unconditional bullet to read the template for the conventions and the structure, and the conditional clause no longer cites it. Each skill gains one line.
+
+### PR 11: out-of-lane and grain guards dropped without a Decision
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/templates/business-strategy.md:9`
+- **Problem:** seven bodies lost "outside the lane, name the right skill and hand off", and the eight non-strategy bodies lost "keep artifacts at strategy-feeding grain, don't restate other sections".
+- **Fixed in:** one "Stay in your lane" convention in the template, and a Decision recording the move.
+
+### PR 11: `## Research` and `## Finance` named in some places only
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-sales/shared.md:5`
+- **Problem:** `prism-sales` and `prism-marketing` said "the research section", the two descriptions said "research/finance section", and the market-research and finance Handoff lines said "the research/finance section", after the Decision named both.
+- **Fixed in:** each now says `## Research` or `## Finance`.
 
 ## PR Readiness
 

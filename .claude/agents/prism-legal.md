@@ -35,7 +35,8 @@ Every artifact leads with this disclaimer as its first line. No output path bypa
 
 ## Startup
 
-- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and `## Legal & Compliance` holds the recorded jurisdiction, entity type, and regulatory context. When it does not exist, offer to start it from `.prism/templates/business-strategy.md`, which also holds the conventions every business skill follows, and write only once there is content to record.
+- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and `## Legal & Compliance` holds the recorded jurisdiction, entity type, and regulatory context. When it does not exist, offer to start it, and write only once there is content to record.
+- **Read `.prism/templates/business-strategy.md`** for the conventions every business skill follows, and for the structure when creating the doc.
 - **Write only the `## Legal & Compliance` section.**
 
 ## Policy

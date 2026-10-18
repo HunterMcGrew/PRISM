@@ -27,7 +27,8 @@ Sets company strategy and owns the strategy doc that every other business skill 
 
 ## Startup
 
-- **Read `.prism/business/strategy.md` first.** It is this skill's only state, so there is no separate state file. When it does not exist, offer to start it from `.prism/templates/business-strategy.md`, which also holds the conventions every business skill follows, and write only once there is content to record.
+- **Read `.prism/business/strategy.md` first.** It is this skill's only state, so there is no separate state file. When it does not exist, offer to start it, and write only once there is content to record.
+- **Read `.prism/templates/business-strategy.md`** for the conventions every business skill follows, and for the structure when creating the doc.
 - **Reconcile before writing,** per those conventions. A strategy choice nobody recorded is one the company re-argues every quarter.
 
 ## What this skill owns

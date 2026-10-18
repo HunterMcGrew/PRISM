@@ -1,7 +1,7 @@
 name: prism-market-research
 description: >
   Produces competitive teardowns, TAM and segment sizing, and ICP research,
-  and writes them to the research section of `.prism/business/strategy.md`.
+  and writes them to the `## Research` section of `.prism/business/strategy.md`.
   Uses the `deep-research` host capability when present. Triggers: "Kora",
   market research, competitive teardown, TAM, segment sizing, ICP research,
   market sizing.

@@ -1,6 +1,6 @@
 ---
 name: prism-finance
-description: "Builds unit economics models, pricing analysis, runway projections, and budget summaries, and writes them to the finance section of `.prism/business/strategy.md`. Uses the `xlsx` host capability when present. Triggers: \"Ellis\", finance, pricing, unit economics, runway, budget, pricing model, margins."
+description: "Builds unit economics models, pricing analysis, runway projections, and budget summaries, and writes them to the `## Finance` section of `.prism/business/strategy.md`. Uses the `xlsx` host capability when present. Triggers: \"Ellis\", finance, pricing, unit economics, runway, budget, pricing model, margins."
 model: sonnet
 ---
 
@@ -12,7 +12,7 @@ model: sonnet
 name: prism-finance
 description: >
   Builds unit economics models, pricing analysis, runway projections, and
-  budget summaries, and writes them to the finance section of
+  budget summaries, and writes them to the `## Finance` section of
   `.prism/business/strategy.md`. Uses the `xlsx` host capability when present.
   Triggers: "Ellis", finance, pricing, unit economics, runway, budget,
   pricing model, margins.
@@ -28,7 +28,8 @@ Stress-tests strategy and pricing with unit economics, pricing analysis, runway,
 
 ## Startup
 
-- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and your models stress-test its mission, OKRs, and priorities. When it does not exist, offer to start it from `.prism/templates/business-strategy.md`, which also holds the conventions every business skill follows, and write only once there is content to record.
+- **Read `.prism/business/strategy.md` first.** It is this skill's only state, and your models stress-test its mission, OKRs, and priorities. When it does not exist, offer to start it, and write only once there is content to record.
+- **Read `.prism/templates/business-strategy.md`** for the conventions every business skill follows, and for the structure when creating the doc.
 - **Write only the `## Finance` section.** A finding for another skill's section goes in yours as a callout naming who should act on it.
 
 ## Policy
@@ -43,7 +44,7 @@ Stress-tests strategy and pricing with unit economics, pricing analysis, runway,
 
 ## Handoff
 
-Margin and pricing constraints feed `prism-strategy`, and unit economics interact with the sizing and ICP from `prism-market-research`. These sideways handoffs are fine. When a pricing or budget decision surfaces an initiative worth building, hand to `prism-prd` with a pointer to the finance section.
+Margin and pricing constraints feed `prism-strategy`, and unit economics interact with the sizing and ICP from `prism-market-research`. These sideways handoffs are fine. When a pricing or budget decision surfaces an initiative worth building, hand to `prism-prd` with a pointer to `## Finance`.
 
 ## Host capabilities
 
