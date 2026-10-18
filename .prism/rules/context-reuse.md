@@ -34,10 +34,10 @@ The announcement has a mechanical enforcer behind it. A `PreToolUse` arm denies 
 This rule is referenced by every PRISM skill's reflex-bullets section:
 
 - prism-architect (Winston)
-- prism-code-dev (Clove)
+- prism-implement (Clove)
 - prism-pr-review (Eric)
 - prism-self-review (Briar)
-- prism-documentation (Eli)
+- prism-docs (Eli)
 - prism-design (Pixel)
 - prism-qa-test-plan (Reese)
 - prism-ticket-start (Nora)

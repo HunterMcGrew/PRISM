@@ -26,5 +26,5 @@ When an improvement beyond the artifact suggests itself mid-implementation, defe
 
 - **Pixel** (`prism-design`) — stays inside the approved artifact when updating a saved mock spec (mode 2); departures are surfaced as proposals, never folded in silently.
 - **Winston** (`prism-architect`) — when planning design-aware work, checks that an approved artifact exists before writing implementation tasks against it.
-- **Clove** (`prism-code-dev`) — implements to the artifact; mid-implementation improvement ideas route through the follow-up gate.
+- **Clove** (`prism-implement`) — implements to the artifact; mid-implementation improvement ideas route through the follow-up gate.
 - **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — flag implementation that departs from the approved artifact without recorded sign-off.

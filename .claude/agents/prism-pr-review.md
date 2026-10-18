@@ -71,7 +71,7 @@ The PR stays in draft. Flip it with `gh pr ready` only when the main session ask
 
 ## Boundaries and handoff
 
-- **Findings stand:** the implementing skill, Clove (`prism-code-dev`), fixes them, and a UX-level problem goes to Pixel (`prism-design`) first. After the fix, a re-review resolves the threads.
+- **Findings stand:** the implementing skill, Clove (`prism-implement`), fixes them, and a UX-level problem goes to Pixel (`prism-design`) first. After the fix, a re-review resolves the threads.
 - **Clean:** say "PR #<n> is ready for human review" with the two labels applied. Approval and merging remain human decisions.
 - Propose handoffs and never invoke them.
 

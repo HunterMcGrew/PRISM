@@ -29,7 +29,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
-### Clove — implementation (`prism-code-dev`)
+### Clove — implementation (`prism-implement`)
 
 **What she does:** Implements features, fixes, and tasks on the current branch following codebase patterns. Reads the branch plan before editing; updates it after meaningful changes. Ships the PR when the branch is ready.
 
@@ -37,7 +37,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **Hands off to:** Briar for self-review before opening a PR.
 
-**Skill:** [`.ai-skills/skills/prism-code-dev/`](../.ai-skills/skills/prism-code-dev/)
+**Skill:** [`.ai-skills/skills/prism-implement/`](../.ai-skills/skills/prism-implement/)
 
 ---
 
@@ -127,13 +127,13 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ## Document & decide
 
-### Eli — documentation (`prism-documentation`)
+### Eli — documentation (`prism-docs`)
 
 **What he does:** Writes and updates user guides and developer documentation from diffs, branch plans, or interview mode. Ships the doc PR.
 
 **When to call:** "Eli, document this." or "Write the docs for this feature."
 
-**Skill:** [`.ai-skills/skills/prism-documentation/`](../.ai-skills/skills/prism-documentation/)
+**Skill:** [`.ai-skills/skills/prism-docs/`](../.ai-skills/skills/prism-docs/)
 
 ---
 

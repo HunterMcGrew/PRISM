@@ -16,7 +16,7 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-code-dev",
+			"id": "prism-implement",
 			"persona": "Clove",
 			"routing": "auto"
 		},
@@ -36,7 +36,7 @@
 			"routing": "named-only"
 		},
 		{
-			"id": "prism-documentation",
+			"id": "prism-docs",
 			"persona": "Eli",
 			"routing": "auto"
 		},

@@ -57,7 +57,7 @@ When two business personas both touch the same input and both produce the same c
 - **Marketing owns the outbound message:** positioning, messaging hierarchy, campaign briefs, content briefs, SEO. It does not write outreach sequences.
 - **Sales owns pipeline mechanics:** ICP-to-pipeline qualification, proposals, outreach sequences, objection handling. It does not write positioning — it reads Marketing's `## Marketing` section so outreach inherits one voice.
 
-A second worked instance crosses the business/engineering boundary: **Customer Success (Remy, `prism-customer-success`) and Eli (`prism-documentation`) share the feature itself as input.** The split is content-class, not audience — both write customer-facing content, so audience can't separate them.
+A second worked instance crosses the business/engineering boundary: **Customer Success (Remy, `prism-customer-success`) and Eli (`prism-docs`) share the feature itself as input.** The split is content-class, not audience — both write customer-facing content, so audience can't separate them.
 
 - **Eli owns the single canonical description of how the feature works** (the researching-owner role): control behavior, settings, feature reference and usage mechanics.
 - **Customer Success reads Eli's docs and writes how the customer succeeds with the feature** (the downstream-reader role): support playbooks, FAQs, escalation runbooks, and outcome-framed onboarding to first win. It never forks a second copy of feature mechanics.

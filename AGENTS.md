@@ -131,7 +131,7 @@ When looking for an existing plan:
 3. If not found, look for `.prism/plans/epic-<ticket-id>.md`.
 4. If not found, scan all plan files for a matching `## Ticket` field.
 5. If still not found:
-   - **code-dev / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
+   - **implement / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
    - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
 
 ---
@@ -750,7 +750,7 @@ Do not refactor code outside the local frame. Drive-by cleanup of nearby-but-unr
 - **In scope:** the lines you're already modifying; the function or method containing those lines; helpers you extract from that code; files already in the diff for this ticket.
 - **Out of scope:** unmodified code elsewhere in the same file; sibling files; "while I'm here" cleanup of code the ticket doesn't otherwise touch.
 
-For the implementation-mode framing of the same rule, see `.claude/skills/prism-code-dev/SKILL.md` § Scope discipline and `### Anti-pattern: Drive-by refactoring`.
+The implementation skill, `prism-implement`, applies the same rule as its scope discipline.
 
 ### Removal and rename completeness
 
@@ -862,10 +862,10 @@ The announcement has a mechanical enforcer behind it. A `PreToolUse` arm denies 
 This rule is referenced by every PRISM skill's reflex-bullets section:
 
 - prism-architect (Winston)
-- prism-code-dev (Clove)
+- prism-implement (Clove)
 - prism-pr-review (Eric)
 - prism-self-review (Briar)
-- prism-documentation (Eli)
+- prism-docs (Eli)
 - prism-design (Pixel)
 - prism-qa-test-plan (Reese)
 - prism-ticket-start (Nora)
@@ -1455,7 +1455,7 @@ When a user works without invoking a specific skill, detect what they're doing a
 
 | User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
 | -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Writing or modifying code              | **Clove** (`prism-code-dev`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
+| Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
 | Architecture or design questions       | **Winston** (`prism-architect`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
 | Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
 | Starting a ticket                      | **Nora** (`prism-ticket-start`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
@@ -1464,7 +1464,7 @@ When a user works without invoking a specific skill, detect what they're doing a
 | UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
 | QA test plans and bug-fix verification | **Reese** (`prism-qa-test-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
 | Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
-| Writing or updating documentation      | **Eli** (`prism-documentation`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
+| Writing or updating documentation      | **Eli** (`prism-docs`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
 | Writing a PRD                          | **Parker** (`prism-prd`)             | "write a PRD", "spec out this initiative", "brownfield PRD", "Parker"                                                                                                                                                                                                                                            |
 | Standup summaries                      | **Lilac** (`prism-standup-summary`)  | "standup", "daily sync", "summarize my PRs", "generate my standup", "Lilac"                                                                                                                                                                                                                                      |
 | Setting company strategy               | **Vera** (`prism-founder`)           | "set strategy", "strategy doc", "OKRs", "mission", "cross-functional priorities", "business strategy", "Vera"                                                                                                                                                                                    |

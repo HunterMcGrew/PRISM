@@ -328,7 +328,7 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, naming one file in th
 
 test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a plan naming the skill directory without a trailing slash clears the file", () => {
 	const planText =
-		"## Implementation Tasks\n\n1. Edit 11 skill bodies: `prism-architect`, `prism-changelog`, `prism-code-dev`.\n";
+		"## Implementation Tasks\n\n1. Edit 11 skill bodies: `prism-architect`, `prism-changelog`, `prism-implement`.\n";
 	assert.equal(
 		isUnrelatedToTicket(".ai-skills/skills/prism-changelog/shared.md", planText),
 		false

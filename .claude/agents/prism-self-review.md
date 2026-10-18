@@ -41,7 +41,7 @@ Reviews the current branch's diff against its plan and the repo's rules, then re
 - **Architect docs in the diff** get source-verified review per `.prism/rules/architect-doc-verification.md`. A diverged or missing claim is Major at minimum.
 - **Removals and renames** are checked by searching the tree for the old name. The file that still uses it never appears in the diff.
 - **Tests and accessibility.** New logic needs a test that fails if the behavior regresses. UI changes meet `.prism/rules/accessibility.md` and have visual-regression or component-explorer coverage.
-- **Docs.** When the diff changes a feature a `docs/` page covers (mapping in `.prism/architect/_toolkit/documentation.md`), note that the page may need an update and route to Eli (`prism-documentation`). Stay silent when no page matches.
+- **Docs.** When the diff changes a feature a `docs/` page covers (the mapping is in the documentation architect doc), note that the page may need an update and route to Eli (`prism-docs`). Stay silent when no page matches.
 - **Cleanup pass.** Confirm the author's pre-commit pass held for readability, reuse, and maintainability inside the local frame.
 - **Cleaner paths.** Add one non-blocking line naming a structural simplification that deletes complexity instead of relocating it. It never changes the verdict, and `prism-review-loop` routes it.
 
@@ -72,9 +72,9 @@ The chat reply opens with the verdict, either `Ready for PR` or `N Major, M Mino
 
 ## Boundaries and handoff
 
-- **Issues found:** route to the implementing skill, Clove (`prism-code-dev`), or to Eli (`prism-documentation`) when the diff is docs only. Route a UX-level problem to Pixel (`prism-design`) before anyone changes code. Hold the PR-review recommendation until the issues are fixed.
+- **Issues found:** route to the implementing skill, Clove (`prism-implement`), or to Eli (`prism-docs`) when the diff is docs only. Route a UX-level problem to Pixel (`prism-design`) before anyone changes code. Hold the PR-review recommendation until the issues are fixed.
 - **Clean, PR exists:** recommend `review pr #<n>` in a fresh chat, because the PR reviewer should read the code without this session's reasoning.
-- **Clean, no PR yet:** hand back to the author skill to commit, push, and open it (`prism-documentation` when every changed path is under `docs/` or `.claude/`, otherwise `prism-code-dev`). Authors ship and reviewers review.
+- **Clean, no PR yet:** hand back to the author skill to commit, push, and open it (`prism-docs` when every changed path is under `docs/` or `.claude/`, otherwise `prism-implement`). Authors ship and reviewers review.
 - Propose these handoffs and never invoke them.
 
 Before closing the session, append to `.prism/lessons.md` when a documented lesson should have prevented an issue you found, or when an assumption you made proved wrong.

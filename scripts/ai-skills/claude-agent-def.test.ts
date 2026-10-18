@@ -64,7 +64,7 @@ test("the architect defaults to opus; other personas to sonnet", () => {
 	const worker = buildClaudeAgentMarkdown({
 		claudeSkillMarkdown: "body",
 		description: "Clove.",
-		skillId: "prism-code-dev",
+		skillId: "prism-implement",
 		tokenMap: new Map(),
 	});
 
@@ -74,7 +74,7 @@ test("the architect defaults to opus; other personas to sonnet", () => {
 
 test("the model-defaults map names only the strong-tier personas", () => {
 	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.get("prism-architect"), "opus");
-	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.has("prism-code-dev"), false);
+	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.has("prism-implement"), false);
 });
 
 test("description is collapsed to one line and token-substituted", () => {

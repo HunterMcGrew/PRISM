@@ -30,10 +30,10 @@ const forceMode = process.argv.includes("--force");
 const SKILL_ID_RENAMES: ReadonlyArray<readonly [string, string]> = [
 	["thrive-architect", "prism-architect"],
 	["thrive-changelog", "prism-changelog"],
-	["thrive-code-dev", "prism-code-dev"],
+	["thrive-code-dev", "prism-implement"],
 	["thrive-code-review-pr", "prism-pr-review"],
 	["thrive-code-review-self", "prism-self-review"],
-	["thrive-documentation", "prism-documentation"],
+	["thrive-documentation", "prism-docs"],
 	["thrive-pixel", "prism-design"],
 	["thrive-qa-test-plan", "prism-qa-test-plan"],
 	["thrive-standup-summary", "prism-standup-summary"],

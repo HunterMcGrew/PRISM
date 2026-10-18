@@ -352,13 +352,13 @@ test("a manifest key is a match pattern, not a closure root", async () => {
 test("every prism-* skill directory on disk is a root, and nothing else under skills is", async () => {
 	await withFixtureRepo(
 		{
-			".ai-skills/skills/prism-code-dev/SKILL.md": "# Clove\n",
+			".ai-skills/skills/prism-implement/SKILL.md": "# Clove\n",
 			".ai-skills/skills/other-tool/SKILL.md": "# Not a persona\n",
 		},
 		async (repoRoot) => {
 			const roots = await resolveDefaultRoots(repoRoot);
 
-			assert.ok(roots.includes(".ai-skills/skills/prism-code-dev"));
+			assert.ok(roots.includes(".ai-skills/skills/prism-implement"));
 			assert.ok(!roots.includes(".ai-skills/skills/other-tool"));
 		}
 	);
