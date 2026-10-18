@@ -3,7 +3,7 @@ title: "Parker — the PRD persona"
 description: "How Parker drafts initiative-grain Product Requirements Documents — two modes, stakes-calibrated, with a parallel reviewer rubric."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-10-18"
+last_updated: "2026-10-17"
 ---
 
 ## What Parker does
@@ -23,7 +23,7 @@ The output is `.prism/prds/<slug>.md` (always) plus `.prism/prds/<slug>.decision
 
 ## How Parker works
 
-Resumable. State lives in the PRD's YAML frontmatter — no separate state file. A `status: draft` PRD offers to resume, and a `status: finalized` one needs your explicit OK before any edit.
+Multi-phase, resumable. State lives in the PRD's YAML frontmatter — no separate state file. Each phase is its own step file at `.prism/skills/prism-prd/step-*.md` so phases are individually replaceable.
 
 **Greenfield flow:** init → stakes calibration → fast/coaching mode → draft → decision log (if stakes ≥ reviewed) → review → finalize → optional Linear handoff.
 
@@ -37,15 +37,15 @@ Resumable. State lives in the PRD's YAML frontmatter — no separate state file.
 | **reviewed** | Reviewer rubric runs; decision log optional; open questions expected to resolve before merge. | Run | Encouraged | Optional | Offered |
 | **strict** | Reviewer rubric runs and escalates; decision log required; every open question resolved before finalize. | Run + escalate | Required | Mandatory | Encouraged |
 
-Parker asks the stakes question once at the top of every run. Greenfield runs a short interview (how many users, what a miss costs), and brownfield asks the single question.
+Parker asks the calibration interview once at the top of every greenfield run. Brownfield infers stakes from the named code area (production code = reviewed/strict; sandbox/experiment = quick).
 
 ## The reviewer rubric
 
-At `reviewed` and `strict`, three reviewers read the draft cold, in parallel subagents where the host allows it:
+Three parallel rubric subagents in step-06:
 
 - **Product fit** — problem clarity, target-user specificity, success-metric measurability, scope coherence, JTBD alignment.
 - **Technical feasibility framing** — does the PRD surface the feasibility questions Winston will need to answer? Constraints articulated? Dependencies named? (Not evaluating feasibility itself — that's Winston.)
-- **Clarity** — ambiguity red flags (vague words, "should" where "must" is meant), `[ASSUMPTION]`/`[INFERRED]` discipline, section completeness, internal consistency.
+- **Clarity** — ambiguity red flags (the rubric lists its own vague words), `[ASSUMPTION]`/`[INFERRED]` discipline, section completeness, internal consistency.
 
 Findings synthesize into a triage table; user picks `fix` / `accept` / `override` per finding. Critical findings must be fixed or overridden before finalize.
 
@@ -72,4 +72,5 @@ Parker → Mira → Nora → Winston is the typical product-to-engineering desce
 ## See also
 
 - [ADR-0043 — Parker as the PRD persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md)
-- [`.ai-skills/skills/prism-prd/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-prd/shared.md) — the skill, including the stakes table
+- [`.prism/references/stakes-calibration.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/references/stakes-calibration.md) — the three-level table
+- [`.prism/references/micro-file-step-machine.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/references/micro-file-step-machine.md) — step-machine pattern
