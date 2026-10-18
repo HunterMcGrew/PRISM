@@ -6,7 +6,7 @@ Date: 2026-10-12
 Supersedes: 0074
 ---
 
-> Amended by [ADR-0080](./0080-skills-are-function-shaped-and-held-to-four-tests.md)'s phase-1 cut of `skill-core.md`: the paragraph below that keeps the runtime notice in `skill-core.md` no longer holds. The notice's static prose now lives only in `.prism/rules/context-reuse.md` § Architect-context routing is diff-blind, which already names Claude Code and Codex as the hosts the hook reaches. The rejection of a per-host notice and of runtime host detection stands.
+> Amended by the PRISM-499 phase-1 cut of `skill-core.md`: the paragraph below that keeps the runtime notice in `skill-core.md` no longer holds. The notice's static prose now lives only in `.prism/rules/context-reuse.md` § Architect-context routing is diff-blind, which already names Claude Code and Codex as the hosts the hook reaches. The rejection of a per-host notice and of runtime host detection stands.
 
 ## Context
 
