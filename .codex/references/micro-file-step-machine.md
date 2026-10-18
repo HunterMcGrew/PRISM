@@ -18,13 +18,11 @@ Skip the pattern when the workflow is short (≤3 phases), single-session, or wh
 
 When the workflow has more than three phases AND benefits from cross-session resume, but the phases are short enough that per-step files would duplicate content the workflow already records elsewhere (e.g. the branch plan's `## Debugged Issues` entry already captures the diagnostic findings), use the lighter variant — a single operational state file (e.g. `.prism/<persona>-state.json`) with no per-step files. The state file carries `currentPhase`, `phasesCompleted`, persona-specific fields (hypothesis tracking, evidence references, etc.), and `status`. The full pattern (per-step files plus state) is the right shape when each phase produces a substantial output the next phase reads; the lighter variant is the right shape when the per-phase output is small or the canonical artifact lives in another file already.
 
-Sasha uses the lighter variant — six phases, but findings land in the branch plan's `## Debugged Issues` entry, not in per-step files. Per-step files would duplicate the plan entry without adding signal.
-
 ## Full variant — per-step files plus state
 
 The full variant — per-step files plus a state file — is the right shape when each phase produces a substantial output the next phase reads. Per-step files are worth the maintenance overhead because they carry artifact-grade content that downstream steps consume directly, and a reviewer auditing step N benefits from reading step N-1's file rather than reconstructing it from the state blob.
 
-Theo, Ren, Parker, and Iris cite the full variant. The output flowing between steps is large enough that inlining it into the state file would either bloat the JSON or force lossy summarization — neither acceptable when later steps need the full prior output to do their work.
+Parker and Iris cite the full variant. The output flowing between steps is large enough that inlining it into the state file would either bloat the JSON or force lossy summarization — neither acceptable when later steps need the full prior output to do their work.
 
 ## File naming convention
 
@@ -37,7 +35,7 @@ Theo, Ren, Parker, and Iris cite the full variant. The output flowing between st
 Each workflow has a top-level state file (e.g. `.prism/workflows/<workflow-id>/state.json` or YAML frontmatter on the workflow's entry doc) tracking completion:
 
 ```yaml
-workflowId: ren-walk-2026-05-22
+workflowId: prd-intake-2026-05-22
 stepsCompleted: [1, 2, 3]
 currentStep: 4
 status: in-progress
@@ -59,15 +57,12 @@ The skill never silently overwrites a prior state file. Resumption is always off
 
 ## Who cites this pattern
 
-- **Theo** (Phase 2.5, architect-doc walker) — uses the pattern for the multi-phase scan → identify candidates → present → write loop. State at `.prism/architect-walker-state.json`.
-- **Ren** (Phase 2.6, refactor scout) — uses the pattern for the explore → categorize → present → grill loop. State at `.prism/ren-state.json`.
 - **Parker** (Phase 3, PRD persona) — uses the pattern for greenfield mode's brain-dump → stakes calibration → draft → rubric → finalize sequence. State at `.prism/prds/<slug>/state.yaml`.
 - **Winston** (existing) — does not currently use the pattern, but if plan mode grows beyond its current shape, this is the pattern it should grow into.
 - **Iris** (Wave 2 PR 5, retrospective persona) — uses the pattern for the detect-target → gather-evidence → stage-voices → facilitate → action-items → save-report flow. Each step's output feeds the next, so the full variant (per-step files plus state) fits. State at `.prism/iris-state.json`.
-- **Sasha** (existing, debugger persona) — uses the **lighter variant** of the pattern (state file only, no per-step files). Six diagnostic phases share a single state file at `.prism/sasha-state.json` for cross-session resume; findings land in the branch plan's `## Debugged Issues` entry, so per-step files would only duplicate that artifact. See the "Lighter variant" section above for the rationale.
 
 ## Why a reference doc rather than inlining
 
-Three downstream consumers (Theo, Ren, Parker) need the same pattern shape with workflow-specific instantiations. Inlining the pattern into each skill triples the maintenance surface and guarantees drift. The reference doc owns the pattern; each skill cites it and documents only what's specific to its workflow.
+Each downstream consumer (Parker, Iris) needs the same pattern shape with workflow-specific instantiations. Inlining the pattern into each skill triples the maintenance surface and guarantees drift. The reference doc owns the pattern; each skill cites it and documents only what's specific to its workflow.
 
 The pattern is also relevant outside PRISM's current persona set — any future skill that grows multi-thousand-line SKILL.md should compare against this pattern before bloating further.

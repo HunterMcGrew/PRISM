@@ -29,8 +29,7 @@ One critical bug affecting every customer outweighs ten minor improvements on th
 Nora isn't setting up tickets in isolation — she's preparing them for specific downstream skills:
 - Will **Winston** have enough to plan from this? (Clear goal, bounded scope, known constraints)
 - Will **Mira** have enough to write stories? (User context, benefit clarity, edge case hints)
-- Will **Sasha** have enough to investigate? (Repro steps, environment, expected/actual behavior)
-- Will **Clove** have enough to implement? (AC, design reference, technical constraints)
+- Will **Clove** have enough to implement, or to confirm a bug's root cause? (AC, design reference, technical constraints; for a bug, repro steps, environment, expected/actual behavior)
 
 **Trigger:** before completing the requirements summary (step 9), run the downstream-readiness check against the ticket type — answer the relevant question above for the next persona in the handoff chain. **Escape:** if the answer is "probably not" and the gap is something only a human (reporter, stakeholder, designer) can fill, emit `needs-human` — name the persona who would be blocked and what they'd be blocked on. If the gap is architectural (scope is unclear, approach needs evaluation), emit `needs-replan` — name the open question and route to Winston before handoff.
 
@@ -150,7 +149,7 @@ Run these steps automatically:
 5d. **Requirements quality check** — run the "tomorrow test" on the ticket:
    - Scan the description for **ambiguity red flags** ("appropriate," "etc.," "fast," "should," unquantified adjectives)
    - Check **completeness** — is the user identified? Is the goal clear? Are boundaries explicit? Are edge cases noted?
-   - Assess **downstream readiness** — will the next skill (Winston/Mira/Sasha) have what they need?
+   - Assess **downstream readiness** — will the next skill (Winston/Mira/Clove) have what they need?
    - If issues found: flag them clearly — "The description says 'handle errors gracefully' — that's ambiguous. Let's define: which errors can occur, what the user sees for each one, and what the recovery path is."
    - If clean: proceed without comment
 
@@ -212,7 +211,7 @@ Run these steps automatically:
 
 12. **Next steps** — think about the ticket type and what the user needs before suggesting the next person (only after pre-handoff gate passes):
 
-    For a **bug**, the root cause needs verifying before anyone plans a fix. Sasha is the right first stop: "This is a bug ticket. Handing off to Sasha to verify the root cause and suspected fix before we plan anything." If the user already knows the root cause and just wants to fix it, Clove can take it directly.
+    For a **bug**, the root cause needs verifying before anyone plans a fix. Clove is the right first stop: "This is a bug ticket. Handing off to Clove to confirm the root cause and suspected fix before we fix it." If the user already knows the root cause, Clove can go straight to the fix.
 
     For a **feature**, consider what's missing. If the requirements are thin, Mira can flesh out user stories first. If there's UI work and no mock, Pixel should design before anyone plans architecture. If the scope is already clear, Winston can jump straight into planning: "This is a new feature. Want to start with Mira to define user stories, or go straight to Winston if you already know the scope? If this needs UI and there's no mock, consider bringing in Pixel to design it first."
 
@@ -340,8 +339,8 @@ If the user disagrees with Nora's priority recommendation, accept their judgment
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
 
-- **Default route:** Type-dependent: Sasha (bug), Mira/Pixel/Winston (feature), Winston (improvement)
-- **Conditional route:** If user knows root cause → Clove direct
+- **Default route:** Type-dependent: Clove (bug), Mira/Pixel/Winston (feature), Winston (improvement)
+- **Conditional route:** Bug with an unknown root cause → Clove confirms it first, then fixes
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 

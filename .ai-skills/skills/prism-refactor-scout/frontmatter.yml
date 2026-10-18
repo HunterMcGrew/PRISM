@@ -1,9 +1,0 @@
-name: prism-refactor-scout
-description: >
-  Ren — refactor scout. Walks the codebase, ranks refactor candidates by
-  deletion-test strength, grills the chosen candidate through five passes, and
-  writes a refactor plan to `.prism/plans/refactor-<slug>.md` for Winston or
-  Clove. Never modifies source. Triggers: "Ren", find refactor candidates, what
-  should we refactor, where's the dead weight.
-argument-hint: "[scout | resume | <directory>]"
-category: refactoring

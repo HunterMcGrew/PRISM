@@ -164,7 +164,19 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 Retired ADRs, as AC-2 requires this PR to list them: 0048, 0049, 0050, 0051, 0052, 0053, 0054, 0055, 0056, 0061, 0066, 0069.
 
-### PRs 4–11
+### PR 4 — Delete Sasha, Ren, Theo
+
+All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, and a `git grep` for `Sasha`, `Ren`, `Theo`, `prism-debugger`, `prism-refactor-scout`, `prism-doc-walker`, and the three `-state.json` names returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/`, and `CHANGELOG.md`. Two filename hits remain by design: the ADR filenames listed in `seed-curation.json`, and two plan filenames recorded in `.prism/audit-state.json`.
+
+1. **Delete the three skills.** Removed `.ai-skills/skills/prism-debugger/`, `prism-refactor-scout/`, and `prism-doc-walker/`, the `.prism/skills/prism-doc-walker/` and `prism-refactor-scout/` step trees, the `.prism/references/debugger/` reference directory and its seed twin, `docs/ai-skills/ren.md` and `theo.md`, the three `roles.json` entries, and the Theo and Ren state-file blocks in `.gitignore`. Sasha never had a `.prism/skills/` tree. No manifest route and no `generate-skills.ts` model pin existed for any of the three. `pnpm prism:build` removed the generated agent, skill, and Codex adapters.
+2. **Cut every handoff to or from them.** Removed their rows and handoff phrases from `skills-ecosystem.md`, `closing-messages.md`, `skill-routing.md` (routing row and named-invocation entries), `docs/personas.md`, and `docs/workflow.md`, plus the curated seed twins of each and `templates/install/AGENTS.md.tmpl`. Rewrote `plan-authoring.md`, `branch-plan.md`, `followup-scope.md`, `context-reuse.md`, `lazy-artifacts.md`, `acceptance-criteria.md`, `skill-authoring.md`, `writing-voice.md`, the surviving skills' handoff lines, the references that named them, the retro step files, `CONTEXT.md`, `README.md`, and `.ai-skills/config.schema.json` so none names a retired persona. See Decision: The bug workflow routes Nora to Clove.
+3. **Resolve the tests.** See Decision: Test dispositions for PR 4.
+4. **Retire the ADRs.** `.prism/spec/adrs/_toolkit/0079-debugger-refactor-scout-and-doc-walker-are-retired.md` supersedes 0041 and 0042, which now carry `Status: superseded` and `Superseded-by: 0079`. ADRs 0014, 0036, and 0045 carry an amendment note. The new ADR is indexed in the ADR README and classified `excluded` in `seed-curation.json`. In 0041 and 0042 the links to the deleted state docs lose their `.prism/skills/` prefix so `crossref-lint` stops resolving them. See Decision: Superseded versus amended ADRs in PR 4.
+5. **Drop stale ship-closure tracking.** Removed the `SHIP_CLOSURE_TRACKED_DANGLING_REFS` entry for ADR-0058, which nothing reaches any more, as `ship-closure.ts` instructs.
+
+Retired ADRs, as AC-2 requires this PR to list them: 0041, 0042.
+
+### PRs 5–11
 
 Each PR's tasks are written into this section when its branch is cut, so a task list never runs ahead of the code it describes. The rules every one of those PRs follows are recorded under `## Decisions`.
 
@@ -195,6 +207,25 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - **Superseded:** 0048 to 0056 (conductor design), 0061 and 0066 (Sol's merge authority and its flag), and 0069 (ratification as a Sol pipeline stage, plus its rule against gates on Sol's report-back channel).
   - **Amended:** 0068 loses its Sol auto-dispatch clause, and 0073 loses the autonomy-ceiling axis, but the retro charter and the `quick` / `reviewed` / `strict` rename stand.
   - **Left alone:** 0067 (already superseded by the floor revert), 0063 (lists `conductor-state*.json` among files that must never publish, a historical list), 0064 (cites 0061 as history), and 0072 (cites 0067 and 0069 as history).
+
+- **The bug workflow routes Nora to Clove, with no new persona.** Sasha was the confirm-root-cause step between Nora's scaffold and the fix.
+  - **Chosen approach:** Clove confirms the root cause against the code before fixing, records the confirmed finding in `## Debugged Issues`, and offers the tracker sync that Sasha used to offer. Nora's closing handoff, `ticket-workflows.md` § Bug and § Bug Report Lifecycle, the ticket-types template, the bug-report template, and the handoff tables all say so. `## Debugged Issues` stays a plan section, and `plan-authoring.md` lists Clove as its writer with a note that any implementer may write it.
+  - **Alternatives considered:** a diagnosis mode in the implement skill. Not done here, because the implement skill is rewritten in PR 7 and ADR-0079 records that no skill text was added.
+  - **Gap:** nothing now enforces ranked hypotheses or instrumentation cleanup. ADR-0079 records that as a negative.
+
+- **Test dispositions for PR 4.** No test guarded only the three skills, so none is deleted.
+  - **Kept, citation retargeted:** `crossref-lint.test.ts` used `.prism/sasha-state.json`, `ren-state.json`, and `theo-state.json.tmp` as examples of lazy state files, which the linter matches with one generic pattern. The assertions now use `iris-state.json`, `audit-state.json`, and `iris-state.json.tmp`, and the comment in `crossref-lint.ts` names Iris's file.
+  - **Kept, guard caught a curated twin:** `routing-coverage.test.ts` failed on the seed `skill-routing.md` until its Sasha row and the Theo and Ren entries were removed by hand. That is the guard working as intended, so it is unchanged.
+  - **Script data, not a test:** the `thrive-debugger` to `prism-debugger` entry in `bootstrap-from-claude.ts` is removed, because its target skill no longer exists.
+
+- **Superseded versus amended ADRs in PR 4.** Only Theo and Ren had ADRs of their own. Sasha had none.
+  - **Superseded:** 0041 (Theo) and 0042 (Ren) by 0079. Both used a bold `**Status:**` header rather than frontmatter, so the header became frontmatter with `Status: superseded` and `Superseded-by: 0079`. Otherwise the bodies are unchanged.
+  - **Amended:** 0014 loses Sasha as the `## Debugged Issues` writer, 0036 loses Sasha as a security checker, and 0045 loses Ren, Theo, and the debugger from its examples. Each decision stands.
+  - **Left alone:** 0004, 0007, 0018, 0037, 0043, and 0064 name the personas as history or as examples. 0038 and 0058 concern paired dev docs, which 0058 had already retired.
+
+- **Two always-on rules lose Theo's and Sasha's traces.** `.prism/rules/response-shape.md` drops the write/skip/defer prompt from its decision-gate examples. That prompt was Theo's, and `writing-voice.md` had already lost the same example. `.prism/rules/skill-routing.md` adds every debugging phrase Sasha's row carried to the implementer's row, because they would otherwise match no row. `.prism/rules/branch-plan.md` drops "a diagnostician" from its plan-only-commit example, since the diagnostician was Sasha.
+
+- **`micro-file-step-machine.md` keeps its lighter-variant section with no exemplar.** Sasha was the only persona using the state-file-only variant. The pattern text is generic and still valid, so it stays. The Theo, Ren, and Sasha bullets and the Sasha paragraph are cut. The reference now cites Parker and Iris.
 
 - **The `needs-fix` / `needs-replan` / `found-followup-work` vocabulary survives in per-skill persona prose only.** Its only defined consumer was Sol. The shared sites that told every run to escalate by typed verdict are fixed in this PR: `session-orientation.md` and `skill-core.md` § Orientation now say to state the blocker and the default taken in the closing message, `prism-handoff` points at the same wording, and the "orchestrated run" and "dispatched run" phrases in `prism-review-loop` Procedure G and Zoe's escapes are gone. The per-lane rewrites in PRs 5 to 11 retire the rest with each skill. Cutting it now would rewrite skill logic the stack replaces later.
 
@@ -241,6 +272,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Self-review pass 1 fixes. Brought the curated `branch-plan.md` twin and the shared no-user wording in line with the Sol removal, defined `ac-defect`, trimmed `modelTiers` to `overrides`, and added the label-dependence negative to ADR-0078.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Restored four #501 files the `-X ours` absorb had reverted to pre-review copies, and widened the absorb check to every file the squash touched; see Decision: Each stack branch absorbs the squash below it.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: PR review pass 1 fixes. The merge condition now names the final pass's clean state, since a missing label alone proves nothing. The review loop defers to § Who merges, and the legacy conductor-state ignores stay so older checkouts can't commit them.
+- 2026-10-17 [huntermcgrew/prism-499-delete-sasha-ren-theo]: Deleted Sasha, Ren, and Theo with their step trees, references, docs, and every handoff; ADR-0079 supersedes 0041 and 0042; the bug workflow now runs Nora to Clove.
 
 ---
 

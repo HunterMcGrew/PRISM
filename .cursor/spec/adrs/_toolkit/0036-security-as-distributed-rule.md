@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-05-22
 ---
 
+> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Sasha is retired, so the distributed security check runs in Eric and Briar only. The pattern stands.
+
 ## Context
 
 Security concerns vary by stack. A React/Next.js codebase worries about XSS through `dangerouslySetInnerHTML`, CSRF on form submissions, and prototype pollution in shared utilities. A Django codebase worries about ORM injection, template-render auto-escaping, and middleware ordering. A WordPress codebase worries about nonces, capability checks, and sanitization on save. A single universal `security.md` rule that tried to cover every team's threat model would either be too generic to act on or too long to load on every session.

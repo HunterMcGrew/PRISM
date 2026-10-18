@@ -8,4 +8,4 @@
 
 **Path-scoped step files.** Step file frontmatter's `paths:` keys are honored by Claude's path-scoped loading — Parker only loads the step file relevant to the current phase.
 
-**Atomic frontmatter writes.** PRD frontmatter mutations follow the codebase's standard `Edit` tool semantics. Atomic-write protocol (tmp + rename) used by Atlas/Theo/Ren applies to separate state files, not to in-file frontmatter.
+**Atomic frontmatter writes.** PRD frontmatter mutations follow the codebase's standard `Edit` tool semantics. Atomic-write protocol (tmp + rename) used by Atlas applies to separate state files, not to in-file frontmatter.

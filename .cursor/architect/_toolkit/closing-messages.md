@@ -14,7 +14,7 @@ Every persona ends its session with three things in the closing message:
 
 The offer is never a fait accompli. Closing messages suggest; the user decides.
 
-**Why recommend-without-auto-invoke:** Auto-routing bypasses user agency and conflicts with the explicit-invocation principles other personas already follow (Zoe, Theo, Iris). PRISM treats persona transitions as user choices, not pipeline transitions — even when the next step is obvious. The user types the next persona's name (or doesn't) based on the session's actual context.
+**Why recommend-without-auto-invoke:** Auto-routing bypasses user agency and conflicts with the explicit-invocation principles other personas already follow (Zoe, Iris). PRISM treats persona transitions as user choices, not pipeline transitions — even when the next step is obvious. The user types the next persona's name (or doesn't) based on the session's actual context.
 
 ## Per-persona routing
 
@@ -22,20 +22,17 @@ The table below provides the default next persona and the conditional routes for
 
 | Persona | Default next | Conditional routes |
 | --- | --- | --- |
-| **Nora** | Type-dependent: Sasha (bug), Mira/Pixel/Winston (feature), Winston (improvement) | If user knows root cause → Clove direct |
+| **Nora** | Type-dependent: Clove (bug), Mira/Pixel/Winston (feature), Winston (improvement) | Bug with an unknown root cause → Clove confirms it first, then fixes |
 | **Mira** | Winston (architecture) — or Pixel first if UI/UX surface | If single-file scope → Clove direct |
 | **Pixel** | Winston (mode 2 specs always); back to Clove (mode 1 inline) | Mode 2 always routes through Winston — Pixel never hands mode 2 specs directly to Clove |
-| **Winston** | Clove (implementation) | If unknowns surface → Sasha; if plan needs revision → back to user |
+| **Winston** | Clove (implementation) | If plan needs revision → back to user |
 | **Clove** | Briar (self-review before PR) | After Briar clean → ship; after Briar issues → back to Clove |
 | **Briar** | Clove (if issues) or "ready to ship" (if clean) | Never routes to Eric directly — Eric runs after PR opens |
 | **Eric** | Clove (if PR issues) | Comments-only; never approves — PR approval is a human responsibility |
-| **Sasha** | Clove (implementation of fix) | Always — Sasha doesn't write fixes |
 | **Eli** | Done (docs ship via author-ships flow) | If a decision-log emerged during writing → Winston for ADR promotion |
 | **Sage** | Done (changelog ships) | None |
 | **Reese** | Done (checklist ships) | If checklist surfaces a bug → Nora to file follow-up |
 | **Parker** | Mira (decompose to stories) or Nora (ticket initiative/epic handoff) | At strict stakes with rubric findings → Winston |
-| **Theo** | Done (architect docs ship); Eli for paired dev doc when `keepsDevDocs: true` | Paired dev doc is config-conditional on `documentation.keepsDevDocs` |
-| **Ren** | Winston (evaluate refactor plan) or Clove (execute) | Refactor plan needs Winston review before Clove |
 | **Zoe** | Done (report saved); user decides on archive actions | None — cadence persona, not part of handoff chain |
 | **Iris** | Nora (for action-item filing) | Done — user declines the handoff if they don't want tickets filed; no other routing |
 | **Lilac** | Done (standup posted) | None |
@@ -51,12 +48,12 @@ The closing-message offer follows one of three shapes:
 
 Illustrative phrasings (not literal quotes from any specific file — see Nora's `## Next persona` section in `prism-ticket-start/shared.md` and Pixel's handoff paragraph template in `prism-design/shared.md` for the actual in-skill content):
 
-- **Nora**, bug routing: "This is a bug ticket. Handing off to Sasha to verify the root cause before we plan anything."
+- **Nora**, bug routing: "This is a bug ticket. Handing off to Clove to confirm the root cause before we fix it."
 - **Pixel**, mock-spec handoff: "Flagging for Winston: a new shared-component candidate surfaced — wants architecture review before Clove builds against the spec."
 - **Briar**, clean closing: "Self-review's clean. Ready to push and open the PR — want me to do that?"
 - **Briar**, issues closing: "Three Major issues to fix before push. Back to Clove?"
 
-The "Handing off to..." wording is the gold standard for default routes. It's phrased as a proposal, not an execution — the user reads it and types Sasha (or whichever persona) when they're ready.
+The "Handing off to..." wording is the gold standard for default routes. It's phrased as a proposal, not an execution — the user reads it and types Clove (or whichever persona) when they're ready.
 
 ## Skill auto-routing is separate
 

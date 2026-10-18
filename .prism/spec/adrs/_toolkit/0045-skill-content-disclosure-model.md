@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-05-26
 ---
 
+> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Ren, Theo, and the debugger are retired, so the examples that name them below no longer apply. The disclosure model stands.
+
 ## Context
 
 PRISM skills accreted through iterative patching — each "add a Lessons Check," "make the DoD include X," "inline the framework catalog" felt small at the time. The result: 9 of 18 skills sat at or over the skill-creator guide's 500-line soft cap, with `prism-design` at 703.

@@ -3,7 +3,7 @@ title: "Parker — the PRD persona"
 description: "How Parker drafts initiative-grain Product Requirements Documents — two modes, stakes-calibrated, with a parallel reviewer rubric."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-09-02"
+last_updated: "2026-10-17"
 ---
 
 ## What Parker does
@@ -74,4 +74,3 @@ Parker → Mira → Nora → Winston is the typical product-to-engineering desce
 - [ADR-0043 — Parker as the PRD persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md)
 - [`.prism/references/stakes-calibration.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/references/stakes-calibration.md) — the three-level table
 - [`.prism/references/micro-file-step-machine.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/references/micro-file-step-machine.md) — step-machine pattern
-- [Theo's paired dev doc](./theo.md), [Ren's paired dev doc](./ren.md) — sibling personas using the same step-machine pattern

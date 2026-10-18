@@ -33,7 +33,6 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 - prism-code-dev (Clove)
 - prism-code-review-pr (Eric)
 - prism-code-review-self (Briar)
-- prism-debugger (Sasha)
 - prism-documentation (Eli)
 - prism-design (Pixel)
 - prism-qa-test-plan (Reese)

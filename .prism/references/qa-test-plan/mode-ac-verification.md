@@ -37,7 +37,7 @@ Every UNMET criterion becomes an open entry in the plan's `## Review Issues` —
 - The exact procedure followed: the command and its exit code, or the file:line inspected, or the behavior attempted.
 - Concrete expected-vs-observed, quoted — never "not met." If the Evidence sub-bullet named an expected observation and the actual output diverges, quote both.
 - The evidence type (`executed` | `inspected` | `demonstrated`).
-- No prescribed fix. An UNMET is a failing-test report, not a diagnosis — root cause is Clove's job, or Sasha's if it needs debugging. A location observation ("the check lives at `foo.ts:42`") is fine; "change X to Y" is lane drift.
+- No prescribed fix. An UNMET is a failing-test report, not a diagnosis — root cause is Clove's job. A location observation ("the check lives at `foo.ts:42`") is fine; "change X to Y" is lane drift.
 
 ## 5. Save the report
 

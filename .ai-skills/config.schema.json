@@ -182,7 +182,7 @@
 				},
 				"keepsDevDocs": {
 					"type": "boolean",
-					"description": "Whether the team maintains technical/dev docs separate from user-facing docs. When true, Eli's paired-doc workflow is active (prism-doc-walker steps 05/06/07). When false, all docs are user-facing and the paired-doc flow is skipped."
+					"description": "Whether the team maintains technical/dev docs separate from user-facing docs. When true, Eli's paired-doc workflow is active. When false, all docs are user-facing and the paired-doc flow is skipped."
 				},
 				"format": {
 					"type": "string",

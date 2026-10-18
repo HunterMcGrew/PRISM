@@ -31,11 +31,6 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-debugger",
-			"persona": "Sasha",
-			"routing": "auto"
-		},
-		{
 			"id": "prism-retro",
 			"persona": "Iris",
 			"routing": "named-only"
@@ -61,19 +56,9 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-refactor-scout",
-			"persona": "Ren",
-			"routing": "named-only"
-		},
-		{
 			"id": "prism-standup-summary",
 			"persona": "Lilac",
 			"routing": "auto"
-		},
-		{
-			"id": "prism-doc-walker",
-			"persona": "Theo",
-			"routing": "named-only"
 		},
 		{
 			"id": "prism-ticket-start",
