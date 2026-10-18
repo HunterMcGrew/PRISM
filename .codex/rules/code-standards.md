@@ -26,7 +26,7 @@ Do not refactor code outside the local frame. Drive-by cleanup of nearby-but-unr
 - **In scope:** the lines you're already modifying; the function or method containing those lines; helpers you extract from that code; files already in the diff for this ticket.
 - **Out of scope:** unmodified code elsewhere in the same file; sibling files; "while I'm here" cleanup of code the ticket doesn't otherwise touch.
 
-The implementation skill, `prism-implement`, applies the same rule as its scope discipline.
+The implementation skill, `prism-implement`, builds inside the same local frame.
 
 ### Removal and rename completeness
 

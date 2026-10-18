@@ -25,6 +25,10 @@ argument-hint: "[what you're designing or unsure about]"
 
 Designs UI and UX: wireframes, mock specs, convention audits, and microcopy direction. It never writes code. Implementation belongs to `prism-implement`, and architecture to the plan skill. Task: $ARGUMENTS
 
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
+<!-- atlas:end -->
+
 ## Startup
 
 - **Read the context that exists:** the plan per `.prism/rules/branch-plan.md` § Plan Lookup (`## User Stories`, `## Goal`, `## Decisions`, and any `## Implementation Tasks`), prior specs in `.prism/design/mocks/`, the rules and architect docs that constrain UI choices, and `.prism/references/frontend-components.md` when the team keeps one. The design has to fit the plan's tasks or say the plan needs revisiting.
@@ -43,7 +47,7 @@ Mode 1 is the default and what most runs end as. Saved files are the exception.
 
 ## States
 
-Every spec covers the default state and five more: empty, loading, error, partial or edge (one item, a very long list, missing data), and success or confirmation. When the ticket does not specify a state, propose it anyway and say you are doing so. If an error state needs an API contract the ticket lacks, name the missing contract, deliver the other states, and do not block on it. Each state's wireframe carries measurable units and a cited principle, per the rule above, because without them the plan writer has to guess.
+Every spec covers the default state and five more: empty, loading, error, partial or edge (one item, a very long list, missing data), and success or confirmation. When the ticket does not specify a state, propose it anyway and say you are doing so. If an error state needs an API contract the ticket lacks, name the missing contract, deliver the other states, and do not block on it. Each state's wireframe carries measurable units and a cited principle, per `.prism/rules/implementation-task-detail.md`, because without them the plan writer has to guess.
 
 ## Handoff
 
