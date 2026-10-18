@@ -29,7 +29,7 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 - **Loaded** is body plus every `.md` under `.prism/references/` or `.prism/skills/` the body cites by markdown link or backticked path. This is the number the intent's 120-line cap applies to.
 - **Closure** follows the same citations transitively through those files. It is context, not a target, and it depends on how a citation is parsed: a second parser gave 891 for `prism-review-loop` against this one's 914.
 - Architect docs are not counted per skill, because they load by manifest route whatever skill is running. A `load: always` rule is counted once, as always-on content. A `load: skill` rule the body cites counts against that skill's Loaded lines, because it loads only when that skill runs. Without that, content moved into a `load: skill` rule would leave the cap's view. No `load: skill` rule is cited from a skill body today, so the numbers below don't change.
-- PR 5's loaded-lines test becomes the canonical measurement. It has to reproduce the Loaded column below before it gates anything.
+- PR 5's loaded-lines test becomes the measurement the cap uses. As built, it gates on `measureSkillLoad`, which follows citations transitively and counts cited templates, architect docs, and `lib/` files, so it reads higher than the Loaded column below; see § Phase 1 result.
 
 ### Skills
 
@@ -84,6 +84,65 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 - **Result:** 19 clean, 0 not clean, 1 unclear (#470), and 10 with no agent review (chores and version bumps). That is 19/19 with #470 excluded, or 19/20 counting it against.
 - **Method:** each PR's reviews, comments, and commits were merged into one timeline. The last agent verdict is Eric's summary comment, which he edits in place. Commits after that verdict counted as human-requested unless an agent finding, CI, a merge from `main`, or plan bookkeeping explains them.
 - **This is an upper bound, not a rate.** Agent and human post from one account, and no human review text appears on any of the 30 PRs. Human corrections happen in chat and surface only as agent-written commits. See Decision: First-pass clean needs a human-written signal.
+
+### Phase 1 result
+
+Measured on `main` at `594f08d4` on 2026-10-18, after all eleven stack PRs merged. The after-run uses the Body and Loaded measurement the baseline used, and that measurement run against `8ef1df0d` reproduces the Body and Loaded columns above exactly (7,084 and 20,189), so the columns compare. Closure was not re-measured.
+
+Two definitions of Loaded appear, and they differ:
+
+- **Loaded** is the Method definition above: body plus the `.md` under `.prism/references/` or `.prism/skills/` that the body cites. The Loaded columns use it.
+- **Gate** is `measureSkillLoad` in `scripts/ai-skills/lib/skill-loaded-lines.ts`, the number the cap's test gates on. It also follows citations transitively and counts cited templates and architect docs, so it reads higher. The business skills each cite the 63-line strategy template, which Loaded ignores and Gate counts.
+
+| Skill | Body before | Body after | Loaded before | Loaded after | Gate after |
+| --- | --- | --- | --- | --- | --- |
+| prism-audit (was prism-surface-audit) | 317 | 57 | 434 | 57 | 57 |
+| prism-challenge (was devils-advocate) | 123 | 38 | 123 | 38 | 38 |
+| prism-changelog | 273 | 50 | 550 | 50 | 50 |
+| prism-customer-success | 133 | 29 | 398 | 29 | 92 |
+| prism-design | 331 | 36 | 889 | 36 | 36 |
+| prism-docs (was prism-documentation) | 238 | 30 | 968 | 117 | 117 |
+| prism-finance | 143 | 27 | 408 | 27 | 90 |
+| prism-forge-skill (was prism-skill-forge) | 256 | 36 | 356 | 36 | 119 |
+| prism-handoff | 178 | 47 | 278 | 47 | 47 |
+| prism-implement (was prism-code-dev) | 254 | 40 | 814 | 63 | 63 |
+| prism-legal | 148 | 31 | 413 | 31 | 94 |
+| prism-market-research | 137 | 25 | 419 | 25 | 88 |
+| prism-marketing | 115 | 28 | 380 | 28 | 91 |
+| prism-metrics (was prism-data) | 144 | 25 | 426 | 25 | 88 |
+| prism-onboard (was prism-onboarding) | 160 | 55 | 482 | 55 | 55 |
+| prism-plan (was prism-architect) | 266 | 252 | 824 | 528 | 1108 |
+| prism-pr-review (was prism-code-review-pr) | 369 | 58 | 1251 | 114 | 114 |
+| prism-prd | 210 | 62 | 536 | 62 | 62 |
+| prism-qa-plan (was prism-qa-test-plan) | 223 | 40 | 833 | 56 | 56 |
+| prism-recruiting | 148 | 24 | 430 | 24 | 87 |
+| prism-retro | 231 | 54 | 586 | 54 | 54 |
+| prism-review-loop | 307 | 306 | 458 | 306 | 306 |
+| prism-sales | 143 | 29 | 408 | 29 | 92 |
+| prism-self-review (was prism-code-review-self) | 363 | 62 | 1078 | 62 | 62 |
+| prism-standup (was prism-standup-summary) | 205 | 34 | 865 | 34 | 94 |
+| prism-start-ticket (was prism-ticket-start) | 396 | 54 | 1078 | 54 | 116 |
+| prism-strategy (was prism-founder) | 147 | 28 | 412 | 28 | 91 |
+| prism-user-stories | 269 | 261 | 741 | 451 | 704 |
+| tdd | 53 | 52 | 53 | 52 | 52 |
+| **Total, the 29 surviving skills** | **6,280** | **1,870** | **16,891** | **2,518** | **4,123** |
+
+Four skills were deleted, not thinned: Sol, Sasha, Ren, and Theo carried 804 body lines and 3,298 loaded lines in the baseline.
+
+| Measure | Baseline (`8ef1df0d`) | After (`594f08d4`) |
+| --- | --- | --- |
+| Skills | 33 | 29 |
+| Body lines | 7,084 | 1,870 |
+| Loaded lines | 20,189 | 2,518 |
+| Gate lines | not measured | 4,123 |
+| Skills over 120 loaded lines | 32 | 3 (`prism-plan`, `prism-user-stories`, `prism-review-loop`) |
+| `load: always` rules | 21 files, 1,622 lines, 19.7k words | 21 files, 1,584 lines, 19.2k words |
+| `CLAUDE.md` | 54 lines | 54 lines |
+| `AGENTS.md` | 1,822 lines, 94 hand-authored | 1,784 lines, 94 hand-authored |
+| `.md` files under `.prism/references/` | 70 | 16 |
+| `.md` files under `.prism/skills/` | 59 | 0 |
+
+Gate gives the same three skills over the cap. The largest skill outside them loads 119 lines under Gate (`prism-forge-skill`). Phase 1 did not rewrite the always-on rules, so the always-on line count moved only where a deletion or rename reached a rule.
 
 ---
 
@@ -264,6 +323,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - **`prism-plan`, `prism-user-stories`, and `prism-review-loop` stay over the 120-line cap through phase 1.** Winston is renamed to `prism-plan` with his plan logic intact. Mira and the review loop keep their names. Their replacements land in phase 2 (`intent`, the plan-folder writer) and phase 3 (`REVIEW.md` and the review runners). Thinning them now would cut logic nothing yet replaces. The loaded-lines check lists all three on its allowlist with this reason.
 
 - **The 120-line cap is enforced by a check, not by review.** PR 5 adds a test that measures loaded lines the way § Baseline § Method defines them. It fails when any skill not on its allowlist is over. Each lane PR removes its skills from the allowlist, so the allowlist shrinks one PR at a time and cannot regrow without a visible diff. Without a check the cap is prose, and the intent's enforcement test says prose does not hold.
+  - The cap gates on `measureSkillLoad`, which follows citations transitively and also counts cited templates, architect docs, and `lib/` files, so it reads higher than the baseline's Loaded column. See § Phase 1 result.
 
 - **Old persona names stay in each renamed persona skill's `description` as trigger words.** "Briar" keeps routing to `prism-self-review`. Consumers' orphan cleanup removes the old directories on the next `prism update`, per `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution.
 
@@ -509,7 +569,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 ## Sessions
 
-- 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc] open: Intent — phase 1 of the AI-native SDLC port; Bounds — baseline, four deletions, rename and thin, umbrella speed bump, no phase-2 artifacts; Approach — stack of PRs, review loop on each, merge in order
+- 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc] open: Intent — phase 1 of the AI-native SDLC port; Bounds — baseline, four deletions, rename and thin, umbrella speed bump, no phase-2 artifacts; Approach — stack of PRs, review loop on each, merge in order · close: scope held
 
 ---
 
@@ -548,6 +608,8 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-10-18 [huntermcgrew/prism-499-business]: Renamed Vera and Tess to `prism-strategy` and `prism-metrics`, and thinned all nine business skills to 85 to 92 loaded lines (from 306 to 339). The shared conventions moved into a thinned strategy template that every skill cites; see Decision: What the business skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-business]: Briar pass 1 fixes. Every business skill now reads the strategy template unconditionally, the out-of-lane and grain guards live in its conventions, and `## Research` and `## Finance` are named everywhere; the three findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-business]: Eric pass 1 fixes. Removed the closed-epic sentence from `business-layer.md` and moved the long-artifact allowance into the template convention every business skill reads; the two findings are under `## Review Issues`.
+- 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Recorded the phase-1 result against the baseline (29 skills, 1,870 body lines, 2,518 loaded, 3 over the cap) and ticked AC-2 to AC-7. AC-1 stays unticked because 7 dated QA and research records still name Sol, Sasha, or the retired skill IDs.
+- 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Widened AC-1's grep exclusions to the QA and research records and the generated ADR copies, accepted by Hunter, and ticked AC-1 on a 0-file result. Fixed four self-review Minors in § Phase 1 result and the cap Decision.
 
 ---
 
@@ -555,23 +617,38 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 ### Non-behavioral
 
-- [ ] **AC-1** No live file references Sol, Sasha, Ren, or Theo by name or skill ID. The only exceptions are the superseded ADRs that recorded their decisions, the ADRs that supersede them, and the 1.0.0 migration note.
-  - Evidence (machine): a `git grep` for each name and ID, excluding plans, lessons, retros, audits, archived history, `.prism/spec/adrs/`, and the migration note, returns no file. The same grep with no exclusions returns at least one file, which proves the pattern matches.
-- [ ] **AC-2** Each ADR whose decision a deletion retires carries `Status: superseded` and names its successor.
+- [x] **AC-1** No live file references Sol, Sasha, Ren, or Theo by name or skill ID. The only exceptions are the superseded ADRs that recorded their decisions, the ADRs that supersede them, and the 1.0.0 migration note.
+  - Evidence (machine): a `git grep` for each name and ID, excluding plans, lessons, retros, audits, archived history, `.prism/qa/`, `.prism/research/`, `.prism/spec/adrs/` and its generated copies under `.claude/`, `.codex/`, and `.cursor/`, and the migration note, returns no file. The same grep with no exclusions returns at least one file, which proves the pattern matches.
+  - Result (2026-10-18, `594f08d4`): Met. With the exclusions widened per the accepted AC Adjustment, the grep returns 0 files. The same grep with no exclusions returns 128 files, so the pattern matches. No migration note exists yet, so that exclusion matched nothing.
+- [x] **AC-2** Each ADR whose decision a deletion retires carries `Status: superseded` and names its successor.
   - Evidence (machine): PR 3 and PR 4 each list their retired ADRs in their own tasks, and `grep` finds `Status: superseded` and a successor in each one listed.
-- [ ] **AC-3** Every skill the intent's § Skills roster renames carries its new name with the `prism-` prefix. `tdd` keeps its bare name, and `prism-user-stories` and `prism-review-loop` keep theirs until phase 2 and phase 3 replace them. Every renamed persona skill keeps its old persona name in its `description`.
+  - Result (2026-10-18, `594f08d4`): Met. All 14 ADRs the plan lists as retired (0048 to 0056, 0061, 0066, and 0069 by PR 3, 0041 and 0042 by PR 4) carry `Status: superseded`, and each names `Superseded-by: 0078` or `0079`.
+- [x] **AC-3** Every skill the intent's § Skills roster renames carries its new name with the `prism-` prefix. `tdd` keeps its bare name, and `prism-user-stories` and `prism-review-loop` keep theirs until phase 2 and phase 3 replace them. Every renamed persona skill keeps its old persona name in its `description`.
   - Evidence (machine): `roles.json` IDs match the roster. Each renamed persona skill's frontmatter `description` contains the old persona name.
-- [ ] **AC-4** Every skill except the three in Decision `prism-plan, prism-user-stories, and prism-review-loop stay over the 120-line cap` loads 120 lines or fewer.
+  - Result (2026-10-18, `594f08d4`): Met. `roles.json` holds 29 IDs that equal the roster and the 29 skill directories. The `description` of each renamed persona skill contains the old persona name (Clove, Winston, Briar, Eric, Eli, Nora, Atlas, Zoe, Lilac, Reese, Vera, and Tess), and `prism-challenge` and `prism-forge-skill` keep "devil's advocate" and "create skill".
+- [x] **AC-4** Every skill except the three in Decision `prism-plan, prism-user-stories, and prism-review-loop stay over the 120-line cap` loads 120 lines or fewer.
   - Evidence (machine): the loaded-lines test passes with an allowlist holding exactly those three IDs.
-- [ ] **AC-5** `pnpm prism:check` is green on every merged PR in the stack.
+  - Result (2026-10-18, `594f08d4`): Met. `skill-loaded-lines.test.ts` passes with `OVER_CAP_ALLOWLIST` holding exactly `prism-plan`, `prism-user-stories`, and `prism-review-loop`. The largest skill outside the allowlist loads 119 lines.
+- [x] **AC-5** `pnpm prism:check` is green on every merged PR in the stack.
   - Evidence (machine): CI on each PR, on both `ubuntu-latest` and `windows-latest`.
+  - Result (2026-10-18, `594f08d4`): Met. All eleven stack PRs (#500 to #510) merged to `main`, and each final head has `prism-check` green on `ubuntu-latest` and `windows-latest`, the two jobs that run `pnpm prism:check`. `main` at `594f08d4` is green on both. Earlier heads of each PR were not examined.
 
 ### Behavioral
 
-- [ ] **AC-6** Given a session that has read a rule file's governing docs, When it adds a new `##` heading to that rule file, Then the write is denied once with the rule's load trigger named, and the same edit retried passes.
+- [x] **AC-6** Given a session that has read a rule file's governing docs, When it adds a new `##` heading to that rule file, Then the write is denied once with the rule's load trigger named, and the same edit retried passes.
   - Evidence (machine): the Claude and Codex legs in `umbrella-speed-bump.test.ts`. Each leg fails if the deny is missing, if the reason names the wrong trigger, or if the retry is denied.
-- [ ] **AC-7** Given the same edit on Cursor, When the hook runs, Then the edit passes and the docs name the gap.
+  - Result (2026-10-18, `594f08d4`): Met. `umbrella-speed-bump.test.ts` passes. Its three `claude:` and three `codex:` legs cover the deny that names the load trigger, the seeded acknowledgement, and the retry after a read. The legs were run as written, not mutation-tested.
+- [x] **AC-7** Given the same edit on Cursor, When the hook runs, Then the edit passes and the docs name the gap.
   - Evidence (machine): the Cursor test asserts `runPreToolUseArm` returns `null`. A `grep` finds the limitation in `hook-runtime.md`.
+  - Result (2026-10-18, `594f08d4`): Met. The Cursor test ("the edit passes, because Cursor has no deny envelope or write tool listed") passes, and `hook-runtime.md` § Umbrella-section speed bump says Cursor has no speed bump, for the same reason it has no write gate.
+
+### AC Adjustments
+
+#### AC Adjustment: AC-1 excludes the QA and research records
+- **Original:** AC-1's grep excludes plans, lessons, retros, audits, archived history, `.prism/spec/adrs/`, and the migration note.
+- **Proposed:** the grep also excludes `.prism/qa/`, `.prism/research/`, and the generated ADR copies under `.claude/`, `.codex/`, and `.cursor/`.
+- **Reason:** those paths are history records, not live files. The stack's PR 3 to PR 11 sweeps already treated them as history, and the ADR copies are byte copies of the excluded `.prism/spec/adrs/`. Without them the grep returned six QA reports and one research file, and no live file.
+- **Status:** `accepted` by Hunter on 2026-10-18, in chat.
 
 ---
 
