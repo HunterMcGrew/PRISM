@@ -1,5 +1,9 @@
 Reviews the current branch's diff against its plan and the repo's rules, then records the findings in the plan. It reports in chat only: it never posts to GitHub (the PR-review skill's lane) and never fixes what it finds (the implementing skill's lane).
 
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
+<!-- atlas:end -->
+
 ## Startup
 
 - **Resolve the branch, repo root, and PR** with `git branch --show-current`, `git rev-parse --show-toplevel`, and `gh pr list --head <branch>`. Review `git diff ${DEFAULT_BRANCH}...HEAD`, and read a full file only when the diff cannot be understood without it. A diff is unfamiliar enough to catch what re-reading your own code would slide past.
@@ -16,7 +20,9 @@ Reviews the current branch's diff against its plan and the repo's rules, then re
 - **Architect docs in the diff** get source-verified review per `.prism/rules/architect-doc-verification.md`. A diverged or missing claim is Major at minimum.
 - **Removals and renames** are checked by searching the tree for the old name. The file that still uses it never appears in the diff.
 - **Tests and accessibility.** New logic needs a test that fails if the behavior regresses. UI changes meet `.prism/rules/accessibility.md` and have visual-regression or component-explorer coverage.
-- **Docs.** When the diff changes a feature a `docs/` page covers (mapping in `.prism/architect/_toolkit/documentation.md`), note that the page may need an update and route to Eli (`prism-documentation`). Stay silent when no page matches.
+- **Smells.** Flag a silent fallback that defaults over an unclear invariant, clever indirection where explicit code would do, shared data or logic duplicated at 2 sites (similar shape at 3 or more), and an abstraction with one consumer, which is Major unless a `## Decisions` entry documents it.
+- **Docs.** When the diff changes a feature a `docs/` page covers, or a rule or architect file that has a `docs/` counterpart, note that the page may need an update and route to the docs skill (`prism-docs`). The documentation architect doc holds the mapping, and a consumer's `.prism/architect/documentation-conventions.md` extends it when it exists. Stay silent when no page matches.
+- **Coverage.** Sweep the whole reviewed range before reporting, not only until the first defects turn up, because a partial sweep costs a repair-and-re-review round (PRISM PRs #470 and #471 took ten rounds and three). On a re-review, re-run the checks the prior pass left unfinished and do not only confirm its fixes.
 - **Cleanup pass.** Confirm the author's pre-commit pass held for readability, reuse, and maintainability inside the local frame.
 - **Cleaner paths.** Add one non-blocking line naming a structural simplification that deletes complexity instead of relocating it. It never changes the verdict, and `prism-review-loop` routes it.
 
@@ -40,16 +46,16 @@ Write the plan in one pass before the chat summary, because the plan is the dura
 
 - **`## Review Issues`:** one entry per finding in the format `.prism/rules/branch-plan.md` defines. A pass with no findings writes `No issues found — <YYYY-MM-DD> [<branch>]`, so a clean pass is distinguishable from a review that never ran.
 - **`## Cleanup Items` and `## PR Readiness`:** record dead code and debug artifacts, the checklist state, and the build result.
-- **`## Acceptance Criteria`:** confirm each criterion against the diff. Record a difference as a `proposed` entry under `### AC Adjustments` and never rewrite a criterion silently. Once an adjustment is accepted, sync the ticket's AC section and log a row in the AC Sync Log.
+- **`## Acceptance Criteria`:** when the plan has none, propose criteria from the diff as `proposed` entries. Otherwise confirm each criterion against the diff. Record a difference as a `proposed` entry under `### AC Adjustments` and never rewrite a criterion silently. Once an adjustment is accepted, sync the ticket's AC section and log a row in the AC Sync Log.
 - **Land the plan commit.** Stage the plan file alone and run `git diff --cached --name-only`. It must print exactly that one path, and any other path means abort and report it. Commit as `chore: self-review plan record for <ticket-id>`, then push. From a worktree use `git push origin HEAD:refs/heads/<branch>`, since a detached HEAD cannot push as `HEAD`. A review record that is not pushed dies with the worktree.
 
 The chat reply opens with the verdict, either `Ready for PR` or `N Major, M Minor to fix`. A review that did not cover the whole diff, or skipped a check it could not run, names what is unreviewed in the verdict and never reports an unqualified ready. Then list issues by severity as `<file>:<line> — description`, followed by one line each for Accessibility, Tests, Docs, Cleanup, and Cleaner paths. Do not repeat plan content in chat.
 
 ## Boundaries and handoff
 
-- **Issues found:** route to the implementing skill, Clove (`prism-code-dev`), or to Eli (`prism-documentation`) when the diff is docs only. Route a UX-level problem to Pixel (`prism-design`) before anyone changes code. Hold the PR-review recommendation until the issues are fixed.
+- **Issues found:** route to the implementing skill (`prism-implement`), or to the docs skill (`prism-docs`) when the diff is docs only. Route a UX-level problem to `prism-design` before anyone changes code. Hold the PR-review recommendation until the issues are fixed.
 - **Clean, PR exists:** recommend `review pr #<n>` in a fresh chat, because the PR reviewer should read the code without this session's reasoning.
-- **Clean, no PR yet:** hand back to the author skill to commit, push, and open it (`prism-documentation` when every changed path is under `docs/` or `.claude/`, otherwise `prism-code-dev`). Authors ship and reviewers review.
+- **Clean, no PR yet:** hand back to the author skill to commit, push, and open it (`prism-docs` when every changed path is under `docs/` or `.claude/`, otherwise `prism-implement`). Authors ship and reviewers review.
 - Propose these handoffs and never invoke them.
 
 Before closing the session, append to `.prism/lessons.md` when a documented lesson should have prevented an issue you found, or when an assumption you made proved wrong.

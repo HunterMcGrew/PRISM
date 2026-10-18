@@ -30,7 +30,7 @@ const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 998 },
 	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 452 },
 	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
-	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 253 },
+	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 334 },
 	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
 	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 789 },
 	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 758 },

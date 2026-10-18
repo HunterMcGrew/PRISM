@@ -57,9 +57,9 @@ ask is create or migrate.
   `PRISM_OWNED_GLOBS`. The only skill that legitimately ships a `prism-*` ID is
   one being contributed back to the PRISM toolkit itself.
 - **Authoring rules.** Every skill body and `description` passes the four
-  tests and the description shape in
-  [`.prism/rules/skill-authoring.md`](../../../.prism/rules/skill-authoring.md),
-  which loads whenever a skill source is edited.
+  tests (policy, trigger, length, enforcement) and follows the body layout and
+  description shape in
+  [`.prism/architect/guides/writing-a-skill.md`](../../../.prism/architect/guides/writing-a-skill.md).
 - **Hard limits enforced by tests.** The `description` field caps at 1000 chars
   (`MAX_FRONTMATTER_DESCRIPTION_LENGTH`, asserted by `discovery-metadata.test.ts`
   so Codex discovery can expose the skill); the generated SKILL.md body caps at
@@ -79,8 +79,8 @@ ask is create or migrate.
 This is the load-bearing fork (ADR-0046). Walk the user through it before
 collecting anything else:
 
-- **Persona** — someone you *switch into*. Has a human name, a domain/lens, a
-  voice, and named triggers. Generates a Codex agent adapter
+- **Persona** — a role users address by name. Has a human name, a domain, and
+  named triggers, and the session still answers in its own voice. Generates a Codex agent adapter
   (`.codex/agents/<id>.toml`) and a Claude agent definition. Choose this when the
   skill embodies a role a user addresses by name ("hey Pixel").
 - **Utility** — an *action* every persona can run. No name, no voice, no
@@ -101,26 +101,26 @@ Winston, not a scaffolding task. Do not proceed to Step 2 until this is resolved
 - **Skill ID** — function-descriptive (describes what the skill does, so a user
   who doesn't know the persona name can still find it). Apply the namespace
   convention above: never `prism-*` for a consumer skill.
-- **Persona type only:** human name, voice/lens one-liner, domain, and 3–8
-  distinctive trigger keywords.
+- **Persona type only:** human name, domain, and 3–8 distinctive trigger
+  keywords.
 - **Utility type:** function trigger keywords only (no name to route on).
 
 ### Step 3 — Write the source files
 
 Write under `.ai-skills/skills/<id>/`:
 
-- **`frontmatter.yml`** — `name: <id>` plus a `description` using the 4-part
-  shape from `skill-authoring.md` § Description field shape (≤1000 chars, folded
-  `>` scalar). Persona descriptions carry the name twice (sentence 1 + Triggers
-  line); utility descriptions drop the name and carry function keywords only.
-  Add an `argument-hint` line when the skill takes arguments.
-- **`shared.md`** — the skill body, sorted through the disclosure gate.
-  - *Persona:* PIN the voice, the "How X Thinks" lens, anti-pattern guardrails,
-    the workflow router, and the Definition of Done. Externalize whole
-    modes/procedures to `.prism/references/<id>/<topic>.md` with a named,
-    conditional trigger (never a vague "see the references").
-  - *Utility:* procedure-first. No voice section, no lens, no "You are X" opener.
-    The body opens with the procedure; the active persona supplies the voice.
+- **`frontmatter.yml`** — `name: <id>` plus a `description` in the guide's
+  shape: what it does, an optional boundary sentence, and a `Triggers:` line
+  (≤1000 chars, folded `>` scalar). A persona skill lists the persona name in
+  quotes in `Triggers:` so a request by name still routes. A utility lists
+  function keywords only. Add an `argument-hint` line when the skill takes
+  arguments.
+- **`shared.md`** — the skill body, written to the four tests. Every line is
+  policy the model would not apply unprompted, and a line that fails is cut,
+  never moved into a reference or step file, because the loaded-lines check
+  counts those too. Persona and utility alike get no voice section, no
+  "How X Thinks" lens, and no "You are X" opener. The body opens with what the
+  skill does and follows the guide's layout.
 - **Optional `claude.md` / `codex.md` / `cursor.md`** — per-platform additions.
   Create one only when a platform genuinely needs extra content; otherwise omit
   it (per [`lazy-artifacts.md`](../../../.prism/rules/lazy-artifacts.md) — no
