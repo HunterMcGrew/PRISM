@@ -20,7 +20,7 @@ The merge authority is the one conductor job that still has work to do. Without 
 
 **The conductor is retired with no replacement, and the main session holds the merge authority ADR-0061 gave Sol.**
 
-- The main session may squash-merge a PR when `features.mainSessionMayMerge: true`, the review loop came back clean, and the PR carries no `review:has-minors` label. These are ADR-0061's two conditions, unchanged.
+- The main session may squash-merge a PR when `features.mainSessionMayMerge: true`, the review loop's final PR-review pass reported the clean state, and the PR carries no `review:has-minors` label. These are ADR-0061's two conditions, with the first stated so a missing label alone cannot satisfy it. The session flips the PR ready before it merges.
 - The flag keeps ADR-0066's mechanics under a new name. It is absent or false by default, never surfaced during init or onboarding, and preserved across reconfigure. Absent or false means the human merges, which is the consumer default.
 - A reviewer persona or a subagent never merges, whatever the flag says.
 
@@ -39,7 +39,7 @@ ADRs 0048 to 0056, 0061, 0066, and 0069 describe conductor behavior or its deliv
 - **Negative:** Orchestrated multi-lane runs are gone. Parallel work now means the user starting separate sessions, or the main session spawning subagents with no run-state, budget governor, or reconcile registry behind them.
 - **Negative:** No dispatcher runs the retro involuntarily. The plan-close retro gate is a declinable nudge only, which was true before Sol and is true again.
 - **Negative:** For self-development PRs the main session is now both author and merger. The compensating controls are the two merge conditions, which are visible on the PR, and the review loop, which runs reviewers as separate agents. ADR-0061 recorded that the auto-mode classifier ignores agent-written authority, so each session still needs an explicit in-session yes. This ADR relies on the same property and has not re-tested it for the main session.
-- **Negative:** Merge safety depends on the review loop applying `review:has-minors` correctly, as it did under ADR-0061. An absent label can also mean only bookkeeping-only Minors remain, which `.prism/rules/followup-scope.md` treats as non-gating, so confirming why the label is absent means reading the review summary, not just noting the missing label.
+- **Negative:** Merge safety depends on the review loop applying `review:has-minors` correctly, as it did under ADR-0061. An absent label can also mean only bookkeeping-only Minors remain, which `.prism/rules/followup-scope.md` treats as non-gating, so confirming why the label is absent means reading the review summary, not just noting the missing label. The label is also absent before any review has run, and while a Critical or Major finding stands, because the reviewer labels only a pass it can grade. So the merge condition is the final PR-review pass's clean state, with no `review:has-minors` label on top of it, never the missing label alone.
 - **Neutral:** Consumers are unchanged. The flag is absent in their config, so the human merges.
 - **Neutral:** The `needs-fix`, `needs-replan`, and `found-followup-work` vocabulary still appears in persona prose. Its only defined consumer was Sol, and the per-lane skill rewrites retire it.
 
