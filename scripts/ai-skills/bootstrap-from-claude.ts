@@ -28,7 +28,7 @@ const canonicalSkillsRoot = path.join(repoRoot, ".ai-skills", "skills");
 const forceMode = process.argv.includes("--force");
 
 const SKILL_ID_RENAMES: ReadonlyArray<readonly [string, string]> = [
-	["thrive-architect", "prism-architect"],
+	["thrive-architect", "prism-plan"],
 	["thrive-changelog", "prism-changelog"],
 	["thrive-code-dev", "prism-implement"],
 	["thrive-code-review-pr", "prism-pr-review"],
@@ -37,7 +37,7 @@ const SKILL_ID_RENAMES: ReadonlyArray<readonly [string, string]> = [
 	["thrive-pixel", "prism-design"],
 	["thrive-qa-test-plan", "prism-qa-test-plan"],
 	["thrive-standup-summary", "prism-standup-summary"],
-	["thrive-ticket-start", "prism-ticket-start"],
+	["thrive-ticket-start", "prism-start-ticket"],
 	["thrive-user-stories", "prism-user-stories"],
 ];
 

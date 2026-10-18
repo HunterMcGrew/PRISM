@@ -35,7 +35,7 @@ Winston runs in **plan-mode-only** when Pixel flagged "no architectural concerns
 The change lands in three surfaces:
 
 - **`.ai-skills/skills/prism-design/shared.md`** — handoff section drops Path B; team-flow section reflects single canonical path; mock-spec template adds the architectural inputs Winston needs.
-- **`.ai-skills/skills/prism-architect/shared.md`** — adds the post-Pixel plan-mode-only path.
+- **`prism-architect/shared.md`** — adds the post-Pixel plan-mode-only path.
 - **`.prism/architect/_toolkit/skills-ecosystem.md`** + **`AGENTS.md`** — Cross-skill Handoffs and Ownership tables updated.
 
 ## Consequences
@@ -53,4 +53,4 @@ The change lands in three surfaces:
 - [ADR-0013](./0013-pixel-is-invoke-only.md) — related: Pixel is invoke-only on the discovery side. ADR-0034 governs the routing destination, ADR-0013 governs the routing source.
 - [ADR-0018](./0018-persona-lane-ownership.md) — related: persona headings in `## Implementation Tasks` define ownership. Always-Winston ensures the tasks section exists for every mode 2 implementation.
 - `.ai-skills/skills/prism-design/shared.md` — the surface where the change lands on the design side.
-- `.ai-skills/skills/prism-architect/shared.md` — the surface where the post-Pixel plan-mode-only path is added.
+- `prism-architect/shared.md` — the surface where the post-Pixel plan-mode-only path is added.

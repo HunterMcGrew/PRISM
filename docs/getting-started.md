@@ -81,4 +81,4 @@ The `npx` path is the recommended starting point. For air-gapped environments, c
 
 ## Going deeper
 
-The onboarding architecture — stack detection, rule generators, stub-anchor population — is documented in the Atlas skill at `.ai-skills/skills/prism-onboarding/`. The ADRs for the install layout and parameterization model live in [`.prism/spec/adrs/`](../.prism/spec/adrs/).
+The onboarding architecture — stack detection, rule generators, stub-anchor population — is documented in the Atlas skill at `.ai-skills/skills/prism-onboard/`. The ADRs for the install layout and parameterization model live in [`.prism/spec/adrs/`](../.prism/spec/adrs/).

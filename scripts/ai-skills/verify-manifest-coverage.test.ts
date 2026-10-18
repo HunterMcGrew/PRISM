@@ -40,10 +40,10 @@ test("compileMatcher: ** matches across path segments", () => {
 
 test("compileMatcher: ** in the middle of a pattern matches multi-segment", () => {
 	const matcher = compileMatcher(".claude/skills/**/SKILL.md");
-	assert.equal(matcher(".claude/skills/prism-architect/SKILL.md"), true);
+	assert.equal(matcher(".claude/skills/prism-plan/SKILL.md"), true);
 	assert.equal(matcher(".claude/skills/foo/bar/SKILL.md"), true);
-	assert.equal(matcher(".codex/skills/prism-architect/SKILL.md"), false);
-	assert.equal(matcher(".claude/skills/prism-architect/other.md"), false);
+	assert.equal(matcher(".codex/skills/prism-plan/SKILL.md"), false);
+	assert.equal(matcher(".claude/skills/prism-plan/other.md"), false);
 });
 
 test("compileMatcher: * matches within a single segment", () => {
@@ -94,7 +94,7 @@ test("loadedDocsForScope: collects matches from every key per file", () => {
 		"**": "skills-ecosystem.md",
 	};
 	const docs = loadedDocsForScope(manifest, [
-		".claude/skills/prism-architect/SKILL.md",
+		".claude/skills/prism-plan/SKILL.md",
 	]);
 	assert.deepEqual(docs, ["skills-ecosystem.md", "spec-editing.md"]);
 });
@@ -133,7 +133,7 @@ test("loadedDocsForScope: array value loads all docs for a matching file", () =>
 		".claude/skills/**": ["spec-editing.md", "skills-ecosystem.md"],
 	};
 	const docs = loadedDocsForScope(manifest, [
-		".claude/skills/prism-architect/SKILL.md",
+		".claude/skills/prism-plan/SKILL.md",
 	]);
 	assert.deepEqual(docs, ["skills-ecosystem.md", "spec-editing.md"]);
 });

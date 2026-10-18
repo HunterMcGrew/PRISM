@@ -351,7 +351,7 @@ test("scanLines: relative link is not resolved or flagged", async () => {
 			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
 			await fs.writeFile(
 				path.join(root, ".prism", "rules", "doc.md"),
-				"See [the skill](../skills/prism-architect/SKILL.md).\n"
+				"See [the skill](../skills/prism-plan/SKILL.md).\n"
 			);
 		},
 		async (root) => {
@@ -378,7 +378,7 @@ test("scanLines: .claude/ ref is not resolved or flagged", async () => {
 			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
 			await fs.writeFile(
 				path.join(root, ".prism", "rules", "doc.md"),
-				"See [the skill](.claude/skills/prism-architect/SKILL.md).\n"
+				"See [the skill](.claude/skills/prism-plan/SKILL.md).\n"
 			);
 		},
 		async (root) => {

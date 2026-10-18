@@ -1,0 +1,9 @@
+name: prism-start-ticket
+description: >
+  Prepares a ticket for work: fetches or creates it in the session's tracker,
+  checks it against the Definition of Ready, creates the branch, and updates
+  the description and acceptance criteria. Works with whatever tracker the
+  session has. Triggers: "Nora", start PRISM-####, pick up this ticket, create
+  a ticket, file a bug, open a ticket.
+argument-hint: "[${TICKET_PREFIX}-####]"
+compatibility: Needs a local git environment. Uses the session's ticket tracker (a tracker MCP or gh issue) when one is available. Supported in Claude Code CLI and VS Code extension. Not supported on Claude.ai web.

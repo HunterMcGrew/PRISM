@@ -45,7 +45,7 @@ A named character a skill embodies — Winston the architect, Clove the implemen
 
 ## Skill
 
-An invokable capability in the ecosystem — `prism-architect`, `prism-implement`, `prism-handoff`. A skill is authored once in canonical form and built into per-runtime adapters (Claude, Codex, Cursor). Two kinds exist, set by the `type` discriminator in `roles.json` (ADR-0046):
+An invokable capability in the ecosystem — `prism-plan`, `prism-implement`, `prism-handoff`. A skill is authored once in canonical form and built into per-runtime adapters (Claude, Codex, Cursor). Two kinds exist, set by the `type` discriminator in `roles.json` (ADR-0046):
 
 - **Persona skill** (the default) — carries a [persona](#persona) with a voice and lens; the build generates a Codex agent adapter.
 - **Utility skill** — `type: "utility"`; an action any persona can run (`prism-handoff`, `prism-review-loop`). No persona, no voice of its own, no agent adapter — it runs in the invoking persona's voice.

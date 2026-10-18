@@ -54,4 +54,4 @@ Write two things into the epic plan:
 
 Default next persona is Winston — his plan-mode reads `## User Stories` unchanged and picks up the map for free; his vertical-mode gate and Epic Detection `## Stories` child references adopt the map's boundaries without any Winston-side change.
 
-Nora cuts one ticket per candidate-ticket marker through her existing create-path (`../ticket-start/create-path.md`) — the story's title, AC hints, and MoSCoW priority seed the ticket without re-elicitation. No batch-cut mode exists yet; Nora creates tickets one at a time, same as any other ticket.
+Nora cuts one ticket per candidate-ticket marker through the "Creating a ticket" path of `prism-start-ticket` — the story's title, AC hints, and MoSCoW priority seed the ticket without re-elicitation. No batch-cut mode exists yet; Nora creates tickets one at a time, same as any other ticket.

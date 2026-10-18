@@ -1,0 +1,9 @@
+name: prism-onboard
+description: >
+  Onboards a repo to PRISM: detects the team's stack, asks what detection
+  cannot answer, writes `.ai-skills/config.json`, generates per-team rules, and
+  regenerates the outputs so stub anchors fill. Runs once per install or stack
+  change and resumes after an interruption. Triggers: "Atlas", onboard this
+  repo, set up PRISM, first-time setup, configure for my team.
+argument-hint: "[onboard | reconfigure | resume]"
+category: onboarding

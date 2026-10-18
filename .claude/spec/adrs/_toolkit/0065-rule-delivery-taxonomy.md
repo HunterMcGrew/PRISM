@@ -42,4 +42,4 @@ Every canonical rule lands in exactly one of five modes. The mode follows from o
 - ADR-0035 — Rule loading tiers (the `paths:` load-gating this taxonomy composes with)
 - ADR-0036 — Security as a distributed rule (the GENERATE precedent for per-stack content)
 - ADR-0064 — Consumer/internal boundary (the sibling boundary decision; ADRs themselves are neither shipped nor tailored — they stay internal)
-- `.ai-skills/skills/prism-onboarding/shared.md` — Atlas step-10 generators and the AC offer
+- `prism-onboarding/shared.md` — Atlas step-10 generators and the AC offer

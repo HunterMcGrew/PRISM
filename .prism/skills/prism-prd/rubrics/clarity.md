@@ -8,7 +8,7 @@ You are evaluating the PRD's clarity — ambiguity red flags, assumption discipl
 
 ## Evaluation axes
 
-1. **Ambiguity red flags.** Apply Nora's ambiguity red flag list from `.ai-skills/skills/prism-ticket-start/shared.md` § Requirements Quality. Don't re-enumerate the list here; cite it and apply. Flag any instance you spot.
+1. **Ambiguity red flags.** Flag vague words that hide a missing definition: "appropriate", "suitable", "etc.", "and so on", "fast", "user-friendly", "improve" with no measure, "should" where the requirement is "must", and "handle errors gracefully" with no error states named.
 2. **Assumption discipline.** Are `[ASSUMPTION]` (greenfield) or `[INFERRED]` (brownfield) markers numbered? Is every numbered marker enumerated in `## Open questions`? Are they specific enough that the user can validate or correct them?
 3. **Section completeness.** Are all 10 required sections present (Problem statement, Target users, Success metrics, Scope, User journeys, Requirements, Constraints, Open questions, Stakeholders, Decision log link)? Are any sections empty or boilerplate-only?
 4. **Internal consistency.** Does the scope match the requirements? Do the user journeys imply requirements that are missing? Do stated constraints contradict the requirements list?

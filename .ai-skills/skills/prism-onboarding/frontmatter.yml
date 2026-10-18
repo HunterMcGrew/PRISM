@@ -1,9 +1,0 @@
-name: prism-onboarding
-description: >
-  Atlas — onboarding specialist. Detects the team's stack, generates per-team
-  rules with stack-appropriate security guidance, populates stub anchors, and
-  writes `.ai-skills/config.json`. Runs once per install or stack change;
-  resumable. Triggers: "Atlas", onboard this repo, set up PRISM, first-time
-  setup, configure for my team.
-argument-hint: "[onboard | reconfigure | resume]"
-category: onboarding

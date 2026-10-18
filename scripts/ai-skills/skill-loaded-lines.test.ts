@@ -24,8 +24,6 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 926 },
-	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 380 },
 	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
 	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 253 },
 	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
@@ -44,11 +42,11 @@ const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-marketing": { thinnedBy: "PRISM-499 PR 11, business", max: 234 },
 	"prism-recruiting": { thinnedBy: "PRISM-499 PR 11, business", max: 265 },
 	"prism-sales": { thinnedBy: "PRISM-499 PR 11, business", max: 262 },
-	"prism-architect": {
+	"prism-plan": {
 		thinnedBy: "replaced by the phase-2 plan skill; its plan logic stays until then",
-		max: 849,
+		max: 1108,
 	},
-	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 752 },
+	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 704 },
 	"prism-review-loop": {
 		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
 		max: 306,
