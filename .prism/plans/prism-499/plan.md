@@ -15,7 +15,7 @@ https://github.com/HunterMcGrew/PRISM/issues/499
 
 ## Goal
 
-Land phase 1 of the intent's § Order of work: measure the baseline, delete Sol, Sasha, Ren, and Theo, rename and thin every surviving skill to the four tests, and port the umbrella-section speed bump into the write gate.
+Land phase 1 of the intent's § Order of work: measure the baseline, delete Sol, Sasha, Ren, and Theo, rename every surviving skill and thin it to the four tests (except the three whose replacements land later), and port the umbrella-section speed bump into the write gate.
 
 ---
 
@@ -25,11 +25,11 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 
 ### Method
 
-- **Body** is `shared.md` plus `claude.md` from `.ai-skills/skills/<id>/`, the two files the Claude `SKILL.md` is generated from.
+- **Body** is `shared.md` plus `claude.md` from `.ai-skills/skills/<id>/`, the two files the Claude `SKILL.md` is generated from. The intent's 6,977-line figure counts `shared.md` alone. The two measures differ by the `claude.md` files, and the after-run uses this one.
 - **Loaded** is body plus every `.md` under `.prism/references/` or `.prism/skills/` the body cites by markdown link or backticked path. This is the number the intent's 120-line cap applies to.
-- **Closure** follows the same citations transitively through those files. It is reported because a step file that names the next step is also read on a normal run.
+- **Closure** follows the same citations transitively through those files. It is context, not a target, and it depends on how a citation is parsed: an independent re-count matched every sampled skill but one (`prism-review-loop`, 891 against 914).
 - Rules and architect docs are not counted per skill. Rules are measured once as always-on content, and architect docs load by manifest route whatever skill is running.
-- The script is read-only and lives outside the repo. Re-run it before phase 1 closes to record the after numbers.
+- PR 5's loaded-lines test becomes the canonical measurement. It has to reproduce the Loaded column below before it gates anything.
 
 ### Skills
 
@@ -74,13 +74,13 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 
 ### Always-on content
 
-- **Rules with `load: always`:** 21 files, 1,622 lines, 19.7k words. Two more rules (`pr-description.md`, `worktree-git.md`) are `load: skill`, and seven are `load: paths`.
+- **Rules with `load: always`:** 21 files, 1,622 lines, 19.7k words. Of the other rules, seven are `load: paths` and two (`pr-description.md`, `worktree-git.md`) are `load: skill`.
 - **`CLAUDE.md`:** 54 lines, all hand-authored.
 - **`AGENTS.md`:** 1,822 lines. Lines 37–1764 are the generated tier-1 rule block, which leaves 94 hand-authored lines.
 
 ### First-pass clean PRs
 
-- **Window:** the 30 most recent merged PRs, #462–#497, merged 2026-08-19 to 2026-10-12 (Central).
+- **Window:** the 30 highest-numbered merged PRs, #462–#497, merged 2026-08-19 to 2026-10-12 (Central).
 - **Result:** 19 clean, 0 not clean, 1 unclear (#470), and 10 with no agent review (chores and version bumps). That is 19/19 with #470 excluded, or 19/20 counting it against.
 - **Method:** each PR's reviews, comments, and commits were merged into one timeline. The last agent verdict is Eric's summary comment, which he edits in place. Commits after that verdict counted as human-requested unless an agent finding, CI, a merge from `main`, or plan bookkeeping explains them.
 - **This is an upper bound, not a rate.** Agent and human post from one account, and no human review text appears on any of the 30 PRs. Human corrections happen in chat and surface only as agent-written commits. See Decision: First-pass clean needs a human-written signal.
@@ -89,39 +89,64 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 
 ## Stack
 
-Phase 1 ships as a GitHub stack off this branch. Each PR merges in order once its review loop comes back clean with no `review:has-minors` label. The next branch then absorbs the squash with `git merge -X ours origin/main`.
+Phase 1 ships as a GitHub stack off this branch. Each PR merges in order once its review loop comes back clean with no `review:has-minors` label. See Decision: Each stack branch absorbs the squash below it with `git merge -X ours origin/main`.
 
-File and line counts below cover hand-authored source. They leave out generated mirrors (`.claude/`, `.codex/`, `.cursor/`, `templates/install/`), which `pnpm prism:build` writes and `pnpm prism:check` verifies byte for byte.
+File counts below are estimates of hand-authored files. They leave out the generated mirrors under `.claude/`, `.codex/`, and `.cursor/`, which `pnpm prism:build` writes and `pnpm prism:check` verifies byte for byte. Hand-edited files under `templates/install/` count.
 
 | # | Branch suffix | What lands | Est. files | Why the cut is here |
 | --- | --- | --- | --- | --- |
-| 1 | `prism-499-ai-native-sdlc` | `intent.md` and this plan | 2 | The baseline has to be on `main` before any change it measures |
-| 2 | `-umbrella-speed-bump` | Write-gate speed bump, `umbrellas` key, harness tests, docs | ~12 | Depends on nothing. It also stops the later PRs from adding sections to umbrella docs |
+| 1 | `prism-499-ai-native-sdlc` | `intent.md`, this plan, and the folder-plan tier in `resolveLivePlan` | 4 | The baseline has to be on `main` before any change it measures, and the stack's spec lint has to find this plan |
+| 2 | `-umbrella-speed-bump` | Write-gate speed bump, `umbrellas` key, tests, docs | ~20 | Depends on nothing. It also stops the later PRs from adding sections to umbrella docs |
 | 3 | `-delete-sol` | Sol skill and conductor tree removed, merge flag renamed, merge-authority ADR | ~70, mostly one-line | One concept per removal, so the sweep for it is complete in one diff |
 | 4 | `-delete-sasha-ren-theo` | The three remaining deletions and their sweeps | ~60, mostly one-line | Same reason. None of the three has a replacement to wait for |
-| 5 | `-shared-core` | Thin `skill-core.md` and the references most skills load; add the loaded-lines check with an allowlist | ~15 | Every skill loads the core, so no skill can reach 120 until it shrinks |
+| 5 | `-shared-core` | Thin `skill-core.md` and the references most skills load. Add the loaded-lines check with an allowlist | ~15 | Every skill loads the core, so no skill can reach 120 until it shrinks |
 | 6 | `-review-lane` | `prism-self-review`, `prism-pr-review` | ~25 | The two reviewers share references and must stay consistent |
 | 7 | `-build-lane` | `prism-implement`, `prism-docs`, `prism-design` | ~30 | The build lane's handoffs reference each other |
 | 8 | `-flow-entry` | `prism-plan` (rename only), `prism-start-ticket`, `prism-onboard` | ~30 | The entry of the engineering flow |
 | 9 | `-utilities` | `prism-challenge`, `tdd`, `prism-forge-skill`, `prism-handoff` | ~20 | Persona-less skills share one shape |
-| 10 | `-cadence-release` | `prism-retro`, `prism-audit`, `prism-changelog`, `prism-standup`, `prism-qa-plan`, `prism-prd` | ~35 | Skills run on a schedule or at release, outside the ticket flow |
+| 10 | `-cadence-release` | `prism-retro`, `prism-audit`, `prism-changelog`, `prism-standup`, `prism-qa-plan`, `prism-prd` | ~35 | Skills that run on a schedule or at release, outside the ticket flow |
 | 11 | `-business` | The nine business skills | ~30 | One shared strategy-doc flow |
 
-Every PR over 10 files is over because a rename or removal has to reach every reference in the same diff, per `.prism/rules/code-standards.md` § Removal and rename completeness. Splitting one removal across PRs would leave `main` pointing at a skill that no longer exists.
+PRs 3, 4, and 6–11 are over 10 files because a rename or removal has to reach every reference in the same diff, per `.prism/rules/code-standards.md` § Removal and rename completeness. Splitting one would leave `main` pointing at a skill that no longer exists. PR 2 is over because one hook change has to land with its type sidecars, every manifest reader, the consumer seed twins, and its tests, or a consumer gets a runtime the docs do not describe. PR 5 is over because the shared references and the check that enforces their size have to move together.
 
 ---
 
 ## Implementation Tasks
 
+### PR 1 — Plan and resolver
+
+1. **Add the folder tier to `resolveLivePlan`** in `scripts/ai-skills/lib/resolve-live-plan.ts`. Check `.prism/plans/<id>/plan.md` before `.prism/plans/<id>.md`. Add two tests to `resolve-live-plan.test.ts`: a folder plan wins over a flat plan of the same id, and a folder without `plan.md` falls through to the flat tier. Verify with `pnpm prism:spec-scope-lint`, which must resolve this plan rather than print "no live plan resolved".
+
 ### PR 2 — Umbrella-section speed bump
 
-1. **Add the `umbrellas` key.** `.prism/architect/manifest.json`, `.prism/architect/_toolkit/manifest.base.json`, and `templates/install/.prism/architect/manifest.stub.json` gain a top-level `"umbrellas": [...]` array. The members are the broad `_toolkit/` docs (`skills-ecosystem.md`, `spec-editing.md`, `hook-runtime.md`, `install-layout.md`) plus `.prism/rules/*.md`. The stub ships with only the rules glob.
-2. **Keep `umbrellas` out of route matching.** `matchDocsForPath` in `scripts/ai-skills/hooks/architect-route.mjs`, `verify-manifest-coverage.ts`, `ownership.ts`, and `prism doctor`'s manifest checks skip the reserved key. One test asserts that every umbrella entry matches at least one file.
-3. **Add `editContent` to each `HARNESSES` row** in `scripts/ai-skills/hooks/harnesses.mjs`. Claude reads Edit `new_string`, Write `content`, and MultiEdit `edits[].new_string`. Codex reads the added lines of an `apply_patch`. Cursor's field names are a documented guess.
-4. **Add the speed bump to `runPreToolUseArm`** in `scripts/ai-skills/hooks/hook.mjs`. It runs after the read-credit check passes and denies once per scope, doc, and `##`–`######` heading the file lacks. The acknowledgement is written to route state before the deny, and a failed write allows. The deny text names the doc's routes or, for a rule file, the every-session cost, and it points at `writing-an-architect-doc.md` § Where new content goes.
-5. **Write tests on all three hosts** in `hook-gate.test.ts`, one leg each: the deny fires, a seeded acknowledgement clears it, and a retry through the gate clears it. Cursor's row asserts the documented limitation instead, which is that `emitDeny` returns `null` and the edit passes.
-6. **Write the docs.** Add `hook-runtime.md` § Umbrella-section speed bump, update `writing-an-architect-doc.md` § Where new content goes step 2, and make the consumer-facing note in `docs/ai-skills/compatibility.md`.
-7. **Verify.** Run `pnpm prism:check` and `pnpm prism:test`.
+Tasks run in order. Each one compiles on its own, and task 7 verifies all of them.
+
+1. **Add the reserved-key helpers to `scripts/ai-skills/hooks/lib/match.mjs`** and its sidecar `match.d.mts`: `UMBRELLAS_KEY = "umbrellas"`, `manifestRoutes(manifest)` (every `[pattern, docOrDocs]` pair except that key), and `manifestUmbrellas(manifest)` (the key's string entries, `[]` when absent or not an array). `match.mjs` is already in `HOOK_RUNTIME_FILES` (`update.ts`), so no new delivered file is needed.
+2. **Route every manifest reader through `manifestRoutes`.** These are `matchDocsForPath` in `hooks/architect-route.mjs`, `loadedDocsForScope` and `collectRoutedDocs` in `verify-manifest-coverage.ts`, `collectRoutedDocs` in `doctor.ts`, the routed-doc loop in `ship-closure.ts`, `findCatchAllKeys` and `findBraceGlobKeys` in `lib/manifest-routes.ts`, and the install-seed route test in `hook-gate.test.ts`. `Manifest` is typed `Record<string, string | string[]>`, so `tsc` cannot catch a missed reader. The sweep is a search for `Object.entries(manifest)`, `Object.values(manifest)`, and `Object.keys(manifest)` under `scripts/ai-skills/`.
+3. **Add the `umbrellas` key to two manifests.**
+   - `.prism/architect/manifest.json` gets `[".prism/architect/_toolkit/audit-workflow.md", ".prism/architect/_toolkit/closing-messages.md", ".prism/architect/_toolkit/install-layout.md", ".prism/architect/_toolkit/skills-ecosystem.md", ".prism/architect/_toolkit/spec-editing.md", ".prism/architect/_toolkit/ticket-workflows.md", ".prism/architect/guides/*.md", ".prism/rules/*.md"]`.
+   - `templates/install/.prism/architect/manifest.stub.json` gets `[".prism/rules/*.md", ".prism/custom/rules/*.md"]`.
+   - Every entry is a repo-relative pattern compiled by `compileMatcher`, not a route value. `_toolkit/manifest.base.json` gets no key. See Decision: The hook reads only the live manifest.
+4. **Add `editContent(payload, filePath)` to every `HARNESSES` row** in `hooks/harnesses.mjs` and the `HarnessSpec` type in `harnesses.d.mts`. Claude and Cursor read `tool_input.new_string`, then `content`, then `contents`. Codex reads the same for `Edit` and `Write`. For `apply_patch` it reads only the `+` lines of the section whose `*** Add File:` or `*** Update File:` header names `filePath` (`extractPatchAddedText`). `MultiEdit` gets no accessor, because it is not in Claude's `toolKinds` or its `Write|Edit|Bash` registration, so the deny arm never sees it.
+5. **Carry `umbrellaAcks` through route state** in `hooks/architect-route.mjs`. `loadRouteState` returns `{ read, announced, umbrellaAcks }`, defaulting each to `[]`. Both saves in `resolveArchitectNag` spread the loaded state, so a read between a deny and its retry keeps the acknowledgement. `ArchitectRouteState` in `architect-route.d.mts` gains `umbrellaAcks?: string[]`.
+6. **Add the speed bump to `hooks/architect-route.mjs`** and call it from `runPreToolUseArm` in `hooks/hook.mjs`. It runs only for a `write` kind, and only when the read-credit check (`resolveDenyReason`) returned `null`.
+   - `extractNewHeadings(editText, currentText)` returns the trimmed `##`–`######` lines the edit adds. A line the file already has does not count, nor does a `#` title or a line inside a fenced block in the edit text. A file being created has no headings, so every one it adds is new.
+   - `resolveUmbrellaSpeedBump(repoRoot, scopeId, edits)` takes the first umbrella file with unacknowledged headings. It saves every such heading as `<repo-relative path>\n<heading>` in `umbrellaAcks`, then returns the reason. A failed save logs to stderr and returns `null`. All the headings in one deny are acknowledged together, so one retry clears them.
+   - `formatUmbrellaReason` writes the deny text. For a path under `.prism/rules/` or `.prism/custom/rules/`, it names when the rule loads, read from its `load:` key (`always`, `paths`, or `skill`, with a missing key read as always). It points at `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes and `.prism/rules/writing-voice.md` § Keep it short enough to be read. For any other umbrella, it lists the routes that deliver the doc and points at the same placement section. Headings cap at three and routes at four, each with an `and N more` tail.
+   - Rewrite the `runPreToolUseArm` JSDoc paragraph "Nothing here writes state". Its narrower form is that the read-credit deny writes no state and the speed bump writes its acknowledgement before it denies.
+7. **Write `scripts/ai-skills/umbrella-speed-bump.test.ts`.**
+   - Unit tests cover `extractNewHeadings`, `extractPatchAddedText`, `manifestRoutes`, `manifestUmbrellas`, and `formatUmbrellaReason`.
+   - Three gate legs run on the Claude row and the Codex row. The deny fires on a rule file. A seeded `umbrellaAcks` entry clears it. A retry through the gate clears it, including after a `PostToolUse` read in between.
+   - Separate tests cover: an unread governing doc denies first with the read-credit message, an acknowledgement in one doc does not clear the same heading in another, a failed save allows, and a multi-file patch charges a heading only to its own file.
+   - A Cursor test asserts the edit passes, since `runPreToolUseArm` returns `null` on that row.
+   - An integrity test asserts every `umbrellas` entry in `.prism/architect/manifest.json` matches at least one tracked file.
+   - Verify with `pnpm prism:check-types` and `pnpm prism:test`.
+8. **Update the docs.**
+   - `.prism/architect/_toolkit/hook-runtime.md`: add `## Umbrella-section speed bump` after `## Write gate`. Add `umbrellaAcks` to the State-file paragraph. Add one sentence after "What triggers a deny" saying a write that clears all five then meets the speed bump.
+   - Hand-edit the same three changes into the curated seed twin, `templates/install/.prism/architect/_toolkit/hook-runtime.md`, since the build skips curated files.
+   - `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes, step 2: add one sentence saying the manifest's `umbrellas` list names the umbrellas, and that the write gate stops a new heading in one once per session.
+   - `docs/ai-skills/compatibility.md` and its twin `.ai-skills/docs/compatibility.md`, § "Hook-based enforcement reaches Claude Code and Codex": add one paragraph. It says the speed bump ships in new installs' stub manifest, that an existing install opts in by adding the `umbrellas` key by hand, and that Cursor has no speed bump.
+   - Verify with `pnpm prism:check`.
 
 ### PRs 3–11
 
@@ -140,12 +165,25 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 - **The 120-line cap is enforced by a check, not by review.** PR 5 adds a test that measures loaded lines the way § Baseline § Method defines them. It fails when any skill not on its allowlist is over. Each lane PR removes its skills from the allowlist, so the allowlist shrinks one PR at a time and cannot regrow without a visible diff. Without a check the cap is prose, and the intent's enforcement test says prose does not hold.
 
-- **Old persona names stay in each renamed skill's `description` as trigger words.** "Briar" keeps routing to `prism-self-review`. Consumers' orphan cleanup removes the old directories on the next `prism update`, per `.prism/architect/_toolkit/consumer-sync-flow.md` § Orphan cleanup.
+- **Old persona names stay in each renamed persona skill's `description` as trigger words.** "Briar" keeps routing to `prism-self-review`. Consumers' orphan cleanup removes the old directories on the next `prism update`, per `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution.
 
-- **Merge authority moves to the main session under a renamed flag.** `features.conductorMayMerge` becomes `features.mainSessionMayMerge`. A new ADR supersedes ADR-0066 and records that the main session squash-merges PRISM's own PRs once the review loop is clean with no `review:has-minors` label. Consumers keep the human merge gate because the flag defaults to absent.
+- **Merge authority moves to the main session under a renamed flag.** `features.conductorMayMerge` becomes `features.mainSessionMayMerge`. The old name describes an actor PR 3 deletes, so keeping it would point every reader at a persona that no longer exists. A new ADR supersedes ADR-0066 and records that the main session squash-merges PRISM's own PRs once the review loop is clean with no `review:has-minors` label. PR 3 also updates `config.schema.json` and the onboarding-config passthrough. A consumer who set the old flag loses nothing, because without Sol nothing read it. Consumers keep the human merge gate because the new flag defaults to absent.
 
-- **`umbrellas` is a reserved key in a flat manifest.** PRISM's manifest maps patterns to docs at the top level, unlike thrive's sectioned manifest. A top-level `umbrellas` array would otherwise read as a route whose pattern is the literal word `umbrellas`. Every manifest reader skips the key by name.
+- **Each stack branch absorbs the squash below it with `git merge -X ours origin/main`.** This is the user's instruction for this stack.
+  - **Root cause:** after a lower PR squash-merges, `main` holds its changes as one commit while the next branch still holds them as several. That is the squash-upstream trap `.prism/rules/git-conventions.md` § Keeping a Branch Current describes.
+  - **Alternatives considered:** rebasing the remainder onto `origin/main`, the rule's remedy. It rewrites a branch that is already pushed with an open PR.
+  - **Chosen approach:** `-X ours` resolves each conflict with the branch's side, which already contains the squashed content. The risk is that it also silences a real conflict with unrelated work on `main`. The compensating check runs after every absorb: `git diff origin/main...HEAD --stat` must list only the files the PR itself changes, and `pnpm prism:check` must pass.
+
+- **The hook reads only the live manifest, so `umbrellas` reaches new installs, not existing ones.** `loadManifest` in `hooks/architect-route.mjs` reads `.prism/architect/manifest.json` alone. That file is consumer-owned, and `prism update` never rewrites it. So the key ships in the install stub. An existing consumer opts in by adding it by hand, and the compatibility doc says how. `_toolkit/manifest.base.json` carries no key, because nothing reads umbrellas from it.
+
+- **`umbrellas` is a reserved key in a flat manifest.** PRISM's manifest maps patterns to docs at the top level, unlike thrive's sectioned manifest. A top-level `umbrellas` array would otherwise read as a route whose pattern is the literal word `umbrellas`. Every reader skips the key through `manifestRoutes` in `hooks/lib/match.mjs`.
   - **Alternatives considered:** a separate `umbrellas.json`. That would be one more file for each consumer to keep in step with the manifest it describes.
+
+- **Umbrella membership is a hand-kept list.** An umbrella covers a wide area by design, and no route shape can read that intent. The members are the `_toolkit/` docs routed over whole trees of spec content or skills, the writing guides (each routed over one whole content area), and the rules glob. `hook-runtime.md` is a topic doc routed by the hook paths alone, so it is not on the list.
+
+- **The rules entry is one glob, and the deny wording reads each rule's `load:` key.** `.prism/rules/*.md` catches the next rule file added, the same way the build loads every rule in the directory. Not every rule is always-on: `load: paths` and `load: skill` rules load on narrower triggers. So the deny states the trigger the rule actually has rather than claiming every rule loads in every session.
+
+- **A plan folder is resolved by `resolveLivePlan` before the flat tiers.** `spec-scope-lint` resolves the branch's plan through that function, and a folder plan was invisible to it, so the lint printed "no live plan resolved" and passed every PR in this stack. `.prism/rules/branch-plan.md` § Plan Lookup and `.prism/references/plan-lookup.md` still describe flat plans only, until phase 2 adds plan folders to both. Until then, a persona working on this stack is handed `.prism/plans/prism-499/plan.md` by path.
 
 - **Cursor gets no speed bump, and the limitation is recorded.** No install path writes a Cursor hook file, and `HARNESSES.cursor.emitDeny` returns `null` (`.prism/architect/_toolkit/hook-runtime.md` § Hook runtime). The Cursor test asserts the edit passes. The docs name the gap rather than papering over it.
 
@@ -162,6 +200,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 ## History
 
 - 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc]: Recorded the phase-1 baseline and the stack plan.
+- 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc]: Self-review pass 1 fixes. Rewrote the PR 2 tasks to the shipped design and added the folder tier to `resolveLivePlan`.
 
 ---
 
@@ -169,12 +208,12 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 ### Non-behavioral
 
-- [ ] **AC-1** No live file references Sol, Sasha, Ren, or Theo by name or skill ID.
-  - Evidence (machine): a `git grep` for each name and ID over the tree, excluding plans, lessons, retros, audits, and archived history, returns no file.
-- [ ] **AC-2** Each ADR whose decision the deletions retire carries `Status: superseded` and names its successor.
-  - Evidence (machine): `grep -l 'Status: superseded'` lists each retired ADR, and each names its successor.
-- [ ] **AC-3** Every surviving skill carries its intent § Skills ID, and its old persona name is in its `description`.
-  - Evidence (machine): `roles.json` IDs match the intent roster, and each renamed skill's `frontmatter` description contains the old persona name.
+- [ ] **AC-1** No live file references Sol, Sasha, Ren, or Theo by name or skill ID. The only exceptions are the superseded ADRs that recorded their decisions, the ADRs that supersede them, and the 1.0.0 migration note.
+  - Evidence (machine): a `git grep` for each name and ID, excluding plans, lessons, retros, audits, archived history, `.prism/spec/adrs/`, and the migration note, returns no file. The same grep with no exclusions returns at least one file, which proves the pattern matches.
+- [ ] **AC-2** Each ADR whose decision a deletion retires carries `Status: superseded` and names its successor.
+  - Evidence (machine): PR 3 and PR 4 each list their retired ADRs in their own tasks, and `grep` finds `Status: superseded` and a successor in each one listed.
+- [ ] **AC-3** Every surviving skill carries the ID the intent's § Skills roster gives it with the `prism-` prefix, except `tdd`. Every renamed persona skill keeps its old persona name in its `description`.
+  - Evidence (machine): `roles.json` IDs match the roster. Each renamed persona skill's frontmatter `description` contains the old persona name.
 - [ ] **AC-4** Every skill except the three in Decision `prism-plan, prism-user-stories, and prism-review-loop stay over the 120-line cap` loads 120 lines or fewer.
   - Evidence (machine): the loaded-lines test passes with an allowlist holding exactly those three IDs.
 - [ ] **AC-5** `pnpm prism:check` is green on every merged PR in the stack.
@@ -182,10 +221,10 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 ### Behavioral
 
-- [ ] **AC-6** Given a session that has read a rule file's governing docs, When it adds a new `##` heading to that rule file, Then the write is denied once with the always-on cost named, and the same edit retried passes.
-  - Evidence (machine): the Claude and Codex legs of the speed-bump test. Each leg fails if the deny is missing, if it fires twice, or if the retry is denied.
+- [ ] **AC-6** Given a session that has read a rule file's governing docs, When it adds a new `##` heading to that rule file, Then the write is denied once with the rule's load trigger named, and the same edit retried passes.
+  - Evidence (machine): the Claude and Codex legs in `umbrella-speed-bump.test.ts`. Each leg fails if the deny is missing, if the reason names the wrong trigger, or if the retry is denied.
 - [ ] **AC-7** Given the same edit on Cursor, When the hook runs, Then the edit passes and the docs name the gap.
-  - Evidence (machine): the Cursor leg asserts no deny. A `grep` finds the limitation in `hook-runtime.md`.
+  - Evidence (machine): the Cursor test asserts `runPreToolUseArm` returns `null`. A `grep` finds the limitation in `hook-runtime.md`.
 
 ---
 

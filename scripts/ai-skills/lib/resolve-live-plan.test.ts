@@ -97,6 +97,41 @@ test("resolveLivePlan: resolves the direct <id>.md tier", async () => {
 	);
 });
 
+test("resolveLivePlan: a plan folder's plan.md wins over a flat plan of the same id", async () => {
+	const branchName = "someone/prism-1002-ai-native-sdlc";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/plans/prism-1002/plan.md", "# Plan: prism-1002\n");
+			await writeFile(tempRoot, ".prism/plans/prism-1002/intent.md", "# Intent\n");
+			await writeFile(tempRoot, ".prism/plans/prism-1002.md", "# Plan: prism-1002 (flat)\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/prism-1002/plan.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: a plan folder with no plan.md falls through to the flat tier", async () => {
+	const branchName = "someone/prism-1003-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/plans/prism-1003/intent.md", "# Intent\n");
+			await writeFile(tempRoot, ".prism/plans/prism-1003.md", "# Plan: prism-1003\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/prism-1003.md"
+			);
+		}
+	);
+});
+
 // ---------------------------------------------------------------------------
 // resolveLivePlan — epic-<id>.md fallback tier
 // ---------------------------------------------------------------------------
