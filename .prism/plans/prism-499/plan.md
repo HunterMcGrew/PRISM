@@ -458,7 +458,7 @@ Its tasks are written into this section when its branch is cut, so a task list n
   - **Step files and rubrics for retro and PRD:** each step either restated a rule, held generic method (the code-walk, the interview), or was the state-file bookkeeping that went with the machine.
   - **Kept:** `qa-plan/verdict-contract.md`, now cited by `prism-qa-plan`, with the persona names in it replaced by skill IDs.
 
-- **`shipping-flow.md` is deleted, not folded.** After PRs 7 to 9 only the changelog and QA skills cited it. What they still needed is inline: the pause preference, prettier on the Markdown only, a cold re-read for session-context leakage, the commit subjects, `gh pr create --draft`, and that the human flips the PR ready because no agent reviews it. The release PR stays with the team lead. What went: the per-push invariant (each skill states its own ship step), the two-path closing that offered a self-review and a PR review on Markdown artifacts, and the per-persona table. The cleanup-pass read is enforced by the commit gate hook, which names `cleanup-pass.md` itself, so no skill needs to cite it. The per-push PR body sync from ADR-0020 and the PR body format are one sentence each in the changelog and QA skills (rewrite only the listed templated sections, never Screenshots or Notes, keep the rest verbatim, state reasoning and never a file list), because citing `pr-description.md` would add its 87 lines to each and put both skills over the cap.
+- **`shipping-flow.md` is deleted, not folded.** After PRs 7 to 9 only the changelog and QA skills cited it. What they still needed is inline: the pause preference, prettier on the Markdown only, a cold re-read for session-context leakage, the commit subjects, `gh pr create --draft`, and that the human flips the PR ready because no agent reviews it. The release PR stays with the team lead. What went: the per-push invariant (each skill states its own ship step), the two-path closing that offered a self-review and a PR review on Markdown artifacts, and the per-persona table. The cleanup-pass read is held by the commit gate hook, which names `cleanup-pass.md` itself, but only where the consumer sets `hooks.commitCleanupPass` (off by default) and the host is Claude Code or Codex. Cursor has no hook, and the changelog and QA skills keep their own cold re-read as the fallback, so neither skill cites the file. The per-push PR body sync from ADR-0020 and the PR body format are one sentence each in the changelog and QA skills (rewrite only the listed templated sections, never Screenshots or Notes, keep the rest verbatim, state reasoning and never a file list), because citing `pr-description.md` would add its 87 lines to each and put both skills over the cap.
 
 - **`> Retro:` enforcement is not part of phase 1.** The intent makes a missing `> Retro:` line a check failure, but neither the stack table nor any task here schedules a check, and PR 10 is rename-and-thin. **Default path (used until a later phase adds the check):** the line stays the declinable gate in `.prism/rules/branch-plan.md` § Before Closing, and `prism-retro` still writes the report that line points at. The intent's wider retro (a verdict on every Decision, promotion into the owning architect doc, the lessons lifecycle) is likewise not done here, because the plan skill's close ceremony owns promotion today and `prism-retro` stays a read-only reporter until the phase that moves it.
 
@@ -506,6 +506,7 @@ Its tasks are written into this section when its branch is cut, so a task list n
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Renamed Zoe, Lilac, and Reese to `prism-audit`, `prism-standup`, and `prism-qa-plan`, and thinned them with Iris, Sage, and Parker to 54, 57, 49, 94, 56, and 62 loaded lines. Deleted the retro and PRD step trees, the changelog, standup, and QA references, `shipping-flow.md`, `stakes-calibration.md`, and `micro-file-step-machine.md`; see Decision: What the cadence and release skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Briar pass 1 fixes. Repointed the worktrees-lane, `step-02`, PRD-shape, and Iris-row references, inlined the `audit-state.json` shape, and added the PR body sync to the changelog and QA skills; see Decision: Judgment calls in the cadence and release thinning.
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Briar pass 2 fixes. Listed the rewritable PR body sections explicitly in the changelog, QA, and implement skills so Screenshots and Notes stay user-owned, and corrected two Decision details.
+- 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Eric pass 1 fixes. Restored the `parker.md` rewrite a merge had dropped, tightened the audit archive test, and added the retro final-child CI note, the changelog every-commit clause, and the explicit Monday window; corrected the cleanup-pass enforcement claim.
 
 ---
 
@@ -867,6 +868,54 @@ Its tasks are written into this section when its branch is cut, so a task list n
 - **File:** `.prism/plans/prism-499/plan.md:440`
 - **Problem:** the skill-directory route was said to exist only in the live manifest, though `manifest.base.json` and its twin carry it. The `pr-description.md` note named only the changelog skill as pushed over the cap.
 - **Fixed in:** the Decisions say "not in the stub" and "both skills".
+
+### PR 10: parker.md still described the step machine
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/ai-skills/parker.md:26`
+- **Problem:** it described `.prism/skills/prism-prd/step-*.md`, "rubric subagents in step-06", and links to the deleted `stakes-calibration.md` and `micro-file-step-machine.md`. A merge conflict resolution had dropped the earlier rewrite, so plan task 6 claimed a sweep the diff did not show.
+- **Fixed in:** the lines match the thinned PRD skill, the links are replaced by one link to the skill, and a sweep of `docs/` finds no other deleted-path link.
+
+### PR 10: audit archive test and consent wording
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-audit/shared.md:30`
+- **Problem:** the archive-ready test accepted any audit verdict, where `audit-workflow.md` allows only `archive-candidate` or `overdue-archive`. "The one write that needs no confirmation" overstated, since the report and state file are written unprompted.
+- **Fixed in:** the test names the two verdicts, and the gate line lists verdict sub-bullets, the report, and the state file.
+
+### PR 10: epic charter-coverage table lost the final-child CI note
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-retro/shared.md:42`
+- **Problem:** `branch-plan.md` § Before Closing promises the epic table names the final child's PR-CI approximation.
+- **Fixed in:** the Charter coverage clause names it.
+
+### PR 10: changelog lost the every-commit accounting
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-changelog/shared.md:22`
+- **Problem:** the old Definition of Done required every commit in range to appear or be excluded with a reason.
+- **Fixed in:** an entries bullet requires each commit in an entry, in Other, or in an Excluded section with its reason.
+
+### PR 10: ambiguous Monday window
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/templates/standup-summary.md:39`
+- **Problem:** "last Friday" did not say where the window starts and ends.
+- **Fixed in:** it runs `00:00:00` Friday (inclusive) to `00:00:00` Monday (exclusive).
+
+### PR 10: cleanup-pass enforcement overstated
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/plan.md:461`
+- **Problem:** the Decision said the commit gate hook enforces the cleanup-pass read. `hooks.commitCleanupPass` is opt-in and off by default, and Cursor has no hook.
+- **Fixed in:** the Decision states both limits and names the skills' cold re-read as the fallback.
 
 ## PR Readiness
 

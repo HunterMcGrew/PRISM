@@ -54,14 +54,14 @@ When several fit, the more severe wins: `open-stale` < `archive-candidate` < `ov
 ## Other surfaces
 
 - **Lessons** (`.prism/lessons.md`): `live` when a plan, rule, ADR, or architect doc referenced the lesson in the last 30 days, else `archive-candidate`. A lesson under 30 days old is never a candidate, since it needs time to be referenced.
-- **Closed plans:** a plan is archive-ready when it has a `> Closed:` marker, every Decision has a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or a verdict from this audit, and it closed at least 90 days ago. Flag any `.prism/qa/ac-verification-<ticket-id>.md` for the same ticket in the same recommendation.
+- **Closed plans:** a plan is archive-ready when it has a `> Closed:` marker, every Decision has a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or an `archive-candidate` or `overdue-archive` verdict from this audit, and it closed at least 90 days ago. Flag any `.prism/qa/ac-verification-<ticket-id>.md` for the same ticket in the same recommendation.
 - **ADRs** (not `TEMPLATE.md` or `README.md`): flag assumptions in `## Context` and `## Consequences` that may no longer hold, such as a PR closed unmerged or a superseded sibling. Never edit an ADR.
 - **Architect docs:** flag re-enumeration drift (a doc lists the states of X and a sibling doc owns a different list) and cited source paths that no longer exist.
 
 ## Gates
 
 - **Archives need explicit consent, item by item.** State "I'll move `<item>` to `<destination>` on your go-ahead" and wait for a yes, not silence. Lessons go to `.prism/archived/lessons-archive.md` with their date kept and an archive timestamp added. Plans go to `.prism/archived/plans/<name>`. Create either on the first move, with a `# Lessons Archive` header for the lessons file, and never seed them empty. The lessons archive is append-only.
-- **Verdict sub-bullets are the one write that needs no confirmation,** because they annotate and delete nothing. Every archive move and removal waits for the user.
+- **Verdict sub-bullets, the report, and the state file are written without asking,** because they annotate or record and delete nothing. Every archive move and removal waits for the user.
 - **Record each confirmed move** in `archived`, and each user deferral with its reason and time in `deferred`, and set `lastRun`. Never delete state entries: the file is its own audit trail.
 
 ## Worktrees lane
