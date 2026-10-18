@@ -437,7 +437,7 @@ Its tasks are written into this section when its branch is cut, so a task list n
   - **Retro findings replace the multi-voice dialogue.** Staging voices and writing dialogue produced fiction-shaped output whose only policy was "cite evidence", and ADR-0080 removes personas from skill bodies. The findings are charter-keyed and each cites its source. If a reviewer finds the dialogue was doing real work, the report format is the place to restore it.
   - **The retro state file is dropped.** It existed to resume a six-step machine that no longer exists, so `.prism/iris-state.json` and its schema are gone.
   - **The `Zoe verdict` marker keeps its name.** Plans already carry `**Zoe verdict (date):**` sub-bullets, `CONTEXT.md` defines the term, and `prism-plan` and `prism-implement` read it, so the audit skill still writes the same string.
-  - **`audit-workflow.md` and `worktree-hygiene.md` are not cited by path, and the skill does not rely on either.** A route loads a doc only on hosts with the write hook (Claude Code and Codex, not Cursor), and only when a call touches the routed path. The skill therefore inlines the `audit-state.json` shape and the worktrees lane steps. `audit-workflow.md` is routed on `.prism/audit-state.json` and `.prism/audits/**` in both the live manifest and the stub, and also on `.prism/plans/**` in the live manifest alone. `worktree-hygiene.md` is routed on `.prism/audit-state.json` in both. Its routes on the audit skill's directory and on `scripts/ai-skills/worktree-classify.ts` exist only in the live manifest and fire on edits to those files, not on a run.
+  - **`audit-workflow.md` and `worktree-hygiene.md` are not cited by path, and the skill does not rely on either.** A route loads a doc only on hosts with the write hook (Claude Code and Codex, not Cursor), and only when a call touches the routed path. The skill therefore inlines the `audit-state.json` shape and the worktrees lane steps. `audit-workflow.md` is routed on `.prism/audit-state.json` and `.prism/audits/**` in both the live manifest and the stub, and also on `.prism/plans/**` in the live manifest alone. `worktree-hygiene.md` is routed on `.prism/audit-state.json` in both. Its routes on the audit skill's directory and on `scripts/ai-skills/worktree-classify.ts` are not in the stub and fire on edits to those files, not on a run.
   - **`qa-test-planning.md` is not cited, and its content is cut from the run.** Its route fires on the skill's own path, so a QA run does not load it, and it is now maintainer reference only. The skill keeps one line of risk weighting and the tester-facing writing rules. These stay out of the run: the risk heat map, the test-design techniques (equivalence classes, boundary values, decision tables, and the rest), the happy-path-only and under-testing-high-risk anti-patterns, and the Product Domain Context slot. That slot is where a team's domain shapes (multi-tenant, faceted filtering, mobile field use, revenue-critical flows) reached the plan, so a plan no longer gets them automatically. **Default path (used until resolved):** the doc stays as reference, and a team that wants its domain context in plans adds it to the request or restores a short domain line to the skill in a later phase.
   - **The PRD drops `stepsCompleted`.** It tracked the step machine. `status` alone decides resume. The `linearInitiativeId` field name is unchanged, since existing PRDs carry it.
   - **The standup template is thinned too,** from 235 to about 60 lines (the worked example and the rationale incidents are gone). The skill cites it, so every line of it counts against the cap.
@@ -452,7 +452,7 @@ Its tasks are written into this section when its branch is cut, so a task list n
   - **Step files and rubrics for retro and PRD:** each step either restated a rule, held generic method (the code-walk, the interview), or was the state-file bookkeeping that went with the machine.
   - **Kept:** `qa-plan/verdict-contract.md`, now cited by `prism-qa-plan`, with the persona names in it replaced by skill IDs.
 
-- **`shipping-flow.md` is deleted, not folded.** After PRs 7 to 9 only the changelog and QA skills cited it. What they still needed is inline: the pause preference, prettier on the Markdown only, a cold re-read for session-context leakage, the commit subjects, `gh pr create --draft`, and that the human flips the PR ready because no agent reviews it. The release PR stays with the team lead. What went: the per-push invariant (each skill states its own ship step), the two-path closing that offered a self-review and a PR review on Markdown artifacts, and the per-persona table. The cleanup-pass read is enforced by the commit gate hook, which names `cleanup-pass.md` itself, so no skill needs to cite it. The per-push PR body sync from ADR-0020 and the PR body format are one sentence each in the changelog and QA skills (rewrite only the templated sections, keep the rest verbatim, state reasoning and never a file list), because citing `pr-description.md` would add its 87 lines to each and put the changelog skill over the cap.
+- **`shipping-flow.md` is deleted, not folded.** After PRs 7 to 9 only the changelog and QA skills cited it. What they still needed is inline: the pause preference, prettier on the Markdown only, a cold re-read for session-context leakage, the commit subjects, `gh pr create --draft`, and that the human flips the PR ready because no agent reviews it. The release PR stays with the team lead. What went: the per-push invariant (each skill states its own ship step), the two-path closing that offered a self-review and a PR review on Markdown artifacts, and the per-persona table. The cleanup-pass read is enforced by the commit gate hook, which names `cleanup-pass.md` itself, so no skill needs to cite it. The per-push PR body sync from ADR-0020 and the PR body format are one sentence each in the changelog and QA skills (rewrite only the listed templated sections, never Screenshots or Notes, keep the rest verbatim, state reasoning and never a file list), because citing `pr-description.md` would add its 87 lines to each and put both skills over the cap.
 
 - **`> Retro:` enforcement is not part of phase 1.** The intent makes a missing `> Retro:` line a check failure, but neither the stack table nor any task here schedules a check, and PR 10 is rename-and-thin. **Default path (used until a later phase adds the check):** the line stays the declinable gate in `.prism/rules/branch-plan.md` § Before Closing, and `prism-retro` still writes the report that line points at. The intent's wider retro (a verdict on every Decision, promotion into the owning architect doc, the lessons lifecycle) is likewise not done here, because the plan skill's close ceremony owns promotion today and `prism-retro` stays a read-only reporter until the phase that moves it.
 
@@ -494,6 +494,7 @@ Its tasks are written into this section when its branch is cut, so a task list n
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 2 fixes. A test ties `roles.json` IDs to `checkIsPrismSkillId`, and the stale `prism-*` prose in `eject.ts`, `generate-skills.ts`, and `consumer-sync-flow.md` now says PRISM-owned.
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Renamed Zoe, Lilac, and Reese to `prism-audit`, `prism-standup`, and `prism-qa-plan`, and thinned them with Iris, Sage, and Parker to 54, 57, 49, 94, 56, and 62 loaded lines. Deleted the retro and PRD step trees, the changelog, standup, and QA references, `shipping-flow.md`, `stakes-calibration.md`, and `micro-file-step-machine.md`; see Decision: What the cadence and release skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Briar pass 1 fixes. Repointed the worktrees-lane, `step-02`, PRD-shape, and Iris-row references, inlined the `audit-state.json` shape, and added the PR body sync to the changelog and QA skills; see Decision: Judgment calls in the cadence and release thinning.
+- 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Briar pass 2 fixes. Listed the rewritable PR body sections explicitly in the changelog, QA, and implement skills so Screenshots and Notes stay user-owned, and corrected two Decision details.
 
 ---
 
@@ -754,6 +755,22 @@ Its tasks are written into this section when its branch is cut, so a task list n
 - **File:** `.prism/architect/_toolkit/skills-ecosystem.md:72`
 - **Problem:** ", Each finding" should start a sentence, and the audit skill's "Everything else waits for the user" overstated what needs consent.
 - **Fixed in:** both reworded, with the twin of the roster row.
+
+### PR 10: body-sync range swallowed user-owned sections
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-changelog/shared.md:44`
+- **Problem:** "Summary through Ticket" spans Screenshots and Notes, which `pr-description.md` makes user-owned. The same wording sat in the QA skill and `prism-implement`.
+- **Fixed in:** all three list the rewritable sections (Summary, What did you do, Why did you do it, How did you achieve it, Ticket, Type of Change, and the checklist) and exclude Screenshots and Notes. `prism-docs` carries no such wording.
+
+### PR 10: two Decision details
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/plan.md:440`
+- **Problem:** the skill-directory route was said to exist only in the live manifest, though `manifest.base.json` and its twin carry it. The `pr-description.md` note named only the changelog skill as pushed over the cap.
+- **Fixed in:** the Decisions say "not in the stub" and "both skills".
 
 ## PR Readiness
 
