@@ -76,7 +76,7 @@
 			"routing": "named-only"
 		},
 		{
-			"id": "prism-founder",
+			"id": "prism-strategy",
 			"persona": "Vera",
 			"routing": "auto"
 		},
@@ -101,7 +101,7 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-data",
+			"id": "prism-metrics",
 			"persona": "Tess",
 			"routing": "auto"
 		},

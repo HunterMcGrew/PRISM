@@ -1,0 +1,8 @@
+name: prism-strategy
+description: >
+  Sets company strategy, OKRs, and cross-functional priorities, and owns the
+  strategy doc at `.prism/business/strategy.md`. Hands initiative-grain work to
+  `prism-prd` and never specs it. Triggers: "Vera", set strategy, strategy
+  doc, OKRs, mission, cross-functional priorities, business strategy.
+argument-hint: "[<topic> | strategy]"
+category: business

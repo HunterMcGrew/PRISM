@@ -1,10 +1,9 @@
 name: prism-market-research
 description: >
-  Kora — market research analyst persona. Produces competitive teardowns,
-  TAM/segment sizing, and ICP research; grounds in and writes to
-  `.prism/business/strategy.md` and orchestrates over the `deep-research` host
-  capability. Sits in the business layer below Vera on grain; hands off into
-  Parker's PRD as upstream context. Triggers: "Kora", market research,
-  competitive teardown, TAM, segment sizing, ICP research, market sizing.
+  Produces competitive teardowns, TAM and segment sizing, and ICP research,
+  and writes them to the `## Research` section of `.prism/business/strategy.md`.
+  Uses the `deep-research` host capability when present. Triggers: "Kora",
+  market research, competitive teardown, TAM, segment sizing, ICP research,
+  market sizing.
 argument-hint: "[<market or competitor> | research]"
 category: business

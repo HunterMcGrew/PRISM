@@ -241,9 +241,16 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 6. **Re-point the surviving citations.** `token-substitution.md` names `.prism/templates/standup-summary.md` as its token example. `lazy-artifacts.md` points at the audit skill's `§ Report`. `crossref-lint.ts` and its test use `audit-state.json` as the lazy-state example. ADRs 0003, 0020, 0043, 0073, and 0076 lose the `.prism/` prefix on their citations of the deleted references, and ADR 0060 loses the `.ai-skills/skills/` prefix on its link to the renamed standup skill, so `crossref-lint` stops resolving them, as PRs 3 and 8 did. `docs/ai-skills/iris.md` is rewritten for the new skill, and `parker.md` and `personas.md` drop the step-file and state-file wording. The `SHIP_CLOSURE_TRACKED_DANGLING_REFS` entry for ADR-0037 is removed, since nothing reaches it any more.
 7. **Fix the allowlist.** Removed the six PR 10 entries from `OVER_CAP_ALLOWLIST`. `literal-allowlist.json` held no entry for any deleted file.
 
-### PR 11
+### PR 11 — Business
 
-Its tasks are written into this section when its branch is cut, so a task list never runs ahead of the code it describes. The rules it follows are recorded under `## Decisions`.
+All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, `measureSkillLoad` reports 120 lines or fewer for all nine skills, and a `git grep` for `prism-founder` and `prism-data` returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/`, and `CHANGELOG.md`.
+
+1. **Rename two skills.** `prism-founder` became `prism-strategy` and `prism-data` became `prism-metrics`, in the skill directories, `roles.json`, frontmatter `name`, the `skills-ecosystem.md` roster and `business-layer.md` (with their seed twins), the two routing rows in `skill-routing.md` (with its curated twin), `docs/personas.md`, and a comment in `crossref-lint.ts`. The other seven keep their IDs. Every description keeps the old persona name as a trigger word, and every routing trigger phrase is unchanged.
+2. **Thin all nine to the four tests.** See Decision: What the business skills kept. They load 91 (`prism-strategy`, was 338), 88 (`prism-market-research`, was 328), 90 (`prism-finance`, was 334), 91 (`prism-marketing`, was 306), 92 (`prism-sales`, was 334), 88 (`prism-metrics`, was 335), 92 (`prism-customer-success`, was 324), 87 (`prism-recruiting`, was 337), and 94 (`prism-legal`, was 339). Each count is a body of 24 to 31 lines plus the 63-line strategy template every skill cites.
+3. **Thin the strategy template.** See Decision: The strategy template carries the shared conventions. It went from 125 lines to 63, and its seed twin follows by build.
+4. **No reference file existed to delete.** See Decision: Why nothing was deleted. The nine skills cited only the template, the closing-messages architect doc, and ADRs, so there is no seed twin, `seed-curation.json` key, manifest route, or `literal-allowlist.json` entry to remove.
+5. **Re-point the surviving citations.** `business-layer.md` (and its seed twin) now names the skills by ID, points to the template for the shared conventions instead of the old anchor skill's body, lists the `## Research` and `## Finance` sections, and states the disclaimer pattern and the skill-shape rule as they now are.
+6. **Fix the tracking.** Removed the nine business entries from `OVER_CAP_ALLOWLIST`, which now holds exactly `prism-plan`, `prism-user-stories`, and `prism-review-loop`, and the `SHIP_CLOSURE_TRACKED_DANGLING_REFS` entries for ADRs 0014, 0043, and 0060, which no skill cites any more.
 
 ---
 
@@ -468,6 +475,36 @@ Its tasks are written into this section when its branch is cut, so a task list n
 
 - **Always-on rules edited in PR 10.** The edits are renames and pointer fixes, and nothing else in them changed: `.prism/rules/skill-routing.md` (the `prism-qa-plan`, `prism-standup`, and `prism-audit` IDs in the routing rows and the named-invocation list, with its curated twin and `templates/install/AGENTS.md.tmpl`), `.prism/rules/context-reuse.md` (the same IDs in the citation list), and `.prism/rules/lazy-artifacts.md` (the audit ID and the `§ Report` pointer). The review-fix pass also edits `.prism/rules/verification-commands.md` (a `load: paths` rule, with its twin), which only replaces the `step-02` pointers with "the retro skill". Each has a seed twin that the build or the sweep updated to match. Every trigger phrase in the routing rows is unchanged.
 
+- **What the business skills kept.** Each line survives because the strategy-doc flow, a handoff, or a host-capability fallback depends on it. The rest of the old bodies failed the policy test: voice, greetings, "How X Thinks" lenses with their Trigger and Escape scaffolding, the opening and closing batteries, mid-flight re-anchor lists, the Definition of Done checklists, the `git rev-parse` repo-root step, the "Project Engineering Standards" pointers, the reflex bullets that restate `context-reuse.md` and `branch-plan.md`, and the Sol-era verdicts (`needs-human`, `needs-replan`, `found-followup-work`, `blocked`). Each verdict became "ask the user", "tell the user to run `<skill>` first", or a handoff.
+  - **Kept in every skill:** the section it owns in the strategy doc, the grounding read of the doc, the handoff into `prism-prd` with a pointer to the section, any sideways handoffs, the host capability it uses with its fallback, and one lessons line.
+  - **`prism-strategy`:** it owns the whole doc; ranked priorities that name what loses; measurable key results; contested calls resolved against the mission and positioning; every choice written to `## Decisions` before close, with `OPEN` entries for calls awaiting input; no initiative specs, and the grain test that sends a single-ticket ask straight to `prism-prd`; fallbacks for all three host capabilities.
+  - **`prism-market-research`:** source or label every claim; sizing with method and numbered assumptions; teardowns on the buyer's three decision axes; ICP research with "who this is not for"; findings annotated with their consuming skill; the `deep-research` fallback.
+  - **`prism-finance`:** assumptions and horizon inline; unit economics before growth; price as floor, ceiling, and landing point; runway with burn and milestone; the changed-input, implausible-output, and contested-price procedures; the `xlsx` fallback.
+  - **`prism-marketing` and `prism-sales`:** positioning traced to research; one message ranked above its proof with the replace test; the audience, action, and channel gate; SEO following the hierarchy; sales qualification, one ask per touch, outcome-first proposals, the objection playbook shape, and outreach inheriting the hierarchy; the message-versus-pipeline boundary; the `brand-voice` fallback.
+  - **`prism-metrics`:** denominator and closed window on every metric; funnel and cohort tables before aggregates; the metric, decision, decision-maker mapping; entries that land in `## Metrics` with the review closing line, which is the loop closure to `prism-strategy`; the `xlsx` fallback.
+  - **`prism-customer-success`:** self-serve before human; the customer's question as the title; escalation with trigger, tier, and owner; onboarding that ends at the first win; the boundary with `prism-docs`; the `brand-voice` fallback.
+  - **`prism-recruiting`:** headcount checked against OKRs and runway first; outcomes before requirements; rubric dimensions as observable signals; the neutral-voice fallback; the `## People` section created on first write.
+  - **`prism-legal`:** the disclaimer section first and as the first line of every artifact; jurisdiction before substance; the missing-context path that marks the output as assumption-based and ends with a counsel recommendation; risks flagged and never conclusions; plain language; engineering-scope constraints written to `## Legal & Compliance` before the `prism-prd` handoff; the `deep-research` fallback folded into the counsel recommendation.
+
+- **The strategy template carries the shared conventions.** All nine skills restated the same rules (read before writing and reconcile, write only your own section, stay in your lane and at strategy-feeding grain, create on first write, hand off through `prism-prd`, and the host-capability pattern), and all nine cite the template, which is the only file they load. The conventions now live in the template once, and each skill adds only what is its own. The template went from 125 lines to 63. Every skill reads it unconditionally in its Startup, because the conventions apply when the doc already exists too.
+  - **Cut:** the purpose and file-location prose (the single-file-with-sections decision is business-layer rule 1), the section-ownership prose, the "Required Workflow" list that the conventions replace, and the Metrics note about a future data persona, which is stale now that `prism-metrics` exists.
+  - **Alternatives considered:** each skill citing the old template and keeping its own conventions, which left every skill over the cap, because the 125-line template alone exceeds it; and only `prism-strategy` citing the template, which would have changed how the other eight create the doc when it is absent. Neither fits the intent's "strategy-doc flow is unchanged".
+  - **Chosen approach:** one template, conventions on top, structure below, cited by all nine.
+
+- **Why nothing was deleted.** The old bodies cited the template, the closing-messages architect doc, and three ADRs (0014, 0043, 0060), and the architect doc and ADRs stay for other readers. The `## Next persona` sections that cited the closing-messages doc are cut, because a business skill's handoff is one `## Handoff` section. The ADR citations are cut because the reasoning each carried is in `business-layer.md`. No `.prism/references/` file, step file, or manifest route existed for the business skills.
+
+- **Judgment calls in the business thinning.**
+  - **`## Research` and `## Finance` are named.** The old bodies said "your research section" and "your finance section", while `prism-sales` read "`## Research`". Naming both removes the ambiguity, and `business-layer.md` lists them.
+  - **The legal disclaimer is encoded at three points, not four.** The fourth, the first "How Lex Thinks" lens, went with the lenses. The section-first, first-line-of-every-artifact, and missing-context points remain, and `business-layer.md` § Disclaimer-as-architecture says so. The first-line rule is prose, not a hook. If a legal artifact ever ships without it, a check is the fix.
+  - **`prism-recruiting` lost its Procedure D ("stuck") and `prism-finance` its Procedure D.** Both were the `blocked` verdict. "Stop and ask the user" covers it.
+  - **`prism-customer-success` lost the `byo`/`configuration`/`blocks` category names.** They described one team's doc tree, and the skill now says "the team's doc root".
+  - **`prism-sales` no longer routes a multi-stakeholder evaluation to a `needs-replan`.** It says to raise the case with the user, since no skill re-sequences runs any more.
+  - **The verdict vocabulary survives only in `prism-plan`, `prism-user-stories`, and `prism-review-loop`.** All three are on the allowlist for later phases.
+
+- **Out-of-lane and grain guards moved into the template, not cut.** Seven bodies had an out-of-lane clause and the eight non-strategy bodies a "strategy-feeding grain, do not restate other sections" clause. Every skill now reads the template, so one "Stay in your lane" convention there carries both, and `prism-legal` keeps its own handoff sentence.
+
+- **Always-on rules edited in PR 11.** `.prism/rules/skill-routing.md` is the one `load: always` rule this PR edits, with its curated twin and the generated block in `AGENTS.md`. The edit renames the two routing-row IDs (`prism-strategy` and `prism-metrics`) and changes nothing else. Every trigger phrase, including "Vera" and "Tess", is unchanged.
+
 ---
 
 ## Sessions
@@ -507,6 +544,10 @@ Its tasks are written into this section when its branch is cut, so a task list n
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Briar pass 1 fixes. Repointed the worktrees-lane, `step-02`, PRD-shape, and Iris-row references, inlined the `audit-state.json` shape, and added the PR body sync to the changelog and QA skills; see Decision: Judgment calls in the cadence and release thinning.
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Briar pass 2 fixes. Listed the rewritable PR body sections explicitly in the changelog, QA, and implement skills so Screenshots and Notes stay user-owned, and corrected two Decision details.
 - 2026-10-18 [huntermcgrew/prism-499-cadence-release]: Eric pass 1 fixes. Restored the `parker.md` rewrite a merge had dropped, tightened the audit archive test, and added the retro final-child CI note, the changelog every-commit clause, and the explicit Monday window; corrected the cleanup-pass enforcement claim.
+
+- 2026-10-18 [huntermcgrew/prism-499-business]: Renamed Vera and Tess to `prism-strategy` and `prism-metrics`, and thinned all nine business skills to 85 to 92 loaded lines (from 306 to 339). The shared conventions moved into a thinned strategy template that every skill cites; see Decision: What the business skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-business]: Briar pass 1 fixes. Every business skill now reads the strategy template unconditionally, the out-of-lane and grain guards live in its conventions, and `## Research` and `## Finance` are named everywhere; the three findings are under `## Review Issues`.
+- 2026-10-18 [huntermcgrew/prism-499-business]: Eric pass 1 fixes. Removed the closed-epic sentence from `business-layer.md` and moved the long-artifact allowance into the template convention every business skill reads; the two findings are under `## Review Issues`.
 
 ---
 
@@ -916,6 +957,46 @@ Its tasks are written into this section when its branch is cut, so a task list n
 - **File:** `.prism/plans/prism-499/plan.md:461`
 - **Problem:** the Decision said the commit gate hook enforces the cleanup-pass read. `hooks.commitCleanupPass` is opt-in and off by default, and Cursor has no hook.
 - **Fixed in:** the Decision states both limits and names the skills' cold re-read as the fallback.
+
+### PR 11: shared conventions reached only when the doc was absent
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-market-research/shared.md:5`
+- **Problem:** eight skills cited the strategy template only inside "when it does not exist, offer to start it from the template", so on the normal path (the doc exists) nothing sent the run to the conventions: reconcile before overwriting, host-capability detection, and no direct handoff to implementation skills. `prism-strategy` had the same gap.
+- **Fixed in:** all nine Startup sections have an unconditional bullet to read the template for the conventions and the structure, and the conditional clause no longer cites it. Each skill gains one line.
+
+### PR 11: out-of-lane and grain guards dropped without a Decision
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/templates/business-strategy.md:9`
+- **Problem:** seven bodies lost "outside the lane, name the right skill and hand off", and the eight non-strategy bodies lost "keep artifacts at strategy-feeding grain, don't restate other sections".
+- **Fixed in:** one "Stay in your lane" convention in the template, and a Decision recording the move.
+
+### PR 11: `## Research` and `## Finance` named in some places only
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-sales/shared.md:5`
+- **Problem:** `prism-sales` and `prism-marketing` said "the research section", the two descriptions said "research/finance section", and the market-research and finance Handoff lines said "the research/finance section", after the Decision named both.
+- **Fixed in:** each now says `## Research` or `## Finance`.
+
+### PR 11: business-layer.md pointed at a closed epic
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/business-layer.md:48`
+- **Problem:** "Planned additions are tracked in epic #212" named an epic that closed on 2026-06-19, in the doc and its seed twin.
+- **Fixed in:** the sentence is gone. "Rules for adding a new business skill" covers additions.
+
+### PR 11: long-artifact allowance kept by one skill only
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/templates/business-strategy.md:8`
+- **Problem:** the old market-research, marketing, sales, customer-success, and legal bodies let a long artifact live in its own file, but the new bodies and the template said only "write only your own section", and `prism-recruiting` alone kept the clause.
+- **Fixed in:** the "Write only your own section" convention says a long artifact may live in its own file, linked from the section, and `prism-recruiting`'s local copy is dropped.
 
 ## PR Readiness
 

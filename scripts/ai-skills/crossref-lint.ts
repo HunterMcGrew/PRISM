@@ -113,8 +113,8 @@ interface ScanRoot {
 // root below. Adding one would catch zero real defects today: its only
 // repo-root-absolute references are lazy-artifact runtime paths — per-persona
 // state files (`.prism/audit-state.json`, etc.) and
-// Vera's strategy doc under `.prism/business/`, none of which exist until
-// their owning persona's first write. Its relative links resolve against the
+// the strategy doc under `.prism/business/`, none of which exist until
+// their owning skill's first write. Its relative links resolve against the
 // consumer's installed tree, not this monorepo, so they sit outside this
 // linter's resolution model by design (see the module header above).
 export const CROSSREF_SCAN_ROOTS: ScanRoot[] = [
@@ -175,7 +175,7 @@ export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
 	// before install-cursor.ts was added) — prose mention, not a live link.
 	".prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
 	"templates/install/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
-	// .prism/business/strategy.md is a lazy artifact — Vera (prism-founder) creates
+	// .prism/business/strategy.md is a lazy artifact — `prism-strategy` creates
 	// it on first real write per lazy-artifacts.md; it is never seeded in the
 	// monorepo tree. ADR-0060, business-layer.md, the strategy template, and the
 	// ADR README all reference it as the live artifact location.
