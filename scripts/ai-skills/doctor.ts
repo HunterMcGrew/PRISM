@@ -28,6 +28,7 @@ import { COPIED_CONTENT_AREAS } from "./build";
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { resolveHosts, type HostName } from "./lib/hosts";
+import { listManifestRoutes } from "./hooks/lib/match.mjs";
 import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
@@ -487,7 +488,7 @@ const TOOLKIT_BASE_MANIFEST_RELATIVE = "_toolkit/manifest.base.json";
 function collectRoutedDocs(manifest: Record<string, unknown>): Set<string> {
 	const routed = new Set<string>();
 
-	for (const value of Object.values(manifest)) {
+	for (const [, value] of listManifestRoutes(manifest)) {
 		for (const doc of Array.isArray(value) ? value : [value]) {
 			if (typeof doc === "string") {
 				routed.add(doc);

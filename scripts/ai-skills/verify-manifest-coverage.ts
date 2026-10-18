@@ -21,7 +21,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { isDirectCliEntry } from "./lib/cli-entry";
-import { compileMatcher } from "./hooks/lib/match.mjs";
+import { compileMatcher, listManifestRoutes } from "./hooks/lib/match.mjs";
 import { type Manifest, findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -91,7 +91,7 @@ export function loadedDocsForScope(
 	scope: string[]
 ): string[] {
 	const docs = new Set<string>();
-	const compiledEntries = Object.entries(manifest).map(
+	const compiledEntries = listManifestRoutes(manifest).map(
 		([pattern, docOrDocs]) => ({
 			matcher: compileMatcher(pattern),
 			docs: Array.isArray(docOrDocs) ? docOrDocs : [docOrDocs],
@@ -158,7 +158,7 @@ const PRISM_OWNED_MANIFESTS = [
  */
 export function collectRoutedDocs(manifest: Manifest): Set<string> {
 	const routed = new Set<string>();
-	for (const value of Object.values(manifest)) {
+	for (const [, value] of listManifestRoutes(manifest)) {
 		for (const doc of Array.isArray(value) ? value : [value]) {
 			routed.add(doc);
 		}

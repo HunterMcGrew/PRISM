@@ -33,7 +33,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { compileMatcher } from "./lib/match.mjs";
+import {
+	compileMatcher,
+	listManifestRoutes,
+	listManifestUmbrellas,
+} from "./lib/match.mjs";
 
 /**
  * Where every manifest route value resolves from. Exported because the deny
@@ -242,7 +246,7 @@ export function matchDocsForPath(manifest, relativePath) {
 	const docs = [];
 	const seen = new Set();
 
-	for (const [pattern, docOrDocs] of Object.entries(manifest)) {
+	for (const [pattern, docOrDocs] of listManifestRoutes(manifest)) {
 		if (!resolveMatcher(pattern)(relativePath)) {
 			continue;
 		}
@@ -313,9 +317,14 @@ function buildStateFilePath(repoRoot, scopeId) {
  * is one doc getting re-nagged, versus re-throwing and bricking the hook for
  * the rest of the session with no repair path.
  *
+ * `umbrellaAcks` holds the `<doc>\n<heading>` keys the umbrella speed bump
+ * has already stopped once. Every save rewrites the whole file, so a load
+ * that dropped the list would make the next save erase it and re-deny the
+ * retry the speed bump promised would pass.
+ *
  * @param {string} repoRoot
  * @param {string} scopeId
- * @returns {Promise<{read: string[], announced: string[]}>}
+ * @returns {Promise<{read: string[], announced: string[], umbrellaAcks: string[]}>}
  */
 export async function loadRouteState(repoRoot, scopeId) {
 	try {
@@ -324,9 +333,10 @@ export async function loadRouteState(repoRoot, scopeId) {
 		return {
 			read: Array.isArray(parsed.read) ? parsed.read : [],
 			announced: Array.isArray(parsed.announced) ? parsed.announced : [],
+			umbrellaAcks: Array.isArray(parsed.umbrellaAcks) ? parsed.umbrellaAcks : [],
 		};
 	} catch {
-		return { read: [], announced: [] };
+		return { read: [], announced: [], umbrellaAcks: [] };
 	}
 }
 
@@ -399,7 +409,7 @@ export async function pruneStaleRouteState(
  *
  * @param {string} repoRoot
  * @param {string} scopeId
- * @param {{read: string[], announced: string[]}} state
+ * @param {{read: string[], announced: string[], umbrellaAcks?: string[]}} state
  * @returns {Promise<void>}
  */
 export async function saveRouteState(repoRoot, scopeId, state) {
@@ -561,6 +571,7 @@ export async function resolveArchitectNag(
 	if (docJustRead !== null && !readSet.has(docJustRead)) {
 		readSet.add(docJustRead);
 		await saveRouteState(repoRoot, scopeId, {
+			...state,
 			read: [...readSet],
 			announced: [...announcedSet],
 		});
@@ -585,9 +596,223 @@ export async function resolveArchitectNag(
 		announcedSet.add(doc);
 	}
 	await saveRouteState(repoRoot, scopeId, {
+		...state,
 		read: [...readSet],
 		announced: [...announcedSet],
 	});
 
 	return text;
+}
+
+// --- Umbrella-section speed bump ---
+
+// A path under one of these gets the rule wording, keyed on its `load:` key.
+const RULE_DIR_PREFIXES = [".prism/rules/", ".prism/custom/rules/"];
+const PLACEMENT_POINTER =
+	".prism/architect/guides/writing-an-architect-doc.md § Where new content goes";
+const BREVITY_POINTER =
+	".prism/rules/writing-voice.md § Keep it short enough to be read";
+const HEADINGS_SHOWN = 3;
+const ROUTES_SHOWN = 4;
+
+/**
+ * Returns the `##` to `######` heading lines an edit adds to a file, trimmed,
+ * in order, without duplicates. A heading the file already carries is not
+ * new, which covers an edit that repeats one as surrounding context. A `#`
+ * line is a document's title and never counts.
+ *
+ * A line inside a fenced code block in the edit text is quoted text, not
+ * structure, so it is skipped. Fence tracking is best effort: it sees only
+ * the edit text, so an `Edit` whose `new_string` opens mid-fence reads its
+ * closing fence as an opening one and can miss a heading after it.
+ *
+ * @param {string} editText
+ * @param {string} currentText
+ * @returns {string[]}
+ */
+export function extractNewHeadings(editText, currentText) {
+	const existing = new Set(currentText.split("\n").map((line) => line.trim()));
+	/** @type {string[]} */
+	const headings = [];
+	/** @type {string | null} */
+	let openFence = null;
+
+	for (const rawLine of editText.split("\n")) {
+		const line = rawLine.trim();
+		const fence = /^(`{3,}|~{3,})/.exec(line)?.[1];
+		if (fence !== undefined) {
+			// A fence closes only on a run of the same character at least as long
+			// as the one that opened it, so a ``` line inside a ```` block is text.
+			if (openFence === null) {
+				openFence = fence;
+			} else if (fence[0] === openFence[0] && fence.length >= openFence.length) {
+				openFence = null;
+			}
+			continue;
+		}
+		if (openFence !== null || !/^#{2,6}\s+\S/.test(line)) {
+			continue;
+		}
+		if (!existing.has(line) && !headings.includes(line)) {
+			headings.push(line);
+		}
+	}
+
+	return headings;
+}
+
+/** Joins up to `shown` items with commas, then appends `and N more`. @param {string[]} items @param {number} shown @returns {string} */
+function joinCapped(items, shown) {
+	const listed = items.slice(0, shown).join(", ");
+	const rest = items.length - shown;
+	return rest > 0 ? `${listed}, and ${rest} more` : listed;
+}
+
+/**
+ * The route patterns that deliver an architect doc, in manifest order. A doc
+ * outside `.prism/architect/` has none.
+ *
+ * @param {Record<string, unknown>} manifest
+ * @param {string} relativePath
+ * @returns {string[]}
+ */
+function findDocRoutes(manifest, relativePath) {
+	const doc = extractArchitectDocPath(relativePath);
+	if (doc === null) {
+		return [];
+	}
+
+	return listManifestRoutes(manifest)
+		.filter(([, value]) => (Array.isArray(value) ? value : [value]).includes(doc))
+		.map(([pattern]) => pattern);
+}
+
+/**
+ * Says when a rule file loads, read off its own `load:` frontmatter key. A
+ * rule with no key, or one this does not recognize, is described as always
+ * loaded, because that is the costliest reading and the one a writer should
+ * weigh.
+ *
+ * @param {string} currentText
+ * @returns {string}
+ */
+function describeRuleLoad(currentText) {
+	const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(currentText)?.[1] ?? "";
+	const load = /^load:\s*(\w+)/m.exec(frontmatter)?.[1];
+	if (load === "paths") {
+		return "a rule file that loads whenever its `paths` match";
+	}
+	if (load === "skill") {
+		return "a rule file that loads whenever a skill cites it";
+	}
+	return "a rule file that loads in every session";
+}
+
+/**
+ * The speed bump's deny text. A rule file has no route to show, so it gets
+ * its own wording, keyed on the rule directory rather than on the absence of
+ * a route — an ADR has no route either and loads in no session.
+ *
+ * @param {string} relativePath
+ * @param {string[]} headings
+ * @param {string[]} routes
+ * @param {string} currentText
+ * @returns {string}
+ */
+export function formatUmbrellaReason(relativePath, headings, routes, currentText) {
+	const headingList = joinCapped(
+		headings.map((heading) => `"${heading}"`),
+		HEADINGS_SHOWN
+	);
+
+	if (RULE_DIR_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
+		return `You're adding ${headingList} to \`${relativePath}\`, ${describeRuleLoad(currentText)}. Name the files this section governs. If it applies whichever file is being touched, retry this edit unchanged. If not, put it in a routed architect doc, per ${PLACEMENT_POINTER}, and keep what stays short, per ${BREVITY_POINTER}.`;
+	}
+
+	const placement = `put it in the topic doc that owns the subject or a new doc with its own route, per ${PLACEMENT_POINTER}`;
+	if (routes.length === 0) {
+		return `You're adding ${headingList} to \`${relativePath}\`, an umbrella doc no route delivers yet. Name the files this section governs. If it belongs to the whole area this doc covers, retry this edit unchanged. If not, ${placement}.`;
+	}
+
+	return `You're adding ${headingList} to \`${relativePath}\`, an umbrella doc that loads on ${joinCapped(routes, ROUTES_SHOWN)}. A section here costs every session that reaches those routes. Name the files this section governs. If it applies to every file those routes reach, retry this edit unchanged. If not, ${placement}.`;
+}
+
+/**
+ * The umbrella speed bump, run once a write has cleared the read-credit gate.
+ * Returns the deny reason for the first umbrella file in `edits` whose edit
+ * adds a heading this scope has not been stopped on, or `null` when every
+ * edit is clear.
+ *
+ * The acknowledgement is saved before the reason is returned, so the retry of
+ * the same edit finds it and passes. A save that fails returns `null` instead:
+ * a deny with no recorded acknowledgement would deny every retry, which turns
+ * a speed bump into a wall with no way through. Every new heading in the
+ * edit is acknowledged at once, including those the deny counts in its
+ * `and N more` tail rather than naming, so one retry clears the whole edit.
+ *
+ * @param {string} repoRoot
+ * @param {string} scopeId
+ * @param {{filePath: string, editText: string}[]} edits
+ * @returns {Promise<string | null>}
+ */
+export async function resolveUmbrellaSpeedBump(repoRoot, scopeId, edits) {
+	if (edits.length === 0) {
+		return null;
+	}
+
+	const manifest = await loadManifest(repoRoot);
+	const umbrellaMatchers = listManifestUmbrellas(manifest).map(resolveMatcher);
+	if (umbrellaMatchers.length === 0) {
+		return null;
+	}
+
+	const state = await loadRouteState(repoRoot, scopeId);
+	const acked = new Set(state.umbrellaAcks);
+
+	for (const { filePath, editText } of edits) {
+		const relativePath = toRepoRelativePath(repoRoot, filePath);
+		if (
+			relativePath === null ||
+			!umbrellaMatchers.some((matches) => matches(relativePath))
+		) {
+			continue;
+		}
+
+		// A file being created has no headings yet, so every one it adds is new.
+		const currentText = await fs
+			.readFile(path.join(repoRoot, relativePath), "utf8")
+			.catch(() => "");
+		const unacked = extractNewHeadings(editText, currentText).filter(
+			(heading) => !acked.has(`${relativePath}\n${heading}`)
+		);
+		if (unacked.length === 0) {
+			continue;
+		}
+
+		try {
+			await saveRouteState(repoRoot, scopeId, {
+				...state,
+				umbrellaAcks: [
+					...state.umbrellaAcks,
+					...unacked.map((heading) => `${relativePath}\n${heading}`),
+				],
+			});
+		} catch (error) {
+			process.stderr.write(
+				`architect-route: umbrella acknowledgement not saved, allowing: ${error instanceof Error ? error.message : String(error)}\n`
+			);
+			return null;
+		}
+
+		return formatUmbrellaReason(
+			relativePath,
+			unacked,
+			findDocRoutes(manifest, relativePath),
+			// A file being created has no `load:` key on disk yet, so read the one
+			// the new content declares.
+			currentText === "" ? editText : currentText
+		);
+	}
+
+	return null;
 }

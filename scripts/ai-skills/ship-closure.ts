@@ -29,6 +29,7 @@ import {
 	isLazyOrHistoricalTarget,
 	resolveRef,
 } from "./crossref-lint";
+import { listManifestRoutes } from "./hooks/lib/match.mjs";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { pathExists, readFileIfExists } from "./utils";
 
@@ -218,7 +219,7 @@ async function collectManifestRoutedPaths(
 
 	const routed: string[] = [];
 
-	for (const value of Object.values(manifest)) {
+	for (const [, value] of listManifestRoutes(manifest)) {
 		for (const doc of Array.isArray(value) ? value : [value]) {
 			if (typeof doc === "string") {
 				routed.push(path.posix.join(".prism/architect", doc));

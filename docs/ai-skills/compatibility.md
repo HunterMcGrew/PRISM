@@ -1,7 +1,7 @@
 ---
 title: Compatibility
 description: How PRISM's build outputs land across tool namespaces and what gets committed vs ignored.
-last_updated: "2026-10-11"
+last_updated: "2026-10-17"
 ---
 
 # Compatibility
@@ -79,6 +79,8 @@ What carries the guarantee on Cursor is the always-on rule in `.prism/rules/cont
 `prism doctor` says which case you are in. It reports per host whether the runtime is installed and registered, and on a repo whose `hosts` lists neither `claude` nor `codex` it says the gate is not delivered.
 
 PRISM installs the hook only when `hosts` includes `claude` or `codex`, or when `hosts` is absent, which means every host. A Codex-only repo gets `.claude/hooks/` and a `.codex/hooks.json` registration, with no `.claude/settings.json` entry. A Cursor-only repo gets no `.claude/hooks/`, no registration, and no `.gitignore` lines.
+
+The write gate also carries the umbrella speed bump. When an edit adds a new heading (`##` through `######`) to a file on the `umbrellas` list in `.prism/architect/manifest.json`, the hook stops it once and shows what the section costs. Retrying the same edit passes. A new install's manifest lists `.prism/rules/*.md` and `.prism/custom/rules/*.md`. `prism update` never rewrites your manifest, so an existing install adds the `umbrellas` key by hand to get it. Cursor has no speed bump, for the same reason it has no write gate.
 
 The same runtime carries two opt-in git gates: a commit-time cleanup pass that holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read, and a push-time verification that runs `commands.lint` and `commands.format` and denies a `git push` on a non-zero exit. Both are off until a `hooks` block in `.ai-skills/config.json` turns them on (`commitCleanupPass`, `pushVerification`). They ride the same delivery as the write gate, so Claude Code and Codex both register them. The shipping flow carries the cleanup pass as a prose step on every host, which is what covers Cursor.
 

@@ -54,3 +54,38 @@ export function compileMatcher(pattern) {
 	const regex = new RegExp(`^${regexBody}$`);
 	return (filePath) => regex.test(filePath);
 }
+
+// The one manifest key that is not a route. Its entries are repo-relative
+// patterns, so a reader that treated it as a route would report each as dead.
+export const UMBRELLAS_KEY = "umbrellas";
+
+/**
+ * The manifest's routes as `[pattern, docOrDocs]` pairs, with the reserved
+ * `umbrellas` key left out. Every reader that walks routes goes through here,
+ * so a second reserved key is one more line in this function rather than a
+ * sweep of every caller.
+ *
+ * @param {Record<string, unknown>} manifest
+ * @returns {[string, string | string[]][]}
+ */
+export function listManifestRoutes(manifest) {
+	return /** @type {[string, string | string[]][]} */ (
+		Object.entries(manifest).filter(([key]) => key !== UMBRELLAS_KEY)
+	);
+}
+
+/**
+ * The manifest's umbrella patterns, or an empty list when the key is absent
+ * or is not an array. A non-string entry is dropped rather than thrown on,
+ * because the hook reads this on every gated write and a malformed list
+ * should cost the speed bump, not the gate.
+ *
+ * @param {Record<string, unknown>} manifest
+ * @returns {string[]}
+ */
+export function listManifestUmbrellas(manifest) {
+	const value = manifest[UMBRELLAS_KEY];
+	return Array.isArray(value)
+		? value.filter((entry) => typeof entry === "string")
+		: [];
+}

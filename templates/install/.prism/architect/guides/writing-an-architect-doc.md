@@ -57,7 +57,9 @@ that fits, in this order:
    wide area, such as every file under `src/components/`. Content belongs there
    only when it applies to every file the umbrella's routes reach. Content
    about one subsystem inside that area is its own topic, and filing it in the
-   umbrella makes every session in the area load it.
+   umbrella makes every session in the area load it. The manifest's
+   `umbrellas` list names the umbrellas, and the write gate stops a new
+   heading in one once per session or subagent, with the doc's routes shown.
 3. **A new doc with its own route.** When neither fits, write one doc for the
    topic and route it per § Route-add is part of authoring. When no doc covers
    the content without widening, a doc is missing. That is not a license to

@@ -438,7 +438,7 @@ test("loadRouteState: a corrupt state file is treated as absent, not thrown", as
 		);
 
 		const state = await loadRouteState(repoRoot, "session-1");
-		assert.deepEqual(state, { read: [], announced: [] });
+		assert.deepEqual(state, { read: [], announced: [], umbrellaAcks: [] });
 	});
 });
 
@@ -452,7 +452,7 @@ test("loadRouteState: an unrecognized state-file schema is treated as absent", a
 		);
 
 		const state = await loadRouteState(repoRoot, "session-1");
-		assert.deepEqual(state, { read: [], announced: [] });
+		assert.deepEqual(state, { read: [], announced: [], umbrellaAcks: [] });
 	});
 });
 

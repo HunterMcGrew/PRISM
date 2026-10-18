@@ -111,5 +111,16 @@
 	"scripts/ai-skills/worktree-classify.ts": "_toolkit/worktree-hygiene.md",
 	".ai-skills/skills/prism-surface-audit/**": "_toolkit/worktree-hygiene.md",
 	".prism/architect/manifest.json": "_toolkit/hook-runtime.md",
-	".prism/.sync-manifest.json": "_toolkit/consumer-sync-flow.md"
+	".prism/.sync-manifest.json": "_toolkit/consumer-sync-flow.md",
+	"umbrellas": [
+		".prism/architect/_toolkit/audit-workflow.md",
+		".prism/architect/_toolkit/closing-messages.md",
+		".prism/architect/_toolkit/install-layout.md",
+		".prism/architect/_toolkit/plan-authoring.md",
+		".prism/architect/_toolkit/skills-ecosystem.md",
+		".prism/architect/_toolkit/spec-editing.md",
+		".prism/architect/_toolkit/ticket-workflows.md",
+		".prism/architect/guides/*.md",
+		".prism/rules/*.md"
+	]
 }

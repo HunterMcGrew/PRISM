@@ -12,6 +12,12 @@ export interface ArchitectRouteState {
 	 * named at most once per session.
 	 */
 	announced: string[];
+	/**
+	 * `<doc>\n<heading>` keys the umbrella speed bump has already stopped
+	 * once. Optional on write so a caller seeding read state alone still
+	 * typechecks; `loadRouteState` always returns it.
+	 */
+	umbrellaAcks?: string[];
 }
 
 export type Manifest = Record<string, string | string[]>;
@@ -63,6 +69,24 @@ export function filterRoutedPaths(
 	repoRoot: string,
 	filePaths: string[]
 ): Promise<string[]>;
+
+export function extractNewHeadings(
+	editText: string,
+	currentText: string
+): string[];
+
+export function formatUmbrellaReason(
+	relativePath: string,
+	headings: string[],
+	routes: string[],
+	currentText: string
+): string;
+
+export function resolveUmbrellaSpeedBump(
+	repoRoot: string,
+	scopeId: string,
+	edits: { filePath: string; editText: string }[]
+): Promise<string | null>;
 
 export function resolveArchitectNag(
 	repoRoot: string,

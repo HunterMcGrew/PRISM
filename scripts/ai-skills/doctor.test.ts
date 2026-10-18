@@ -835,6 +835,27 @@ test("runDoctor reports no architect finding when every doc on disk is routed", 
 	});
 });
 
+test("runDoctor treats the umbrellas key as a list, not a route to dead docs", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{
+				".prism/rules/**": "_toolkit/routed.md",
+				umbrellas: [".prism/rules/*.md", ".prism/custom/rules/*.md"],
+			},
+			["_toolkit/routed.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(architectMessages(report.findings), []);
+	});
+});
+
 test("runDoctor reports a consumer manifest route anchored to nothing", async () => {
 	// The catch-all rejection in `pnpm prism:check` is a development gate and
 	// never runs in a consumer's repo, where `manifest.json` is the
