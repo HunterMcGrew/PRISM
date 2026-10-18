@@ -92,7 +92,7 @@ Measured on `main` at `594f08d4` on 2026-10-18, after all eleven stack PRs merge
 Two definitions of Loaded appear, and they differ:
 
 - **Loaded** is the Method definition above: body plus the `.md` under `.prism/references/` or `.prism/skills/` that the body cites. The Loaded columns use it.
-- **Gate** is `measureSkillLoad` in `scripts/ai-skills/lib/skill-loaded-lines.ts`, the number the cap's test gates on. It also follows citations transitively and counts cited templates and architect docs, so it reads higher. The business skills each cite the 63-line strategy template, which Loaded ignores and Canonical counts.
+- **Gate** is `measureSkillLoad` in `scripts/ai-skills/lib/skill-loaded-lines.ts`, the number the cap's test gates on. It also follows citations transitively and counts cited templates and architect docs, so it reads higher. The business skills each cite the 63-line strategy template, which Loaded ignores and Gate counts.
 
 | Skill | Body before | Body after | Loaded before | Loaded after | Gate after |
 | --- | --- | --- | --- | --- | --- |
