@@ -223,7 +223,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - **Amended:** 0014 loses Sasha as the `## Debugged Issues` writer, 0036 loses Sasha as a security checker, and 0045 loses Ren, Theo, and the debugger from its examples. Each decision stands.
   - **Left alone:** 0004, 0007, 0018, 0037, 0043, and 0064 name the personas as history or as examples. 0038 and 0058 concern paired dev docs, which 0058 had already retired.
 
-- **Two always-on rules lose Theo's and Sasha's traces.** `.prism/rules/response-shape.md` drops the write/skip/defer prompt from its decision-gate examples. That prompt was Theo's, and `writing-voice.md` had already lost the same example. `.prism/rules/skill-routing.md` adds "this is broken" and "why is this happening" to the implementer's row, because those debugging phrases routed to Sasha and would otherwise match no row.
+- **Two always-on rules lose Theo's and Sasha's traces.** `.prism/rules/response-shape.md` drops the write/skip/defer prompt from its decision-gate examples. That prompt was Theo's, and `writing-voice.md` had already lost the same example. `.prism/rules/skill-routing.md` adds every debugging phrase Sasha's row carried to the implementer's row, because they would otherwise match no row. `.prism/rules/branch-plan.md` drops "a diagnostician" from its plan-only-commit example, since the diagnostician was Sasha.
 
 - **`micro-file-step-machine.md` keeps its lighter-variant section with no exemplar.** Sasha was the only persona using the state-file-only variant. The pattern text is generic and still valid, so it stays. The Theo, Ren, and Sasha bullets and the Sasha paragraph are cut. The reference now cites Parker and Iris.
 
