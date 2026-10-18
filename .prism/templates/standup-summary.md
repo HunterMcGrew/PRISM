@@ -36,7 +36,7 @@ An empty subsection is omitted with its label and the spacer before it. The proj
 
 ## Window
 
-Yesterday is the full local calendar day, from `00:00:00` yesterday (inclusive) to `00:00:00` today (exclusive). On Monday it is last Friday. A range the user names ("since Friday", "this week") replaces it. The window applies to merge times, commit dates, and review times.
+Yesterday is the full local calendar day, from `00:00:00` yesterday (inclusive) to `00:00:00` today (exclusive). On Monday it is last Friday: from `00:00:00` Friday (inclusive) to `00:00:00` Monday (exclusive), which covers the weekend. A range the user names ("since Friday", "this week") replaces it. The window applies to merge times, commit dates, and review times.
 
 ## Subsection assignment
 

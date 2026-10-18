@@ -38,7 +38,7 @@ export const PRISM_OWNED_GLOBS = [
  * it shipped under, so eject and the ship-closure roots must treat it as
  * PRISM's even though a prefix check would not.
  */
-export const PRISM_BARE_SKILL_IDS: readonly string[] = ["tdd"];
+const PRISM_BARE_SKILL_IDS: readonly string[] = ["tdd"];
 
 /** True for a skill ID PRISM owns: any `prism-*` ID or a listed bare ID. */
 export function checkIsPrismSkillId(skillId: string): boolean {

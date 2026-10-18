@@ -226,8 +226,7 @@ async function collectManifestRoutedPaths(
  *
  * Three groups: the fixed set below (the rules, the writing guides, and the
  * runtime — hook scripts, both shipped routing tables, and `doctor`), every
- * PRISM-owned skill directory found on disk (`prism-*` plus the bare IDs in
- * `PRISM_BARE_SKILL_IDS`), and every architect doc the two
+ * PRISM-owned skill directory found on disk (`checkIsPrismSkillId`), and every architect doc the two
  * shipped routing tables route to. The last two are computed, so a new
  * persona or a new route enters the closure without editing this function.
  */

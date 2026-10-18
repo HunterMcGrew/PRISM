@@ -39,7 +39,7 @@ Write once to a temp path and rename it, creating `.prism/retros/` on first use.
 - **Epic grain:** `.prism/retros/<epic-slug>/<YYYY-MM-DD>-<epic-slug>.md` without the `epic-` prefix. A date range goes to `.prism/retros/<YYYY-MM-DD>-<from>..<to>.md`.
 - **Per-PR grain:** a compact note at `.prism/retros/<epic-slug>/<ticket-id>.md`, or `.prism/retros/per-pr/<ticket-id>.md` for a ticket with no parent epic. It holds the header, charter coverage, any fidelity gap, and Promotion cautions only when there are any.
 
-Sections, in order: header (target, grain, date), Summary, Charter coverage (one row per item with its answer, sources, and gap, where `not configured` stays distinct from `unreachable`), Findings, Action Items, Promotion cautions, Lesson candidates (epic only), and Citations split into plan evidence, execution record, and per-ticket notes.
+Sections, in order: header (target, grain, date), Summary, Charter coverage (one row per item with its answer, sources, and gap, where `not configured` stays distinct from `unreachable`; at epic grain it also names that the final child's main-branch CI is approximated by its PR CI, since earlier children have fully merged), Findings, Action Items, Promotion cautions, Lesson candidates (epic only), and Citations split into plan evidence, execution record, and per-ticket notes.
 
 - **Findings** follow the charter. Each cites the plan section or execution-record entry it comes from and names a persona or skill only when that entry does. Never invent a perspective the evidence does not contain.
 - **Action Items** carry a proposed owner. Every divergence yields one, or an explicit "observation only". Epic retros produce about 3 to 8, per-PR notes at most 2.
