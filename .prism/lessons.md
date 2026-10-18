@@ -517,3 +517,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-10-17 — PR 3 of the PRISM-499 stack had absorbed PR 2 at an earlier head. PR 2 then took three more review fixes and squash-merged. Absorbing that squash with `-X ours` kept PR 3's older copies of four PR 2 files, which reverted the fixes. `prism:check` stayed green, because the old code and the old tests agreed. Self-review caught it by diffing the squash's files against `main`.
 
 **How to apply:** Before a lower PR squashes, merge its final head into every branch above it. After any `-X ours` absorb, run `git diff origin/main HEAD -- <file>` for every file the squash touched, and confirm it shows only the branch's own edits.
+
+## A claim about every skill's sections goes false when a thinning cuts the section
+
+**Why:** 2026-10-18 (PRISM-499 PR 8) — `closing-messages.md` said every persona's `shared.md` has a `## Next persona` section that cites it. The thinning PRs cut that section from each skill, and no rename or symbol search flagged the doc, because it names a section heading and not a skill.
+
+**How to apply:** When thinning or renaming a skill, grep the architect docs for claims about every skill's sections (for example `## Next persona`), and reword the claim in the same PR.

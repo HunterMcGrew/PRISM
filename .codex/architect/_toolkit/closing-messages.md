@@ -46,7 +46,7 @@ The closing-message offer follows one of three shapes:
 - **Conditional route** — "If `<condition>`, this routes to `<persona>`. Otherwise, `<other-persona>`. Which do you want?"
 - **Done route** — "This ships from here — no next persona needed."
 
-Illustrative phrasings (not literal quotes from any specific file — see the `## Summary and handoff` section in `prism-start-ticket/shared.md` and the `## Handoff` section in `prism-design/shared.md` for the actual in-skill content):
+Illustrative phrasings (not literal quotes from any specific file — see the closing and handoff text of `prism-start-ticket` and `prism-design` for the actual in-skill content):
 
 - **Nora**, bug routing: "This is a bug ticket. Handing off to Clove to confirm the root cause before we fix it."
 - **Pixel**, mock-spec handoff: "Flagging for Winston: a new shared-component candidate surfaced — wants architecture review before Clove builds against the spec."
@@ -66,7 +66,7 @@ A persona's closing message names the next persona's name verbatim; the user cop
 
 ## Who cites this pattern
 
-- **All ticket-flow personas** — cite this doc from their `shared.md` § Next persona section and provide the routing logic for their lane.
-- **Cadence personas (Atlas, Zoe, Iris)** — cite this doc but typically end with "Done" or "no next persona needed" rather than a routing handoff. The closing message still names this file as the authority on the closing pattern.
+- **All ticket-flow skills** — name their next skill in their own closing or handoff text, and this doc holds the routing table they follow.
+- **Cadence personas (Atlas, Zoe, Iris)** — typically end with "Done" or "no next persona needed" rather than a routing handoff. The closing message still follows the pattern here.
 
-Each persona's `shared.md` includes a `## Next persona` section that names this file and provides the persona's row of the table. Synthesizing the data here means each persona points at one source instead of re-deriving the routing on every shared.md edit.
+A skill's closing or handoff text carries its own next-skill line, and the table above is the one place that lists the routes together. Keeping the table here means a route change is one edit to this doc and the skills that disagree with it, instead of a re-derivation in every `shared.md`.

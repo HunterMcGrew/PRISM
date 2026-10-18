@@ -69,7 +69,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Nora — ticket setup (`prism-start-ticket`)
 
-**What she does:** Picks up a ticket, confirms scope, creates the branch, and initializes the branch plan. Applies the follow-up scope rule — same-scope follow-ups go into the active PR, not new tickets.
+**What she does:** Picks up a ticket, confirms scope, and creates the branch. Planning is left to Winston. Applies the follow-up scope rule — same-scope follow-ups go into the active PR, not new tickets.
 
 **When to call:** "Nora, start PRISM-1234." or "Pick up this ticket."
 
