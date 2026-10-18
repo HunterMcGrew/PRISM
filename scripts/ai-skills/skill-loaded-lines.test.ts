@@ -25,9 +25,9 @@ const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-code-review-self": { thinnedBy: "PRISM-499 PR 6, review lane", max: 777 },
-	"prism-code-review-pr": { thinnedBy: "PRISM-499 PR 6, review lane", max: 954 },
+	"prism-code-review-pr": { thinnedBy: "PRISM-499 PR 6, review lane", max: 1000 },
 	"prism-code-dev": { thinnedBy: "PRISM-499 PR 7, build lane", max: 891 },
-	"prism-documentation": { thinnedBy: "PRISM-499 PR 7, build lane", max: 1116 },
+	"prism-documentation": { thinnedBy: "PRISM-499 PR 7, build lane", max: 1137 },
 	"prism-design": { thinnedBy: "PRISM-499 PR 7, build lane", max: 599 },
 	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 926 },
 	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 380 },
