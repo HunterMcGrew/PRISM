@@ -37,11 +37,10 @@ ask is create or migrate.
   [`ownership.ts`](../../../scripts/ai-skills/ownership.ts) JSDoc on
   `PRISM_OWNED_GLOBS`. The only skill that legitimately ships a `prism-*` ID is
   one being contributed back to the PRISM toolkit itself.
-- **Authoring rules.** Every skill body and `description` obeys the content
-  disclosure model — three loading levels, the disclosure gate (PIN / EXTERNALIZE /
-  CATALOG / CUT), and the description-shape guidance.
-
-  **Before writing any skill source, read [`lib/skill-authoring.md`](./lib/skill-authoring.md) and apply it.**
+- **Authoring rules.** Every skill body and `description` passes the four
+  tests and the description shape in
+  [`.prism/rules/skill-authoring.md`](../../../.prism/rules/skill-authoring.md),
+  which loads whenever a skill source is edited.
 - **Hard limits enforced by tests.** The `description` field caps at 1000 chars
   (`MAX_FRONTMATTER_DESCRIPTION_LENGTH`, asserted by `discovery-metadata.test.ts`
   so Codex discovery can expose the skill); the generated SKILL.md body caps at

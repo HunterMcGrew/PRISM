@@ -1,110 +1,42 @@
-# Skill Authoring — Content Disclosure
+# Skill Authoring
 
-## Purpose
+A PRISM skill is a function a session runs. It holds the policy the model would not apply on its own, in a body short enough to follow, and nothing else. This rule is the author-facing form of [ADR-0080](../spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md).
 
-PRISM skills are scaffolding. They define what a persona does and how it weighs everything else — and they point to references for the rest. This rule governs what stays in the skill body and what moves to a reference, so skills stay lean enough that their load-bearing rules actually get followed. It is the author-facing form of [ADR-0045](../spec/adrs/_toolkit/0045-skill-content-disclosure-model.md).
+**Why:** the baseline for PRISM-499 found most skill text was persona voice, engineering method the model already applies, or copies of rules every session already holds. That text cost every run and diluted the few lines that mattered. Moving it into references only moved the cost, because a run that is told to read a reference pays for it anyway.
 
-**Why:** A skill's body is paid every time the skill triggers and stays in context for the rest of the conversation. References are free until the body tells the agent to read them. But the real cost of a bloated body isn't tokens — it's attention dilution. A 200-line skill with five sharp rules treats them as load-bearing because they're the whole document; a 700-line skill with the same five rules plus thirty nice-to-haves flattens the hierarchy, and the critical rules get followed less reliably. Going lean is not about line count for its own sake — it's about keeping the importance hierarchy sharp.
+## The four tests
 
-## The three loading levels
+Every line of a skill passes all four, or it is cut:
 
-Use "level" or "stage" here — never "tier." [ADR-0035](../spec/adrs/_toolkit/0035-rule-loading-tiers.md) owns "tier" for rule loading; colliding the vocabularies confuses both.
+- **Policy.** It encodes something the model would not do unprompted: a PRISM format, gate, lane boundary, or owner. Voice, generic method ("write tests," "read before you edit"), and restatements of an always-on rule fail.
+- **Trigger.** The `description` fires the skill on the requests it serves and not on others.
+- **Length.** The body plus every reference, step, and `load: skill` rule file it tells a run to read fits in 120 lines. `scripts/ai-skills/skill-loaded-lines.test.ts` measures it.
+- **Enforcement.** Anything that must always hold is a hook or a check. Prose that says "always" or "never" without one behind it is a request, not a guarantee.
 
-1. **Frontmatter** (`name` + `description`) — loaded every session, for every installed skill. Keep it tight; it's permanent cost.
-2. **Body** (`shared.md` + the platform file → generated `SKILL.md`) — loaded every trigger. This is where the cost and the dilution live.
-3. **References** (`.prism/references/…`) — free until the body instructs a read.
+**How to apply:** cut content that fails a test. Do not move it into a reference or a step file, since the cap counts those too. When a cut removes a judgment the model would genuinely miss, keep it as one plain policy line, not as a lens or a persona.
 
 ## Description field shape
 
-The `description` field is the routing surface — the auto-routing layer reads it to decide which skill fires. Write it as **WHAT the skill does + WHEN to use it + compact discovery keywords**, not as an enumeration of trigger phrases. A list of name-permutations (`"hey Pixel", "over to Pixel", "ask Pixel"`) all collapse to the single keyword `Pixel`; spelling them out spends permanent per-session context without adding routing coverage.
+The `description` is loaded every session for every installed skill, so it is the most expensive text a skill owns. The enforced cap is 1,000 characters (`MAX_FRONTMATTER_DESCRIPTION_LENGTH` in `scripts/ai-skills/utils.ts`).
 
-**Why:** `description` is loaded every session for every installed skill (loading level 1 above) — it's the most expensive surface in the skill. The enforced cap is **1000 characters** (`MAX_FRONTMATTER_DESCRIPTION_LENGTH` in `scripts/ai-skills/utils.ts`, asserted for every skill by `discovery-metadata.test.ts` so Codex skill discovery can expose the skill). Trigger-phrase enumeration crowds that budget while the persona-name keyword and the AGENTS.md §0 signal-phrase table already carry the routing.
+- **Sentence 1 — what it does.** Name the action and the artifact.
+- **Sentence 2, optional — the boundary.** Include it only when it steers routing away from work the skill does not do, such as "Reports in chat only; never posts to GitHub."
+- **`Triggers:` line.** List the old persona name in quotes, plus a few distinctive phrases. A request by the old name must still route here.
 
-Multi-line `description` values use the YAML folded (`>`) scalar. `parseFrontmatter` (`scripts/ai-skills/utils.ts`) reads single-line values and folded scalars only — a plain multi-line continuation silently parses as its first line, truncating the description that the length check and discovery metadata read.
+Multi-line values use the YAML folded (`>`) scalar. `parseFrontmatter` reads single-line and folded values only, so a plain multi-line value parses as its first line.
 
-### The four parts
+## Names
 
-1. **Sentence 1 — persona name + role.** `"Pixel — UI/UX designer."`
-2. **Sentence 2 — WHAT.** One or two clauses naming the core actions, the artifacts produced, and the key context the skill reads or pre-conditions it needs.
-3. **Sentence 3 (optional) — load-bearing exclusion.** Only when a behavioral constraint changes routing — see below.
-4. **`Triggers:` line — persona name in quotes + a handful of distinctive keywords or short phrases (≈3–8).** The label is cosmetic; routing depends on the keyword content, not on the word "Triggers." Quality beats count — three sharp keywords route better than eight vague ones.
-
-Target roughly **250–400 characters** — well under the 1000 cap, above the floor where the WHAT stops carrying real signal.
-
-### Persona name appears twice
-
-The name goes in sentence 1 (as role) and again in the `Triggers:` line. This is double-coverage for named-invocation routing: if keyword extraction favors prose mentions, sentence 1 catches it; if it favors keyword lists, the trigger line catches it. Cheap insurance against a routing miss on a named handoff — and every persona's `## Next persona` section depends on named handoffs working.
-
-### Exclusions stay when they're concrete behavioral constraints
-
-The general preference is positive framing. Negation clauses are the exception when they're load-bearing for routing — `"Never writes code"` (Pixel), `"Reports in chat only — never posts to GitHub"` (Briar), `"Never approves"` (Eric). These steer the router away from the wrong skill when a user asks for code, a GitHub post, or a PR approval. Keep one short exclusion on the skills where it marks a real behavioral boundary; drop it everywhere else. The test: does omitting the clause let the router pick this skill for work it doesn't do? If yes, the exclusion is load-bearing — it's a behavioral constraint, not a stylistic preference.
-
-### Example
-
-> Briar — self-review specialist. Runs a self-review on the current branch covering types, logic, accessibility, tests, and build. Reports findings in chat only — never posts to GitHub. Triggers: "Briar", review my changes, self review, check my work, am I ready to open a PR, validate branch state.
-
-## The disclosure gate
-
-Sort every section by **load-frequency × trigger-determinism**:
-
-- **PIN** — stays in the body. Fires every run *and* is voice / the "How X Thinks" lens / an anti-pattern guardrail / the workflow router / the Definition of Done. **If a section must shape reasoning throughout the run, it is a lens — it stays, regardless of length.** A reference loads mid-run, after reasoning has started; a lens has to be present when reasoning begins.
-- **EXTERNALIZE** — body moves to a reference, an inline trigger stays. Allowed **only if you can write a one-line imperative trigger naming the exact file and the exact condition.** If the honest trigger is "keep this in mind throughout," it's a lens — don't move it. Candidates: whole modes, conditional procedures, command/template bodies.
-- **CATALOG** — model-resident knowledge (named frameworks, heuristics, laws) or verbatim templates. Move freely; cite by name. This enforces consistency, not instruction — the model already holds it.
-- **CUT** — fails the deletion test (restates a pinned lens, or is dead weight from an old one-off patch). Removal is a separate, signed-off decision — never bundle a deletion into a relocation.
-
-**The test that resolves most calls:** would a session that never uses this content still be a valid run of the skill? Yes → it can leave the body. No → it pins.
-
-**The hard floor under the gate.** The gate is qualitative judgment; the build enforces a hard ceiling underneath it. The generated Claude `SKILL.md` body caps at **500 lines** (`MAX_SKILL_BODY_LINES` in `scripts/ai-skills/utils.ts`, asserted for every skill by `discovery-metadata.test.ts` — failure reads `Body for '<skillId>' is N lines (max 500)`). The count is taken on the *generated* body (`shared.md` + the platform file), not on `shared.md` alone, so a source file comfortably under 500 can still breach once the platform file concatenates. Passing the gate and feeling "lean enough" does not guarantee passing the cap — a rewrite that satisfies the disclosure judgment can still fail CI silently if it never checks the line count. When a body approaches the ceiling, the gate isn't optional polish — it's the mechanism that gets you back under. `pnpm prism:test` (or `pnpm prism:build`) is the local check; run it before relying on the gate alone.
-
-**A worked example of heavy externalization.** `prism-retro` (Iris) is a reference: a lean `shared.md` that pins the persona, the lens, and the workflow router, with whole steps externalized to `step-NN-*.md` and shared procedures to `.prism/references/*.md`, each cited from the body by an imperative trigger naming the exact file and condition. When a body won't fit under the ceiling without dropping a lens, that's the shape to copy — pin the lenses, move the steps and procedures, cite them deterministically.
-
-## Always pin
-
-Never externalize these, regardless of length:
-
-- Persona and voice.
-- The "How X Thinks" lens / cognitive approach — the reasoning that shapes output quality.
-- Anti-pattern guardrails.
-- The workflow router — startup batch + the at-a-glance phase/mode index.
-- The Definition of Done.
-
-## Persona name vs. slash-command ID
-
-The skill's slash-command ID is function-descriptive (`prism-design`, `prism-surface-audit`, `prism-onboarding`, `prism-prd`, `prism-retro`). It describes what the skill does, so a user who doesn't know the persona name can still find and route to it. The persona keeps her human name and announces it on intro — that's how voice and continuity show up in conversation.
-
-Persona-name trigger phrases (`"invoke whenever the user mentions 'Pixel'"`) live in the frontmatter `description` field, not in the ID. The auto-routing layer reads `description` for the name match; the slash-command surface reads the ID for the function match. Both paths reach the same skill.
-
-**Why:** Function-descriptive IDs let a user who's never met the persona discover the skill by what it does; persona-name triggers let returning users invoke by name. Collapsing the two into one (ID = persona name) loses the discovery path; collapsing the other direction (no name triggers) loses the named-handoff pattern every persona's `## Next persona` section depends on. The Slice 4 rename in `epic-lean-skill-architecture` (pixel→design, zoe→surface-audit, atlas→onboarding, parker→prd, iris→retro) is the establishing precedent — see that epic's `## Decisions` → "Naming."
+A skill ID is a verb with the `prism-` prefix: `prism-self-review`, `prism-implement`. `prism update` rewrites only `prism-*` skills, so a bare verb would collide with a consumer's own skill of the same name. A consumer's skills use their own prefix and are never touched by an update.
 
 ## Utility skills
 
-Most skills are personas; some are actions. A utility skill (`type: "utility"` in `.ai-skills/definitions/roles.json`) packages a procedure every persona can run — it carries no persona, so it has no voice section, no "How X Thinks" lens, and no `You are X` opener. The body opens with the procedure itself; the active persona supplies the voice at runtime, because skills stack additively.
+A skill whose `roles.json` entry declares `type: "utility"` is an action any skill can run. It generates no Codex agent adapter. Everything else in this rule applies unchanged ([ADR-0046](../spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md)).
 
-The `description` field drops persona double-coverage: there's no name to route on, so the trigger line carries function keywords only. Everything else in this rule applies unchanged — the disclosure gate, the three loading levels, and the description-shape guidance all hold; only the persona-specific parts fall away.
+## Atlas anchors
 
-**Why:** a persona nobody switches into is a permanent lie in the data model, and a hand-authored slash-command outside `.ai-skills/` fragments the canonical→multi-runtime pipeline. The `type` discriminator keeps action-shaped skills inside the pipeline with honest data — see [ADR-0046](../spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md).
-
-## Externalization mechanics
-
-Replace the moved section with its `## Heading`, a one-line `> _italic note_`, and an imperative trigger. Copy the shape from `prism-architect` (the worked precedent):
-
-> **When the user asks to plan, build tasks, or decompose work, read [`plan-mode.md`](../../../.prism/references/architect/plan-mode.md) and follow it.**
-
-- **Vague pointers are the failure mode.** "See the references for X" leaves the agent guessing — it usually never loads the file and wings it from training. Name the file and the condition, imperatively.
-- **Tripwire nuance.** When the trigger is detective/implicit ("you're about to overwrite X," "scope changed"), the *detection* stays inline; only the procedure body moves. You can't externalize a detection condition — the skill would never know to load the file.
-- **Atlas-anchor hard rule.** Anchor substitution (`scripts/ai-skills/lib/anchor-substitute.ts`) touches only skill-source files (`shared.md`/`claude.md`/`codex.md`/`cursor.md`); references are never scanned. **Never move a `<!-- atlas:* -->` anchor into a reference** — it would never get populated. If a section being externalized contains an anchor, split it: the anchor and its stub prose stay pinned; the rest moves.
-- **Reference home.** Skill-specific references → `.prism/references/<skill>/<topic>.md`; genuinely shared cross-skill references → `.prism/references/` top-level. Triggers in the body link `../../../.prism/references/<skill>/<topic>.md`. Internal links inside a sub-dir reference take an extra hop: `../../rules/`, `../../spec/`, `../../architect/`, `../../templates/`; a top-level shared ref is `../<file>.md`; a sibling is `./<file>.md`.
-- **Create references lazily.** Write the reference when there's content for it; never seed an empty file (per [`lazy-artifacts.md`](./lazy-artifacts.md)).
-
-## Don't externalize a lens for line count
-
-Line counts are deliberately non-uniform. A judgment-heavy skill that lands at 400 lines of mostly-lens is correct; a skill padded down to 250 by externalizing a lens is wrong. The gate is the standard, not the number. If you're tempted to move a lens to hit a target, that's the signal to stop.
-
-## Wrap a lens in a step when a judgment must fire every run
-
-A lens that's present but not *placed* fires only when the run's reasoning path happens to reach it. To make a judgment reliable across runs, give it a deterministic placement — a gate, a forcing question, a DoD item — rather than trusting the path. Winston's premise gate is the model: the content is "how to think," the delivery is "when to think it." Don't over-apply this — every wrapped lens is more pinned content. Wrap the every-run judgments; leave the conditional ones to triggers.
+Anchor substitution (`scripts/ai-skills/lib/anchor-substitute.ts`) reads skill source files only (`shared.md`, `claude.md`, `codex.md`, `cursor.md`). An `<!-- atlas:* -->` anchor placed in a reference is never filled.
 
 ## Who runs this rule
 
-- **Skill authors** apply the gate when writing or editing any skill, on every section.
-- **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) flag violations in review: a lens externalized to a reference (Major — it degrades adherence), a vague pointer with no deterministic trigger, an `atlas:*` anchor moved into a reference, or a CUT bundled silently into a relocation. Deletion candidates flagged for cut get read for incident-derived "why" before sign-off — line count alone never justifies a cut. (Slice 3's audit nearly cut a load-bearing wall — the standup-summary anti-pattern guardrails — on a line-count basis; see `epic-lean-skill-architecture` § Decisions → "CUT sign-off.")
+Skill authors apply it on every edit. Self-review and PR review flag a line that fails a test, content moved into a reference instead of cut, and a renamed skill whose description lost its old persona name.

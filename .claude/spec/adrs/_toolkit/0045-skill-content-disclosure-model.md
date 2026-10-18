@@ -1,8 +1,9 @@
 ---
 Number: 0045
 Title: Skill Content Disclosure Model
-Status: accepted
+Status: superseded
 Date: 2026-05-26
+Superseded-by: 0080
 ---
 
 > Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Ren, Theo, and the debugger are retired, so the examples that name them below no longer apply. The disclosure model stands.
