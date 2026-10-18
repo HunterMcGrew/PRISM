@@ -126,11 +126,14 @@ function editTextFromToolInput(payload) {
 
 /**
  * The lines a Codex `apply_patch` adds to one file, with their `+` stripped.
- * Each `*** Add File:` or `*** Update File:` header opens that file's
- * section, and the next `***` line closes it. Reading per section is what
- * keeps a heading added to one file in a multi-file patch from being charged
- * to every other file the patch touches. Removed and context lines are left
- * out, so deleting a heading never reads as adding one.
+ * Each `*** Add File:`, `*** Update File:`, or `*** Delete File:` header
+ * starts a new file's section, and only the first two open one for this
+ * file. Any other `***` line, such as `*** Move to:` or `*** End of File`,
+ * stays inside the current section rather than closing it. Reading per
+ * section is what keeps a heading added to one file in a multi-file patch
+ * from being charged to every other file the patch touches. Removed and
+ * context lines are left out, so deleting a heading never reads as adding
+ * one.
  *
  * @param {string | undefined} command
  * @param {string} filePath
@@ -145,9 +148,12 @@ export function extractPatchAddedText(command, filePath) {
 	let inSection = false;
 	for (const rawLine of command.split("\n")) {
 		const line = rawLine.replace(/\r$/, "");
+		const header = /^\*\*\* (Add File|Update File|Delete File): (.+)$/.exec(line.trim());
+		if (header !== null) {
+			inSection = header[1] !== "Delete File" && header[2].trim() === filePath;
+			continue;
+		}
 		if (line.startsWith("***")) {
-			const match = /^\*\*\* (?:Add File|Update File): (.+)$/.exec(line.trim());
-			inSection = match !== null && match[1].trim() === filePath;
 			continue;
 		}
 		if (inSection && line.startsWith("+")) {
