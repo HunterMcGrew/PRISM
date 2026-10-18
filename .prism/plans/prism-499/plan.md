@@ -230,7 +230,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - **Amended:** 0014 loses Sasha as the `## Debugged Issues` writer, 0036 loses Sasha as a security checker, and 0045 loses Ren, Theo, and the debugger from its examples. Each decision stands.
   - **Left alone:** 0004, 0007, 0018, 0037, 0043, and 0064 name the personas as history or as examples. 0038 and 0058 concern paired dev docs, which 0058 had already retired.
 
-- **Two always-on rules lose Theo's and Sasha's traces.** `.prism/rules/response-shape.md` drops the write/skip/defer prompt from its decision-gate examples. That prompt was Theo's, and `writing-voice.md` had already lost the same example. `.prism/rules/skill-routing.md` adds "this is broken" and "why is this happening" to the implementer's row, because those debugging phrases routed to Sasha and would otherwise match no row.
+- **Two always-on rules lose Theo's and Sasha's traces.** `.prism/rules/response-shape.md` drops the write/skip/defer prompt from its decision-gate examples. That prompt was Theo's, and `writing-voice.md` had already lost the same example. `.prism/rules/skill-routing.md` adds every debugging phrase Sasha's row carried to the implementer's row, because they would otherwise match no row. `.prism/rules/branch-plan.md` drops "a diagnostician" from its plan-only-commit example, since the diagnostician was Sasha.
 
 - **`micro-file-step-machine.md` keeps its lighter-variant section with no exemplar.** Sasha was the only persona using the state-file-only variant. The pattern text is generic and still valid, so it stays. The Theo, Ren, and Sasha bullets and the Sasha paragraph are cut. The reference now cites Parker and Iris.
 
@@ -287,6 +287,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Deleted Sol and the conductor tree, moved merge authority to the main session as `features.mainSessionMayMerge`, and wrote ADR-0078. Superseded ADRs 0048 to 0056, 0061, 0066, and 0069 and amended 0068 and 0073.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Self-review pass 1 fixes. Brought the curated `branch-plan.md` twin and the shared no-user wording in line with the Sol removal, defined `ac-defect`, trimmed `modelTiers` to `overrides`, and added the label-dependence negative to ADR-0078.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Restored four #501 files the `-X ours` absorb had reverted to pre-review copies, and widened the absorb check to every file the squash touched; see Decision: Each stack branch absorbs the squash below it.
+- 2026-10-17 [huntermcgrew/prism-499-delete-sol]: PR review pass 1 fixes. The merge condition now names the final pass's clean state, since a missing label alone proves nothing. The review loop defers to § Who merges, and the legacy conductor-state ignores stay so older checkouts can't commit them.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sasha-ren-theo]: Deleted Sasha, Ren, and Theo with their step trees, references, docs, and every handoff; ADR-0079 supersedes 0041 and 0042; the bug workflow now runs Nora to Clove.
 - 2026-10-17 [huntermcgrew/prism-499-shared-core]: Cut `skill-core.md` and `session-close.md` and added the loaded-lines check with a shrink-only allowlist; see Decision: The shared skill core is cut, not thinned.
 

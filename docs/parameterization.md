@@ -148,7 +148,7 @@ Set it once; it survives reconfiguration runs (the reconfigure flow preserves un
 
 ## Model overrides
 
-The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. The review loop honors an `eric` entry when present. Absent, every persona runs on the host's default model.
+The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. The review loop honors an `eric` entry when present, and no other key is read today. Absent, each skill keeps the model its generated agent definition or frontmatter pins.
 
 One tradeoff is worth naming. If the reviewer (Eric) and the workers run the same model, the review loop loses some family-level blind-spot coverage — a mistake the model's family is prone to can slip past a reviewer of the same family. A team that wants cross-model review pins Eric explicitly:
 
