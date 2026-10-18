@@ -33,9 +33,9 @@ After this one run, `.prism/.sync-manifest.json` exists and the repo is in stead
 
 ## Steady-state persona-skill distribution
 
-After the first `prism adopt` run, every subsequent `prism update` (and every future `prism adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. Both entry points reach the same render step without duplication.
+After the first `prism adopt` run, every subsequent `prism update` (and every future `prism adopt` on a fresh repo) automatically renders the full PRISM skill roster into the consumer's configured skill directories. Both entry points reach the same render step without duplication.
 
-**What you receive.** For each `prism-*` skill in the PRISM source roster, the update renders the skill body with your own token map — `${PROJECT}` becomes your project name, `${TICKET_PREFIX}` becomes your ticket prefix, and so on — and writes the rendered output to the platform directory for each host your `hosts` config key declares, all three when the key is absent:
+**What you receive.** For each skill in the PRISM source roster, the update renders the skill body with your own token map — `${PROJECT}` becomes your project name, `${TICKET_PREFIX}` becomes your ticket prefix, and so on — and writes the rendered output to the platform directory for each host your `hosts` config key declares, all three when the key is absent:
 
 - `.claude/skills/<id>/SKILL.md` (Claude Code)
 - `.agents/skills/<id>/SKILL.md` (Codex)

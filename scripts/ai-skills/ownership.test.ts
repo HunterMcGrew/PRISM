@@ -4,10 +4,14 @@
  * flat product docs and the overlay/plans dirs are consumer, and a path that
  * matches neither set is unknown so the update flow leaves it untouched.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 
 import {
+  checkIsPrismSkillId,
   classifyPath,
   PRISM_OWNED_GLOBS,
   CONSUMER_OWNED_GLOBS,
@@ -98,4 +102,26 @@ test("classifyPath treats a raw backslash-joined path as unclassified", () => {
 test("the glob sets are non-empty", () => {
   assert.ok(PRISM_OWNED_GLOBS.length > 0);
   assert.ok(CONSUMER_OWNED_GLOBS.length > 0);
+});
+
+test("every skill ID in roles.json is PRISM-owned, so eject and ship-closure reach it", () => {
+  const rolesPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    ".ai-skills",
+    "definitions",
+    "roles.json",
+  );
+  const { skills } = JSON.parse(readFileSync(rolesPath, "utf8")) as {
+    skills: { id: string }[];
+  };
+  const unowned = skills.map((skill) => skill.id).filter((id) => !checkIsPrismSkillId(id));
+
+  assert.deepEqual(unowned, [], "add a bare ID to PRISM_BARE_SKILL_IDS in ownership.ts");
+});
+
+test("a consumer-prefixed skill ID is not PRISM-owned", () => {
+  assert.equal(checkIsPrismSkillId("custom-review"), false);
+  assert.equal(checkIsPrismSkillId("tdd"), true);
 });
