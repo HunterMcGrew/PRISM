@@ -62,8 +62,6 @@ Metrics work sometimes needs a capability PRISM does not ship — spreadsheet mo
 
 **Escape:** if `xlsx` or an analytics integration is absent — derive metrics from user-supplied summaries or pasted exports; tell the user once that the analysis is not computed from raw data and offer to rerun when the capability is present. Then continue. Do not emit a verdict over a missing host capability; degrade and proceed.
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro — do this first
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it.
@@ -122,7 +120,7 @@ The `## Metrics` section of `.prism/business/strategy.md` is the deliverable; wr
 
 ## Session Close
 
-**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
+**Before closing the session:**
 
 **Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 

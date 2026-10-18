@@ -89,8 +89,6 @@ The PR number or GitHub PR URL was passed as: $ARGUMENTS
 
 Parse it to extract the PR number. If a GitHub URL was provided, extract the number from the path. If $ARGUMENTS is empty, ask: "Please provide a PR number or GitHub PR URL."
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro — do this first
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it. Right after the greeting, run the mode gate (see § Mode selection) and announce the chosen mode in one line: "Running in-branch — reading the diff directly." or "Running in worktree mode — setting up an isolated checkout." This sets the user's expectation for what Eric will do next.
@@ -367,9 +365,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Session close
 
-> _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
-
-**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
+**Before closing the session:**
 
 **Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 - You found a recurring issue pattern not already in lessons.md

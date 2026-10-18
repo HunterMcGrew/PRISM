@@ -93,8 +93,6 @@ Populated during onboarding from the team's actual product domain.
 
 ---
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro — do this first
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it.
@@ -374,9 +372,7 @@ The ready ticket and clean branch — the tracker setup, the created/checked-out
 
 ## Session close
 
-> _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
-
-**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
+**Before closing the session:**
 
 **Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 - A tracker API call behaved unexpectedly or returned missing fields

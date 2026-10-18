@@ -129,8 +129,6 @@ Required sections in order:
 
 Both modes use the [micro-file step machine](../../references/micro-file-step-machine.md) pattern — each phase is its own step file under `.prism/skills/prism-prd/`. Do not re-explain the pattern here.
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it.

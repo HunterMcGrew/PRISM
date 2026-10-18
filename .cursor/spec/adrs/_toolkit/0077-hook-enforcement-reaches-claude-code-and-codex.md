@@ -6,6 +6,8 @@ Date: 2026-10-12
 Supersedes: 0074
 ---
 
+> Amended by PRISM-499 phase 1: `skill-core.md` is cut, so the runtime notice's static prose now lives only in `.prism/rules/context-reuse.md` § Architect-context routing is diff-blind, which already names Claude Code and Codex as the hosts the hook reaches. The placement reasoning below stands.
+
 ## Context
 
 ADR-0074 accepted hook-dependent enforcement as Claude Code only. It rejected
@@ -110,7 +112,7 @@ disk. Removing the Claude Code gate to make every host behave alike still
 trades a measured guarantee for symmetry.
 
 The runtime notice also stays where ADR-0074 put it: static prose in
-`.prism/references/skill-core.md` § "Reading before writing", which now names
+`skill-core.md` § "Reading before writing", which now names
 Claude Code and Codex as the hosts that receive the runtime. Both
 placements ADR-0074 rejected for it, a per-host notice in each skill's
 platform body and a runtime host-detection check, stay rejected for the same

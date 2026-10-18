@@ -176,7 +176,14 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 Retired ADRs, as AC-2 requires this PR to list them: 0041, 0042.
 
-### PRs 5–11
+### PR 5 — Shared core and the loaded-lines check
+
+1. **Delete `.prism/references/skill-core.md` and `.prism/references/session-close.md`**, with their seed twins and the `skill-core.md` entry in `seed-curation.json`. See Decision: The shared skill core is cut, not thinned.
+2. **Remove every citation** of both files. That covers the Step 0 line in each skill body and the session-close pointer before each skill's lesson signals, which becomes **Before closing the session:** with the signals unchanged. It also covers `skills-ecosystem.md` § The shared skill core and its curated twin, the Cursor sentence in `docs/ai-skills/compatibility.md`, and the hosts-without-hook message in `doctor.ts`.
+3. **Add `scripts/ai-skills/lib/skill-loaded-lines.ts`** (`countLines`, `listCitedFiles`, `measureSkillLoad`) and `scripts/ai-skills/skill-loaded-lines.test.ts`. The test holds every skill to 120 loaded lines, and `OVER_CAP_ALLOWLIST` names the PR that thins each one still over.
+4. Verify with `pnpm prism:check`.
+
+### PRs 6–11
 
 Each PR's tasks are written into this section when its branch is cut, so a task list never runs ahead of the code it describes. The rules every one of those PRs follows are recorded under `## Decisions`.
 
@@ -253,6 +260,15 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - **Codex `Edit` and `Write` field names are unverified.** A wrong guess yields no edit text and lets the edit pass, which is the direction every hook failure takes.
   - The docs name all three.
 
+- **The shared skill core is cut, not thinned.** Every section of `skill-core.md` restated an always-on rule. Orientation restated `session-orientation.md`, the plan section `branch-plan.md`, reading-before-writing `context-reuse.md`, closing `session-orientation.md` again, and the context budget `bash-output-minimization.md` and `subagent-strategy.md`. Every section of `session-close.md` likewise restated an always-on rule or a routed doc: the rule-loading tiers, `self-improvement-loop.md`, and `lesson-promotion.md`. Each section fails the policy test, because the model already reads the rule it restates. The intent says content that fails a test is cut, not moved, so both files go.
+  - **Alternatives considered:** thinning `skill-core.md` to a few pointers. Each pointer would still cost every skill lines for a rule the session already holds.
+  - **Persona-specific lesson signals stay** in each skill body under **Before closing the session:**, until each lane PR applies the four tests to them.
+
+- **The loaded-lines check measures the transitive closure, including bare step names.** `measureSkillLoad` counts the body, plus every reference, step, and `load: skill` rule file the body cites, followed through those files. A bare `step-NN-*.md` name is resolved under `.prism/skills/<id>/`.
+  - **Root cause:** counting direct citations only lets a skill cite one step file that cites the next and charge only the first. The baseline's Loaded column also missed step files a body names without their directory, so `prism-prd` and `prism-retro` measured far below what a run reads: 834 and 717 lines now, against 536 and 586 in the baseline.
+  - **Chosen approach:** this check is now the canonical measurement, and it supersedes § Baseline § Method's Loaded definition for every number after PR 5.
+  - **Shrink-only allowlist:** an allowlisted skill that comes in under the cap fails the test until its entry is removed. That keeps the list from hiding a regression behind an entry nobody needs.
+
 - **First-pass clean needs a human-written signal.** GitHub cannot separate agent comments from human ones in this repo, so the baseline is an upper bound. **Default path (until a later phase adds the signal):** report the upper bound, and do not claim movement on criterion 1 from GitHub data alone.
 
 ---
@@ -272,6 +288,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Self-review pass 1 fixes. Brought the curated `branch-plan.md` twin and the shared no-user wording in line with the Sol removal, defined `ac-defect`, trimmed `modelTiers` to `overrides`, and added the label-dependence negative to ADR-0078.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Restored four #501 files the `-X ours` absorb had reverted to pre-review copies, and widened the absorb check to every file the squash touched; see Decision: Each stack branch absorbs the squash below it.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sasha-ren-theo]: Deleted Sasha, Ren, and Theo with their step trees, references, docs, and every handoff; ADR-0079 supersedes 0041 and 0042; the bug workflow now runs Nora to Clove.
+- 2026-10-17 [huntermcgrew/prism-499-shared-core]: Cut `skill-core.md` and `session-close.md` and added the loaded-lines check with a shrink-only allowlist; see Decision: The shared skill core is cut, not thinned.
 
 ---
 

@@ -25,8 +25,6 @@ exactly as if invoked by hand.
 fixes → re-review until clean, threads resolved) → cleaner-path routing →
 closing re-orientation → scoreboard TLDR.
 
-Step 0: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)

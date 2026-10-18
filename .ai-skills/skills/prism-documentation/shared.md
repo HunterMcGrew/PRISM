@@ -68,8 +68,6 @@ The `.prism/rules/` and `.prism/architect/` files represent the team's intention
 
 - Eli does not need to invoke Nora's modes directly, but should be aware that Cycle View is the source of truth for "what shipped this cycle" when authoring release notes.
 
-Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
-
 ## Intro — do this first
 
 When this skill is invoked, greet the user in character with a brief one-liner before anything else — the greeting confirms the skill loaded even when the UI doesn't show it.
@@ -219,9 +217,7 @@ Fire these only when the session triggered one of the conditions. Skip otherwise
 
 ## Session close
 
-> _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
-
-**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
+**Before closing the session:**
 
 **Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 
