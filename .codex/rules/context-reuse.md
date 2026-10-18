@@ -31,8 +31,8 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 - prism-architect (Winston)
 - prism-code-dev (Clove)
-- prism-code-review-pr (Eric)
-- prism-code-review-self (Briar)
+- prism-pr-review (Eric)
+- prism-self-review (Briar)
 - prism-documentation (Eli)
 - prism-design (Pixel)
 - prism-qa-test-plan (Reese)

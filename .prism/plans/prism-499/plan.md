@@ -183,7 +183,18 @@ Retired ADRs, as AC-2 requires this PR to list them: 0041, 0042.
 3. **Add `scripts/ai-skills/lib/skill-loaded-lines.ts`** (`countLines`, `listCitedFiles`, `measureSkillLoad`) and `scripts/ai-skills/skill-loaded-lines.test.ts`. The test holds every skill to 120 loaded lines, and `OVER_CAP_ALLOWLIST` names the PR that thins each one still over.
 4. Verify with `pnpm prism:check`.
 
-### PRs 6–11
+### PR 6 — Review lane
+
+All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, `measureSkillLoad` reports 120 lines or fewer for both skills, and a `git grep` for `prism-code-review-self`, `prism-code-review-pr`, and `code-review-(self|pr)/` returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/`, and `CHANGELOG.md`.
+
+1. **Land the doctrine.** The earlier commit on this branch wrote ADR-0080, rewrote `.prism/rules/skill-authoring.md`, set the body layout in `.prism/architect/guides/writing-a-skill.md`, and removed the `prism-skill-forge` copy of the skill guide.
+2. **Rename the two skills.** `prism-code-review-self` became `prism-self-review` and `prism-code-review-pr` became `prism-pr-review`, in the skill directories, `roles.json`, frontmatter `name`, the manifest routes (`.prism/architect/manifest.json`, `_toolkit/manifest.base.json` and its seed twin, `manifest.stub.json`), `verify-manifest-coverage.ts`, `bootstrap-from-claude.ts`, the `skill-loaded-lines.test.ts` allowlist, `docs/personas.md`, `templates/install/AGENTS.md.tmpl`, and every rule and architect doc that named them (`skill-routing.md`, `context-reuse.md`, `architect-doc-verification.md`, `design-governance.md`, `followup-scope.md`, `implementation-task-detail.md`, `branch-plan.md`, `skills-ecosystem.md`, and the curated twins). `generate-skills.ts` needed no change, because the `opus` and `sonnet` pins come from each skill's `frontmatter.yml`. The `.prism/references/code-review-pr/` directory became `.prism/references/pr-review/`.
+3. **Thin both skills to the four tests.** See Decision: What the review skills kept. `prism-self-review` loads 56 lines and `prism-pr-review` loads 109.
+4. **Delete the references the skills no longer load.** See Decision: Why each review reference could go.
+5. **Re-point the surviving citations.** `prism-review-loop/shared.md` now cites `prism-self-review` § Severity and the resolve-threads step, and `code-standards.md` names the two skills for the reviewer-side removal check. `shipping-flow.md` and `skills-ecosystem.md` (and its twin) no longer say the PR reviewer flips a PR ready.
+6. **Drop stale tracking.** Removed the `SHIP_CLOSURE_TRACKED_DANGLING_REFS` entry for ADR-0011, which no shipped file links any more, and the `references/review-docs-impact.md`, `references/worktree-mode.md`, and `references/review-angles.md` entries in `seed-curation.json`.
+
+### PRs 7–11
 
 Each PR's tasks are written into this section when its branch is cut, so a task list never runs ahead of the code it describes. The rules every one of those PRs follows are recorded under `## Decisions`.
 
@@ -271,6 +282,27 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 - **First-pass clean needs a human-written signal.** GitHub cannot separate agent comments from human ones in this repo, so the baseline is an upper bound. **Default path (until a later phase adds the signal):** report the upper bound, and do not claim movement on criterion 1 from GitHub data alone.
 
+- **What the review skills kept.** Each line below survives because other parts of the system read it, and the rest of the old bodies failed the policy test (voice, "How X Thinks" lenses, greetings, batteries, generic review method, restated rules, the Sol-era verdict vocabulary).
+  - **`prism-self-review`:** reports in chat only and never posts to GitHub; reviews `git diff ${DEFAULT_BRANCH}...HEAD`; Critical, Major, and Minor with one-line definitions; plan fidelity (a contradicted Decision is Major); source-verified review when the diff has architect docs; the removal-and-rename search; the `## Review Issues` entries, the `No issues found — <date>` line, `## PR Readiness`, and AC adjustments as `proposed`; the plan-only commit with its staged-set check; plan-file scope; bookkeeping-only Minors count as clean; the review-loop surfaces; no unqualified ready over a partial review; and the handoff rules (authors ship, route fixes to the implementer, recommend a fresh-chat PR review).
+  - **`prism-pr-review`:** posts inline comments, one summary comment, and labels; never approves; stays in draft; the PR identifier forms; in-branch default with the three worktree triggers; Standards and Spec findings under separate headings; the AC-verification sampling rule; the three states and the label policy that `git-conventions.md` § Who merges reads; the resolve-threads step that `prism-review-loop` depends on; plan-file scope; the review-loop surfaces.
+  - **Judgment calls:** the parallel Standards and Spec subagents and the lightweight docs-only path are cut, and the two headings stay. The subagents were an orchestration choice, not a policy a hook enforces, and the cap cannot hold the phases that describe them. The nine-angle coverage block, its status vocabulary, and the pass-bounded cap on `confidence:high` are cut with `review-angles.md`, replaced by one line that a partial review never reports an unqualified ready. The `labels.md` strip loop missed `confidence:standards-only`, so a stale label survived a re-review. The new loop strips it.
+
+- **Why each review reference could go.** A reference is cut when it fails the policy test and nothing else needs it. The files below are named because the spec-scope lint matches deleted `review-*` references by basename.
+  - **`review-angles.md`:** the nine angles are generic review method, and the coverage block is the only PRISM-specific part. Only the two review skills read it, so it goes with their pass-bounded label cap.
+  - **`review-justification.md`:** the four-question abstraction procedure restates `code-standards.md` § General (one adapter does not earn an abstraction).
+  - **`review-doc-class-triage.md`:** a copy of `architect-doc-verification.md`, which the skills now cite directly.
+  - **`review-docs-impact.md`:** one line in `prism-self-review` replaces it, pointing at the mapping in `documentation.md`.
+  - **`review-frameworks.md`:** severity definitions moved into the skills, and the removal-and-rename search became a line in each. The two other users, `prism-review-loop` and `code-standards.md`, are re-pointed to the skills.
+  - **`worktree-mode.md`:** generic git-worktree mechanics. The four PRISM-specific rules (return with `;`, detached-HEAD push, check-only formatting, tear down on every exit) became lines in `prism-pr-review`. `branch-plan.md` already states the full-ref push form.
+  - **`pr-review/context-gathering.md`, `gotchas.md`, `labels.md`, and `summary-template.md`:** merged into `pr-review/github-writes.md` where PRISM-specific (the marker, REST for labels, the 422 rule, the label table) and cut elsewhere (generic `gh` calls, batching advice, the Write-tool temp-file workaround).
+  - **Kept for other skills:** `structural-remedies.md` (the architect uses it), `architect-context.md`, `plan-lookup.md`, and `cleanup-pass.md` (the commit hook names it). The review skills no longer cite them, so none counts against their cap.
+
+- **The PR reviewer leaves the PR in draft.** The old reviewer ran `gh pr ready` in state #3. The labels it applies are exactly what `git-conventions.md` § Who merges reads, so a flip inside the review pass could open the merge gate on a label the reviewer picked a moment earlier. The flip now belongs to the main session once the merge conditions hold. `shipping-flow.md` § Draft-by-default and the `skills-ecosystem.md` roster (with its curated twin) say so.
+
+- **The summary-comment marker keeps its old spelling.** `<!-- code-review-pr-summary -->` is the first line of every summary comment already on open PRs. Re-runs find the comment by it, so renaming the marker would post a duplicate on every PR reviewed before the rename. It is the one `code-review-pr` string the rename sweep leaves, and the reference says why.
+
+- **Always-on rules edited in PR 6.** These edits are the rename and the two re-points above, and nothing else in them changed: `.prism/rules/skill-routing.md` (routing rows, with its curated twin and `templates/install/AGENTS.md.tmpl`), `.prism/rules/context-reuse.md` (citation list), `.prism/rules/architect-doc-verification.md` (who runs it, with its twin), `.prism/rules/design-governance.md`, `.prism/rules/followup-scope.md`, `.prism/rules/implementation-task-detail.md` (with its twin), `.prism/rules/branch-plan.md` (the skill names under `## Review Issues` and `## PR Readiness`, and the push clause that cited `worktree-mode.md`, with its twin), and `.prism/rules/code-standards.md` (the reviewer-side pointer in § Removal and rename completeness).
+
 ---
 
 ## Sessions
@@ -289,6 +321,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Restored four #501 files the `-X ours` absorb had reverted to pre-review copies, and widened the absorb check to every file the squash touched; see Decision: Each stack branch absorbs the squash below it.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sasha-ren-theo]: Deleted Sasha, Ren, and Theo with their step trees, references, docs, and every handoff; ADR-0079 supersedes 0041 and 0042; the bug workflow now runs Nora to Clove.
 - 2026-10-17 [huntermcgrew/prism-499-shared-core]: Cut `skill-core.md` and `session-close.md` and added the loaded-lines check with a shrink-only allowlist; see Decision: The shared skill core is cut, not thinned.
+- 2026-10-17 [huntermcgrew/prism-499-review-lane]: Renamed Briar and Eric to `prism-self-review` and `prism-pr-review`, thinned each to the four tests (56 and 109 loaded lines), and deleted ten reference files. The PR reviewer now leaves the PR in draft; see Decision: What the review skills kept.
 
 ---
 

@@ -41,7 +41,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
-### Briar — self-review (`prism-code-review-self`)
+### Briar — self-review (`prism-self-review`)
 
 **What she does:** Reviews the current branch covering types, logic, accessibility, tests, and build. Reports findings in chat and in the branch plan's `## Review Issues` section. Never posts to GitHub.
 
@@ -49,11 +49,11 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **Hands off to:** Clove for fixes, then back to Briar until clean.
 
-**Skill:** [`.ai-skills/skills/prism-code-review-self/`](../.ai-skills/skills/prism-code-review-self/)
+**Skill:** [`.ai-skills/skills/prism-self-review/`](../.ai-skills/skills/prism-self-review/)
 
 ---
 
-### Eric — PR review (`prism-code-review-pr`)
+### Eric — PR review (`prism-pr-review`)
 
 **What he does:** Runs a full review on an open GitHub PR. Posts inline comments, severity-ranked issues, test coverage gaps, and a readiness checklist directly to the PR. Never approves — that's a human responsibility.
 
@@ -61,7 +61,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **Hands off to:** Clove for fixes.
 
-**Skill:** [`.ai-skills/skills/prism-code-review-pr/`](../.ai-skills/skills/prism-code-review-pr/)
+**Skill:** [`.ai-skills/skills/prism-pr-review/`](../.ai-skills/skills/prism-pr-review/)
 
 ---
 

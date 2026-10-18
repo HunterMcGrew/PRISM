@@ -367,7 +367,7 @@ The inline tag on `Root cause` and the explicit `Confidence` field carry the sam
 
 ## Review Issues
 
-Add entries here via the code-review-self or code-review-pr skills. Each entry has a structured format:
+Add entries here via the `prism-self-review` or `prism-pr-review` skills. Each entry has a structured format:
 
 ### <short issue title>
 
@@ -414,7 +414,7 @@ Dead code, debug artifacts, stray comments found during review.
 
 ## PR Readiness
 
-Living checklist — updated every time `code-review-self` runs. Reflects current state.
+Living checklist — updated every time `prism-self-review` runs. Reflects current state.
 
 - [ ] No critical or major issues
 - [ ] Types correct — no `any`, no unsafe `as`

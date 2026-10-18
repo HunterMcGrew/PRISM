@@ -23,8 +23,6 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, string> = {
-	"prism-code-review-self": "PRISM-499 PR 6, review lane",
-	"prism-code-review-pr": "PRISM-499 PR 6, review lane",
 	"prism-code-dev": "PRISM-499 PR 7, build lane",
 	"prism-documentation": "PRISM-499 PR 7, build lane",
 	"prism-design": "PRISM-499 PR 7, build lane",

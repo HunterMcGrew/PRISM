@@ -10,7 +10,7 @@
 		"_toolkit/closing-messages.md"
 	],
 	".claude/skills/prism-qa-test-plan/**": "_toolkit/qa-test-planning.md",
-	".claude/skills/prism-code-review-pr/**": "_toolkit/eric-review-modes.md",
+	".claude/skills/prism-pr-review/**": "_toolkit/eric-review-modes.md",
 	".prism/templates/**": [
 		"guides/writing-a-plan.md",
 		"_toolkit/plan-authoring.md"

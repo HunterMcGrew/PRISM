@@ -54,7 +54,7 @@ it, and every pass reviews them at different bars:
   bookkeeping, never the whole plan file. `## PR Readiness` is
   persona-rewritten on every self-review pass
   (`.prism/rules/branch-plan.md` defines it as "updated every time
-  `code-review-self` runs"), which is the same
+  `prism-self-review` runs"), which is the same
   persona-appends-versus-author-declares test the rest of the set
   applies — reviewing it at Subject bar would flag the loop's own
   bookkeeping as a finding on every pass. The loop's disposition is
@@ -128,7 +128,7 @@ its dispatch text rather than changing how either persona works.
 
 **Disposition — surface decides, severity is unchanged.** No new severity
 vocabulary: Critical / Major / Minor keep their existing meanings from
-`.prism/references/review-frameworks.md`, and the surface supplies provenance
+`prism-self-review` § Severity, and the surface supplies provenance
 for free.
 
 | Surface | Critical / Major | Minor |
@@ -162,7 +162,7 @@ removes.
    subject-clean (see **Subject-clean exit** under **Guardrails** below)
    **AND** zero fixed-but-unresolved review threads remain — when a fix lands
    a finding, the thread that flagged it is only closed by the reviewer's next
-   pass (the reviewer's batch-D resolve step is the sole actor that resolves
+   pass (the reviewer's resolve-threads step is the sole actor that resolves
    threads). If fixed threads remain unresolved once the phase is
    subject-clean, run a final reviewer pass to resolve them before closing the
    phase.

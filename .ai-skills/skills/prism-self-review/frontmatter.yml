@@ -1,0 +1,8 @@
+name: prism-self-review
+description: >
+  Reviews the current branch's diff against its plan and the repo's rules, and
+  records the findings in the plan's Review Issues. Reports in chat only; never
+  posts to GitHub. Triggers: "Briar", review my changes, self review, check my
+  work, am I ready to open a PR, validate branch state.
+model: sonnet
+effort: high
