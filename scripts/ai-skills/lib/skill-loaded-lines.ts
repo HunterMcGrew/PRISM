@@ -7,10 +7,10 @@
  * line the run reads, so measuring the body alone would let a skill pass by
  * relocating content instead of cutting it.
  *
- * Citation parsing is local rather than shared with `crossref-lint.ts`. That
- * linter resolves only repo-root-absolute references, while a skill body cites
- * by relative link, by link spelled for the generated platform tree, and by
- * bare step-file name, and each of those has to resolve here.
+ * Citation parsing is local rather than shared with `crossref-lint.ts`,
+ * because neither that linter nor `ship-closure.ts` resolves three spellings a
+ * skill body uses: a link written for the generated platform tree, the
+ * `<repo-root>/` token, and a bare step-file name.
  */
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
@@ -46,7 +46,8 @@ export function countLines(text: string): number {
  * Returns the repo-relative `.md` paths a file cites by markdown link or by
  * backticked path. A target resolves, in order:
  *
- * 1. a `.prism/`-prefixed path, from the repo root;
+ * 1. a `.prism/`-prefixed path, from the repo root, with any leading
+ *    `<repo-root>/` token dropped first;
  * 2. a relative path, from the citing file;
  * 3. a relative path that resolves nowhere, under `.prism/` with its leading
  *    `../` segments dropped, because a skill source cites
@@ -69,7 +70,12 @@ export function listCitedFiles(
 	const cited = new Set<string>();
 
 	for (const candidate of candidates) {
-		const resolved = resolveCandidate(repoRoot, citingDir, candidate, stepDir);
+		const resolved = resolveCandidate(
+			repoRoot,
+			citingDir,
+			candidate.replace(/^<repo-root>\//, ""),
+			stepDir
+		);
 		// A link's own text often repeats its target's bare name, which resolves
 		// back to the citing file.
 		if (resolved !== null && resolved !== citingFile) {

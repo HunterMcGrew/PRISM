@@ -24,9 +24,9 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-code-review-self": { thinnedBy: "PRISM-499 PR 6, review lane", max: 731 },
+	"prism-code-review-self": { thinnedBy: "PRISM-499 PR 6, review lane", max: 777 },
 	"prism-code-review-pr": { thinnedBy: "PRISM-499 PR 6, review lane", max: 954 },
-	"prism-code-dev": { thinnedBy: "PRISM-499 PR 7, build lane", max: 845 },
+	"prism-code-dev": { thinnedBy: "PRISM-499 PR 7, build lane", max: 891 },
 	"prism-documentation": { thinnedBy: "PRISM-499 PR 7, build lane", max: 1116 },
 	"prism-design": { thinnedBy: "PRISM-499 PR 7, build lane", max: 599 },
 	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 926 },
@@ -51,9 +51,9 @@ const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-sales": { thinnedBy: "PRISM-499 PR 11, business", max: 262 },
 	"prism-architect": {
 		thinnedBy: "replaced by the phase-2 plan skill; its plan logic stays until then",
-		max: 828,
+		max: 849,
 	},
-	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 731 },
+	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 752 },
 	"prism-review-loop": {
 		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
 		max: 380,
@@ -120,22 +120,25 @@ test("countLines counts a final unterminated line and nothing for an empty file"
 	assert.equal(countLines("a\nb"), 2);
 });
 
-test("listCitedFiles resolves a platform-tree link, a section-suffixed span, and a bare step name", async () => {
+test("listCitedFiles resolves a platform-tree link, a section-suffixed span, a repo-root token, and a bare step name", async () => {
 	await withTempRepo(async (root) => {
 		await writeRepoFile(root, ".prism/references/shipping.md", "# Shipping\n");
 		await writeRepoFile(root, ".prism/references/frameworks.md", "# Frameworks\n");
+		await writeRepoFile(root, ".prism/references/lookup.md", "# Lookup\n");
 		await writeRepoFile(root, ".prism/skills/prism-x/step-01-start.md", "# Step\n");
 		await writeRepoFile(
 			root,
 			".ai-skills/skills/prism-x/shared.md",
 			"Ship per [`shipping.md`](../../references/shipping.md). " +
-				"See `.prism/references/frameworks.md § Severity`. Then `step-01-start.md`.\n"
+				"See `.prism/references/frameworks.md § Severity`. Then `step-01-start.md`. " +
+				"Resolve per `<repo-root>/.prism/references/lookup.md`.\n"
 		);
 
 		assert.deepEqual(
 			listCitedFiles(root, ".ai-skills/skills/prism-x/shared.md", ".prism/skills/prism-x").sort(),
 			[
 				".prism/references/frameworks.md",
+				".prism/references/lookup.md",
 				".prism/references/shipping.md",
 				".prism/skills/prism-x/step-01-start.md",
 			]

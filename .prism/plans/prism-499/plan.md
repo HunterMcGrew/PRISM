@@ -271,7 +271,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - **Shrink-only allowlist:** an allowlisted skill that comes in under the cap fails the test until its entry is removed. A listed skill that grows past its recorded `max` fails too, so an entry can neither sit stale nor hide a regression.
   - **Templates count; architect docs don't.** A template a body cites is read by the run, so `.prism/templates/` counts. An architect doc loads by manifest route whatever skill runs, so it is measured with the routed docs, not charged to the skill.
   - **A link spelled for the generated tree resolves too.** Skill sources cite `../../references/x.md` as it reads from `.claude/skills/<id>/`. That spelling resolves nowhere from the source tree, and it resolves under `.prism/` instead. Without this, the check undercounted every skill citing `shipping-flow.md` by 98 lines.
-  - **The parser is local.** `crossref-lint.ts` resolves only repo-root-absolute references, while a skill cites by relative link, by platform-tree spelling, and by bare step name.
+  - **The parser is local.** Neither `crossref-lint.ts` nor `ship-closure.ts` resolves the three spellings a skill body uses: the platform-tree link, the `<repo-root>/` token, and a bare step name.
 
 - **First-pass clean needs a human-written signal.** GitHub cannot separate agent comments from human ones in this repo, so the baseline is an upper bound. **Default path (until a later phase adds the signal):** report the upper bound, and do not claim movement on criterion 1 from GitHub data alone.
 
