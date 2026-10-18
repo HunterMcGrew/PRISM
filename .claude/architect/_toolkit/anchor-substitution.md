@@ -36,7 +36,7 @@ Markers must be on their own line — line-start (optionally indented) and line-
 - **missing-close** — an open marker has no matching `<!-- atlas:end -->`, or an `<!-- atlas:end -->` appears with no preceding open.
 - **duplicate-name** — two open markers in one file share the same name.
 
-The errors are distinguishable so callers can surface the specific violation. When more than one occurrence of the same content slot is needed within a file (Clove's multiple workflow-example sections, for instance), the convention is to suffix the duplicates — `workflow-example-2`, `workflow-example-3` — so each anchor stays uniquely named.
+The errors are distinguishable so callers can surface the specific violation. When more than one occurrence of the same content slot is needed within a file, the convention is to suffix the duplicates (`workflow-example`, `workflow-example-2`, `workflow-example-3`) so each anchor stays uniquely named.
 
 ## Idempotency, ordering, and atomic write
 

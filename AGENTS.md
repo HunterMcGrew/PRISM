@@ -750,7 +750,7 @@ Do not refactor code outside the local frame. Drive-by cleanup of nearby-but-unr
 - **In scope:** the lines you're already modifying; the function or method containing those lines; helpers you extract from that code; files already in the diff for this ticket.
 - **Out of scope:** unmodified code elsewhere in the same file; sibling files; "while I'm here" cleanup of code the ticket doesn't otherwise touch.
 
-The implementation skill, `prism-implement`, applies the same rule as its scope discipline.
+The implementation skill, `prism-implement`, builds inside the same local frame.
 
 ### Removal and rename completeness
 
@@ -851,7 +851,7 @@ The pattern is "read once, refer many" — not "read every step."
 
 ## Architect-context routing is diff-blind
 
-Architect-context routing keys on the working diff (`prism-plan` startup step 3 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. When a task names a specific existing doc or directory, match that target path against `manifest.json` and load its context before editing.
+Architect-context routing keys on the working diff (`prism-plan` startup step 3 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. Before editing any path, match it against `manifest.json` and read every doc its routes name. When a task names a specific existing doc or directory, match that target path too, since it may sit outside the diff entirely.
 
 A `PostToolUse` hook backs this up. It fires on `Read` in Claude Code and on shell reads in Codex, which has no read tool. When a read path matches a manifest route, the hook names each still-unread architect doc by path, once per session and not again. It announces rather than blocks — reading the named doc is still yours to do.
 

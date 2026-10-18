@@ -35,9 +35,9 @@ The same artifact as a [plan](#plan). The term "branch plan" is the historical n
 
 ## Persona
 
-A named character a skill embodies — Winston the architect, Clove the implementer, Eric the PR reviewer. A persona carries a voice, a thinking lens, and a defined lane of ownership. Most skills are personas; the roster lives in `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster. Personas split on two orthogonal axes: **ticket-flow** (invoked for a specific ticket, read/write a plan, hand off along the lifecycle) and **cadence-driven** (invoked on a schedule or on demand, operate over the whole `.prism/` surface, write to a dedicated state file) — see ADR-0037.
+A name a skill answers to — Winston the architect, Clove the implementer, Eric the PR reviewer. A persona is a name and a defined lane of ownership. The skill speaks in the session's own voice, and the name survives as a trigger word in the skill's description (ADR-0080). Most skills are personas; the roster lives in `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster. Personas split on two orthogonal axes: **ticket-flow** (invoked for a specific ticket, read/write a plan, hand off along the lifecycle) and **cadence-driven** (invoked on a schedule or on demand, operate over the whole `.prism/` surface, write to a dedicated state file) — see ADR-0037.
 
-- **Avoid:** "agent", "bot", "assistant", "role" as a synonym. "Agent" is the runtime (the model running a skill); "role" is the ownership lane, not the character. A persona is the character a skill puts on.
+- **Avoid:** "agent", "bot", "assistant", "role" as a synonym. "Agent" is the runtime (the model running a skill); "role" is the ownership lane, not the character. A persona is the name a skill answers to.
 - **Relationships:**
   - One persona per persona-type [skill](#skill). A [utility skill](#skill) has no persona and runs in the invoking persona's voice (ADR-0046).
   - Each persona owns a [lane](#lane-persona-lane) of work — see `AGENTS.md` § Ownership & Handoff.
@@ -47,7 +47,7 @@ A named character a skill embodies — Winston the architect, Clove the implemen
 
 An invokable capability in the ecosystem — `prism-plan`, `prism-implement`, `prism-handoff`. A skill is authored once in canonical form and built into per-runtime adapters (Claude, Codex, Cursor). Two kinds exist, set by the `type` discriminator in `roles.json` (ADR-0046):
 
-- **Persona skill** (the default) — carries a [persona](#persona) with a voice and lens; the build generates a Codex agent adapter.
+- **Persona skill** (the default) — carries a [persona](#persona), a name and lane with no voice or lens of its own; the build generates a Codex agent adapter.
 - **Utility skill** — `type: "utility"`; an action any persona can run (`prism-handoff`, `prism-review-loop`). No persona, no voice of its own, no agent adapter — it runs in the invoking persona's voice.
 
 Owned by `.prism/rules/skill-authoring.md` and the Tier 4 definition in `.prism/SPEC.md`.
@@ -120,7 +120,7 @@ An entry in a plan's `## Decisions` section: a choice made during a ticket, reco
 A distinct operating shape a single [skill](#skill) switches between, selected from prompt words, input shape, or flags. The skill is one persona; the mode is which job it's doing this run. Examples: Pixel's mode 1 (inline sketch) vs mode 2 (saved mock spec); Eric's in-branch vs worktree mode; Reese's four QA modes (Release / Sprint-Group / Feature-PR / Bug-fix Verification); Parker's greenfield vs brownfield. Owned by each skill's source; the roster summarizes modes in `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster.
 
 - **Avoid:** "phase" (a phase is a step within one run; a mode is which run-shape you're in), "variant" used loosely, "state" (Eric's review states are a different concept).
-- **Relationships:** a skill has one [persona](#persona) and may have multiple modes. The mode gate runs at session start and the chosen mode is announced in the greeting.
+- **Relationships:** a skill has one [persona](#persona) and may have multiple modes. The mode gate runs at session start and the chosen mode is announced before the work starts.
 
 ## Lane (persona lane)
 
