@@ -58,7 +58,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `hooks.pushVerificationTimeoutMs` | integer | optional | Per-command budget for `pushVerification`, 120000 by default. Keep it below the host's own hook timeout (Claude Code: 600 s) so the script, not the host, decides the outcome. |
 | `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
 | `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
-| `modelTiers` | object | optional | Optional per-persona model selection for Sol's conductor dispatches. Maps abstract tiers (top / worker) to concrete models, plus per-persona `overrides`. See § Model tiering below. |
+| `modelTiers` | object | optional | Optional model selection. Only `overrides` is read today, by the review loop, which honors an `eric` entry. See § Model overrides below. |
 | `slackChannel` | string | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`. |
 
 ## All tokens
@@ -121,9 +121,9 @@ If you're tempted to tokenize one of these, write an ADR first. The fewer tokens
 
 The `features` object in `.ai-skills/config.json` holds capability flags that are off by default. They are not surfaced during `npx @huntermcgrew/prism adopt` or onboarding — you set them manually after install when you want to enable the capability.
 
-### `features.conductorMayMerge`
+### `features.mainSessionMayMerge`
 
-When set to `true`, Sol (the Conductor) is permitted to merge PRs when the Briar→Eric review loop is clean. When absent or `false`, merge is always a human responsibility — Sol parks every lane at the merge gate.
+When set to `true`, the main session — the agent session you are working in — may squash-merge a PR once the review loop came back clean and the PR carries no `review:has-minors` label. When absent or `false`, merge is always a human responsibility.
 
 **This flag is off by default.** Most teams should leave it off. It is appropriate for solo maintainers or automated pipelines where a human is on-the-loop rather than in-the-loop for each merge.
 
@@ -132,31 +132,29 @@ When set to `true`, Sol (the Conductor) is permitted to merge PRs when the Briar
 ```json
 {
   "features": {
-    "conductorMayMerge": true
+    "mainSessionMayMerge": true
   }
 }
 ```
 
 Set it once; it survives reconfiguration runs (the reconfigure flow preserves unknown and feature-flag fields without re-prompting for them).
 
-**What Sol checks before merging:** even when this flag is `true`, Sol still verifies that the Briar→Eric gauntlet passed cleanly. A lane with open review issues or an unresolved human gate does not merge — the flag gates the _capability_, not Sol's judgment about readiness.
+**What the main session checks before merging:** even when this flag is `true`, the main session still verifies that the review loop came back clean. A PR with open review issues or a `review:has-minors` label does not merge — the flag gates the _capability_, not the judgment about readiness. A reviewer persona or a subagent never merges, whatever the flag says.
 
 > [!NOTE]
-> Sol never mentions this flag during init, onboarding, or normal operation. If you ask Sol directly whether it can merge, it will describe the flag. Otherwise it stays invisible.
+> The flag is never mentioned during init or onboarding. You set it by hand.
 
 ---
 
-## Model tiering
+## Model overrides
 
-Sol dispatches every persona at an abstract tier — **top** (Sol, Winston, Eric) or **worker** (Clove, Sasha, Briar, …) — never a hardcoded model. The optional `modelTiers` object in `.ai-skills/config.json` maps those tiers to your runtime's concrete models (`top`, `worker`) and pins individual personas via `overrides`. Absent, the conductor uses its run-wide default model for every dispatch.
+The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. The review loop honors an `eric` entry when present, and no other key is read today. Absent, each skill keeps the model its generated agent definition or frontmatter pins.
 
-One tradeoff is worth naming. If the reviewer (Eric) and the workers run the same model, the review loop loses some family-level blind-spot coverage — a mistake the model's family is prone to can slip past a reviewer of the same family. A team that wants cross-model review sets Eric's tier explicitly:
+One tradeoff is worth naming. If the reviewer (Eric) and the workers run the same model, the review loop loses some family-level blind-spot coverage — a mistake the model's family is prone to can slip past a reviewer of the same family. A team that wants cross-model review pins Eric explicitly:
 
 ```json
 {
   "modelTiers": {
-    "top": "opus",
-    "worker": "sonnet",
     "overrides": { "eric": "gpt-5" }
   }
 }

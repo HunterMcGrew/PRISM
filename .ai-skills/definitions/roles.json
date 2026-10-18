@@ -91,11 +91,6 @@
 			"routing": "named-only"
 		},
 		{
-			"id": "prism-conductor",
-			"persona": "Sol",
-			"routing": "auto"
-		},
-		{
 			"id": "prism-founder",
 			"persona": "Vera",
 			"routing": "auto"

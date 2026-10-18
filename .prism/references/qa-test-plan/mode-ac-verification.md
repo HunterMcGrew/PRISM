@@ -18,7 +18,7 @@ Go criterion by criterion, in ID order (AC-1, AC-2, …). For each, follow its E
 
 **Read-only execution, operationally defined:** no writes to tracked files, no mutating flags (snapshot updates, migrations, seeders). Ephemeral build artifacts (compiled output, test caches) are tolerated — they aren't tracked changes.
 
-**Tree-clean discipline:** run `git status` before starting and again after every criterion is graded. The tree must be unchanged at the end, or the run is invalid — a dirtied worktree poisons Sol's own ratification `git diff` downstream. If a command unexpectedly mutates the tree, stop, restore it (`git checkout -- <paths>` for tracked files only), and grade that criterion UNGRADEABLE(`harness`) with the mutation named as the error.
+**Tree-clean discipline:** run `git status` before starting and again after every criterion is graded. The tree must be unchanged at the end, or the run is invalid — a dirtied worktree poisons the diff the next reviewer reads. If a command unexpectedly mutates the tree, stop, restore it (`git checkout -- <paths>` for tracked files only), and grade that criterion UNGRADEABLE(`harness`) with the mutation named as the error.
 
 ## 3. Render verdicts
 
@@ -55,7 +55,7 @@ Every UNMET criterion becomes an open entry in the plan's `## Review Issues` —
 
 ## 6. Human-tagged criteria
 
-Pull every `Evidence (human): ...` criterion into an **awaiting-human-verification** mini-checklist section in the report. These are never graded and never counted in the machine MET/UNMET/UNGRADEABLE totals — they surface at the human merge gate (the unconditional gate in `lib/report-back.md` § Gate registry) so a human verifies them before the branch merges.
+Pull every `Evidence (human): ...` criterion into an **awaiting-human-verification** mini-checklist section in the report. These are never graded and never counted in the machine MET/UNMET/UNGRADEABLE totals — they surface in the report so a human verifies them before the branch merges.
 
 ## 7. Re-check scope
 
@@ -68,13 +68,10 @@ Before rendering the final all-clear, run one full pass of every machine criteri
 
 ## 8. Converted UNGRADEABLE
 
-A criterion that survives two Reese⇄Clove fix cycles without resolving converts to UNGRADEABLE(`converted`). This pre-empts a third identical fix attempt on a criterion that isn't actually gradeable as written — the primary verdict becomes `needs-replan` (routes to Winston for criterion rewrite), not another `needs-fix` loop. This rides the existing step-07 three-strike rule; strike 2 already escalates the model, and the conversion is the AC-verification-specific escape before strike 3 would park the lane.
+A criterion that survives two Reese⇄Clove fix cycles without resolving converts to UNGRADEABLE(`converted`). This pre-empts a third identical fix attempt on a criterion that isn't actually gradeable as written — the report routes it to Winston for criterion rewrite instead of another fix loop. This is the AC-verification-specific escape before a third identical attempt.
 
-## 9. Update the plan and report back
+## 9. Update the plan
 
 After saving the report, append one line to the plan's `## History`: date, report path, and the MET/UNMET/UNGRADEABLE counts. The plan is the content bus — Eric, Iris, and Briar discover the report through this pointer; `.prism/qa/` is otherwise invisible to them.
 
-**Report-back verdict** per `.prism/skills/prism-conductor/lib/report-back.md` (pointer, not restatement):
-
-- Primary verdict per the contract: all machine criteria MET (born-UNGRADEABLE side-findings permitted) → `done`; ≥1 UNMET → `needs-fix`; all criteria UNGRADEABLE → `needs-replan`; no `## Acceptance Criteria` section at all → `blocked`.
-- `acVerdicts` carried per `lib/report-back.md` § Evidence fields — the schema is quoted there only.
+Close with the outcome per the contract: all machine criteria MET (born-UNGRADEABLE side-findings permitted) means done; at least one UNMET goes back to the implementer; all criteria UNGRADEABLE goes to Winston for criterion rewrite; no `## Acceptance Criteria` section at all means blocked.

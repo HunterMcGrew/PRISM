@@ -1,8 +1,9 @@
 ---
 Number: 0053
 Title: Conductor — Integration Lane Marker Is a Nullable `type` Field; No Default Integration Persona
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 ## Context
@@ -44,4 +45,4 @@ This ADR is focused on the `type` marker. The companion Phase C seam for per-tea
 - `.prism/prds/sol-conductor-phase-c-teams.md` — the Phase C PRD (FR-5; the integration-gate trigger and persona-assignment requirements)
 - [ADR-0049](./0049-conductor-teams-are-lane-groups.md) — the `team` field and flat `lanes[]` model the cross-team trigger reads
 - [ADR-0054](./0054-conductor-integration-gate-always-human.md) — the always-human gate behavior this marker triggers
-- `.prism/skills/prism-conductor/lib/goal-state.md`, `lib/fleet.md` — the schema field notes that add `type` and the integration-gate trigger and persona-assignment-via-scope sections that drive it
+- `prism-conductor/lib/goal-state.md`, `lib/fleet.md` — the schema field notes that add `type` and the integration-gate trigger and persona-assignment-via-scope sections that drive it

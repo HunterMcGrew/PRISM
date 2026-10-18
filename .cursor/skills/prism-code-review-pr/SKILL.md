@@ -249,7 +249,7 @@ Whether the code does what the ticket says, against the branch plan and architec
 
 The Spec subagent does **not** evaluate the rules themselves (that's Standards). It evaluates the diff's alignment with the ticket contract.
 
-**Sampling Reese's AC-verification report, when one exists.** Eric doesn't re-grade every criterion — he's the checker of the checker. Sample `demonstrated`-class METs first (self-reported evidence is where rubber-stamping hides), then re-execute `executed`-class citations directly — the report already carries the command, exit code, and output line, so re-running is cheap. **A flipped MET in the sample triggers a full re-grade at top tier, not a point fix** — a flipped MET is evidence the judge was miscalibrated, a Bayesian update on every other MET in the same report, not an isolated defect. Eric is the only checker of the checker: Sol re-runs Clove's commands during ratification, but takes Reese's evidence as self-report.
+**Sampling Reese's AC-verification report, when one exists.** Eric doesn't re-grade every criterion — he's the checker of the checker. Sample `demonstrated`-class METs first (self-reported evidence is where rubber-stamping hides), then re-execute `executed`-class citations directly — the report already carries the command, exit code, and output line, so re-running is cheap. **A flipped MET in the sample triggers a full re-grade at top tier, not a point fix** — a flipped MET is evidence the judge was miscalibrated, a Bayesian update on every other MET in the same report, not an isolated defect. Eric is the only checker of the checker: nobody else re-checks Reese's evidence, so it is self-report until he samples it.
 
 ### Missing spec handling
 
@@ -310,17 +310,9 @@ The label-apply command and the state-#3 draft→ready flip are part of the batc
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict. For Unasked assumptions, name which axis was skipped, which file was excluded, or which interpretation was chosen. For Edge recall, name which edge-case PR states applied (no description, no diff, no plan, branch behind `main`, draft PR, mechanical-change-only) and whether each was handled deliberately.
 
-The PR review — inline comments, the two-axis summary comment, and the labels posted to the PR — is the deliverable; posting the summary comment to the PR is the final act before stopping — except in worktree mode, where tearing down the worktree per [`worktree-mode.md`](../../references/worktree-mode.md) comes after the comment post and is the true final act. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the posted review. Eric never approves — the readiness call belongs to a human (ADR-0011).
+The PR review — inline comments, the two-axis summary comment, and the labels posted to the PR — is the deliverable; posting the summary comment to the PR is the final act before stopping — except in worktree mode, where tearing down the worktree per [`worktree-mode.md`](../../references/worktree-mode.md) comes after the comment post and is the true final act. Eric never approves — the readiness call belongs to a human (ADR-0011).
 
 ---
-
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
-**The review-rung verdict, spelled out.** Zero findings → `done`; so does a pass whose only remaining findings are bookkeeping-only Minors — record them and return `done` rather than buying another dispatch (see `.prism/rules/followup-scope.md` § Bookkeeping findings are recorded, not gated). Findings you recorded in `## Review Issues` that a competent implementer can fix without an architecture call → **`needs-fix`** (Sol routes them to Clove and re-dispatches you; the lane stays in the review phase). Reserve `needs-replan` for findings that mean the *plan* is wrong, and `blocked` for a lane you genuinely cannot review — a missing branch, a failed checkout, an absent PR. `needs-human` is for a finding that needs a human's call, not a hard one.
-
-If the dispatch schema you were handed does not offer `needs-fix`, the schema is defective — return the closest verdict, and emit an `observation` signal naming the missing enum value so the run report surfaces it. Do not silently pick a verdict your own prose contradicts.
 
 ## After the review
 

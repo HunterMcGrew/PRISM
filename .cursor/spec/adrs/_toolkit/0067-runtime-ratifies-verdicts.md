@@ -64,6 +64,6 @@ The lawful lever is **maintenance mode** — a human-held suspension of enforcem
 ## References
 
 - `.prism/plans/epic-prism-enforcement-layer.md` — the epic plan and the `## Decisions` that this ADR promotes (inversion principle, channel-hardening, handoff enforcement, factual-grounding bar incl. escape-verdict typing and the orientation/re-orientation batteries, Briar caveat, gate non-circumventability incl. the complete Bash-segmentation grammar and git-mutation closure, always-on + maintenance mode)
-- `.prism/skills/prism-conductor/lib/report-back.md` — the authoritative verdict enum (`done` / `needs-fix` / `blocked` / `needs-replan` / `needs-stronger-model` / `needs-human`) and Sol's deterministic routing; the contract this floor hardens
+- `prism-conductor/lib/report-back.md` — the authoritative verdict enum (`done` / `needs-fix` / `blocked` / `needs-replan` / `needs-stronger-model` / `needs-human`) and Sol's deterministic routing; the contract this floor hardens
 - [ADR-0011](./0011-eric-never-approves-prs.md) — the human merge boundary is the one unconditional human gate; this floor never crosses it (enforcement names and verifies the handoff, but a human still merges)
 - [ADR-0048](./0048-conductor-autonomy-between-gates.md) — Sol drives between gates and never clears one; a gate-ratified verdict is what makes that autonomy safe

@@ -171,7 +171,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
 
-The validated `.ai-skills/config.json`, the generated per-team rules, and the populated anchors are the deliverable; the final act before stopping is the atomic config write plus a green output regeneration (§ Install context). When dispatched by Sol, return the verdict (see the dispatch section) alongside those writes.
+The validated `.ai-skills/config.json`, the generated per-team rules, and the populated anchors are the deliverable; the final act before stopping is the atomic config write plus a green output regeneration (§ Install context).
 
 A successful Atlas session satisfies all of the following:
 

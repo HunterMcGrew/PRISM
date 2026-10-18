@@ -1,15 +1,16 @@
 ---
 Number: 0049
 Title: Conductor — Teams Are Lane-Groups, Not Sub-Conductors
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 ## Context
 
 The Sol product-lead vision (`.prism/plans/sol-product-lead-vision-brief.md`) wants Sol to run several specialized teams — a backend team and a frontend team and more — in parallel, each with its own flow and queue. The brief's open question Q1 framed the fork directly: is a "team" a **nested Sol** (its own conductor running its own fleet) or a **labeled grouping of lanes** under the one conductor? Q5/Q7/Q8 piled on — scale ceiling, nested budgets, autonomy granularity — all of which only exist if teams are sub-conductors.
 
-The fork is not a style preference; the runtime settles it. PRISM's fleet runs on the Workflow engine (`.prism/skills/prism-conductor/lib/fleet.md`, `.ai-skills/skills/prism-conductor/claude.md`), and that engine has two hard properties: it **forbids nesting deeper than one level** — a `workflow()` call inside a child workflow throws — and a nested workflow **shares the parent's concurrency cap, agent counter, and token budget**. The per-run concurrency cap is ~12 (`min(16, cores-2)`), and nesting does not raise it.
+The fork is not a style preference; the runtime settles it. PRISM's fleet runs on the Workflow engine (`prism-conductor/lib/fleet.md`, `prism-conductor/claude.md`), and that engine has two hard properties: it **forbids nesting deeper than one level** — a `workflow()` call inside a child workflow throws — and a nested workflow **shares the parent's concurrency cap, agent counter, and token budget**. The per-run concurrency cap is ~12 (`min(16, cores-2)`), and nesting does not raise it.
 
 Alternatives considered:
 
@@ -34,5 +35,5 @@ Sub-conductors / nested Sol are a **standing invariant rejection**, not deferred
 - `.prism/prds/sol-product-lead-conductor.md` — the v1 PRD (Won't-this-time: sub-conductors)
 - `.prism/plans/epic-sol-product-lead-conductor.md` — the epic plan that builds on this decision
 - [ADR-0048](./0048-conductor-autonomy-between-gates.md) — Sol dispatches, never does; this ADR adds the one-Sol-per-run corollary
-- `.prism/skills/prism-conductor/lib/fleet.md` — the fleet contract and concurrency cap this decision is grounded in
+- `prism-conductor/lib/fleet.md` — the fleet contract and concurrency cap this decision is grounded in
 - [ADR-0050](./0050-conductor-growth-loop-and-convergence-governor.md) — the growth loop and convergence governor that run on the flat lane list this ADR keeps flat

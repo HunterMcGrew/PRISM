@@ -80,4 +80,4 @@ The commit subject template branches per checklist-producing mode. Use the templ
 - **Feature / PR:** `chore: Add QA checklist for PR #<number>` — and if a ${TICKET_PREFIX}-NNNN is in the PR title, prefer `${TICKET_PREFIX}-NNNN: Add QA checklist for PR #<number>`
 - **Bug-fix Verification:** `${TICKET_PREFIX}-NNNN: Add bug-fix verification plan for PR #<number>`
 
-**AC Verification mode has no entry here** — it has no commit at all. Its deliverable is the saved report plus a plan `## History` pointer and a report-back verdict, per `mode-ac-verification.md` § 9. There is nothing to push.
+**AC Verification mode has no entry here** — it has no commit at all. Its deliverable is the saved report plus a plan `## History` pointer, per `mode-ac-verification.md` § 9. There is nothing to push.

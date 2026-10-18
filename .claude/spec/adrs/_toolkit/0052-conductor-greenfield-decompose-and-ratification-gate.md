@@ -1,15 +1,16 @@
 ---
 Number: 0052
 Title: Conductor — Greenfield Decompose Extends the Reconcile Primitive; the Ratification Gate Is the Breadth Gate's Human Review
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 > Amended by [ADR-0073](./0073-stakes-levels-name-their-behavior.md): the level names below were renamed — read `hobby` as `quick`, `internal` as `reviewed`, `launch` as `strict`.
 
 ## Context
 
-Phase A built the between-segment reconcile-delta primitive (`.prism/skills/prism-conductor/lib/reconcile.md`) once, deliberately, so later phases reuse it rather than fork it ([ADR-0050](./0050-conductor-growth-loop-and-convergence-governor.md)). Phase B's second half adds greenfield mode: Sol takes a PRD plus an architecture document and conducts a Parker→Winston→Nora chain that turns them into a ratifiable epic→issue→ticket tree, then dispatches it. Two architectural questions had to be settled together, because the answer to each shapes the other (`.prism/plans/epic-sol-conductor-phase-b.md`, Decisions B-A6 and B-A4).
+Phase A built the between-segment reconcile-delta primitive (`prism-conductor/lib/reconcile.md`) once, deliberately, so later phases reuse it rather than fork it ([ADR-0050](./0050-conductor-growth-loop-and-convergence-governor.md)). Phase B's second half adds greenfield mode: Sol takes a PRD plus an architecture document and conducts a Parker→Winston→Nora chain that turns them into a ratifiable epic→issue→ticket tree, then dispatches it. Two architectural questions had to be settled together, because the answer to each shapes the other (`.prism/plans/epic-sol-conductor-phase-b.md`, Decisions B-A6 and B-A4).
 
 **First, how the chain's tree output enters the lane set.** The Phase A primitive handles *flat* discovery signals → candidate lanes. A planned ticket tree carries internal `parentId` structure the flat path doesn't model, and the whole tree must land at `generation: 0` regardless of depth — which the flat path's `parent.generation + 1` formula would get wrong (it would assign growing generations down the tree, falsely tripping the governor's generation cap; see [ADR-0051](./0051-conductor-tree-dispatch-semantics.md)).
 
@@ -44,4 +45,4 @@ Under every policy a large planned tree faces exactly one human gate — never z
 - [ADR-0050](./0050-conductor-growth-loop-and-convergence-governor.md) — the reconcile-delta primitive this extends and the breadth gate this gate's review satisfies
 - [ADR-0051](./0051-conductor-tree-dispatch-semantics.md) — the gen-0-planned-tree rule the reconcile extension assigns and the tree dispatch model the ratified tree feeds
 - [ADR-0049](./0049-conductor-teams-are-lane-groups.md) — the one-Sol-per-run invariant the one-level conducted segment respects
-- `.prism/skills/prism-conductor/lib/reconcile.md`, `lib/greenfield-decompose.md`, `step-02-decompose.md`, `lib/convergence.md`, `step-10-report.md` — the reconcile extension, the chain and ratification-gate procedure, the greenfield mode wiring, the breadth gate cited, and the shared tree-render
+- `prism-conductor/lib/reconcile.md`, `lib/greenfield-decompose.md`, `step-02-decompose.md`, `lib/convergence.md`, `step-10-report.md` — the reconcile extension, the chain and ratification-gate procedure, the greenfield mode wiring, the breadth gate cited, and the shared tree-render

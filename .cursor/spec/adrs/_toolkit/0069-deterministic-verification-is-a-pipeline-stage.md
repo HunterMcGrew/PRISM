@@ -1,8 +1,9 @@
 ---
 Number: 0069
 Title: Deterministic Verification Is a Pipeline Stage, Not a Runtime Hook
-Status: accepted
+Status: superseded
 Date: 2026-07-12
+Superseded-by: 0078
 ---
 
 ## Context
@@ -41,5 +42,5 @@ A write-lane's `done` is **proposed, not accepted**. It advances only after a de
 - `.prism/plans/issue-408.md` — the plan that ports this design back in, and its `## Decisions` section
 - [ADR-0067](./0067-runtime-ratifies-verdicts.md) (superseded) — the trust-gap goal this ADR carries forward, and the hook-based mechanism this ADR replaces
 - `.prism/plans/epic-floor-revert.md` — the revert that removed the `Stop`/`SubagentStop` hook and the incident that motivated it
-- `.prism/skills/prism-conductor/lib/report-back.md` — the verdict enum, evidence fields, and routing table this decision extends
-- `.prism/skills/prism-conductor/step-05-route.md` § Deterministic ratification — the pipeline-stage mechanism
+- `prism-conductor/lib/report-back.md` — the verdict enum, evidence fields, and routing table this decision extends
+- `prism-conductor/step-05-route.md` § Deterministic ratification — the pipeline-stage mechanism

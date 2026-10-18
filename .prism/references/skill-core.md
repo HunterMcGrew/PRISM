@@ -10,10 +10,11 @@ core:` sub-list in its own body, never a restatement.
 
 Run the Opening Orientation Battery per
 [`session-orientation.md`](../rules/session-orientation.md) before the skill's
-core work. The no-user-available calibration, stated once: mid-dispatch there
-is no user — for each load-bearing gap pick a defensible default, state the
-assumption, and proceed; escalate only by typed verdict (`needs-replan` /
-`blocked` / `needs-human`), never by a question into the void.
+core work. The no-user-available calibration, stated once: when no user is
+there to answer, pick a defensible default for each load-bearing gap, state the
+assumption, and proceed; when a gap genuinely blocks, state the blocker and the
+default you took in your closing message rather than asking a question nobody
+is there to answer.
 
 ## The plan is the working memory
 
@@ -34,47 +35,6 @@ runtime, where an edit to a routed path is denied until that route's docs are
 read. Claude Code and Codex receive it today. On Cursor nothing stops an
 unread edit, so match the manifest and read the docs yourself before you
 write.
-
-## Reporting back
-
-When dispatched by Sol, finish by returning one report-back in the canonical
-dispatch schema. Its single owner is the conductor's report-back reference —
-PRISM's internal `.prism/skills/prism-conductor/lib/report-back.md`
-§ Canonical dispatch schema (monorepo-only, not shipped to consumers, which is
-why the block is quoted here in full); it is quoted verbatim because something
-downstream parses it — never paraphrase it, never abbreviate the enum:
-
-```
-{
-  verdict: "done" | "needs-fix" | "blocked" | "needs-replan" | "needs-stronger-model" | "needs-human",
-  summary: string,
-  signals?: [
-    {
-      kind: "found-bug" | "found-followup-work" | "observation",
-      note: string,
-      target?: { file?: string, symbol?: string, scopeSlug?: string, errorSignature?: string }
-    }
-  ],
-  gateDisposition?: "auto-cleared" | "needs-human" | "blocked" | "none",
-
-  // write lanes only — see § Evidence fields (write lanes)
-  filesChanged?: string[],
-  verificationCommand?: string,
-  verificationExitCode?: number,
-
-  // Reese's ac-verify dispatch only — see § `acVerdicts`
-  acVerdicts?: [
-    {
-      id: string,
-      criterion: string,
-      verdict: "MET" | "UNMET" | "UNGRADEABLE",
-      evidenceType: "executed" | "inspected" | "demonstrated",
-      evidence: string,
-      reason?: "ac-defect" | "harness" | "dead-reference" | "requires-human" | "converted"
-    }
-  ]
-}
-```
 
 ## Closing
 

@@ -95,12 +95,8 @@ export const SHIP_CLOSURE_TRACKED_DANGLING_REFS: ReadonlySet<string> = new Set([
 	"spec/adrs/_toolkit/0043-parker-prd-persona.md",
 	"spec/adrs/_toolkit/0044-direct-write-tool-outputs.md",
 	"spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md",
-	"spec/adrs/_toolkit/0055-conductor-partitions-run-control-by-epic-subtree.md",
 	"spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md",
 	"spec/adrs/_toolkit/0060-business-layer-substrate.md",
-	"spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md",
-	"spec/adrs/_toolkit/0069-deterministic-verification-is-a-pipeline-stage.md",
-	"spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md",
 ]);
 
 export interface SeedCurationTiers {

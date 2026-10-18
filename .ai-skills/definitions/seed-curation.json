@@ -78,6 +78,7 @@
 		"spec/adrs/_toolkit/0075-anchors-substitute-at-projection-time.md",
 		"spec/adrs/_toolkit/0076-commit-and-push-gates-are-harness-hooks.md",
 		"spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md",
+		"spec/adrs/_toolkit/0078-main-session-holds-merge-authority-and-the-conductor-is-retired.md",
 		"architect/_toolkit/npm-packaging.md",
 		"architect/_toolkit/token-substitution.md"
 	],

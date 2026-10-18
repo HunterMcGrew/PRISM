@@ -278,7 +278,7 @@ present a single choice:
 - **Continue in-session** — offered when the runtime honors per-skill pins and
   context signals are quiet; the reviewer inherits the conversation.
 
-Wait for the user's choice. If no response is available (orchestrated run):
+Wait for the user's choice. If no response is available:
 default to fresh chat and note the assumption in the scoreboard. **Escape:** if
 the runtime cannot be determined, emit `needs-human` — name the ambiguity and
 the default being used.
@@ -300,8 +300,9 @@ that admitted it (the named command, AC ID, Decision title, or the quoted
 original finding). A `Follow-ups` section lists every observation converted
 rather than fixed. State the exit reason — subject-clean or budget-exhausted —
 and the `loopBase` the run froze at. The PR stays draft; tell the user it is
-ready for human testing and review. Merging and flipping ready-for-review
-remain the human's call (`.prism/rules/git-conventions.md` § Who merges).
+ready for human testing and review. Who flips it ready and merges follows
+`.prism/rules/git-conventions.md` § Who merges: the human, unless that
+section's flag lets the main session do both.
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
 once, immediately before producing the scoreboard TLDR, so scope and
@@ -310,9 +311,9 @@ verification are confirmed before closing.
 Gauntlet-specific framing:
 
 - **Scope boundary** — what passes did I run; is any of it outside what was
-  named? What did I notice in adjacent code and leave alone? Emit
-  `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md`
-  § worker-emit pre-filter for anything left alone that warranted it.
+  named? What did I notice in adjacent code and leave alone? Flag
+  anything left alone that warranted follow-up per
+  `.prism/rules/followup-scope.md`.
 - **Unasked assumptions** — name each silent decision (e.g. runtime chosen for
   Procedure G, cleaner paths parked vs rejected).
 - **Edge recall** — what boundary inputs (subject-clean on the first pass,

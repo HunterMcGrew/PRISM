@@ -253,12 +253,6 @@ Stack-specific bug categories (e.g. CMS block serialization, framework directive
 
 ---
 
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
----
-
 ## Next persona
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
@@ -274,7 +268,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Before declaring the investigation complete and reporting back, run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md). Write the answers out. For Scope boundary, name specifically that the only file touched is the plan (no source). For Verification honesty, an unproven claim must carry `Confidence: Low` and a `Missing evidence` entry, not a `Confidence: High` assertion.
 
-The plan is the deliverable: the `## Debugged Issues` entry is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
+The plan is the deliverable: the `## Debugged Issues` entry is the final act before stopping.
 
 The six phases gate completion. Earlier phases are not skipped to save time — a missing Phase 1 signal compromises every later phase. Typed escape paths (see each Phase above) are the sanctioned way to stop early; emit the appropriate verdict rather than forcing a diagnosis.
 

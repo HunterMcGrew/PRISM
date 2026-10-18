@@ -261,7 +261,7 @@ For each ticket or epic:
 
 A persona that writes plan content but does not own the branch's code lane — a reviewer, a diagnostician — lands its own plan-file commit: stage the plan file alone, commit it, push it. This is a narrow, machine-checkable exception to "authors ship, reviewers review" (`skill-routing.md` § Authors ship, reviewers review), and it is scoped by the *file set*, not by judgment: if the staged set contains anything other than the one plan file, the exception does not apply and the persona stops.
 
-**Why:** a review record that exists only in a torn-down worktree is not a durable plan entry — it defeats `## Review Issues` and `## PR Readiness` as the ticket's working memory. In the 2026-07-20 run a reviewer's plan write was stranded three times (twice committed-but-unpushed, once uncommitted in a worktree) and needed manual conductor recovery each time. Making the conductor the lander was considered and rejected: it re-institutionalizes exactly the manual recovery that failed three times, and it leaves standalone (non-conducted) reviewer sessions with no landing path at all.
+**Why:** a review record that exists only in a torn-down worktree is not a durable plan entry — it defeats `## Review Issues` and `## PR Readiness` as the ticket's working memory. In the 2026-07-20 run a reviewer's plan write was stranded three times (twice committed-but-unpushed, once uncommitted in a worktree) and needed manual recovery each time. Having a separate session land the record was considered and rejected: it re-institutionalizes exactly the manual recovery that failed three times, and it leaves a standalone reviewer session with no landing path at all.
 
 **How to apply:**
 
@@ -287,7 +287,7 @@ The close ceremony runs in two phases: **reflect**, then **close**.
 
 **Universal gate — every plan close, not just epics.** Every plan (ticket and epic) records a retro verdict line beside `> Closed:`: `> Retro: <path>` or `> Retro: declined — <one-line reason>`. The nudge is universal; declining is always legitimate; the decline is visible and recorded so the skip has teeth. The theater risk a universal gate raises — heavyweight synthesis on a one-line bugfix — is answered by **grain**, not by exempting trivial plans from the gate: an exemption would re-open the silent-skip hole the gate exists to close.
 
-**Why declinable, not enforced:** PRISM cannot force a retro to run involuntarily outside a Sol run — no scheduler, personas never auto-invoke each other, and hook enforcement was deliberately reverted. What the gate can replicate is CI's real property: skipping is a visible, recorded override, not a silent omission. Under Sol the retro *is* involuntary — Sol auto-dispatches Iris at run close, both grains, and records every dispatch and its outcome in the run report. Outside Sol, the gate is the human-declinable nudge. Promotion-without-relitigation is the defect the reflect phase fixes — today's ceremony, unrestructured, could promote a decision the work itself disproved.
+**Why declinable, not enforced:** PRISM cannot force a retro to run involuntarily — no scheduler, personas never auto-invoke each other, and hook enforcement was deliberately reverted. What the gate can replicate is CI's real property: skipping is a visible, recorded override, not a silent omission. The gate is a human-declinable nudge. Promotion-without-relitigation is the defect the reflect phase fixes — today's ceremony, unrestructured, could promote a decision the work itself disproved.
 
 **Placement:** the pre-merge-on-final-branch placement above stands for the reflect phase too — the retro report rides the final PR as a committed file. At epic grain, earlier children are fully merge-settled by close time; only the final child's main-CI is approximated by its PR CI, and the charter-coverage table names this approximation explicitly.
 
@@ -1040,7 +1040,7 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 **How to apply:**
 
 - **Record it in full.** A bookkeeping-only Minor still earns its `## Review Issues` entry, its inline comment, and its severity. Nothing is suppressed — a claim that would mislead a future implementer, like an AC evidence command that cannot return its asserted result, is worth flagging. It earns one flag, not a round.
-- **Don't re-dispatch for it.** Briar returns `done` rather than `needs-fix` when bookkeeping-only Minors are all that remain; Eric treats them as state #3 rather than state #2.
+- **Don't re-dispatch for it.** Briar reports the pass clean, without calling for another fix round, when bookkeeping-only Minors are all that remain; Eric treats them as state #3 rather than state #2.
 - **Fix it in the next commit that touches the plan** — on a live branch that is the next commit, because every persona writes the plan.
 
 ## Who runs this rule
@@ -1051,33 +1051,6 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 - **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 - **`prism-review-loop`** — carries a stricter disposition: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. Its own Ledger set is this section's set plus two loop-local additions — the PR body and the readiness line the loop itself emits. See its § Review surfaces.
-
-## Worker emit pre-filter (Sol-run-time)
-
-When a worker persona (Clove, Briar, Eric, Sasha) operates inside a Sol run, it runs a lightweight two-question pre-filter before deciding whether to emit a `found-bug` or `found-followup-work` signal. This pre-filter is a cheap subset of the scope-fit gate above — it keeps trivial noise out of the registry without attempting Nora's full adjacency/size/persona-alignment judgment (that belongs in the decision box, per `lib/decision-box.md`).
-
-**Two questions, in order:**
-
-1. **Is this work inside my local frame?** The local frame is the lines being modified, the function or method containing those lines, and helpers extracted from that code — per `.prism/rules/code-standards.md § Refactor scope`. Work inside the local frame that is also trivial is fixed inline; everything else is emitted.
-2. **Is this trivial?** Trivial means a one-line fix with no design trade-off. Non-trivial work is emitted even if it is inside the local frame.
-
-**Decision table:**
-
-| In local frame? | Trivial? | Action |
-| --- | --- | --- |
-| Yes | Yes | Fix inline, emit nothing. |
-| Yes | No | Emit the signal. |
-| No | Yes or No | Emit the signal. |
-
-**Tiebreaker — borderline finds:** when uncertain whether to emit, **over-emit**. Downstream dedup and the decision box collapse duplicates and drop noise; a signal that is silently swallowed is unrecoverable. Over-emit < under-emit.
-
-**Broken-dependency stub convention:** when a worker finds that a dependency of the code it is currently writing is broken and cannot proceed cleanly, it:
-
-1. Emits the signal with a structured `target` (file, symbol, scopeSlug, or errorSignature as appropriate — per `lib/goal-state.md` schema).
-2. Proceeds on a **documented stub** — a clearly-marked placeholder whose comment names the emitted signal's `target`. Example: `// Placeholder while <target.symbol> is broken — found-bug signal emitted; the reconcile pass tracks the fix.`
-3. Does **not** stall the lane. The stub lets the lane continue; the emitted signal enters the registry for the next reconcile pass.
-
-Reconciliation for stubs is **surface-not-rewire**: when the fix lane lands, the end-of-run report flags the original stub site for human or follow-up attention. v1 never auto-replaces stubs — the dependent lane's worktree may already be done, and rewiring is itself follow-up work.
 
 ---
 
@@ -1189,7 +1162,7 @@ Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the ha
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
 
-Sol may merge when `features.conductorMayMerge: true` is set in `.ai-skills/config.json`. The flag is the gate — Sol checks for it before any merge; absent or false means the human merges.
+The main session may flip a PR ready and squash-merge it when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review loop's final PR-review pass reported the clean state, and the PR carries no `review:has-minors` label. A missing label alone proves nothing, because the reviewer applies no labels before its first pass or while a Critical or Major finding stands. The flag is the gate: absent or false means the human merges. A team opts in by setting the flag by hand; installs leave it absent. A reviewer persona or a subagent never merges, whatever the flag says.
 
 ---
 
@@ -1436,7 +1409,7 @@ Every persona skill opens a session with the same four-question battery, closes 
 Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** when no user is available to answer, do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. When a gap genuinely blocks, state the blocker and the default you took in your closing message — never by a question nobody is there to answer.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -1448,7 +1421,7 @@ The opening battery's answers don't stay in the transcript — they compress to 
 
 Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
 
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
+1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Flag anything left alone that warranted follow-up per `.prism/rules/followup-scope.md`.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
 3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?
@@ -1496,7 +1469,6 @@ When a user works without invoking a specific skill, detect what they're doing a
 | QA test plans and bug-fix verification | **Reese** (`prism-qa-test-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
 | Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
 | Writing or updating documentation      | **Eli** (`prism-documentation`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
-| Goal-driven orchestration              | **Sol** (`prism-conductor`)          | "orchestrate", "run the fleet", "drive this from the SPEC", "build this end to end", "goal-driven run", "conductor"                                                                                                                                                                                            |
 | Writing a PRD                          | **Parker** (`prism-prd`)             | "write a PRD", "spec out this initiative", "brownfield PRD", "Parker"                                                                                                                                                                                                                                            |
 | Standup summaries                      | **Lilac** (`prism-standup-summary`)  | "standup", "daily sync", "summarize my PRs", "generate my standup", "Lilac"                                                                                                                                                                                                                                      |
 | Setting company strategy               | **Vera** (`prism-founder`)           | "set strategy", "strategy doc", "OKRs", "mission", "cross-functional priorities", "business strategy", "Vera"                                                                                                                                                                                    |
@@ -1539,10 +1511,6 @@ These personas route on their name or an explicit trigger phrase only — never 
 - `prism-skill-forge` is a *utility* skill — no persona; it runs in the current voice. Invocation is user-initiated: "create skill", "scaffold skill", "new skill", "add persona", "migrate skill", "decompose skill", "import skill". Create mode scaffolds a new PRISM skill from scratch; migrate mode decomposes a generated platform skill back into canonical source.
 - `tdd` is a *utility* reference — no persona, no greeting, no batteries; it is read for its content, not invoked as a session. Invocation is user-initiated: "tdd", "test-first", "red-green", "why is this test useless", "test anti-patterns". It holds the red-green loop and its three anti-patterns (with their tells) in one place other skills can point at instead of restating them.
 - `devils-advocate` is a *utility* reference — deliberately no persona, no voice, no greeting: a named character would be tempted to perform skepticism. Invocation is user-initiated: "devil's advocate", "poke holes in this", "stress test this", "red team this", "challenge this plan". It red-teams a finished artifact through four passes and a typed verdict, and never edits the artifact it challenges.
-
-## Sol is a persona, not a utility
-
-Unlike the utility skills above, Sol (`prism-conductor`) carries its own persona and voice on the orchestration axis — it may be invoked directly or auto-routed per the table. It has no authoritative write path: it writes only its run-control state (`.prism/conductor-state.json`), dispatches the other personas, and routes their verdicts — never code, tracker writes, or merges. See the conductor-autonomy-between-gates decision in `.prism/spec/adrs/_toolkit/`.
 
 ## Skip auto-routing when
 

@@ -1,8 +1,9 @@
 ---
 Number: 0056
 Title: Conductor — Convergence Governor Brakes Are Evaluated Run-Wide, Never Per-Partition
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 ## Context
@@ -38,4 +39,4 @@ The invariant, stated plainly: **no brake is weakened by partitioning.** Partiti
 - `.prism/prds/sol-conductor-phase-d-scale.md` — the Phase D PRD (FR-9, NFR-6, the run-wide-brakes requirement)
 - [ADR-0050](./0050-conductor-growth-loop-and-convergence-governor.md) — the convergence governor (budget, generation cap, breadth gate) this ADR keeps run-wide under partitioning
 - [ADR-0055](./0055-conductor-partitions-run-control-by-epic-subtree.md) — the partitioned layout this invariant constrains; this ADR is its companion
-- `.prism/skills/prism-conductor/lib/convergence.md`, `lib/reconcile.md`, `lib/partition-store.md` — the run-wide brake evaluation, the run-wide registry/dedup path, and the root-index-holds-the-counters layout that bind Sol to this decision
+- `prism-conductor/lib/convergence.md`, `lib/reconcile.md`, `lib/partition-store.md` — the run-wide brake evaluation, the run-wide registry/dedup path, and the root-index-holds-the-counters layout that bind Sol to this decision

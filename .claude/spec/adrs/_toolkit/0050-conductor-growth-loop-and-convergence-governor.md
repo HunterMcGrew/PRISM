@@ -1,13 +1,14 @@
 ---
 Number: 0050
 Title: Conductor — Growth via Between-Segment Reconcile, Governed by a Two-Axis Convergence Brake
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 ## Context
 
-Sol today conducts a **flat, fixed lane set** — lanes are the input, hand-listed at decompose time, and the run ends when they finish. But real product work discovers itself: a Clove lane finds a bug outside its frame, an Eric review surfaces a follow-up, a Sasha diagnosis spawns a fix. Today that discovered work routes to Nora as a *separate future run* (`found-followup-work → Nora`, `.prism/skills/prism-conductor/lib/report-back.md`) — a ticket that waits for a human to notice and start another run. The fleet cannot grow during the run it was found in, so a single run can't take a goal from "start" to "actually done."
+Sol today conducts a **flat, fixed lane set** — lanes are the input, hand-listed at decompose time, and the run ends when they finish. But real product work discovers itself: a Clove lane finds a bug outside its frame, an Eric review surfaces a follow-up, a Sasha diagnosis spawns a fix. Today that discovered work routes to Nora as a *separate future run* (`found-followup-work → Nora`, `prism-conductor/lib/report-back.md`) — a ticket that waits for a human to notice and start another run. The fleet cannot grow during the run it was found in, so a single run can't take a goal from "start" to "actually done."
 
 Closing that loop is the smallest net-new capability that unlocks "drive this to done while I'm away," and it is the foundation every later phase reuses. But closing it without braking it creates a new failure mode: an autonomously self-growing fleet runs away — work that finds work that finds work, or sixteen lanes finding the same broken helper, burning budget unsupervised overnight. The loop and its brake have to ship together or v1 ships a hazard.
 
@@ -40,5 +41,5 @@ Generation is a reported signal and a soft gate; **the budget is the guarantee.*
 - `.prism/plans/epic-sol-product-lead-conductor.md` — the epic plan that implements this decision
 - [ADR-0049](./0049-conductor-teams-are-lane-groups.md) — the flat lane list this growth loop runs on
 - [ADR-0048](./0048-conductor-autonomy-between-gates.md) — Sol dispatches and structurally-tracks; semantic judgment stays with the owning persona
-- `.prism/skills/prism-conductor/lib/goal-state.md`, `lib/report-back.md`, `lib/fleet.md` — the run-control schema, signal contract, and conflict gate this design extends
+- `prism-conductor/lib/goal-state.md`, `lib/report-back.md`, `lib/fleet.md` — the run-control schema, signal contract, and conflict gate this design extends
 - `.prism/rules/followup-scope.md` — the three-tier dispositions the decision box maps onto

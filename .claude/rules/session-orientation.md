@@ -19,7 +19,7 @@ Every persona skill opens a session with the same four-question battery, closes 
 Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** when no user is available to answer, do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. When a gap genuinely blocks, state the blocker and the default you took in your closing message — never by a question nobody is there to answer.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -31,7 +31,7 @@ The opening battery's answers don't stay in the transcript — they compress to 
 
 Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
 
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
+1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Flag anything left alone that warranted follow-up per `.prism/rules/followup-scope.md`.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
 3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?

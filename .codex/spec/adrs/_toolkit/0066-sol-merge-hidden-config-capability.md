@@ -1,9 +1,10 @@
 ---
 Number: 0066
 Title: Sol-Merge Becomes a Hidden, Default-Off Config Capability
-Status: accepted
+Status: superseded
 Date: 2026-06-24
 Supersedes: 0061
+Superseded-by: 0078
 ---
 
 ## Context

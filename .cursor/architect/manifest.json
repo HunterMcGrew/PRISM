@@ -40,7 +40,6 @@
 		"_toolkit/audit-workflow.md"
 	],
 	".prism/business/**": "_toolkit/business-layer.md",
-	".prism/skills/prism-conductor/**": "_toolkit/spec-editing.md",
 	".prism/skills/**": "_toolkit/skills-ecosystem.md",
 	".ai-skills/skills/**": [
 		"_toolkit/spec-editing.md",

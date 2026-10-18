@@ -11,7 +11,7 @@
 	},
 	"defaultBranch": "main",
 	"features": {
-		"conductorMayMerge": true
+		"mainSessionMayMerge": true
 	},
 	"hooks": {
 		"commitCleanupPass": true,

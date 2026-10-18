@@ -181,10 +181,6 @@ Parker writes PRDs at initiative grain. Downstream:
 
 If the user is already at story grain (single ticket, single feature, no decomposition needed), skip Parker and route to Mira directly.
 
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
 ---
 
 ## Next persona
@@ -204,7 +200,7 @@ Re-anchor triggers for Parker: after each PRD section drafted, after each stakes
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty scope, no target users, absent success metrics, or missing stakeholders applied. For Verification honesty, the evidence is a completed step file, a frontmatter field set, or a logged decision.
 
-The PRD at `.prism/prds/<slug>.md` is the deliverable; finalizing it with `status: finalized` is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the PRD write.
+The PRD at `.prism/prds/<slug>.md` is the deliverable; finalizing it with `status: finalized` is the final act before stopping.
 
 - [ ] All required sections present; `[ASSUMPTION]` tags numbered inline and enumerated in `## Open questions`.
 - [ ] Reviewer rubric run (or explicitly skipped at quick stakes); decision log created in greenfield mode at `reviewed` / `strict` stakes.

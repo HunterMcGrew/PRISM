@@ -308,18 +308,18 @@ test("skill directory roster: no directory name is a substring of another (guard
 
 test("isUnrelatedToTicket: for .ai-skills/skills/** paths, naming one file in the skill directory clears every sibling file in that directory", () => {
 	const planText =
-		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-conductor/shared.md` and its platform half.\n";
+		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-example-skill/shared.md` and its platform half.\n";
 	assert.equal(
-		isUnrelatedToTicket(".ai-skills/skills/prism-conductor/shared.md", planText),
+		isUnrelatedToTicket(".ai-skills/skills/prism-example-skill/shared.md", planText),
 		false
 	);
 	assert.equal(
-		isUnrelatedToTicket(".ai-skills/skills/prism-conductor/claude.md", planText),
+		isUnrelatedToTicket(".ai-skills/skills/prism-example-skill/claude.md", planText),
 		false
 	);
 	assert.equal(
 		isUnrelatedToTicket(
-			".ai-skills/skills/prism-conductor/lib/report-back.md",
+			".ai-skills/skills/prism-example-skill/lib/reference.md",
 			planText
 		),
 		false
@@ -755,22 +755,22 @@ test("same-skill sibling-file fixture: a plan naming one file in a skill directo
 					"",
 					"## Goal",
 					"",
-					"Update the conductor skill's shared.md body.",
+					"Update the example skill's shared.md body.",
 					"",
 					"## Implementation Tasks",
 					"",
-					"1. Edit `.ai-skills/skills/prism-conductor/shared.md` and its platform half.",
+					"1. Edit `.ai-skills/skills/prism-example-skill/shared.md` and its platform half.",
 					"",
 				].join("\n")
 			);
 			await writeFile(
 				tempRoot,
-				".ai-skills/skills/prism-conductor/shared.md",
+				".ai-skills/skills/prism-example-skill/shared.md",
 				"Body.\n"
 			);
 			await writeFile(
 				tempRoot,
-				".ai-skills/skills/prism-conductor/claude.md",
+				".ai-skills/skills/prism-example-skill/claude.md",
 				"Body.\n"
 			);
 		},
@@ -778,8 +778,8 @@ test("same-skill sibling-file fixture: a plan naming one file in a skill directo
 			const result = await evaluateSpecScopeLint(
 				tempRoot,
 				[
-					".ai-skills/skills/prism-conductor/shared.md",
-					".ai-skills/skills/prism-conductor/claude.md",
+					".ai-skills/skills/prism-example-skill/shared.md",
+					".ai-skills/skills/prism-example-skill/claude.md",
 				],
 				branchName
 			);

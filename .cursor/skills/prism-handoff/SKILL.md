@@ -58,11 +58,11 @@ Handoff-specific framing for two of the four questions:
 - **Bounds** — a complete handoff covers the branch plan (read and may be
   written); source files are never touched by this skill.
 
-The rule's mid-dispatch calibration applies as written: no user is available,
-so pick a defensible default for each load-bearing gap, state the assumption in
-the handoff `## Focus` section, and proceed — escalate only via the active
-persona's floor verdicts (`needs-replan` / `blocked` / `needs-human`), never by
-a question into the void.
+The rule's no-user calibration applies as written: pick a defensible default
+for each load-bearing gap, state the assumption in the handoff `## Focus`
+section, and proceed. When a gap genuinely blocks, state the blocker and the
+default you took in your closing message rather than asking a question nobody
+is there to answer.
 
 ## Step 1 — Flush before writing
 
@@ -155,10 +155,8 @@ Handoff-specific framing:
 
 - **Scope boundary** — what did the handoff doc include; is any of it outside
   what was named in the arguments? What did you notice in adjacent open threads
-  and exclude? If adjacent work should be tracked but was left out, emit a
-  `found-followup-work` signal per followup-scope.md § worker-emit pre-filter
-  (this utility runs in the active persona's voice, so the signal is attributed
-  to that persona's lane).
+  and exclude? If adjacent work should be tracked but was left out, flag
+  it as follow-up work per followup-scope.md.
 - **Unasked assumptions** — name each silent decision in `## Focus` so the next
   session sees them explicitly.
 - **Edge recall** — did the session involve empty states, absent files, missing

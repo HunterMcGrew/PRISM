@@ -1,8 +1,9 @@
 ---
 Number: 0054
 Title: Conductor — The Integration Gate Is an Unconditional Human Gate, Including at `hobby`
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 > Amended by [ADR-0073](./0073-stakes-levels-name-their-behavior.md): the level names below were renamed — read `hobby` as `quick`, `internal` as `reviewed`, `launch` as `strict`.
@@ -43,4 +44,4 @@ The integration gate is **distinct from the confidence-gated autonomy pattern** 
 - [ADR-0011](./0011-eric-never-approves-prs.md) — the merge gate this gate is the categorical sibling of (the unconditional-human-gate precedent)
 - [ADR-0048](./0048-conductor-autonomy-between-gates.md) — the confidence-gated autonomy pattern this gate is explicitly distinct from
 - [ADR-0053](./0053-conductor-integration-lane-type-marker.md) — the `type: "integration"` marker plus cross-team `dependsOn` that triggers this gate
-- `.prism/skills/prism-conductor/lib/fleet.md`, `lib/report-back.md` — the integration-gate trigger/behavior and the gate-registry row that bind Sol to this decision
+- `prism-conductor/lib/fleet.md`, `lib/report-back.md` — the integration-gate trigger/behavior and the gate-registry row that bind Sol to this decision

@@ -1,8 +1,9 @@
 ---
 Number: 0055
 Title: Conductor — Run-Control State Partitions by Epic-Subtree Root, Not by Team
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 ## Context
@@ -46,4 +47,4 @@ Partition-by-epic-subtree is the run-control state-layout key only; it does not 
 - [ADR-0051](./0051-conductor-tree-dispatch-semantics.md) — the `parentId` tree and container/leaf semantics the partition key walks
 - [ADR-0049](./0049-conductor-teams-are-lane-groups.md) — the `team` field this ADR keeps as a reporting dimension rather than a partition boundary
 - [ADR-0056](./0056-conductor-governor-brakes-evaluated-run-wide.md) — the companion invariant that the governor brakes stay run-wide under this partitioned layout
-- `.prism/skills/prism-conductor/lib/goal-state.md`, `lib/partition-store.md`, `lib/fleet.md` — the v3 partitioned schema, the partition read/write protocol, and the cross-partition dependency resolution that bind Sol to this decision
+- `prism-conductor/lib/goal-state.md`, `lib/partition-store.md`, `lib/fleet.md` — the v3 partitioned schema, the partition read/write protocol, and the cross-partition dependency resolution that bind Sol to this decision

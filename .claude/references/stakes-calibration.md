@@ -24,16 +24,6 @@ The one-line description a consumer shows next to each option. Quote these verba
 | `reviewed` | Reviewer rubric runs; decision log optional; open questions expected to resolve before merge. |
 | `strict` | Reviewer rubric runs and escalates; decision log required; every open question resolved before finalize. |
 
-## The same words as an autonomy ceiling
-
-Sol reuses these level names for `autonomyPolicy` — the human-set ceiling on which gates a persona may clear for itself. Same vocabulary, a different axis, so the lines differ:
-
-| Level | What it changes |
-| --- | --- |
-| `quick` | Personas clear their own gates; they escalate only on genuine risk. |
-| `reviewed` | Personas self-clear the clearly-simple cases and escalate on judgment — the balanced default. |
-| `strict` | Every gate stays human. |
-
 ## Reading older artifacts
 
 Artifacts written before the rename carry the old words. Read `hobby` as `quick`, `internal` as `reviewed`, and `launch` as `strict`. Closed plans, finalized PRDs, and accepted ADRs keep their original wording — they are records of what was decided then, and rewriting them would make the record lie about itself.

@@ -1,8 +1,9 @@
 ---
 Number: 0051
 Title: Conductor — Container Lanes Are Non-Dispatchable Status-Rollup Nodes
-Status: accepted
+Status: superseded
 Date: 2026-06-14
+Superseded-by: 0078
 ---
 
 ## Context
@@ -38,4 +39,4 @@ Alternatives considered:
 - [ADR-0049](./0049-conductor-teams-are-lane-groups.md) — the flat `lanes[]` and the `parentId` parent-pointer model this tree dispatch runs on
 - [ADR-0050](./0050-conductor-growth-loop-and-convergence-governor.md) — the convergence governor whose generation cap counts lineage, not tree depth
 - [ADR-0052](./0052-conductor-greenfield-decompose-and-ratification-gate.md) — the greenfield decompose chain that emits the planned gen-0 tree this dispatch model drives
-- `.prism/skills/prism-conductor/lib/goal-state.md`, `step-04-dispatch.md`, `lib/convergence.md`, `step-10-report.md` — the schema field notes, tree-dispatch section, convergence check, and tree-structured report that implement this decision
+- `prism-conductor/lib/goal-state.md`, `step-04-dispatch.md`, `lib/convergence.md`, `step-10-report.md` — the schema field notes, tree-dispatch section, convergence check, and tree-structured report that implement this decision

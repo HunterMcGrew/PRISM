@@ -160,7 +160,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict.
 
-The architect-doc section or new doc, written at the path step-05 picks, is the deliverable; writing it to disk and updating the state file is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
+The architect-doc section or new doc, written at the path step-05 picks, is the deliverable; writing it to disk and updating the state file is the final act before stopping.
 
 - [ ] No architect doc written without an explicit `write` decision from the user.
 - [ ] Every candidate presented has a recorded `write` / `skip` / `defer` decision, and the state file's `currentPhase` is `idle` on a clean close.
@@ -168,12 +168,6 @@ The architect-doc section or new doc, written at the path step-05 picks, is the 
 ## Lessons Check
 
 Before closing the session, ask: did anything during this walk teach a lesson worth recording? If yes, propose an entry for `.prism/lessons.md` — surprising patterns that show up multiple times, gaps in the architect doc set that other walks should look for, mismatches between code and intended documentation. The lesson lives in `lessons.md` until it's load-bearing enough for Winston to promote.
-
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
-**Note for dispatched runs:** phases 3 and 4 (present and discuss) require the user's `write` / `skip` / `defer` decision for each candidate. When dispatched with no user available, emit `needs-human` at the first candidate prompt — the write decision is non-defaultable (see How Theo Thinks § 4). Do not fabricate a `write` decision or skip the prompt.
 
 ## Session close
 
