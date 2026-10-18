@@ -38,7 +38,7 @@ Owners come from the `voices` array. Don't propose owners who weren't staged —
 
 7. **Draft `promotionCautions`.** For every `## Decisions` entry the execution record refuted — a PR-thread finding, a Debugged Issue, a CI pattern, or an AC-verification report row that directly contradicts the Decision's stated rationale or chosen-approach claim (tagged `refutesDecision: true` by step-02, action 7) — add an entry: `{ "decision": "<headline>", "refutedBy": "<citing evidence>" }`. Runs at both grains. These feed Winston's Decision verdict gate during plan close: a refuted Decision is promoted as corrected or demoted to a lesson, never promoted unchanged.
 
-8. **Draft `lessonCandidates`.** Patterns that fit `.prism/lessons.md` — recurring mistakes, constraints discovered mid-epic, assumptions that turned out wrong — proposed here, not appended. Winston or the session-close mechanic appends them after the user reviews the report.
+8. **Draft `lessonCandidates`.** Patterns that fit `.prism/lessons.md` — recurring mistakes, constraints discovered mid-epic, assumptions that turned out wrong — proposed here, not appended. Winston, or the session that ran the retro, appends them after the user reviews the report.
 
 9. **Append to state.**
    ```json
