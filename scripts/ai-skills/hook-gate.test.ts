@@ -42,7 +42,7 @@ import {
 	resolveListedToolKind,
 	resolveToolKind,
 } from "./hooks/harnesses.mjs";
-import { manifestRoutes } from "./hooks/lib/match.mjs";
+import { listManifestRoutes } from "./hooks/lib/match.mjs";
 
 const execFileAsync = promisify(execFile);
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -941,7 +941,7 @@ test("every install-seed route names a doc the seed carries or deliberately with
 			)
 		) as Record<string, string | string[]>;
 
-		for (const [pattern, docOrDocs] of manifestRoutes(manifest)) {
+		for (const [pattern, docOrDocs] of listManifestRoutes(manifest)) {
 			for (const doc of Array.isArray(docOrDocs) ? docOrDocs : [docOrDocs]) {
 				routeCount += 1;
 				const onDisk = await fs
