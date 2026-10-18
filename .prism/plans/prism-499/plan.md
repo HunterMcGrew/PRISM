@@ -451,6 +451,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 1 fixes. The forge skill cites the writing guide by path again (112 loaded lines), migrate mode regained three facts, and `tdd` is owned in `eject.ts` and `ship-closure.ts`; see Decision: A bare PRISM skill ID is owned in code.
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 2 fixes. A test ties `roles.json` IDs to `checkIsPrismSkillId`, and the stale `prism-*` prose in `eject.ts`, `generate-skills.ts`, and `consumer-sync-flow.md` now says PRISM-owned.
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: PR review pass 1 fixes. The forge skill now splits toolkit and consumer steps and loads 119 lines, the guide's ownership wording names `tdd`, and the bare-ID list is private; see Decision: The forge skill splits by install context.
+- 2026-10-18 [huntermcgrew/prism-499-utilities]: PR review pass 2 fix. The guide's forge section is scoped to the toolkit repo and names the consumer path.
 
 ---
 
@@ -711,6 +712,14 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - **File:** `scripts/ai-skills/ownership.ts:41`
 - **Problem:** only `checkIsPrismSkillId` is imported.
 - **Fixed in:** the constant is module-private.
+
+### Guide's forge section contradicted the consumer column
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/guides/writing-a-skill.md:61`
+- **Problem:** § Where `prism-forge-skill` fits said Migrate decomposes back into canonical source and that editing generated output is what both modes prevent, with no scope. A consumer has neither canonical source nor a build.
+- **Fixed in:** the section is scoped to the toolkit repo and says a consumer hand-writes a `SKILL.md` per host under its own prefix. The section keeps its length, so the forge skill stays at 119 loaded lines.
 
 ## PR Readiness
 

@@ -60,18 +60,18 @@ update, and the edit disappears with it.
 
 ## Where `prism-forge-skill` fits
 
-`prism-forge-skill` is the utility that scaffolds skills. It runs in two modes:
+In the PRISM toolkit repo, `prism-forge-skill` scaffolds skills in canonical
+source under `.ai-skills/skills/`, in two modes:
 
-- **Create** — scaffolds a new skill from scratch with the layout above already
-  in place, so a new skill starts consistent with the roster instead of
-  converging on it later.
-- **Migrate** — takes a skill that only exists as generated platform output and
-  decomposes it back into canonical source, which is what makes it maintainable
-  rather than a one-time paste.
+- **Create** — scaffolds a new skill with the layout above already in place, so
+  it starts consistent with the roster.
+- **Migrate** — decomposes a skill that exists only as generated platform output
+  back into canonical source, so it is maintainable rather than a one-time paste.
 
-Reach for it when you are adding a persona or bringing an existing one under
-management. Editing generated output directly is the failure mode both modes
-exist to prevent.
+Editing generated output directly is the failure mode both modes exist to
+prevent. A consumer repo has no canonical source and no build: hand-write a
+`SKILL.md` into each host's skill dir under your own prefix, and an update
+never rewrites it.
 
 ---
 
