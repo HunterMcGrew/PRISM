@@ -4,10 +4,10 @@
  * followed transitively.
  *
  * Skills over the cap today are listed in `OVER_CAP_ALLOWLIST` with the change
- * that thins them and the size they may not grow past. The list only shrinks:
- * a listed skill that comes in under the cap fails until its entry is removed,
- * and a listed skill that grows past its recorded size fails too, so an entry
- * can neither go stale nor hide a regression.
+ * that thins them and their exact current size. The list ratchets: a listed
+ * skill that comes in under the cap fails until its entry is removed, and one
+ * whose size moves either way fails until its `max` is updated, so a cut is
+ * recorded in the same diff and cannot quietly grow back.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -24,31 +24,31 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 926 },
-	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 380 },
+	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 998 },
+	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 452 },
 	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
-	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 253 },
+	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 334 },
 	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
-	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 717 },
-	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 356 },
-	"prism-changelog": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 698 },
-	"prism-standup-summary": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 810 },
-	"prism-qa-test-plan": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 994 },
-	"prism-prd": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 902 },
-	"prism-customer-success": { thinnedBy: "PRISM-499 PR 11, business", max: 252 },
-	"prism-data": { thinnedBy: "PRISM-499 PR 11, business", max: 263 },
-	"prism-finance": { thinnedBy: "PRISM-499 PR 11, business", max: 262 },
-	"prism-founder": { thinnedBy: "PRISM-499 PR 11, business", max: 266 },
-	"prism-legal": { thinnedBy: "PRISM-499 PR 11, business", max: 267 },
-	"prism-market-research": { thinnedBy: "PRISM-499 PR 11, business", max: 256 },
-	"prism-marketing": { thinnedBy: "PRISM-499 PR 11, business", max: 234 },
-	"prism-recruiting": { thinnedBy: "PRISM-499 PR 11, business", max: 265 },
-	"prism-sales": { thinnedBy: "PRISM-499 PR 11, business", max: 262 },
+	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 789 },
+	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 758 },
+	"prism-changelog": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 709 },
+	"prism-standup-summary": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 882 },
+	"prism-qa-test-plan": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 1183 },
+	"prism-prd": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 974 },
+	"prism-customer-success": { thinnedBy: "PRISM-499 PR 11, business", max: 324 },
+	"prism-data": { thinnedBy: "PRISM-499 PR 11, business", max: 335 },
+	"prism-finance": { thinnedBy: "PRISM-499 PR 11, business", max: 334 },
+	"prism-founder": { thinnedBy: "PRISM-499 PR 11, business", max: 338 },
+	"prism-legal": { thinnedBy: "PRISM-499 PR 11, business", max: 339 },
+	"prism-market-research": { thinnedBy: "PRISM-499 PR 11, business", max: 328 },
+	"prism-marketing": { thinnedBy: "PRISM-499 PR 11, business", max: 306 },
+	"prism-recruiting": { thinnedBy: "PRISM-499 PR 11, business", max: 337 },
+	"prism-sales": { thinnedBy: "PRISM-499 PR 11, business", max: 334 },
 	"prism-architect": {
 		thinnedBy: "replaced by the phase-2 plan skill; its plan logic stays until then",
-		max: 849,
+		max: 1112,
 	},
-	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 752 },
+	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 824 },
 	"prism-review-loop": {
 		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
 		max: 306,
@@ -89,7 +89,7 @@ test("every skill not on the allowlist loads 120 lines or fewer", async () => {
 	assert.deepEqual(over, [], `Over the ${LOADED_LINE_CAP}-line cap. Cut content rather than moving it into a cited file.`);
 });
 
-test("every allowlisted skill exists, is still over the cap, and has not grown", async () => {
+test("every allowlisted skill exists, is still over the cap, and matches its recorded size", async () => {
 	const ids = new Set(await listSkillIds());
 	const stale = Object.entries(OVER_CAP_ALLOWLIST).flatMap(([id, { max }]) => {
 		if (!ids.has(id)) {
@@ -101,7 +101,7 @@ test("every allowlisted skill exists, is still over the cap, and has not grown",
 			return [`${id}: now ${total} lines, so remove its entry`];
 		}
 
-		return total > max ? [`${id}: grew to ${total} lines, past its recorded ${max}`] : [];
+		return total === max ? [] : [`${id}: now ${total} lines, so set its max from ${max} to ${total}`];
 	});
 
 	assert.deepEqual(stale, []);
@@ -138,6 +138,30 @@ test("listCitedFiles resolves a platform-tree link, a section-suffixed span, a r
 				".prism/skills/prism-x/step-01-start.md",
 			]
 		);
+	});
+});
+
+test("measureSkillLoad counts a skill's own lib file and a cited architect doc without following the doc's links", async () => {
+	await withTempRepo(async (root) => {
+		await writeRepoFile(root, ".prism/architect/_toolkit/other.md", "Other.\n");
+		await writeRepoFile(
+			root,
+			".prism/architect/_toolkit/handoffs.md",
+			"Handoffs.\nSee [`other.md`](./other.md).\n"
+		);
+		await writeRepoFile(root, ".ai-skills/skills/prism-x/lib/modes.md", "Mode A.\nMode B.\n");
+		await writeRepoFile(
+			root,
+			".ai-skills/skills/prism-x/shared.md",
+			"Pick a mode from [`lib/modes.md`](./lib/modes.md). Route per `.prism/architect/_toolkit/handoffs.md`.\n"
+		);
+
+		const load = measureSkillLoad(root, "prism-x");
+		assert.deepEqual(load.files, [
+			".ai-skills/skills/prism-x/lib/modes.md",
+			".prism/architect/_toolkit/handoffs.md",
+		]);
+		assert.equal(load.totalLines, 1 + 2 + 2);
 	});
 });
 

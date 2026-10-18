@@ -1,6 +1,6 @@
 # Structural Remedies
 
-Shared remedy vocabulary for personas that flag structural problems — the reviewers (Eric, Briar) at review time and the architect (Winston) at design time. Framing-neutral on purpose: a remedy that deletes complexity is the same remedy whether you're reading a diff or evaluating an approach before code exists.
+Remedy vocabulary for the architect (Winston) at design time. A reviewer who names a Cleaner path may borrow the same remedies, though the review skills do not load this file. Framing-neutral on purpose: a remedy that deletes complexity is the same remedy whether you're reading a diff or evaluating an approach before code exists.
 
 ## Preferred Remedies
 

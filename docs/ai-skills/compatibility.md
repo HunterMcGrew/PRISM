@@ -74,7 +74,7 @@ PRISM ships a hook runtime that does two things: it names the architect docs tha
 
 Cursor has no delivery path. The runtime can read Cursor's hook payload, but no install step writes a Cursor registration, and no Cursor deny format has been verified. Wiring it up is unshipped work, not a setting to flip.
 
-What carries the guarantee on Cursor is the always-on rule in `.prism/rules/context-reuse.md`: when a task names a specific doc or directory, match that path against `.prism/architect/manifest.json` and read its governing docs before you edit. On Cursor, that's a discipline, not an enforcement.
+What carries the guarantee on Cursor is the always-on rule in `.prism/rules/context-reuse.md`: before editing any path, match it against `.prism/architect/manifest.json` and read every doc its routes name. On Cursor, that's a discipline, not an enforcement.
 
 `prism doctor` says which case you are in. It reports per host whether the runtime is installed and registered, and on a repo whose `hosts` lists neither `claude` nor `codex` it says the gate is not delivered.
 
