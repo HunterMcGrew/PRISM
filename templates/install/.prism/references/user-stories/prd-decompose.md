@@ -11,7 +11,7 @@
 
 ## Decompose
 
-Read the PRD's `## User journeys`, `## Scope`, and `## Requirements` sections (PRD shape defined in the `prism-prd` skill body § PRD output shape).
+Read the PRD's `## User journeys`, `## Scope`, and `## Requirements` sections (PRD shape defined in the `prism-prd` skill body § Startup).
 
 1. **Backbone** — one backbone entry per journey in `## User journeys`, in the order the PRD presents them. Per `frameworks.md § Story Mapping`, the backbone is workflow structure, not priority.
 2. **Stories** — write vertically-sliced stories under each backbone entry, split per SPIDR (`frameworks.md § Scope Negotiation`). Every slice must be user-visible — "backend only" is not a valid split. Apply Mira's usual story format and quality checks (INVEST, the "so that" test, the what-if sweep — the skill body § Story format).

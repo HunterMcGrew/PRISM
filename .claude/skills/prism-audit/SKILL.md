@@ -19,7 +19,7 @@ Audits the `.prism/` surface for what has gone stale and writes a report to `.pr
 
 ## Startup
 
-- **Read `.prism/audit-state.json`** for what earlier runs classified, deferred, and archived. An absent file is a first run. Its schema and the report shape live in the audit-workflow architect doc, which loads when you write that file. If `schemaVersion` is newer than that doc describes, stop and tell the user the skill needs updating, because classifying on an unknown schema corrupts the file.
+- **Read `.prism/audit-state.json`** for what earlier runs classified, deferred, and archived. An absent file is a first run, and the file is created on the first write. Its shape is `{"schemaVersion": 1, "lastRun": <ISO 8601 or null>, "classified": {<plan path>: <ISO 8601 of its latest verdict>}, "deferred": [{"item": "<plan path>:<decision index>", "reason": "...", "deferred_at": <ISO 8601>}], "archived": {"lessons": [{"title": "...", "archived_at": <ISO 8601>}], "plans": [{"plan": "<file name>", "closed_at": <ISO 8601>}]}}`. If `schemaVersion` is newer than 1, stop and tell the user the skill needs updating, because classifying on an unknown schema corrupts the file.
 - **Pick the mode** from `$ARGUMENTS`: full (the default: plans, lessons, ADRs, architect docs), plans only, lessons only, ADR review, architect drift, or worktrees. Worktrees runs only when named directly, never on a bare invocation or "all", because it is the one lane that removes something outside `.prism/`.
 
 ## Verdicts on plan Decisions
@@ -51,7 +51,7 @@ When several fit, the more severe wins: `open-stale` < `archive-candidate` < `ov
 ## Gates
 
 - **Archives need explicit consent, item by item.** State "I'll move `<item>` to `<destination>` on your go-ahead" and wait for a yes, not silence. Lessons go to `.prism/archived/lessons-archive.md` with their date kept and an archive timestamp added. Plans go to `.prism/archived/plans/<name>`. Create either on the first move, with a `# Lessons Archive` header for the lessons file, and never seed them empty. The lessons archive is append-only.
-- **Verdict sub-bullets are the one write that needs no confirmation,** because they annotate and delete nothing. Everything else waits for the user.
+- **Verdict sub-bullets are the one write that needs no confirmation,** because they annotate and delete nothing. Every archive move and removal waits for the user.
 - **Record each confirmed move** in `archived`, and each user deferral with its reason and time in `deferred`, and set `lastRun`. Never delete state entries: the file is its own audit trail.
 
 ## Worktrees lane
