@@ -193,7 +193,7 @@
 		},
 		"features": {
 			"type": "object",
-			"description": "Feature flags. Read by specific personas only; not surfaced during init or onboarding. Set manually after install.",
+			"description": "Feature flags. Capabilities that are off by default; not surfaced during init or onboarding. Set manually after install.",
 			"properties": {
 				"mainSessionMayMerge": {
 					"type": "boolean",
@@ -257,21 +257,11 @@
 		},
 		"modelTiers": {
 			"type": "object",
-			"description": "Optional per-persona model selection. Maps PRISM's abstract tiers (top / worker) to this runtime's concrete model names, plus optional per-persona overrides such as pinning the PR reviewer to a different model family than the workers. Model-name strings are examples only — a consumer on a non-Claude runtime supplies that runtime's model identifiers.",
+			"description": "Optional model selection. Only `overrides` is read today, by the review loop, which honors an `eric` entry when present.",
 			"properties": {
-				"top": {
-					"type": "string",
-					"description": "Model for the top tier (Winston, Eric, and any escalated worker).",
-					"examples": ["opus", "gpt-5"]
-				},
-				"worker": {
-					"type": "string",
-					"description": "Model for the worker tier (Clove, Briar, and other default worker personas).",
-					"examples": ["sonnet", "gpt-5-mini"]
-				},
 				"overrides": {
 					"type": "object",
-					"description": "Optional per-persona model pins keyed by lowercase persona name (e.g. `eric`, `winston`). An override wins over the persona's default tier — the seam for cross-model review, where a team pins Eric to a different family than the workers. A value here is a concrete model name, not a tier name.",
+					"description": "Optional per-persona model pins keyed by lowercase persona name. The seam for cross-model review: pin `eric` to a different model family than the workers. A value is a concrete model name for this runtime, such as `opus`, `sonnet`, or `gpt-5`.",
 					"additionalProperties": { "type": "string" }
 				}
 			}

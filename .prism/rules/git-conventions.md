@@ -104,7 +104,7 @@ Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the ha
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
 
-The main session may squash-merge a PR when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review loop came back clean, and the PR carries no `review:has-minors` label. The flag is the gate: absent or false means the human merges. PRISM sets it on its own repo, and a consumer install leaves it absent. A reviewer persona or a subagent never merges, whatever the flag says.
+The main session may squash-merge a PR when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review loop came back clean, and the PR carries no `review:has-minors` label. The flag is the gate: absent or false means the human merges. A team opts in by setting the flag by hand; installs leave it absent. A reviewer persona or a subagent never merges, whatever the flag says.
 
 ---
 

@@ -58,7 +58,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `hooks.pushVerificationTimeoutMs` | integer | optional | Per-command budget for `pushVerification`, 120000 by default. Keep it below the host's own hook timeout (Claude Code: 600 s) so the script, not the host, decides the outcome. |
 | `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
 | `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
-| `modelTiers` | object | optional | Optional per-persona model selection. Maps abstract tiers (top / worker) to concrete models, plus per-persona `overrides`. See § Model tiering below. |
+| `modelTiers` | object | optional | Optional model selection. Only `overrides` is read today, by the review loop, which honors an `eric` entry. See § Model overrides below. |
 | `slackChannel` | string | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`. |
 
 ## All tokens
@@ -146,17 +146,15 @@ Set it once; it survives reconfiguration runs (the reconfigure flow preserves un
 
 ---
 
-## Model tiering
+## Model overrides
 
-PRISM names personas by an abstract tier — **top** (Winston, Eric) or **worker** (Clove, Briar, …) — never a hardcoded model. The optional `modelTiers` object in `.ai-skills/config.json` maps those tiers to your runtime's concrete models (`top`, `worker`) and pins individual personas via `overrides`. Absent, every persona runs on the host's default model.
+The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. The review loop honors an `eric` entry when present. Absent, every persona runs on the host's default model.
 
-One tradeoff is worth naming. If the reviewer (Eric) and the workers run the same model, the review loop loses some family-level blind-spot coverage — a mistake the model's family is prone to can slip past a reviewer of the same family. A team that wants cross-model review sets Eric's tier explicitly:
+One tradeoff is worth naming. If the reviewer (Eric) and the workers run the same model, the review loop loses some family-level blind-spot coverage — a mistake the model's family is prone to can slip past a reviewer of the same family. A team that wants cross-model review pins Eric explicitly:
 
 ```json
 {
   "modelTiers": {
-    "top": "opus",
-    "worker": "sonnet",
     "overrides": { "eric": "gpt-5" }
   }
 }

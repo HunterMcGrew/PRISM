@@ -39,6 +39,7 @@ ADRs 0048 to 0056, 0061, 0066, and 0069 describe conductor behavior or its deliv
 - **Negative:** Orchestrated multi-lane runs are gone. Parallel work now means the user starting separate sessions, or the main session spawning subagents with no run-state, budget governor, or reconcile registry behind them.
 - **Negative:** No dispatcher runs the retro involuntarily. The plan-close retro gate is a declinable nudge only, which was true before Sol and is true again.
 - **Negative:** For self-development PRs the main session is now both author and merger. The compensating controls are the two merge conditions, which are visible on the PR, and the review loop, which runs reviewers as separate agents. ADR-0061 recorded that the auto-mode classifier ignores agent-written authority, so each session still needs an explicit in-session yes. This ADR relies on the same property and has not re-tested it for the main session.
+- **Negative:** Merge safety depends on the review loop applying `review:has-minors` correctly, as it did under ADR-0061. An absent label can also mean only bookkeeping-only Minors remain, which `.prism/rules/followup-scope.md` treats as non-gating, so confirming why the label is absent means reading the review summary, not just noting the missing label.
 - **Neutral:** Consumers are unchanged. The flag is absent in their config, so the human merges.
 - **Neutral:** The `needs-fix`, `needs-replan`, and `found-followup-work` vocabulary still appears in persona prose. Its only defined consumer was Sol, and the per-lane skill rewrites retire it.
 

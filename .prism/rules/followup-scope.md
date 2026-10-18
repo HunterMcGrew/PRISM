@@ -88,7 +88,7 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 **How to apply:**
 
 - **Record it in full.** A bookkeeping-only Minor still earns its `## Review Issues` entry, its inline comment, and its severity. Nothing is suppressed — a claim that would mislead a future implementer, like an AC evidence command that cannot return its asserted result, is worth flagging. It earns one flag, not a round.
-- **Don't re-dispatch for it.** Briar returns `done` rather than `needs-fix` when bookkeeping-only Minors are all that remain; Eric treats them as state #3 rather than state #2.
+- **Don't re-dispatch for it.** Briar reports the pass clean, without calling for another fix round, when bookkeeping-only Minors are all that remain; Eric treats them as state #3 rather than state #2.
 - **Fix it in the next commit that touches the plan** — on a live branch that is the next commit, because every persona writes the plan.
 
 ## Who runs this rule
