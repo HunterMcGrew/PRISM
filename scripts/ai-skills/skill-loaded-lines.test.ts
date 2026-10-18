@@ -30,7 +30,7 @@ const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 926 },
 	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 380 },
 	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
-	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 254 },
+	"prism-skill-forge": { thinnedBy: "PRISM-499 PR 9, utilities", max: 253 },
 	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
 	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 717 },
 	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 356 },
@@ -54,7 +54,7 @@ const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 752 },
 	"prism-review-loop": {
 		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
-		max: 380,
+		max: 306,
 	},
 };
 
