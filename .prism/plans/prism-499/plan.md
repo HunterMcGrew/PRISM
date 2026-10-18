@@ -225,7 +225,9 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 - **`micro-file-step-machine.md` keeps its lighter-variant section with no exemplar.** Sasha was the only persona using the state-file-only variant. The pattern text is generic and still valid, so it stays. The Theo, Ren, and Sasha bullets and the Sasha paragraph are cut. The reference now cites Parker and Iris.
 
-- **The `needs-fix` / `needs-replan` / `found-followup-work` vocabulary survives in persona prose and in `session-orientation.md` and `skill-core.md` § Orientation.** Its only defined consumer was Sol. The per-lane rewrites in PRs 5 to 11 retire it with each skill, and PR 5 rewrites `skill-core.md`. Cutting it now would rewrite skill logic the stack replaces later. The vocabulary is dead until then, not harmful.
+- **The `needs-fix` / `needs-replan` / `found-followup-work` vocabulary survives in per-skill persona prose only.** Its only defined consumer was Sol. The shared sites that told every run to escalate by typed verdict are fixed in this PR: `session-orientation.md` and `skill-core.md` § Orientation now say to state the blocker and the default taken in the closing message, `prism-handoff` points at the same wording, and the "orchestrated run" and "dispatched run" phrases in `prism-review-loop` Procedure G and Zoe's escapes are gone. The per-lane rewrites in PRs 5 to 11 retire the rest with each skill. Cutting it now would rewrite skill logic the stack replaces later.
+
+- **`modelTiers` keeps only `overrides`.** Nothing reads `top` or `worker` once Sol is gone: no script, test, or skill references them, and the review loop reads only `modelTiers.overrides.eric`. The schema and `docs/parameterization.md` drop the two keys and the "Model tiering" section is now "Model overrides". A consumer config that still sets `top` or `worker` keeps validating, because the object does not forbid extra keys.
 
 - **Each stack branch absorbs the squash below it with `git merge -X ours origin/main`.** This is the user's instruction for this stack.
   - **Root cause:** after a lower PR squash-merges, `main` holds its changes as one commit while the next branch still holds them as several. That is the squash-upstream trap `.prism/rules/git-conventions.md` § Keeping a Branch Current describes.
@@ -265,6 +267,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc]: Self-review pass 1 fixes. Rewrote the PR 2 tasks to the shipped design and added the folder tier to `resolveLivePlan`.
 - 2026-10-17 [huntermcgrew/prism-499-umbrella-speed-bump]: Shipped the umbrella speed bump per PR 2 tasks 1–8. The new `hook-runtime.md` section is a `###` under `## Write gate`, since it is part of the write gate.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Deleted Sol and the conductor tree, moved merge authority to the main session as `features.mainSessionMayMerge`, and wrote ADR-0078. Superseded ADRs 0048 to 0056, 0061, 0066, and 0069 and amended 0068 and 0073.
+- 2026-10-17 [huntermcgrew/prism-499-delete-sol]: Self-review pass 1 fixes. Brought the curated `branch-plan.md` twin and the shared no-user wording in line with the Sol removal, defined `ac-defect`, trimmed `modelTiers` to `overrides`, and added the label-dependence negative to ADR-0078.
 - 2026-10-17 [huntermcgrew/prism-499-delete-sasha-ren-theo]: Deleted Sasha, Ren, and Theo with their step trees, references, docs, and every handoff; ADR-0079 supersedes 0041 and 0042; the bug workflow now runs Nora to Clove.
 
 ---

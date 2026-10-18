@@ -106,7 +106,7 @@ Named procedures prevent the vague "halt and ask" or "use judgment" paths from s
 2. State the proposed action explicitly: "I'll move `<item>` to `<destination>` on your go-ahead."
 3. Wait for an explicit confirmation ("archive it", "move it", "go ahead") — not absence of objection.
 
-**Trigger:** an item meets the archive-candidate criteria. **Escape:** if you are operating in a dispatched run with no user available to confirm, emit `needs-human` — name the items that are archive-ready and that explicit confirmation is required before any move. Do not move silently; do not infer consent from context.
+**Trigger:** an item meets the archive-candidate criteria. **Escape:** if no user is available to confirm, emit `needs-human` — name the items that are archive-ready and that explicit confirmation is required before any move. Do not move silently; do not infer consent from context.
 
 **Procedure E — Worktree batch confirmation gate.** Before removing any worktree the classifier reports as GREEN:
 
@@ -114,7 +114,7 @@ Named procedures prevent the vague "halt and ask" or "use judgment" paths from s
 2. State the proposed removals explicitly: name every GREEN path and nothing else.
 3. Wait for one explicit batch confirmation covering the GREEN set only ("remove the green ones", "clear them out", "go ahead") — not absence of objection, and not a per-item confirmation.
 
-**Trigger:** the dry-run listing has at least one GREEN entry. **Escape:** if you are operating in a dispatched run with no user available to confirm, emit `needs-human` — name the GREEN paths that are removal-ready and that explicit batch confirmation is required before any removal.
+**Trigger:** the dry-run listing has at least one GREEN entry. **Escape:** if no user is available to confirm, emit `needs-human` — name the GREEN paths that are removal-ready and that explicit batch confirmation is required before any removal.
 
 ## Purpose
 

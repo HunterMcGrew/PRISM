@@ -278,7 +278,7 @@ present a single choice:
 - **Continue in-session** — offered when the runtime honors per-skill pins and
   context signals are quiet; the reviewer inherits the conversation.
 
-Wait for the user's choice. If no response is available (orchestrated run):
+Wait for the user's choice. If no response is available:
 default to fresh chat and note the assumption in the scoreboard. **Escape:** if
 the runtime cannot be determined, emit `needs-human` — name the ambiguity and
 the default being used.

@@ -10,10 +10,11 @@ core:` sub-list in its own body, never a restatement.
 
 Run the Opening Orientation Battery per
 [`session-orientation.md`](../rules/session-orientation.md) before the skill's
-core work. The no-user-available calibration, stated once: mid-dispatch there
-is no user — for each load-bearing gap pick a defensible default, state the
-assumption, and proceed; escalate only by typed verdict (`needs-replan` /
-`blocked` / `needs-human`), never by a question into the void.
+core work. The no-user-available calibration, stated once: when no user is
+there to answer, pick a defensible default for each load-bearing gap, state the
+assumption, and proceed; when a gap genuinely blocks, state the blocker and the
+default you took in your closing message rather than asking a question nobody
+is there to answer.
 
 ## The plan is the working memory
 

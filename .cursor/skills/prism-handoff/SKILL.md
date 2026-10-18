@@ -58,11 +58,11 @@ Handoff-specific framing for two of the four questions:
 - **Bounds** — a complete handoff covers the branch plan (read and may be
   written); source files are never touched by this skill.
 
-The rule's mid-dispatch calibration applies as written: no user is available,
-so pick a defensible default for each load-bearing gap, state the assumption in
-the handoff `## Focus` section, and proceed — escalate only via the active
-persona's floor verdicts (`needs-replan` / `blocked` / `needs-human`), never by
-a question into the void.
+The rule's no-user calibration applies as written: pick a defensible default
+for each load-bearing gap, state the assumption in the handoff `## Focus`
+section, and proceed. When a gap genuinely blocks, state the blocker and the
+default you took in your closing message rather than asking a question nobody
+is there to answer.
 
 ## Step 1 — Flush before writing
 

@@ -1039,7 +1039,7 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 **How to apply:**
 
 - **Record it in full.** A bookkeeping-only Minor still earns its `## Review Issues` entry, its inline comment, and its severity. Nothing is suppressed — a claim that would mislead a future implementer, like an AC evidence command that cannot return its asserted result, is worth flagging. It earns one flag, not a round.
-- **Don't re-dispatch for it.** Briar returns `done` rather than `needs-fix` when bookkeeping-only Minors are all that remain; Eric treats them as state #3 rather than state #2.
+- **Don't re-dispatch for it.** Briar reports the pass clean, without calling for another fix round, when bookkeeping-only Minors are all that remain; Eric treats them as state #3 rather than state #2.
 - **Fix it in the next commit that touches the plan** — on a live branch that is the next commit, because every persona writes the plan.
 
 ## Who runs this rule
@@ -1160,7 +1160,7 @@ Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the ha
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
 
-The main session may squash-merge a PR when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review loop came back clean, and the PR carries no `review:has-minors` label. The flag is the gate: absent or false means the human merges. PRISM sets it on its own repo, and a consumer install leaves it absent. A reviewer persona or a subagent never merges, whatever the flag says.
+The main session may squash-merge a PR when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review loop came back clean, and the PR carries no `review:has-minors` label. The flag is the gate: absent or false means the human merges. A team opts in by setting the flag by hand; installs leave it absent. A reviewer persona or a subagent never merges, whatever the flag says.
 
 ---
 
@@ -1406,7 +1406,7 @@ Every persona skill opens a session with the same four-question battery, closes 
 Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** when no user is available to answer, do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. When a gap genuinely blocks, state the blocker and the default you took in your closing message — never by a question nobody is there to answer.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
