@@ -191,13 +191,13 @@ test("escapeTomlMultiline escapes backslash and triple-quote but preserves newli
 test("buildRoleMap accepts a utility entry with no persona", () => {
 	const definitions: RolesDefinitions = {
 		skills: [
-			{ id: "prism-code-dev", persona: "Clove", routing: "auto" },
+			{ id: "prism-implement", persona: "Clove", routing: "auto" },
 			{ id: "prism-handoff", type: "utility", routing: "named-only" },
 		],
 	};
 	const roleMap = buildRoleMap(definitions);
 	assert.equal(roleMap.get("prism-handoff")?.type, "utility");
-	assert.equal(roleMap.get("prism-code-dev")?.persona, "Clove");
+	assert.equal(roleMap.get("prism-implement")?.persona, "Clove");
 });
 
 test("buildRoleMap rejects a persona-less entry that is not a utility", () => {
@@ -238,7 +238,7 @@ test("buildRoleMap rejects a role missing routing", () => {
 	assert.throws(
 		() =>
 			buildRoleMap({
-				skills: [{ id: "prism-code-dev", persona: "Clove" }],
+				skills: [{ id: "prism-implement", persona: "Clove" }],
 			}),
 		/missing or unrecognized routing 'undefined'/
 	);
@@ -248,7 +248,7 @@ test("buildRoleMap rejects an unrecognized routing value", () => {
 	// Built via JSON.parse to mirror the production path, same rationale as
 	// the unrecognized-type case above.
 	const definitions = JSON.parse(
-		'{"skills": [{"id": "prism-code-dev", "persona": "Clove", "routing": "sometimes"}]}'
+		'{"skills": [{"id": "prism-implement", "persona": "Clove", "routing": "sometimes"}]}'
 	) as RolesDefinitions;
 	assert.throws(
 		() => buildRoleMap(definitions),
@@ -260,8 +260,8 @@ test("buildCodexAgentToml opens with the persona line for persona entries", () =
 	const toml = buildCodexAgentToml({
 		codexSkillMarkdown: "# Skill body",
 		description: "A persona skill.",
-		roleDefinition: { id: "prism-code-dev", persona: "Clove" },
-		skillId: "prism-code-dev",
+		roleDefinition: { id: "prism-implement", persona: "Clove" },
+		skillId: "prism-implement",
 		tokenMap: new Map(),
 	});
 	assert.match(toml, /You are Clove\./);

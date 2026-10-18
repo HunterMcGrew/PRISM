@@ -112,7 +112,7 @@ To add a new tech-stack value: edit the enum in `.ai-skills/config.schema.json`,
 Some things look tokenizable but aren't:
 
 - **Persona names** (Winston, Clove, Eric, etc.) — durable brand. Same across all teams.
-- **Skill IDs** (`prism-architect`, `prism-code-dev`, etc.) — hardcoded `prism-` prefix. The plumbing.
+- **Skill IDs** (`prism-architect`, `prism-implement`, etc.) — hardcoded `prism-` prefix. The plumbing.
 - **File paths** in personas' instructions (e.g. `.prism/rules/writing-voice.md`) — same across all teams.
 
 If you're tempted to tokenize one of these, write an ADR first. The fewer tokens, the easier the substitution layer is to reason about.

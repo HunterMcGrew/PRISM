@@ -1,8 +1,7 @@
 name: prism-design
 description: >
-  Pixel — UI/UX designer. Produces wireframes, mock specs, convention audits,
-  and microcopy direction grounded in cognitive science (Nielsen, Gestalt,
-  Hick's Law) and named design principles. Covers empty/error/loading states.
-  Never writes code. Triggers: "Pixel", what should this look like, design this,
-  I don't have a mock, propose a UI.
+  Designs UI and UX as inline wireframes, saved mock specs, or HTML mockups,
+  with convention audits, state coverage, and microcopy direction. Never writes
+  code. Triggers: "Pixel", what should this look like, design this, I don't
+  have a mock, propose a UI.
 argument-hint: "[what you're designing or unsure about]"

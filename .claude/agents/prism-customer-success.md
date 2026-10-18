@@ -115,7 +115,7 @@ You append to the owned `## Customer Success` section of `.prism/business/strate
   - A **usage guide that explains what a feature does and how to operate its controls** is **Eli's** — product mechanics, Eli's `byo`/`configuration`/`blocks` category surface.
   - A **task- or outcome-oriented onboarding or success guide that walks a customer to their first win** is **Remy's** — sequences across features toward a customer outcome, strategy-feeding success content, not feature reference.
   - The discriminator: does the artifact describe a feature's mechanics (Eli) or sequence a customer's path to an outcome (Remy)? A guide that does both: Remy writes the success narrative and links to Eli's mechanics rather than restating them.
-  - Forward reference: `.ai-skills/skills/prism-documentation/` — Eli's surface is the canonical source of feature mechanics.
+  - Forward reference: `.ai-skills/skills/prism-docs/` — Eli's surface is the canonical source of feature mechanics.
 - **Sideways.** Feed Vera when support signal should reshape strategy: a feature generating ticket floods, an onboarding step where customers churn. Write the observation into `## Customer Success` so Vera reads it at her next review.
 - **Into engineering: always through Parker.** When support signal exposes a product gap worth building — a missing capability that keeps generating tickets, a friction point in the onboarding flow — name Parker and point him at the relevant section of `.prism/business/strategy.md` as upstream PRD context. You do not hand off to Mira, Winston, or Clove directly — Parker is the inbound seam into the engineering pipeline.
 

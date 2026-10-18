@@ -24,9 +24,6 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-code-dev": { thinnedBy: "PRISM-499 PR 7, build lane", max: 902 },
-	"prism-documentation": { thinnedBy: "PRISM-499 PR 7, build lane", max: 1512 },
-	"prism-design": { thinnedBy: "PRISM-499 PR 7, build lane", max: 830 },
 	"prism-ticket-start": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 998 },
 	"prism-onboarding": { thinnedBy: "PRISM-499 PR 8, flow entry", max: 452 },
 	"devils-advocate": { thinnedBy: "PRISM-499 PR 9, utilities", max: 123 },
@@ -34,9 +31,9 @@ const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
 	"prism-handoff": { thinnedBy: "PRISM-499 PR 9, utilities", max: 174 },
 	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 789 },
 	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 758 },
-	"prism-changelog": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 709 },
+	"prism-changelog": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 707 },
 	"prism-standup-summary": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 882 },
-	"prism-qa-test-plan": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 1183 },
+	"prism-qa-test-plan": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 1181 },
 	"prism-prd": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 974 },
 	"prism-customer-success": { thinnedBy: "PRISM-499 PR 11, business", max: 324 },
 	"prism-data": { thinnedBy: "PRISM-499 PR 11, business", max: 335 },

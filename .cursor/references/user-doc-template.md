@@ -69,7 +69,7 @@ A specific use case with step-by-step guidance.
 
 ## Tips & Gotchas
 
-Edge cases, limitations, or non-obvious behavior worth flagging. Use callout syntax for important notes — see `.prism/references/doc-callouts.md`.
+Edge cases, limitations, or non-obvious behavior worth flagging. Use callout syntax for important notes, within the count guidance in the Callouts section of the documentation architect doc.
 ```
 
 ---
@@ -83,5 +83,5 @@ Edge cases, limitations, or non-obvious behavior worth flagging. Use callout syn
 - **Document every option** — every setting, toggle, dropdown. Nothing skipped.
 - **Image paths** use relative format from the doc to the team's image root (set during onboarding). Adjust `../` depth based on the doc's location in the tree.
 - **Alt text** must describe what the screenshot shows, not just label it: "The settings sidebar showing the Headline Level dropdown" not "Screenshot"
-- **Callouts** — use GitHub alert syntax for tips, warnings, and important notes. See `.prism/references/doc-callouts.md` for when to use each type.
+- **Callouts** — use GitHub alert syntax for tips, warnings, and important notes. The Callouts section of the documentation architect doc gives the count guidance and points to the per-type reference.
 - **TOC** — most static site generators auto-generate a table of contents from headings; check your team's configured format before adding one manually.

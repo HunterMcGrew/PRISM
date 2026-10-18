@@ -195,7 +195,18 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 6. **Drop stale tracking.** Removed the `SHIP_CLOSURE_TRACKED_DANGLING_REFS` entry for ADR-0011, which no shipped file links any more, and the `references/review-docs-impact.md`, `references/worktree-mode.md`, and `references/review-angles.md` entries in `seed-curation.json`.
 7. **Address self-review pass 1.** `prism-skill-forge` now sends authors to the `writing-a-skill.md` guide and the four tests, and drops the voice and lens input, with its allowlist `max` re-measured (PR 9 thins it). Both review skills regain the coverage rule (sweep the whole range, and on a re-review re-run what the prior pass left unfinished), the four code smells, and the Atlas domain-context anchor. Self-review also proposes AC when the plan has none, widens its docs check to rule and architect files and a consumer's conventions doc, and no longer names an architect doc by path, which had pushed it to 180 lines under the stricter check. Both name the implementing and docs skills by their PR 7 IDs. `CONTEXT.md`, `skills-ecosystem.md` (and its twin), and `structural-remedies.md` no longer say the reviewers carry a voice or load the remedy file.
 
-### PRs 7–11
+### PR 7 — Build lane
+
+All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:check` pass, `measureSkillLoad` reports 120 lines or fewer for all three skills, and a `git grep` for `prism-code-dev`, `prism-documentation`, `references/code-dev`, `references/documentation`, and `references/pixel` returns nothing outside the history paths (plans, lessons, retros, audits, archived, research, qa, prds), `.prism/spec/adrs/`, and `CHANGELOG.md`.
+
+1. **Rename two skills.** `prism-code-dev` became `prism-implement` and `prism-documentation` became `prism-docs`, in the skill directories, `roles.json`, frontmatter `name`, `docs/personas.md`, `docs/parameterization.md`, `docs/adopting-into-existing-repos.md`, `CONTEXT.md`, `bootstrap-from-claude.ts`, the tests that used the old IDs as fixtures, `skills-ecosystem.md` and `business-layer.md` (with their curated twins), and the other skills that named them (`prism-customer-success`). `prism-design` keeps its ID. No manifest route, `seed-curation.json` entry, or `generate-skills.ts` pin named any of the three.
+2. **Thin all three to the four tests.** See Decision: What the build skills kept. `prism-implement` loads 63 lines, `prism-docs` 117, and `prism-design` 36.
+3. **Delete the references the skills no longer load.** See Decision: Why each build reference could go. That covers `.prism/references/code-dev/`, `.prism/references/documentation/`, and `.prism/references/pixel/` with their seed twins, and `prism-design/lib/`.
+4. **Re-point the surviving citations.** `code-standards.md` (and its twin) no longer points at the removed "Scope discipline" and "Drive-by refactoring" sections, `closing-messages.md` (and its twin) points at `prism-design`'s `## Handoff`, and `branch-plan.md` (and its twin) names `implement` in the plan-lookup list. The `rules/implementation-task-detail.md` citation of `prism-design` § States still resolves, because the skill keeps a `## States` section.
+5. **Drop stale tracking.** Removed the three build-lane entries from `OVER_CAP_ALLOWLIST` and the five `literal-allowlist.json` entries that exempted the old skill's THR-1881 citation, which the thinned body no longer carries.
+6. **Leave the review skills to PR 6.** Their bodies already name the build skills by their new IDs, and `prism-self-review` no longer names an architect doc by path, so this PR makes no edit to either review skill.
+
+### PRs 8–11
 
 Each PR's tasks are written into this section when its branch is cut, so a task list never runs ahead of the code it describes. The rules every one of those PRs follows are recorded under `## Decisions`.
 
@@ -309,6 +320,33 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 - **Always-on rules edited in PR 6.** These edits are the rename and the two re-points above, and nothing else in them changed: `.prism/rules/skill-routing.md` (routing rows, with its curated twin and `templates/install/AGENTS.md.tmpl`), `.prism/rules/context-reuse.md` (citation list), `.prism/rules/architect-doc-verification.md` (who runs it, with its twin), `.prism/rules/design-governance.md`, `.prism/rules/followup-scope.md`, `.prism/rules/implementation-task-detail.md` (with its twin), `.prism/rules/branch-plan.md` (the skill names under `## Review Issues` and `## PR Readiness`, and the push clause that cited `worktree-mode.md`, with its twin), and `.prism/rules/code-standards.md` (the reviewer-side pointer in § Removal and rename completeness). The pass-1 fixes edit no further rule.
 
+- **What the build skills kept.** Each line survives because a gate, a rule, or another skill reads it. The rest of the old bodies failed the policy test: voice, greetings, "How X Thinks" lenses, batteries, generic engineering, design, and writing method, restated rules, and the Sol-era verdicts (`needs-replan`, `blocked`, `found-followup-work`, `needs-human`).
+  - **`prism-implement`:** resolves the plan first and presents `open` Debugged and Review Issues; loads the routed architect docs; verifies external dependencies at the source; on a bug ticket confirms the root cause, records it under `## Debugged Issues`, and offers the tracker post; stays in the local frame per `code-standards.md` § Refactor scope; routes UI gaps to `prism-design` and plan-breaking changes to the plan skill; proposes AC changes as `proposed` and syncs the ticket once accepted; records fixed issues, one `## History` line, and timeless `## Decisions` in one plan pass; pre-flights AC without claiming a graded verdict and sends a disputed UNMET to the plan skill; runs the checks, the cleanup pass, and git-conventions commits; ships through the pause preference, `gh pr create --draft`, and the PR title and body lines (body sync per push, `--body-file`, `#N` escaping); proposes `prism-self-review` and never invokes it.
+  - **`prism-docs`:** reads the `documentation.*` config and never assumes a path or audience; resolves the source and audience; checks the plan's identifiers against the codebase; updates before creating and checks siblings; follows `user-doc-template.md` and builds a control inventory for user docs; the frontmatter schema lives in the architect doc; post-write sidebar, index, cross-reference, and plan updates; ships its own docs PR as a draft with prettier on Markdown only.
+  - **`prism-design`:** never writes code; the three modes with their save triggers, the mode 2 path and section order, the `## Design` summary and its Status values, and the HTML-only-on-request rule; `## States` (the five-state doctrine the task-detail rule cites); an approved mock is the design; reuse before inventing; every saved spec routes through the plan skill, a mode 1 gap-fill returns to the implementer.
+  - **Judgment calls.** `prism-docs` cites `user-doc-template.md` (87 lines) because the template is the doc format, and the callout reference it cited is now named only by the documentation architect doc, so the closure stops there. The dev template is reached through the architect doc's split-audience paragraph, which is an architect doc the cap does not charge. `prism-implement` states the PR title and body shape inline and does not cite `pr-description.md` (87 lines) or its template, because either one would put it over the cap. The `ac-adjustment` reference is gone and `acceptance-criteria.md` is not cited, for the same reason.
+
+- **Why each build reference could go.** A reference is cut when it fails the policy test and nothing else needs it.
+  - **`code-dev/ac-adjustment.md` and `code-dev/decisions-temporal-scan.md`:** two lines in `prism-implement` carry each, and a 24-line and a 19-line file were more than the policy needed.
+  - **`code-dev/formatting.md`:** the check-before-you-write discipline is one clause in `prism-implement`. The formatting-only fast path is generic tool use.
+  - **`code-dev/engineering-frameworks.md`:** SOLID, debugging, refactoring, and testing method the model applies unprompted.
+  - **`documentation/startup.md`, `codebase-read.md`, `after-writing.md`, and `frameworks.md`:** the config read, source resolution, audience, sibling check, and post-write steps are lines in `prism-docs`. The sub-agent split for mixed frontend and backend diffs was an orchestration choice, and the Divio and readability frameworks are model-resident.
+  - **`pixel/frameworks.md` and `pixel/pattern-vocabulary.md`:** a catalog of named design frameworks and tactical patterns the model already knows.
+  - **`pixel/mock-spec-template.md`:** the section order is one line in `prism-design`, and the detail bar already lives in `implementation-task-detail.md`. The template's verbatim wireframe scaffolding restated both.
+  - **`prism-design/lib/output-modes.md` and `handoff-procedures.md`:** the mode triggers and the route-through-the-plan-skill invariant are in the body, and the Procedures C and E were generic.
+  - **Kept for other skills:** `shipping-flow.md` (the changelog and QA skills still cite it, so it stays until PR 10, minus its Clove and Eli rows, since `prism-implement` and `prism-docs` state the flow themselves), `architect-context.md`, `plan-lookup.md`, `cleanup-pass.md`, `doc-callouts.md`, and both doc templates.
+
+- **What the build skills cut on purpose.** These behaviors had no line in the old bodies' policy that a gate, rule, or other skill reads, so they are gone and not lost by accident.
+  - **`prism-implement`:** the pass-by-pass "How Clove Thinks" lenses, the `engineering-frameworks` catalog, the testing-trophy and 100%-coverage lines (code-standards and `verification-commands.md` hold the test rules), the Zoe-verdict reflex bullet (kept as a clause on the `## Decisions` read; the audit workflow doc now lists the skills that still carry it), and the "After a merge" re-verify note.
+  - **`prism-docs`:** the new-template breadcrumb (add a Category-specific rules bullet to the parent template) and the doc-collection handoff to the architect doc. Both fire only when a team adds a template or a collection of three or more pages, and the architect doc's own routes cover that edit. The missing-doc nudge became one clause, and the new-category sidebar and index check became one parenthetical.
+  - **`prism-design`:** the six-dimension convention audit as a numbered lens (kept as one Startup line), the Nielsen and Gestalt axes, and the interview protocol (kept as one line).
+
+- **A non-`docs/` doc root needs its own manifest route.** `prism-docs` does not name the documentation architect doc by path, because a named architect doc is charged in full to the cap and the manifest already routes it for the doc root. The install stub routes only `docs/`. A consumer whose `documentation.location` is elsewhere would never load the frontmatter schema and naming rules.
+  - **Alternatives considered:** naming the doc in the skill body (its 124 lines would put the skill over the cap), or routing a pattern derived from `documentation.location` at install time (the manifest is consumer-owned and `prism update` never rewrites it).
+  - **Chosen approach:** `docs/ai-skills/compatibility.md` tells such a consumer to add the route by hand, next to the existing note that an install adds the `umbrellas` key by hand.
+
+- **Always-on rules edited in PR 7.** The edits are renames and re-points, and nothing else in them changed: `.prism/rules/skill-routing.md` (the two routing rows, with its curated twin and `templates/install/AGENTS.md.tmpl`), `.prism/rules/context-reuse.md` (citation list), `.prism/rules/design-governance.md` (who runs it), `.prism/rules/branch-plan.md` (the plan-lookup skill list), and `.prism/rules/code-standards.md` (the pointer to the implementation skill, reworded to "builds inside the same local frame" since its Scope discipline section is gone). Each has a seed twin that the build or the sweep updated to match.
+
 ---
 
 ## Sessions
@@ -329,6 +367,9 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-17 [huntermcgrew/prism-499-delete-sasha-ren-theo]: Deleted Sasha, Ren, and Theo with their step trees, references, docs, and every handoff; ADR-0079 supersedes 0041 and 0042; the bug workflow now runs Nora to Clove.
 - 2026-10-17 [huntermcgrew/prism-499-shared-core]: Cut `skill-core.md` and `session-close.md` and added the loaded-lines check with a shrink-only allowlist; see Decision: The shared skill core is cut, not thinned.
 - 2026-10-17 [huntermcgrew/prism-499-review-lane]: Renamed Briar and Eric to `prism-self-review` and `prism-pr-review`, thinned each to the four tests (56 and 109 loaded lines), and deleted ten reference files. The PR reviewer now leaves the PR in draft; see Decision: What the review skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-build-lane]: Renamed Clove and Eli to `prism-implement` and `prism-docs`, thinned both and `prism-design` to the four tests (58, 113, and 32 loaded lines), and deleted the `code-dev`, `documentation`, and `pixel` references; see Decision: What the build skills kept.
+- 2026-10-18 [huntermcgrew/prism-499-build-lane]: Self-review pass 1 fixes. Restored the domain-context anchor and the commit-pause preference, added the doc-root route note to `compatibility.md`, and reworded the audit-workflow reflex line, the anchor-substitution example, and the stale pointers; see Decision: A non-`docs/` doc root needs its own manifest route.
+- 2026-10-18 [huntermcgrew/prism-499-build-lane]: PR review pass 1 fixes. Widened the Zoe-verdict clause in `prism-implement`, restored the doc-conventions read and the docs PR title policy, and reworded the UI-gap handoff as a recommendation; the six findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-review-lane]: Self-review pass 1 fixes. Brought `prism-skill-forge` onto the four tests, restored the coverage rule, smells, AC proposal, and domain anchor in the review skills, and fixed stale persona wording in `CONTEXT.md` and the roster.
 
 ---
@@ -358,6 +399,54 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 ---
 
 ## Review Issues
+
+### Audit-workflow doc overstated who carries the Zoe-verdict reflex
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/audit-workflow.md:169`
+- **Problem:** the doc said every skill that acts on Decisions states the reflex, but `prism-implement` handled only `archive-candidate` and the review skills carry no verdict language.
+- **Suggested fix:** widen the `prism-implement` clause to all four verdicts and name exactly `prism-architect`, `prism-surface-audit`, and `prism-implement` in the doc and its twin. Fixed in: the PR 7 review-fix commit.
+
+### `prism-docs` dropped the read side of the doc-conventions doc
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-docs/shared.md:9`
+- **Problem:** the old startup read a consumer's documentation-conventions doc, and the thinned startup only wrote to it.
+- **Suggested fix:** add a prose clause, with no backticked path, to read it when it exists. Fixed in: the PR 7 review-fix commit.
+
+### Docs PRs lost their title and body policy
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-docs/shared.md:26`
+- **Problem:** nothing in the skill's closure cited the PR description rule.
+- **Suggested fix:** one sentence stating the title (the commit subject) and the body (reasoning and ticket link, no file list or AC). Fixed in: the PR 7 review-fix commit.
+
+### PR 7 Task 6 described an edit this PR does not make
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/plan.md:207`
+- **Problem:** the task claimed a `prism-self-review` change and a 56-line count, and the diff carries neither.
+- **Suggested fix:** state that the review skills are left to PR 6. Fixed in: the PR 7 review-fix commit.
+
+### Callout wording in the user doc template did not match the architect doc
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/references/user-doc-template.md:86`
+- **Problem:** it said the architect doc's Callouts section says when to use each type, but that section gives count guidance and points to the callouts reference.
+- **Suggested fix:** reword both mentions to say count guidance. Fixed in: the PR 7 review-fix commit.
+
+### "A UI gap goes to `prism-design`" read as an invocation
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-implement/shared.md:18`
+- **Problem:** it dropped the old option to make the call and keep going, and no skill invokes another.
+- **Suggested fix:** recommend `prism-design` to the user, or make the call and record it in `## Decisions`. The plan-skill handoff is worded the same way. Fixed in: the PR 7 review-fix commit.
 
 ## PR Readiness
 

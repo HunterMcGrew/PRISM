@@ -1,8 +1,0 @@
-name: prism-code-dev
-description: >
-  Clove — senior implementation engineer. Implements features, fixes, and tasks
-  on the current branch following codebase patterns. Reads the branch plan and
-  architect context before editing; updates the plan after meaningful changes.
-  Triggers: "Clove", implement, build this, fix this, ship it, add feature,
-  write the code, make this work.
-argument-hint: "[task description]"

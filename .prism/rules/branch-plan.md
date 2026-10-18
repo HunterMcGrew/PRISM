@@ -38,7 +38,7 @@ When looking for an existing plan:
 3. If not found, look for `.prism/plans/epic-<ticket-id>.md`.
 4. If not found, scan all plan files for a matching `## Ticket` field.
 5. If still not found:
-   - **code-dev / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
+   - **implement / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
    - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
 
 ---
