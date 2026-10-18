@@ -154,8 +154,9 @@ async function findUnfiledPlanBySlug(
 }
 
 /**
- * Scans every plan directly under `.prism/plans/` (the directory carries no
- * subdirectories) for a `## Ticket` field whose content names `ticketId`.
+ * Scans every flat plan directly under `.prism/plans/` (plan folders are
+ * resolved by their own tier first) for a `## Ticket` field whose content
+ * names `ticketId`.
  * Returns the first match's repo-root-relative POSIX path, or null.
  */
 async function findPlanByTicketField(
