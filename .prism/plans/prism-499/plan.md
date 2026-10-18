@@ -452,6 +452,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 2 fixes. A test ties `roles.json` IDs to `checkIsPrismSkillId`, and the stale `prism-*` prose in `eject.ts`, `generate-skills.ts`, and `consumer-sync-flow.md` now says PRISM-owned.
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: PR review pass 1 fixes. The forge skill now splits toolkit and consumer steps and loads 119 lines, the guide's ownership wording names `tdd`, and the bare-ID list is private; see Decision: The forge skill splits by install context.
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: PR review pass 2 fix. The guide's forge section is scoped to the toolkit repo and names the consumer path.
+- 2026-10-18 [huntermcgrew/prism-499-utilities]: Fixed the `tdd` eject test's Windows-only path lookup; the production code was correct. See Debugged Issues.
 
 ---
 
@@ -478,6 +479,19 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - Evidence (machine): the Cursor test asserts `runPreToolUseArm` returns `null`. A `grep` finds the limitation in `hook-runtime.md`.
 
 ---
+
+## Debugged Issues
+
+### Bare-skill eject test failed on Windows
+
+- **Status:** `fixed`
+- **Severity:** Low
+- **Confidence:** `High`
+- **Environment:** `windows-latest` CI only
+- **File:** `scripts/ai-skills/eject.test.ts:388`
+- **Root cause:** `[Confirmed]` the test looked up the outcome with `o.path.includes(".cursor/skills/tdd")`, but eject builds outcome paths with `path.join`, which uses backslashes on Windows. Production code was correct. The existing marker tests match on a bare name (`prism-handauthored`), which has no separator.
+- **Fix:** the lookup uses `o.path.endsWith(path.join(".cursor", "skills", "tdd"))`, so it matches on either platform.
+- **Ticket:** `N/A`
 
 ## Review Issues
 

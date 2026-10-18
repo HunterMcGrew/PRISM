@@ -386,7 +386,7 @@ test("runEject removes a marker-confirmed bare PRISM skill and keeps one without
 		assert.equal(await fileExists(path.join(consumerRepoRoot, ".claude/skills/tdd")), false);
 		assert.equal(await fileExists(path.join(consumerRepoRoot, ".cursor/skills/tdd")), true);
 		assert.equal(
-			report.skillOutcomes.find((o) => o.path.includes(".cursor/skills/tdd"))?.action,
+			report.skillOutcomes.find((o) => o.path.endsWith(path.join(".cursor", "skills", "tdd")))?.action,
 			"skipped-no-marker"
 		);
 	});
