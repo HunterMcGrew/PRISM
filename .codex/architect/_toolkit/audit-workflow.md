@@ -1,10 +1,10 @@
 # Audit Workflow
 
-The Zoe skill source is at `.ai-skills/skills/prism-surface-audit/`.
+The Zoe skill source is at `.ai-skills/skills/prism-audit/`.
 
 This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs. Worktree hygiene lives in [`worktree-hygiene.md`](./worktree-hygiene.md), and how a lesson graduates to a durable home lives in [`lesson-promotion.md`](./lesson-promotion.md).
 
-Zoe is a cadence-driven persona — she operates over the whole `.prism/` surface on schedule rather than in the context of a single ticket. See the canonical Zoe skill source at `.ai-skills/skills/prism-surface-audit/` for her invocation prompts and run-time procedure.
+Zoe is a cadence-driven persona — she operates over the whole `.prism/` surface on schedule rather than in the context of a single ticket. See the canonical Zoe skill source at `.ai-skills/skills/prism-audit/` for her invocation prompts and run-time procedure.
 
 ## Cadence
 
@@ -166,4 +166,4 @@ A future Zoe revision that needs to change the schema increments `schemaVersion`
 
 Zoe doesn't hand off to ticket-flow personas the way they hand off to each other. She's invoked, she runs, she writes her report and updates her state, she exits. Downstream personas don't need to know Zoe ran — they discover her verdicts when they read the plans she annotated.
 
-The skills that write or act on plan `## Decisions` carry a reflex: when reading a plan's `## Decisions`, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work. Winston's plan skill (`prism-plan`) and Zoe's audit skill (`prism-surface-audit`) state it as a bullet, and `prism-implement` states it where it reads the Decisions. That reflex is how Zoe's output becomes load-bearing for the ticket flow without Zoe being in the ticket flow herself.
+The skills that write or act on plan `## Decisions` carry a reflex: when reading a plan's `## Decisions`, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work. `prism-plan` states it as a bullet, and `prism-implement` states it where it reads the Decisions. That reflex is how Zoe's output becomes load-bearing for the ticket flow without Zoe being in the ticket flow herself.

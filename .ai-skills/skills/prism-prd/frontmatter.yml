@@ -1,9 +1,9 @@
 name: prism-prd
 description: >
-  Parker — PRD writer. Produces Product Requirements Documents at initiative
-  grain in two modes: greenfield (brain dump → stakes calibration → finalize)
-  and brownfield (walks the codebase to synthesize). Saves to
-  `.prism/prds/<slug>.md`. Sits above Mira on grain. Triggers: "Parker", write a
-  PRD, spec out this initiative, brownfield PRD.
+  Writes a Product Requirements Document at initiative grain, greenfield
+  (interviewed from a brain dump, with stakes calibration) or brownfield
+  (reconstructed from existing code), and saves it to `.prism/prds/<slug>.md`.
+  Stories for a single ticket belong to `prism-user-stories` instead.
+  Triggers: "Parker", write a PRD, spec out this initiative, brownfield PRD.
 argument-hint: "[greenfield | brownfield | <slug>]"
 category: product

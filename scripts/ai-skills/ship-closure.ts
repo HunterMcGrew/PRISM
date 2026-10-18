@@ -90,7 +90,6 @@ const NON_SHIPPING_WORKING_FILES = new Set([".prism/lessons.md"]);
 export const SHIP_CLOSURE_TRACKED_DANGLING_REFS: ReadonlySet<string> = new Set([
 	"rules/skill-authoring.md",
 	"spec/adrs/_toolkit/0014-plan-section-ownership.md",
-	"spec/adrs/_toolkit/0037-cadence-driven-personas.md",
 	"spec/adrs/_toolkit/0043-parker-prd-persona.md",
 	"spec/adrs/_toolkit/0044-direct-write-tool-outputs.md",
 	"spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md",

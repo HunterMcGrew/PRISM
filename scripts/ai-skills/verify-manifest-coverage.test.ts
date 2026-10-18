@@ -25,9 +25,9 @@ test("compileMatcher: exact path", () => {
 });
 
 test("compileMatcher: prefix with trailing slash matches files under the prefix", () => {
-	const matcher = compileMatcher(".claude/skills/prism-qa-test-plan/");
-	assert.equal(matcher(".claude/skills/prism-qa-test-plan/SKILL.md"), true);
-	assert.equal(matcher(".claude/skills/prism-qa-test-plan/"), true);
+	const matcher = compileMatcher(".claude/skills/prism-qa-plan/");
+	assert.equal(matcher(".claude/skills/prism-qa-plan/SKILL.md"), true);
+	assert.equal(matcher(".claude/skills/prism-qa-plan/"), true);
 	assert.equal(matcher(".claude/skills/other-skill/SKILL.md"), false);
 });
 

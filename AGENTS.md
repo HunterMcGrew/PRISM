@@ -867,11 +867,11 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 - prism-self-review (Briar)
 - prism-docs (Eli)
 - prism-design (Pixel)
-- prism-qa-test-plan (Reese)
+- prism-qa-plan (Reese)
 - prism-start-ticket (Nora)
 - prism-user-stories (Mira)
 - prism-changelog (Sage)
-- prism-standup-summary (Lilac)
+- prism-standup (Lilac)
 
 ---
 
@@ -1213,7 +1213,7 @@ Personas don't create empty or header-only placeholder files at install time or 
 ## Canonical patterns
 
 - **Pixel's mock directory** (`.prism/design/mocks/`) — created on first mode 2 spec save.
-- **Zoe's audits directory** (`.prism/audits/`) — created on first audit run (see `prism-surface-audit/shared.md` § Output format).
+- **Zoe's audits directory** (`.prism/audits/`) — created on first audit run (see `prism-audit/shared.md` § Report).
 - **Atlas's onboarding state** (`.ai-skills/registry/onboarding-state.json`) — written on first answer; not seeded at session start.
 - **Zoe's lessons archive** (`.prism/archived/lessons-archive.md`) — created with the standard header on first archive move. Wave 2 removed the install-template seed that previously shipped this file empty.
 - **Zoe's archived plans directory** (`.prism/archived/plans/`) — created on first confirmed plan archive move; not pre-seeded.
@@ -1462,11 +1462,11 @@ When a user works without invoking a specific skill, detect what they're doing a
 | Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
 | Self-reviewing the current branch      | **Briar** (`prism-self-review`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
 | UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
-| QA test plans and bug-fix verification | **Reese** (`prism-qa-test-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
+| QA test plans and bug-fix verification | **Reese** (`prism-qa-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
 | Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
 | Writing or updating documentation      | **Eli** (`prism-docs`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
 | Writing a PRD                          | **Parker** (`prism-prd`)             | "write a PRD", "spec out this initiative", "brownfield PRD", "Parker"                                                                                                                                                                                                                                            |
-| Standup summaries                      | **Lilac** (`prism-standup-summary`)  | "standup", "daily sync", "summarize my PRs", "generate my standup", "Lilac"                                                                                                                                                                                                                                      |
+| Standup summaries                      | **Lilac** (`prism-standup`)  | "standup", "daily sync", "summarize my PRs", "generate my standup", "Lilac"                                                                                                                                                                                                                                      |
 | Setting company strategy               | **Vera** (`prism-founder`)           | "set strategy", "strategy doc", "OKRs", "mission", "cross-functional priorities", "business strategy", "Vera"                                                                                                                                                                                    |
 | Market research                        | **Kora** (`prism-market-research`)   | "market research", "competitive teardown", "TAM", "segment sizing", "ICP research", "market sizing", "Kora"                                                                                                                                                                                                              |
 | Finance and pricing                    | **Ellis** (`prism-finance`)          | "finance", "pricing", "unit economics", "runway", "budget", "pricing model", "margins", "Ellis"                                                                                                                                                                                                                 |
@@ -1481,7 +1481,7 @@ When a user works without invoking a specific skill, detect what they're doing a
 
 These personas route on their name or an explicit trigger phrase only — never on bare-agent intent detection. Each is cadence-driven or ceremony-shaped (invoked at a bound event, not a conversational signal), so an ambient-intent match would misfire (e.g. "how did that go?" firing a retrospective).
 
-- **Zoe** (`prism-surface-audit`) — audits the `.prism/` surface on cadence; explicit invocation only. Triggers: "weekly audit", "what's stale", "what can we archive".
+- **Zoe** (`prism-audit`) — audits the `.prism/` surface on cadence; explicit invocation only. Triggers: "weekly audit", "what's stale", "what can we archive".
 - **Iris** (`prism-retro`) — runs the retro charter at plan close. Triggers: "retrospective", "post-mortem", "retro this epic".
 
 ## How to route

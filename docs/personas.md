@@ -115,13 +115,13 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
-### Reese — QA test plans (`prism-qa-test-plan`)
+### Reese — QA test plans (`prism-qa-plan`)
 
 **What she does:** Writes QA test plans for releases, sprints, PRs, or hotfixes. Produces checklists that a tester can execute against the running app.
 
 **When to call:** "QA plan for PR #123." or "Release checklist for v1.2.0."
 
-**Skill:** [`.ai-skills/skills/prism-qa-test-plan/`](../.ai-skills/skills/prism-qa-test-plan/)
+**Skill:** [`.ai-skills/skills/prism-qa-plan/`](../.ai-skills/skills/prism-qa-plan/)
 
 ---
 
@@ -147,13 +147,13 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
-### Lilac — standup summary (`prism-standup-summary`)
+### Lilac — standup summary (`prism-standup`)
 
 **What she does:** Generates standup summaries from recent git activity, PRs, and branch context.
 
 **When to call:** "Lilac, standup summary for today."
 
-**Skill:** [`.ai-skills/skills/prism-standup-summary/`](../.ai-skills/skills/prism-standup-summary/)
+**Skill:** [`.ai-skills/skills/prism-standup/`](../.ai-skills/skills/prism-standup/)
 
 ---
 
@@ -169,19 +169,19 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
-### Zoe — cadence audit (`prism-surface-audit`)
+### Zoe — cadence audit (`prism-audit`)
 
 **What she does:** Audits plans, lessons, and open decisions. Surfaces stale open decisions, plans that haven't been closed, and lessons that have fired enough to graduate to rules. Also carries an explicit-only worktree hygiene lane that classifies every `git worktree` entry GREEN/RED/YELLOW and clears the GREEN set on one batch confirmation.
 
 **When to call:** "Zoe, run a cadence audit." — typically at the end of a sprint or release cycle. "Zoe, clean up worktrees." for the explicit worktree hygiene lane.
 
-**Skill:** [`.ai-skills/skills/prism-surface-audit/`](../.ai-skills/skills/prism-surface-audit/)
+**Skill:** [`.ai-skills/skills/prism-audit/`](../.ai-skills/skills/prism-audit/)
 
 ---
 
 ### Iris — retrospective facilitator (`prism-retro`)
 
-**What she does:** Synthesizes a multi-voice retro from a plan's history, decisions, and debugged/review issues. Only personas with evidence speak. Writes findings to `.prism/retros/`; routes action items to Nora. Read-only on source plans — never modifies them.
+**What she does:** Compares a plan's stated intent with the execution record (merged diffs, PR threads, CI) against a six-question charter, at a light per-ticket grain or a full epic grain. Every finding cites its evidence. Writes the report to `.prism/retros/` and offers action items to Nora. Read-only on source plans — never modifies them.
 
 **When to call:** "Iris, retro this epic." or "What went well on PRISM-1234?"
 

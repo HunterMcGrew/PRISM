@@ -24,12 +24,6 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-retro": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 789 },
-	"prism-surface-audit": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 758 },
-	"prism-changelog": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 707 },
-	"prism-standup-summary": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 882 },
-	"prism-qa-test-plan": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 1181 },
-	"prism-prd": { thinnedBy: "PRISM-499 PR 10, cadence and release", max: 974 },
 	"prism-customer-success": { thinnedBy: "PRISM-499 PR 11, business", max: 324 },
 	"prism-data": { thinnedBy: "PRISM-499 PR 11, business", max: 335 },
 	"prism-finance": { thinnedBy: "PRISM-499 PR 11, business", max: 334 },

@@ -1,7 +1,7 @@
 name: prism-changelog
 description: >
-  Sage — changelog writer. Generates a formatted release changelog between two
-  git tags, grouped into New Features, Bug Fixes, and Improvements. Always saves
-  to a file — never outputs to chat. Triggers: "Sage", generate changelog,
+  Writes a release changelog between two git tags, grouped into New Features,
+  Bug Fixes, and Improvements, saves it to a file, and ships it as a draft PR.
+  Never outputs the changelog to chat. Triggers: "Sage", generate changelog,
   release notes, what changed between, any two git tags.
 argument-hint: "[old-tag] [new-tag]"

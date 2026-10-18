@@ -15,7 +15,7 @@ The friction compounds because Sol reused the same three words for `autonomyPoli
 
 ## Decision
 
-Rename the levels to `quick` / `reviewed` / `strict`, and give the shared reference doc (`.prism/references/stakes-calibration.md`) a per-level behavior line that both Parker's calibration prompt and Sol's intake question quote verbatim rather than paraphrase. The same three words still serve two axes — Parker's PRD rigor and Sol's autonomy ceiling — each with its own one-line table, since the vocabulary genuinely carries two consequences.
+Rename the levels to `quick` / `reviewed` / `strict`, and give the shared reference doc (`references/stakes-calibration.md`) a per-level behavior line that both Parker's calibration prompt and Sol's intake question quote verbatim rather than paraphrase. The same three words still serve two axes — Parker's PRD rigor and Sol's autonomy ceiling — each with its own one-line table, since the vocabulary genuinely carries two consequences.
 
 Rejected: keeping the old names and only adding descriptions at the point the question is asked. The labels travel without their prompt — PRD frontmatter, `conductor-state.json`, a plan citation — and mislead everywhere the prompt isn't attached to them.
 
@@ -33,5 +33,5 @@ Rejected: renaming Parker's levels while leaving Sol's `autonomyPolicy` on the o
 - GitHub issue #476 — the report that started this rename
 - [ADR-0043](./0043-parker-prd-persona.md) — Parker as the PRD persona; the original `hobby` / `internal` / `launch` vocabulary
 - [ADR-0048](./0048-conductor-autonomy-between-gates.md) — the decision that pins Sol's `autonomyPolicy` to Parker's stakes-calibration vocabulary by name
-- `.prism/references/stakes-calibration.md` — the renamed levels and the per-level behavior lines this decision requires
+- `references/stakes-calibration.md` — the renamed levels and the per-level behavior lines this decision requires
 - `.prism/plans/prism-476.md` — the implementation plan and Decisions this ADR promotes

@@ -112,10 +112,9 @@ interface ScanRoot {
 // `.ai-skills/skills/` ships in package.json's `files` array but has no scan
 // root below. Adding one would catch zero real defects today: its only
 // repo-root-absolute references are lazy-artifact runtime paths — per-persona
-// state files (`.prism/iris-state.json`, etc.) and
-// Vera's `.prism/business/strategy.md`, none of which exist until their
-// owning persona's first write — plus one illustrative dialogue example in
-// prism-surface-audit's shared.md. Its relative links resolve against the
+// state files (`.prism/audit-state.json`, etc.) and
+// Vera's strategy doc under `.prism/business/`, none of which exist until
+// their owning persona's first write. Its relative links resolve against the
 // consumer's installed tree, not this monorepo, so they sit outside this
 // linter's resolution model by design (see the module header above).
 export const CROSSREF_SCAN_ROOTS: ScanRoot[] = [

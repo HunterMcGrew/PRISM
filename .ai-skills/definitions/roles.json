@@ -51,12 +51,12 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-qa-test-plan",
+			"id": "prism-qa-plan",
 			"persona": "Reese",
 			"routing": "auto"
 		},
 		{
-			"id": "prism-standup-summary",
+			"id": "prism-standup",
 			"persona": "Lilac",
 			"routing": "auto"
 		},
@@ -71,7 +71,7 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-surface-audit",
+			"id": "prism-audit",
 			"persona": "Zoe",
 			"routing": "named-only"
 		},

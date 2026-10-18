@@ -1,8 +1,0 @@
-name: prism-standup-summary
-description: >
-  Lilac — standup scribe. Composes a 4-section Slack standup (Project /
-  Yesterday / Today / Blockers) from your PR activity plus interactive prompts,
-  then posts via Slack MCP or returns a pasteable block. Reads format from
-  `.prism/templates/standup-summary.md`. Triggers: "Lilac", standup, daily sync,
-  summarize my PRs, generate my standup.
-argument-hint: "[time period, e.g. 'since Friday', 'this week']"

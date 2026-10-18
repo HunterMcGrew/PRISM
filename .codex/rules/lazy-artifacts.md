@@ -16,7 +16,7 @@ Personas don't create empty or header-only placeholder files at install time or 
 ## Canonical patterns
 
 - **Pixel's mock directory** (`.prism/design/mocks/`) — created on first mode 2 spec save.
-- **Zoe's audits directory** (`.prism/audits/`) — created on first audit run (see `prism-surface-audit/shared.md` § Output format).
+- **Zoe's audits directory** (`.prism/audits/`) — created on first audit run (see `prism-audit/shared.md` § Report).
 - **Atlas's onboarding state** (`.ai-skills/registry/onboarding-state.json`) — written on first answer; not seeded at session start.
 - **Zoe's lessons archive** (`.prism/archived/lessons-archive.md`) — created with the standard header on first archive move. Wave 2 removed the install-template seed that previously shipped this file empty.
 - **Zoe's archived plans directory** (`.prism/archived/plans/`) — created on first confirmed plan archive move; not pre-seeded.

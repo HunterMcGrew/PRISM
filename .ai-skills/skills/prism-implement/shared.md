@@ -28,7 +28,7 @@ After the code is done, update the plan in one pass:
 
 ## Verify and ship
 
-- **Pre-flight the AC** against the diff, following each criterion's Evidence sub-bullet. This is not the graded verdict. When `prism-qa-test-plan` runs AC verification, it renders MET or UNMET, and this skill never claims "AC-3 is MET". If an UNMET misreads the criterion, hand both readings to the plan skill, the criterion's owner. Never change code to satisfy a verdict the requirement does not back.
+- **Pre-flight the AC** against the diff, following each criterion's Evidence sub-bullet. This is not the graded verdict. When `prism-qa-plan` runs AC verification, it renders MET or UNMET, and this skill never claims "AC-3 is MET". If an UNMET misreads the criterion, hand both readings to the plan skill, the criterion's owner. Never change code to satisfy a verdict the requirement does not back.
 - **Run fresh** the type check, lint, and tests from `.prism/rules/verification-commands.md`. Run the formatter in check mode first and write only when its changes fall on lines you touched, since pre-existing drift swept into the commit is a formatting-only change.
 - **Before every commit,** run the cleanup pass in `.prism/references/cleanup-pass.md`. Commit per `.prism/rules/git-conventions.md`: one commit per plan task on a multi-task plan, and review fixes as separate commits.
 - **Ship without asking** (authors ship). First read `git config --global --get ${PROJECT_LOWERCASE}.pauseBeforeCommit`. `true` means state the commit subject and wait for "ship it". Unset means ask once and save the answer with `git config --global`. Then push, and open a draft PR with `gh pr create --draft`. If `gh pr list --head <branch>` already finds one, the push updates it and no new PR is created.

@@ -1,91 +1,46 @@
 ---
-title: "Iris — the retrospective persona"
-description: "How Iris synthesizes multi-voice retros from plan evidence — only personas that touched the work speak, and disagreements come from divergences the evidence already captured."
+title: "Iris — the retrospective skill"
+description: "How the retro skill compares a plan's stated intent with the execution record and writes an evidence-cited report."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-10-17"
+last_updated: "2026-10-18"
 ---
 
 ## What Iris does
 
-Iris facilitates retrospectives on shipped work. She reads the target plan's `## History`, `## Decisions`, `## Debugged Issues`, and `## Review Issues`, identifies which PRISM personas actually touched the work, and synthesizes a multi-voice dialogue grounded in that evidence. Disagreements are evidence-based — when a `## Decisions` entry's rationale didn't hold up against later `## Debugged Issues`, Iris surfaces that divergence rather than papering over it.
+`prism-retro` (Iris) runs the retro charter on a plan: six questions answered from the plan's intent sections (`## History`, `## Decisions`, `## Acceptance Criteria`, `## Debugged Issues`, `## Review Issues`) and from the execution record (merged diffs, PR review threads, CI conclusions). It writes one report to `.prism/retros/` and never edits the plan.
 
-Iris is the third cadence-driven persona, joining Zoe (audit) and Atlas (onboarding). She runs on explicit invocation only — no cadence-driven auto-trigger, no place in the ticket-flow handoff chain.
+The six questions are: did we do what we said, were there issues or bottlenecks, what could we improve, did we follow the code standards, did we do anything wrong, and are the tests passing. A question that no reached source can answer is reported as unanswered, so a retro built on thin evidence says so.
 
-## When to bring in Iris
+Iris runs when invoked and at plan close. She has no place in the ticket-flow handoff chain.
 
-- **End of an epic.** When a multi-PR epic ships, Iris produces a retro that names what worked, what didn't, and which Decisions the team should rethink before the next epic in the same area.
-- **Post-incident.** When a bug surfaced that a Decision had explicitly ruled out, Iris re-litigates the Decision against the Debugged Issues that produced the incident.
-- **Date-range retros.** When you want a cross-cutting view across multiple plans (e.g. "all bug fixes in March"), Iris accepts a date range and walks every plan whose `## History` entries fall inside it.
+## Two grains
 
-Don't invoke Iris on a single-PR plan — there's rarely enough evidence for multi-voice synthesis. Single-PR retrospection lives in the PR review itself.
+- **Per-PR.** A light fidelity check on one ticket: what the plan said against what shipped, what CI showed, and whether review findings were addressed. It produces a compact note.
+- **Epic.** The full audit of an epic plan and its children. It reads the per-PR notes first and spends its effort on cross-ticket patterns.
 
-## How Iris works
+A date range (`YYYY-MM-DD..YYYY-MM-DD`) walks every plan with a `## History` line inside it.
 
-Iris uses the [micro-file step machine pattern (full variant)](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/references/micro-file-step-machine.md) — per-step files plus a single state file at `.prism/iris-state.json`. Six steps, each feeding the next:
+## How it works
 
-1. **Detect target** — epic-plan (primary, by slug) or date-range (fallback).
-2. **Gather evidence** — categorize `## History`, `## Decisions`, `## Debugged Issues`, `## Review Issues` from every plan in scope. Cross-reference Decisions against Debugged Issues to flag divergences.
-3. **Stage voices** — identify which personas actually touched the work from `## History` annotations, `## Implementation Tasks` persona headings, and ownership signals in the debugged/review entries. Only those personas speak.
-4. **Facilitate** — generate the multi-voice dialogue body. Every line cites the evidence it responds to. Divergences flagged in step 2 produce explicit disagreement lines.
-5. **Action items** — synthesize `## Action Items` with proposed owners from the staged voices. Offer the Nora handoff.
-6. **Save report** — write the assembled report to `.prism/retros/<YYYY-MM-DD>-<epic-slug-or-date-range>.md`. Read-only on the source plan.
+1. **Resolve the target and the grain,** and confirm the target before reading.
+2. **Read the team's evidence config** (`retroEvidence` in `.ai-skills/config.json`). A source the team does not have is `not configured`, and one that fails this run is `unreachable`. The report keeps the two apart.
+3. **Gather evidence** from the plan sections, merged diffs, all three GitHub review surfaces (issue comments, review objects, check runs), CI conclusions, and an AC-verification report when the plan points at one.
+4. **Flag divergences.** A Decision counts as refuted only when later evidence directly contradicts its stated rationale. An adjacent bug is logged, not staged as a disagreement.
+5. **Write the report:** summary, charter coverage, findings that each cite their evidence, action items with proposed owners, promotion cautions, lesson candidates, and citations.
 
-Resumability follows the standard step-machine pattern — Iris writes state after each step, so a paused session resumes from the last completed step.
+## Action items
 
-## Example output
-
-A short illustrative excerpt from a retro on a hypothetical epic that added a resumable review workflow:
-
-```markdown
-# Retro — epic-prism-pattern-absorptions-wave-2
-
-**Target:** `.prism/plans/epic-prism-pattern-absorptions-wave-2.md`
-**Generated:** 2026-05-23
-**Voices:** Winston, Clove, Briar
-
-## Multi-voice dialogue
-
-Winston (senior architect): "We chose a state file with no per-step files because
-the findings already land in the plan. Resuming mid-run became the contract, not
-an add-on."
-
-Clove (implementation engineer): "The state-file schema took two passes — the
-status field's shape wasn't obvious from the pattern doc alone. That's the kind
-of thing the next plan that cites the pattern should call out upfront."
-
-Briar (self-review): "Self-review caught one regression: the resume flow didn't
-handle the `aborted` status cleanly. That was a divergence from the
-lighter-variant pattern doc — worth a follow-up rule."
-
-## Action Items
-
-- [ ] Document the status field shape in the lighter-variant pattern doc — proposed owner: Winston
-- [ ] Add a regression test for `aborted` status in the resume flow — proposed owner: Clove
-```
-
-The dialogue is short on purpose. Iris isn't trying to fill pages — she's trying to surface signal the team will act on.
-
-## Action items and Nora
-
-Iris's `## Action Items` section is a list of proposals. At the end of step 5, Iris offers the Nora handoff:
-
-> "Want me to hand off to Nora to file these as follow-up tickets? She'll run the scope-fit gate from `.prism/rules/followup-scope.md` on each one."
-
-If the user accepts, they type `Nora` into the next prompt and Nora's skill picks up the action items, applying the scope-fit gate before filing each one in Linear. If the user declines, the action items stay in the retro report as a record — no tickets get filed.
-
-The handoff is always a proposal, never an execution. Iris doesn't auto-invoke Nora; she names the natural next persona and lets the user choose.
+Action items are proposals. Iris offers to hand them to `prism-start-ticket`, which runs the scope-fit gate from `.prism/rules/followup-scope.md` on each one before filing. If you decline, the items stay in the report as a record and no tickets are filed.
 
 ## What Iris is not
 
-- **Iris does not modify source plans.** The plan being retro'd is read-only. Iris writes once to a separate report file.
-- **Iris does not write code.** Reports are markdown; state is JSON. No source files, tests, configs, or rules.
-- **Iris does not invent dialogue.** A retro that scripts in personas absent from the evidence is fiction. Only personas with at least one evidence entry attributed to them appear in the dialogue.
-- **Iris does not auto-file action items.** Nora does the filing, after the scope-fit gate, after the user explicitly invokes her.
+- **Not an editor of plans.** The plan being retro'd is read-only. The plan-close ceremony consumes the report's promotion cautions, so the reflector and the closer stay separate.
+- **Not a code writer.** The output is a Markdown report.
+- **Not a source of invented perspectives.** Every finding cites a plan section or an execution-record entry.
 
 ## See also
 
-- [`.ai-skills/skills/prism-retro/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-retro/shared.md) — canonical persona source
+- [`.ai-skills/skills/prism-retro/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-retro/shared.md) — the skill
 - [ADR-0037 — Cadence-driven personas](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0037-cadence-driven-personas.md) — the axis Iris shares with Zoe and Atlas
-- [`.prism/references/micro-file-step-machine.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/references/micro-file-step-machine.md) — the step-machine pattern
-- [`.prism/rules/followup-scope.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/rules/followup-scope.md) — the scope-fit gate Nora applies to Iris's action items
+- [`.prism/rules/followup-scope.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/rules/followup-scope.md) — the scope-fit gate applied to action items
