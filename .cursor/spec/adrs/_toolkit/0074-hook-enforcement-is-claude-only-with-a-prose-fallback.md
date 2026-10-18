@@ -138,5 +138,6 @@ the state on `main`.
 
 Numbered ADRs do not ship to consumers (ADR-0064), so this ADR is the
 maintainer-facing record only. The consumer-facing statement lives in
-`docs/ai-skills/compatibility.md` § "Hook-based enforcement is Claude Code
-only".
+`docs/ai-skills/compatibility.md` § "Hook-based enforcement reaches Claude
+Code and Codex", which describes the reach ADR-0077 set after superseding this
+ADR.

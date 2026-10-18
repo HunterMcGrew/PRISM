@@ -32,14 +32,16 @@
  * not a change anywhere else in `hooks/`.
  *
  * `emitDeny` returns `null` on a host whose deny envelope is neither
- * documented nor observed. A documented envelope clears the bar even without
- * a live probe (the Codex row below) — the asymmetry is that an unrecognized
- * envelope fails open, so shipping one ahead of a probe cannot make things
- * worse. A deny is the one output shape that changes what the user's tool
- * does, so a genuinely guessed envelope either fails silently or blocks a
- * write with a message the host never renders. Returning `null` makes "the
- * gate does not reach Cursor" a property of the code rather than a sentence
- * in a doc (ADR-0072).
+ * documented nor observed. A documented envelope ships without a live probe
+ * (the Codex row below), which relaxes the live-probe bar ADR-0074 set rather
+ * than meeting it (ADR-0077). Shipping early is safe in one direction only:
+ * an unrecognized envelope fails open, so it cannot block anything, but a
+ * recognized deny firing on the wrong path is not covered until a probe. A
+ * deny is the one output shape that changes what the user's tool does, so a
+ * genuinely guessed envelope either fails silently or blocks a write with a
+ * message the host never renders. Returning `null` makes "the gate does not
+ * reach Cursor" a property of the code rather than a sentence in a doc
+ * (ADR-0072).
  *
  * @typedef {Object} HarnessSpec
  * @property {Record<string, "read"|"write"|"search"|"shell">} toolKinds

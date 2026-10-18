@@ -102,7 +102,7 @@ Alternatives, and why each lost:
 - `.prism/plans/issue-488.md`
 - [ADR-0069](0069-deterministic-verification-is-a-pipeline-stage.md) — the report-back channel is closed to hooks
 - [ADR-0072](0072-write-gate-on-routed-paths.md) — the write gate this runtime was built for, and the habituation measurement
-- [ADR-0074](0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md) — git hooks rejected as a read-before-write substitute; Claude-only reach with a prose fallback
+- [ADR-0074](0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md) — git hooks rejected as a read-before-write substitute; Claude-only reach with a prose fallback. Superseded by [ADR-0077](0077-hook-enforcement-reaches-claude-code-and-codex.md) for reach. Its git-hook rejection still stands.
 - `.prism/plans/epic-floor-revert.md` — the revert that left room for a smaller opt-in
 - `.prism/architect/_toolkit/hook-runtime.md` § Git gates
 - `.prism/references/cleanup-pass.md`
