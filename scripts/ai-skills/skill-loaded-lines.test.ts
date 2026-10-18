@@ -24,15 +24,6 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-customer-success": { thinnedBy: "PRISM-499 PR 11, business", max: 324 },
-	"prism-data": { thinnedBy: "PRISM-499 PR 11, business", max: 335 },
-	"prism-finance": { thinnedBy: "PRISM-499 PR 11, business", max: 334 },
-	"prism-founder": { thinnedBy: "PRISM-499 PR 11, business", max: 338 },
-	"prism-legal": { thinnedBy: "PRISM-499 PR 11, business", max: 339 },
-	"prism-market-research": { thinnedBy: "PRISM-499 PR 11, business", max: 328 },
-	"prism-marketing": { thinnedBy: "PRISM-499 PR 11, business", max: 306 },
-	"prism-recruiting": { thinnedBy: "PRISM-499 PR 11, business", max: 337 },
-	"prism-sales": { thinnedBy: "PRISM-499 PR 11, business", max: 334 },
 	"prism-plan": {
 		thinnedBy: "replaced by the phase-2 plan skill; its plan logic stays until then",
 		max: 1108,

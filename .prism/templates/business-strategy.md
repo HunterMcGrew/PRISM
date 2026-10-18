@@ -1,43 +1,16 @@
 # Business Strategy Doc — Template & Conventions
 
-## Purpose
+The strategy doc is the business layer's working memory, scoped to a company and a quarter. It sits above PRDs: it decides what the company is doing and why, and the business skills feed it. The live doc is the single file `.prism/business/strategy.md`.
 
-The strategy doc is the business layer's durable working memory — the company/quarter-scoped equivalent of the branch plan. The founder/strategy persona (Vera) owns it; every Wave 1+ business persona reads it and appends to its owned sections, the way every engineering persona grounds in the branch plan. It sits *above* PRDs on grain: it decides what the company is doing and why, and points Parker at the relevant section as upstream context for the PRDs that flow from it.
+## Conventions every business skill follows
 
-This file is the template and the conventions. The live doc lives at `.prism/business/strategy.md` and is created on Vera's first real write — not seeded at install time (per [`lazy-artifacts.md`](../rules/lazy-artifacts.md)).
+- **Read before writing.** Each `## Decisions` entry is an implicit do-not-undo. When a request conflicts with one, name the conflict and ask whether it is an intentional reversal. If yes, update the entry with the reason it changed before writing, and if reversing it would invalidate other recorded priorities, ask the user who must ratify it. Never overwrite a decision silently.
+- **Write only your own section.** `prism-strategy` owns the doc and writes any section. Every other business skill reads the whole doc and writes only the section named in its body. `## Decisions` and `## History` are shared and append-only.
+- **Create on first real write.** Build the file from the structure below when a run has content to record, and never seed it empty.
+- **Hand off through `prism-prd`.** When work surfaces an initiative worth building, point `prism-prd` at the relevant strategy section as upstream context. Business skills never hand to implementation skills directly. Handoffs between business skills are fine.
+- **Host capabilities are not shipped.** `deep-research`, `brand-voice`, and `xlsx` come from the host. Check for one at runtime with `ToolSearch select:<name>`, use the parameters its schema advertises, and when it is absent say so once, use the fallback in your body, and continue.
 
----
-
-## File location
-
-The strategy doc is a single file:
-
-`.prism/business/strategy.md`
-
-Single file with sections, not a per-domain subdirectory — the branch-plan precedent proves single-file-with-sections works across many personas, and a subdir fragments reads and writes before any contention justifies it. A split into per-domain subdocs is a deferred, second-adapter decision: earn it when contention is observed, not anticipated.
-
----
-
-## Section ownership
-
-Vera owns the doc and writes every section freely. Later business personas append to their owned sections under the same section-ownership model the branch plan uses — they read the whole doc but write only the sections they own. The `## Decisions` log is shared, append-only working memory the way the branch plan's is.
-
----
-
-## Required Workflow
-
-- **Read before writing.** Treat the existing doc as the source of truth for current mission, OKRs, priorities, and prior decisions. Each `## Decisions` entry is an implicit do-not-undo.
-- **Reconcile, don't overwrite.** When a new choice conflicts with a recorded decision, update the `## Decisions` entry with the reason it changed — never silently overwrite a documented choice.
-- **Outcomes over activity.** OKRs are measurable results, not lists of work. Reject key results that can't be measured.
-- **Surface open questions.** When a call needs input you don't have, record it with the open-question variant and a default path so work continues without losing the question.
-
----
-
-# Strategy Doc File Template
-
-When creating `.prism/business/strategy.md`, use the following structure.
-
----
+# Strategy Doc Structure
 
 # Strategy: <company or product name>
 
@@ -45,81 +18,45 @@ When creating `.prism/business/strategy.md`, use the following structure.
 
 ## Mission & Positioning
 
-One short paragraph each. The anchor every contested priority resolves against.
-
 - **Mission** — what the company is for.
 - **Positioning** — who it serves, against whom, and why it wins.
 
----
-
 ## OKRs
 
-Current quarter. Each objective is a direction; each key result is a measurable outcome that proves you got there.
+Current quarter. Each objective is a direction, and each key result is a measurable outcome.
 
 ### Objective 1: <one-sentence direction>
 
-- [ ] KR1: <measurable result — e.g. "30% of weekly-active teams adopt X">
-- [ ] KR2: <measurable result>
-
-### Objective 2: <one-sentence direction>
-
-- [ ] KR1: <measurable result>
-
----
+- [ ] KR1: <measurable result, such as "30% of weekly-active teams adopt X">
 
 ## Cross-Functional Priorities
 
-Ranked, so downstream personas know what comes first. Name what the company will *not* do this quarter as clearly as what it will.
+Ranked, with the why. Name what the company will not do this quarter as clearly as what it will.
 
-1. <highest priority — one line, with the why>
-2. <next>
-
----
+1. <highest priority>
 
 ## Decisions
 
-Durable, auditable log of strategy choices. Append-only working memory — each entry is an implicit do-not-undo, and the reasoning is the signal.
+Durable log of strategy choices. Each entry gives the reasoning, and a real alternative gets one line on why it lost.
 
-- <what was decided and why — one line each>
-
-When a decision had a real alternative, record it as a TL;DR: alternative + one-line reason it was rejected. No essay.
-
-### Open-question Decision variant
-
-Some strategy calls surface before the input to resolve them exists — a stakeholder hasn't weighed in, a benchmark hasn't run, a market read is pending. Record these explicitly so work continues under a documented default while the question stays visible. Mirrors the branch plan's `OPEN —` variant ([`branch-plan.md`](../rules/branch-plan.md)).
-
-**Format:**
-
-```markdown
-- **OPEN — TBD, needs <name> input.** <The open question>. **Default path (used until resolved):** <what work follows in the meantime>.
-```
-
-When the question resolves, replace the entry with a normal Decision and note the resolution in `## History`.
-
----
+- <what was decided and why>
+- **OPEN — TBD, needs <name> input.** <The question>. **Default path (used until resolved):** <what work follows meanwhile>. When it resolves, replace it with a normal Decision and note the resolution in `## History`.
 
 ## History
 
-Append-only log. One line per meaningful change, oldest first.
-
 - YYYY-MM-DD: <what changed and why>
-
----
 
 ## Metrics
 
-The landing spot for measured outcomes. Today this section holds the OKR targets and any baseline numbers; it is also the documented home for the **future outbound seam** — a Wave 3 data/metrics persona will append measured results here, feeding the engineering pipeline's outcomes back into strategy. Keep the section present and labeled even before that persona exists.
+Written by `prism-metrics`, which appends measured results here for `prism-strategy` to review.
 
 | Metric | Target | Current | As of |
 | ------ | ------ | ------- | ----- |
-| <name> | <target> | <value or —> | YYYY-MM-DD |
-
----
 
 ## Initiatives → PRDs
 
-Pointers to the PRDs that flow from this strategy. Vera names the initiative and the strategy section it derives from; Parker writes the PRD at `.prism/prds/<slug>.md`. This is the inbound handoff seam — the strategy doc is a *source* Parker reads, not a parallel pipeline.
-
 | Initiative | Strategy section | PRD |
 | ---------- | ---------------- | --- |
-| <name> | <e.g. Cross-Functional Priorities #1> | `.prism/prds/<slug>.md` (or "pending") |
+| <name> | <e.g. Cross-Functional Priorities #1> | `.prism/prds/<slug>.md` or "pending" |
+
+Sections owned by the other business skills (`## Research`, `## Finance`, `## Marketing`, `## Sales`, `## Customer Success`, `## People`, `## Legal & Compliance`) are added by their owner on its first write.

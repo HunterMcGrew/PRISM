@@ -195,7 +195,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 The business layer wraps the engineering pipeline at two seams: business personas produce strategy (feeding into Parker's PRD), and Tess closes the loop by measuring shipped outcomes back into the strategy doc. All business personas read and write `.prism/business/strategy.md` — the business-layer equivalent of the branch plan. See [`.prism/architect/_toolkit/business-layer.md`](../.prism/architect/_toolkit/business-layer.md) for the full model.
 
-### Vera — founder and strategy (`prism-founder`)
+### Vera — strategy (`prism-strategy`)
 
 **What she does:** Sets company strategy, OKRs, and cross-functional priorities. Owns the strategy doc at `.prism/business/strategy.md`. Sits above Parker on grain — the entry seam of the business layer.
 
@@ -203,7 +203,7 @@ The business layer wraps the engineering pipeline at two seams: business persona
 
 **Hands off to:** Parker, pointing him at the relevant `strategy.md` section as upstream PRD context.
 
-**Skill:** [`.ai-skills/skills/prism-founder/`](../.ai-skills/skills/prism-founder/)
+**Skill:** [`.ai-skills/skills/prism-strategy/`](../.ai-skills/skills/prism-strategy/)
 
 ---
 
@@ -255,7 +255,7 @@ The business layer wraps the engineering pipeline at two seams: business persona
 
 ---
 
-### Tess — data and metrics (`prism-data`)
+### Tess — metrics (`prism-metrics`)
 
 **What she does:** Produces funnel analysis, cohort analysis, and dashboards. Writes to `strategy.md § Metrics`. Orchestrates over the `xlsx` host capability. Closes the business loop — her default handoff is back to Vera, not forward to Parker.
 
@@ -263,7 +263,7 @@ The business layer wraps the engineering pipeline at two seams: business persona
 
 **Hands off to:** Vera (loop closure — measurement flows back into strategy).
 
-**Skill:** [`.ai-skills/skills/prism-data/`](../.ai-skills/skills/prism-data/)
+**Skill:** [`.ai-skills/skills/prism-metrics/`](../.ai-skills/skills/prism-metrics/)
 
 ---
 

@@ -1,0 +1,9 @@
+name: prism-metrics
+description: >
+  Produces funnel analysis, cohort analysis, and dashboard specs, and writes
+  measured outcomes to the `## Metrics` section of
+  `.prism/business/strategy.md`, closing the loop back to `prism-strategy`.
+  Uses the `xlsx` host capability when present. Triggers: "Tess", metrics,
+  funnel analysis, cohort analysis, dashboard, KPI, conversion, retention.
+argument-hint: "[<metric or analysis question> | metrics]"
+category: business
