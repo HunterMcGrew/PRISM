@@ -3,7 +3,7 @@
  * `prism eject` — cleanly removes a PRISM install from a consumer repo.
  *
  * Deletes every PRISM-owned `.prism/` file (per `classifyPath`), every
- * projected `prism-*` skill/agent whose `.ai-skill-generated` marker (or, for
+ * projected PRISM-owned skill/agent (`checkIsPrismSkillId`) whose `.ai-skill-generated` marker (or, for
  * flat agent adapters and the generated Codex config file, generated header
  * line) confirms PRISM authored it, and finally the sync manifest itself —
  * while preserving consumer-owned content, unknown paths, and every diverged
@@ -178,26 +178,27 @@ async function runFileRemovalPass(
  * agent root, plus the generated Codex config file. Two gates must both pass
  * before a candidate is removed:
  *
- * 1. **Prefix** — only `prism-`-prefixed names are candidates at all. A
- *    consumer's own `custom-*` or org-token skill is never even considered.
+ * 1. **Ownership** — only PRISM-owned names (`checkIsPrismSkillId`: `prism-*`
+ *    plus the bare IDs PRISM ships) are candidates at all. A consumer's own
+ *    `custom-*` or org-token skill is never even considered.
  * 2. **Marker** — the candidate must carry PRISM's authored-by-us signal: the
  *    `.ai-skill-generated` marker file for skill directories
  *    (`removeDeletedManagedSkills`), or the generated header line for flat
  *    agent adapter files and the Codex config file
  *    (`removeDeletedManagedAgentFiles`, `collectCodexConfigOutcome`). A
- *    `prism-`-prefixed dir or file without that signal is a consumer's
+ *    PRISM-owned name without that signal is a consumer's
  *    hand-authored work and is never deleted.
  *
  * Reuses `removeDeletedManagedSkills`/`removeDeletedManagedAgentFiles` with an
- * empty valid-set so every marker-confirmed `prism-*` entry is treated as an
- * orphan — that is exactly eject's intent. The prefix filter is applied first
- * by pre-scanning each root and only including `prism-*` entries in the
+ * empty valid-set so every marker-confirmed PRISM-owned entry is treated as an
+ * orphan — that is exactly eject's intent. The ownership filter is applied first
+ * by pre-scanning each root and only including PRISM-owned entries in the
  * tracked outcome list; the reused functions still walk the whole directory,
- * but they only ever delete a marker-confirmed entry, so a non-`prism-*`
- * marked skill (if one ever existed) stays untouched by construction. The
- * Codex config file is a single file (not `prism-*`-prefixed — it has no
+ * but they only ever delete a marker-confirmed entry, so a marked skill
+ * that is not PRISM-owned (if one ever existed) stays untouched by
+ * construction. The Codex config file is a single file (not a skill ID — it has no
  * per-consumer name to gate on) so it is checked directly against
- * `GENERATED_HEADER_LINE` rather than through the prefix+marker pre-scan.
+ * `GENERATED_HEADER_LINE` rather than through the ownership+marker pre-scan.
  */
 async function runSkillRemovalPass(
 	consumerRepoRoot: string,
@@ -273,13 +274,13 @@ async function collectCodexConfigOutcome(
 }
 
 /**
- * Scans one skill-directory root (Claude/Codex/Cursor `prism-*` skill dirs),
+ * Scans one skill-directory root (Claude/Codex/Cursor PRISM-owned skill dirs),
  * records a `skipped-not-prism` / `skipped-no-marker` / `removed` outcome for
  * every entry, then delegates the actual deletion to
- * `removeDeletedManagedSkills`. Every non-`prism-*` entry name is passed back
+ * `removeDeletedManagedSkills`. Every entry name that is not PRISM-owned is passed back
  * in as a "valid" (keep) skill ID — `removeDeletedManagedSkills` only orphans
  * entries absent from that set, so this is the prefix filter applied ahead of
- * the marker gate: a marked skill that isn't `prism-*` is protected by construction, not by
+ * the marker gate: a marked skill that isn't PRISM-owned is protected by construction, not by
  * convention.
  */
 async function collectSkillDirOutcomes(
@@ -323,14 +324,15 @@ async function collectSkillDirOutcomes(
 
 /**
  * Scans one flat agent-adapter root (Codex `.toml` / Claude `.md`), records an
- * outcome per `prism-*`-prefixed file, then delegates deletion to
- * `removeDeletedManagedAgentFiles`. Every non-`prism-*` file's skill ID is
- * passed back in as "valid" (keep) — same prefix-filter-ahead-of-the-marker-gate
- * shape as `collectSkillDirOutcomes`, so a non-`prism-*` file is protected by
- * construction even if it somehow carried the generated header line. A
- * `prism-*.toml` / `prism-*.md` is removed only when it also carries the
- * header — the sibling-marker convention `removeDeletedManagedAgentFiles`
- * already enforces for flat files that have no directory to hold a marker.
+ * outcome per PRISM-owned file, then delegates deletion to
+ * `removeDeletedManagedAgentFiles`. Every file whose skill ID is not
+ * PRISM-owned is passed back in as "valid" (keep) — same
+ * ownership-filter-ahead-of-the-marker-gate shape as `collectSkillDirOutcomes`,
+ * so a file that is not PRISM-owned is protected by construction even if it
+ * somehow carried the generated header line. A PRISM-owned `.toml` or `.md`
+ * adapter is removed only when it also carries the header — the sibling-marker
+ * convention `removeDeletedManagedAgentFiles` already enforces for flat files
+ * that have no directory to hold a marker.
  */
 async function collectAgentFileOutcomes(
 	outputRoot: string,
@@ -444,7 +446,7 @@ async function pruneEmptyDirs(
 /**
  * Prunes one projected skill/agent root (e.g. `.claude/skills`,
  * `.codex/agents`) if it is now empty, after `runSkillRemovalPass` has
- * removed every marker-confirmed `prism-*` entry from it. Deliberately
+ * removed every marker-confirmed PRISM-owned entry from it. Deliberately
  * shallow — unlike `pruneEmptyDirs`, this never recurses into a surviving
  * entry's own subdirectories, because a surviving entry here is always a
  * consumer's own skill or agent file, and its internal contents are consumer

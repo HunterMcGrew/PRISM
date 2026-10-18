@@ -401,7 +401,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
   - **`prism-handoff`:** the flush into `## Decisions`, `## History`, `## Debugged Issues`, and `## Review Issues` before writing, so the document holds only session residue; scope filter and target prefix; the unique temp path with its explicit separator join and the `.prism/handoffs/` fallback; the seven sections; neutral prose with secrets redacted; `(unverified)` on claims asserted from memory; the report; and the read-side contract (open the given path, never scan the directory, the plan wins a conflict).
   - **`tdd`:** unchanged apart from two edits. It was already 53 lines, so the cap did not call for a cut. The persona preamble became one line, and the dispatch clause now says to name the seam in the closing message. Absorbing the planned `testing` skill is phase 2.
 
-- **No utility reference could go.** None of the four skills cited a `.prism/references/` file, a step file, or a template, so there was no reference to delete and no seed twin, `seed-curation.json` key, or manifest route to remove. The one cited file is `writing-a-skill.md`, an architect doc, and the forge skill cites it by path (81 lines, 112 loaded). The manifest does not route it on `.ai-skills/skills/**`: `.prism/architect/manifest.json` and `_toolkit/manifest.base.json` route only the spec-editing, skills-ecosystem, ticket-workflows, and closing-messages docs there, the install stub has no such route, and only the generated `.claude/skills/**` mirror routes the guide. An earlier draft dropped the citation on the opposite claim and shipped a forge skill that never told its run to read the guide. The description shape is stated inline, since `skill-authoring.md` is `excluded` from the consumer seed.
+- **No utility reference could go.** None of the four skills cited a `.prism/references/` file, a step file, or a template, so there was no reference to delete and no seed twin, `seed-curation.json` key, or manifest route to remove. The one cited file is `writing-a-skill.md`, an architect doc, and the forge skill cites it by path (112 loaded). The manifest does not route it on `.ai-skills/skills/**`: `.prism/architect/manifest.json` and `_toolkit/manifest.base.json` route only the spec-editing, skills-ecosystem, ticket-workflows, and closing-messages docs there, the install stub has no such route, and only the generated `.claude/skills/**` mirror routes the guide. An earlier draft dropped the citation on the opposite claim and shipped a forge skill that never told its run to read the guide. The description shape is stated inline, since `skill-authoring.md` is `excluded` from the consumer seed.
 
 - **What the utility skills cut on purpose.** These behaviors had no line that a gate, rule, or other skill reads, so they are gone and not lost by accident.
   - **`prism-handoff`:** the "20+ messages" invocation condition, which contradicted the same paragraph's rule against counted proxies, and the unrecognized-target escape that named AGENTS.md routing (now: resume in the same session and say so under `## Focus`).
@@ -439,6 +439,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - 2026-10-18 [huntermcgrew/prism-499-review-lane]: Self-review pass 1 fixes. Brought `prism-skill-forge` onto the four tests, restored the coverage rule, smells, AC proposal, and domain anchor in the review skills, and fixed stale persona wording in `CONTEXT.md` and the roster.
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: Renamed `devils-advocate` and `prism-skill-forge` to `prism-challenge` and `prism-forge-skill`, thinned them and `prism-handoff` to 38, 112, and 47 loaded lines, and stated the `tdd` ID exception in ADR-0080 and `skill-authoring.md`. No utility reference existed to delete; see Decision: What the utility skills kept.
 - 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 1 fixes. The forge skill cites the writing guide by path again (112 loaded lines), migrate mode regained three facts, and `tdd` is owned in `eject.ts` and `ship-closure.ts`; see Decision: A bare PRISM skill ID is owned in code.
+- 2026-10-18 [huntermcgrew/prism-499-utilities]: Self-review pass 2 fixes. A test ties `roles.json` IDs to `checkIsPrismSkillId`, and the stale `prism-*` prose in `eject.ts`, `generate-skills.ts`, and `consumer-sync-flow.md` now says PRISM-owned.
 
 ---
 
@@ -499,6 +500,30 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 - **File:** `.prism/rules/skill-authoring.md:37`
 - **Problem:** ADR-0080 and `skill-authoring.md` gave different reasons, `writing-a-skill.md` and `install-layout.md` said PRISM owns only `prism-*`, and `eject.ts` and `ship-closure.ts` keyed on the prefix alone.
 - **Fixed in:** one reason in both places, the exception named in the guide and `install-layout.md` (with its twin), and both scripts keyed on `checkIsPrismSkillId` with tests. See Decision: A bare PRISM skill ID is owned in code.
+
+### Nothing tied the bare-ID list to roles.json
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/ownership.ts:41`
+- **Problem:** a future bare skill ID could ship in `roles.json` without joining `PRISM_BARE_SKILL_IDS`, and would fall out of eject and ship-closure silently.
+- **Fixed in:** `ownership.test.ts` asserts every `roles.json` skill ID satisfies `checkIsPrismSkillId`.
+
+### Prefix prose left stale after the ownership change
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/eject.ts:279`
+- **Problem:** the JSDoc said a marked skill that is not `prism-*` is protected by construction, but a marked `tdd` is removed. The `eject.ts` header, the removal-pass and agent-pass comments, `generate-skills.ts`, and `consumer-sync-flow.md` still said `prism-*`.
+- **Fixed in:** all now say PRISM-owned (`checkIsPrismSkillId`), and `consumer-sync-flow.md` and its seed twin say "PRISM skill roster".
+
+### Plan quoted a line count that had moved
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/plan.md:404`
+- **Problem:** the Decision gave the writing guide as 81 lines, and it is now 82.
+- **Fixed in:** the Decision keeps "112 loaded" and drops the guide's own count.
 
 ## PR Readiness
 

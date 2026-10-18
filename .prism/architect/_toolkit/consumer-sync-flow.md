@@ -46,9 +46,9 @@ After this one run, `.prism/.sync-manifest.json` exists and the repo is in stead
 
 ## Steady-state persona-skill distribution
 
-After the first `prism:adopt` run, every subsequent `pnpm prism:update` (and every future `prism:adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. The mechanism lives in `runUpdate` (`scripts/ai-skills/update.ts`) — the shared function both `prism:update`'s `main()` and `prism:adopt`'s `runAdopt` call — so both entry points reach the same render step without duplication (see plan prism-242 Decision "Adopt-path seam").
+After the first `prism:adopt` run, every subsequent `pnpm prism:update` (and every future `prism:adopt` on a fresh repo) automatically renders the full PRISM skill roster into the consumer's configured skill directories. The mechanism lives in `runUpdate` (`scripts/ai-skills/update.ts`) — the shared function both `prism:update`'s `main()` and `prism:adopt`'s `runAdopt` call — so both entry points reach the same render step without duplication (see plan prism-242 Decision "Adopt-path seam").
 
-**What the consumer receives.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` (`scripts/ai-skills/generate-skills.ts`) renders the skill body with the consumer's own token map — `${PROJECT}` becomes the consumer's project name, `${TICKET_PREFIX}` becomes their ticket prefix, and so on — and writes the rendered output to the platform directory for each host the consumer's `hosts` config key declares, all three when the key is absent (`deriveOptedIn` in `scripts/ai-skills/lib/hosts.ts` derives the per-output flags from `hosts`):
+**What the consumer receives.** For each skill in the PRISM source roster, `generatePlatformSkills` (`scripts/ai-skills/generate-skills.ts`) renders the skill body with the consumer's own token map — `${PROJECT}` becomes the consumer's project name, `${TICKET_PREFIX}` becomes their ticket prefix, and so on — and writes the rendered output to the platform directory for each host the consumer's `hosts` config key declares, all three when the key is absent (`deriveOptedIn` in `scripts/ai-skills/lib/hosts.ts` derives the per-output flags from `hosts`):
 
 - `.claude/skills/<id>/SKILL.md` (Claude Code)
 - `.agents/skills/<id>/SKILL.md` (Codex)
