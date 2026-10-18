@@ -29,7 +29,7 @@ Measured on `main` at `8ef1df0d` on 2026-10-17, before any phase-1 change.
 - **Loaded** is body plus every `.md` under `.prism/references/` or `.prism/skills/` the body cites by markdown link or backticked path. This is the number the intent's 120-line cap applies to.
 - **Closure** follows the same citations transitively through those files. It is context, not a target, and it depends on how a citation is parsed: a second parser gave 891 for `prism-review-loop` against this one's 914.
 - Architect docs are not counted per skill, because they load by manifest route whatever skill is running. A `load: always` rule is counted once, as always-on content. A `load: skill` rule the body cites counts against that skill's Loaded lines, because it loads only when that skill runs. Without that, content moved into a `load: skill` rule would leave the cap's view. No `load: skill` rule is cited from a skill body today, so the numbers below don't change.
-- PR 5's loaded-lines test becomes the canonical measurement. As built, it gates on `measureSkillLoad`, which follows citations transitively and counts cited templates, architect docs, and `lib/` files, so it reads higher than the Loaded column below; see § Phase 1 result.
+- PR 5's loaded-lines test becomes the measurement the cap uses. As built, it gates on `measureSkillLoad`, which follows citations transitively and counts cited templates, architect docs, and `lib/` files, so it reads higher than the Loaded column below; see § Phase 1 result.
 
 ### Skills
 
@@ -92,9 +92,9 @@ Measured on `main` at `594f08d4` on 2026-10-18, after all eleven stack PRs merge
 Two definitions of Loaded appear, and they differ:
 
 - **Loaded** is the Method definition above: body plus the `.md` under `.prism/references/` or `.prism/skills/` that the body cites. The Loaded columns use it.
-- **Canonical** is `measureSkillLoad` in `scripts/ai-skills/lib/skill-loaded-lines.ts`, the number the cap's test gates on. It also follows citations transitively and counts cited templates and architect docs, so it reads higher. The business skills each cite the 63-line strategy template, which Loaded ignores and Canonical counts.
+- **Gate** is `measureSkillLoad` in `scripts/ai-skills/lib/skill-loaded-lines.ts`, the number the cap's test gates on. It also follows citations transitively and counts cited templates and architect docs, so it reads higher. The business skills each cite the 63-line strategy template, which Loaded ignores and Canonical counts.
 
-| Skill | Body before | Body after | Loaded before | Loaded after | Canonical after |
+| Skill | Body before | Body after | Loaded before | Loaded after | Gate after |
 | --- | --- | --- | --- | --- | --- |
 | prism-audit (was prism-surface-audit) | 317 | 57 | 434 | 57 | 57 |
 | prism-challenge (was devils-advocate) | 123 | 38 | 123 | 38 | 38 |
@@ -134,7 +134,7 @@ Four skills were deleted, not thinned: Sol, Sasha, Ren, and Theo carried 804 bod
 | Skills | 33 | 29 |
 | Body lines | 7,084 | 1,870 |
 | Loaded lines | 20,189 | 2,518 |
-| Canonical lines | not measured | 4,123 |
+| Gate lines | not measured | 4,123 |
 | Skills over 120 loaded lines | 32 | 3 (`prism-plan`, `prism-user-stories`, `prism-review-loop`) |
 | `load: always` rules | 21 files, 1,622 lines, 19.7k words | 21 files, 1,584 lines, 19.2k words |
 | `CLAUDE.md` | 54 lines | 54 lines |
@@ -142,7 +142,7 @@ Four skills were deleted, not thinned: Sol, Sasha, Ren, and Theo carried 804 bod
 | `.md` files under `.prism/references/` | 70 | 16 |
 | `.md` files under `.prism/skills/` | 59 | 0 |
 
-Canonical gives the same three skills over the cap. The largest skill outside them loads 119 lines under Canonical (`prism-forge-skill`). Phase 1 did not rewrite the always-on rules, so the always-on line count moved only where a deletion or rename reached a rule.
+Gate gives the same three skills over the cap. The largest skill outside them loads 119 lines under Gate (`prism-forge-skill`). Phase 1 did not rewrite the always-on rules, so the always-on line count moved only where a deletion or rename reached a rule.
 
 ---
 
