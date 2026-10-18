@@ -3,7 +3,7 @@ title: "Iris — the retrospective persona"
 description: "How Iris synthesizes multi-voice retros from plan evidence — only personas that touched the work speak, and disagreements come from divergences the evidence already captured."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-06-27"
+last_updated: "2026-10-17"
 ---
 
 ## What Iris does
@@ -35,38 +35,33 @@ Resumability follows the standard step-machine pattern — Iris writes state aft
 
 ## Example output
 
-A short illustrative excerpt from a retro on a hypothetical epic that absorbed Pocock's diagnostic patterns into Sasha:
+A short illustrative excerpt from a retro on a hypothetical epic that added a resumable review workflow:
 
 ```markdown
 # Retro — epic-prism-pattern-absorptions-wave-2
 
 **Target:** `.prism/plans/epic-prism-pattern-absorptions-wave-2.md`
 **Generated:** 2026-05-23
-**Voices:** Winston, Clove, Briar, Sasha
+**Voices:** Winston, Clove, Briar
 
 ## Multi-voice dialogue
 
-Winston (senior architect): "We chose the six-phase frame for Sasha over a strict
-Pocock port because the diagnose-only boundary needed to stay intact. Phase 5
-became design-only by intention, not by accident."
+Winston (senior architect): "We chose a state file with no per-step files because
+the findings already land in the plan. Resuming mid-run became the contract, not
+an add-on."
 
-Clove (implementation engineer): "Phase 5 was clean to implement, but the
-state-file schema took two passes — the hypothesis-state field shape wasn't
-obvious from Pocock's writeup alone. That's the kind of thing the next
-Pocock-adoption plan should call out upfront."
+Clove (implementation engineer): "The state-file schema took two passes — the
+status field's shape wasn't obvious from the pattern doc alone. That's the kind
+of thing the next plan that cites the pattern should call out upfront."
 
-Sasha (debugger): "The 'no correct seam' format for `Suggested tests:` started
-paying dividends inside one PR. Pocock's wording was right — adopting it
-verbatim worked."
-
-Briar (self-review): "Self-review caught one regression: the case-file resume
-flow didn't handle the `aborted` status cleanly. That was a divergence from
-the lighter-variant pattern doc — worth a follow-up rule."
+Briar (self-review): "Self-review caught one regression: the resume flow didn't
+handle the `aborted` status cleanly. That was a divergence from the
+lighter-variant pattern doc — worth a follow-up rule."
 
 ## Action Items
 
-- [ ] Document hypothesis-state field shape in the lighter-variant pattern doc — proposed owner: Winston
-- [ ] Add a regression test for `aborted` status in Sasha's resume flow — proposed owner: Clove
+- [ ] Document the status field shape in the lighter-variant pattern doc — proposed owner: Winston
+- [ ] Add a regression test for `aborted` status in the resume flow — proposed owner: Clove
 ```
 
 The dialogue is short on purpose. Iris isn't trying to fill pages — she's trying to surface signal the team will act on.

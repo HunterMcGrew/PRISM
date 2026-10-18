@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-04-19
 ---
 
+> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Sasha is retired, so Clove, or any implementer, creates `## Debugged Issues` entries and marks them fixed. The section and its readers stand.
+
 ## Context
 
 The plan file has many sections — goal, user stories, decisions, tasks, history, debugged issues, review issues, AC, cleanup items, PR readiness. Multiple skills read and write to the plan across a ticket's lifetime. Without an ownership model, skills either step on each other's work or leave sections untouched out of caution.

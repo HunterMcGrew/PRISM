@@ -46,14 +46,13 @@ Nora → Mira → [Pixel] → Winston → Clove → Briar → [Eric] → [Sage/E
 ### Bug
 
 ```
-Nora (verify + scaffold + AC) → Sasha (confirm root cause + fix) → Clove → Briar → [Eric] → [Reese]
+Nora (verify + scaffold + AC) → Clove (confirm root cause, then fix) → Briar → [Eric] → [Reese]
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement, verifies the bug, scaffolds bug report with root cause + suspected fix + AC, syncs AC to the tracker
-2. **Sasha** confirms root cause and suspected fix before implementation
-3. **Clove** implements the fix, syncs AC to the tracker if adjusted
-4. **Briar** self-reviews, syncs AC to the tracker if updated
-5. **[Reese]** (optional) generates a bug-fix verification plan for QA to retest against — invoke after the fix ships when QA needs a structured retest artifact rooted in the ticket's bug report.
+2. **Clove** confirms the root cause and suspected fix against the code, records the confirmed finding in `## Debugged Issues`, then implements the fix and syncs AC to the tracker if adjusted
+3. **Briar** self-reviews, syncs AC to the tracker if updated
+4. **[Reese]** (optional) generates a bug-fix verification plan for QA to retest against — invoke after the fix ships when QA needs a structured retest artifact rooted in the ticket's bug report.
 
 ### Improvement
 
@@ -92,7 +91,7 @@ Lateral moves that happen while implementation is in progress. These aren't devi
 Clove → Pixel → Clove
 ```
 
-Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes. Same pattern the team uses for Clove → Sasha → Clove on bugs.
+Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes.
 
 **UX Concern from Review** — Briar or Eric surfaces a UX problem, not just a code problem:
 
@@ -134,9 +133,9 @@ Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. 
 
 1. **Discovery** — any agent that discovers a bug uses the shared template at `.prism/templates/bug-report.md`
 2. **Scaffolding** — Nora verifies the bug, fills in root cause (`verified` or `suspected`), suspected fix, and acceptance criteria. Updates the ticket description with the full template including AC.
-3. **Verification** — Sasha confirms the root cause and suspected fix before implementation begins
-4. **Recording** — Sasha records confirmed findings in `## Debugged Issues` using the extended format (severity, environment, repro steps, expected/actual)
-5. **Ticket sync** — opt-in: Sasha asks whether to post the bug report to the tracker. If yes, formats using the template and posts via `save_comment`
+3. **Verification** — Clove confirms the root cause and suspected fix against the code before changing it
+4. **Recording** — Clove records confirmed findings in `## Debugged Issues` using the extended format (severity, environment, repro steps, expected/actual)
+5. **Ticket sync** — opt-in: Clove asks whether to post the bug report to the tracker. If yes, formats using the template and posts via `save_comment`
 6. **Fix** — Clove implements the fix, syncs AC to the tracker if adjusted
 7. **Review** — Briar checks the fix during self-review, syncs AC to the tracker if updated
 

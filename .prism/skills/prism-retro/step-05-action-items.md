@@ -20,7 +20,7 @@ Each action item follows the shape:
 [ ] <action> — proposed owner: <persona>
 ```
 
-Owners come from the `voices` array. Don't propose owners who weren't staged — if the action falls outside the staged voices, name the persona class anyway (e.g. "proposed owner: Theo" for an architect-doc gap) and let the user decide whether to route it.
+Owners come from the `voices` array. Don't propose owners who weren't staged — if the action falls outside the staged voices, name the persona class anyway (e.g. "proposed owner: Winston" for an architect-doc gap) and let the user decide whether to route it.
 
 ## Actions
 

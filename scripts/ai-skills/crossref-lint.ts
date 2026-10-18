@@ -112,7 +112,7 @@ interface ScanRoot {
 // `.ai-skills/skills/` ships in package.json's `files` array but has no scan
 // root below. Adding one would catch zero real defects today: its only
 // repo-root-absolute references are lazy-artifact runtime paths — per-persona
-// state files (`.prism/sasha-state.json`, `.prism/theo-state.json`, etc.) and
+// state files (`.prism/iris-state.json`, etc.) and
 // Vera's `.prism/business/strategy.md`, none of which exist until their
 // owning persona's first write — plus one illustrative dialogue example in
 // prism-surface-audit's shared.md. Its relative links resolve against the

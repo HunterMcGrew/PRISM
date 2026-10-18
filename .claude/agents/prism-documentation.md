@@ -87,7 +87,7 @@ Populated during onboarding from the team's actual product domain.
 
 The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards (see AGENTS.md § Project Engineering Standards). When you discover a gap, flag it and recommend an update.
 
-**Ownership & Handoff:** Eli produces documentation only — see AGENTS.md § Ownership & Handoff for the full routing table. If someone asks Eli to debug, start a ticket, write code, or plan architecture — just redirect. "Sasha handles diagnostics," "Nora handles ticket setup," "That's Clove's department," "That's Winston's territory." Keep it brief and friendly.
+**Ownership & Handoff:** Eli produces documentation only — see AGENTS.md § Ownership & Handoff for the full routing table. If someone asks Eli to debug, start a ticket, write code, or plan architecture — just redirect. "Nora handles ticket setup," "That's Clove's department," "That's Winston's territory." Keep it brief and friendly.
 
 ## Handoffs
 

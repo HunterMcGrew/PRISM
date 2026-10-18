@@ -131,7 +131,7 @@ When looking for an existing plan:
 3. If not found, look for `.prism/plans/epic-<ticket-id>.md`.
 4. If not found, scan all plan files for a matching `## Ticket` field.
 5. If still not found:
-   - **code-dev / architect / self-review / debugger**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
+   - **code-dev / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
    - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
 
 ---
@@ -381,7 +381,7 @@ Silent cross-lane edits are the failure mode. Documented absorption is fine; und
 
 1. <task description — docs changes go here>
 
-Tasks may reference other personas as needed (e.g. `### Briar`, `### Sasha`). Cross-persona dependencies are noted inline.
+Tasks may reference other personas as needed (e.g. `### Briar`, `### Reese`). Cross-persona dependencies are noted inline.
 
 ---
 
@@ -449,7 +449,7 @@ Examples:
 
 ## Debugged Issues
 
-Add entries here via the debugger skill. Each entry has a structured format. Non-trivial CI/build failures fixed during implementation earn an entry here even when no debugger session ran — the plan is the durable content bus, and a failure fixed inline without a record starves anything that reads this section later (the retro charter, an audit, a future debugger session).
+Add entries here when a bug's root cause is confirmed. Any implementer (Clove by default) writes them. Each entry has a structured format. Non-trivial CI/build failures fixed during implementation earn an entry here even when no separate diagnosis was run — the plan is the durable content bus, and a failure fixed inline without a record starves anything that reads this section later (the retro charter, an audit, a future debugging session).
 
 ### <short issue title>
 
@@ -466,7 +466,7 @@ Add entries here via the debugger skill. Each entry has a structured format. Non
 - **Refuted hypotheses:** (optional — list hypotheses tested and eliminated; skip when there were no real alternatives)
   - <hypothesis> — refuted by <evidence>
 - **Recommended fix:** minimal description
-- **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags Winston/Ren follow-up)
+- **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags Winston follow-up)
 - **Missing evidence:** (optional — Gap / Impact / How to Obtain mini-table for any unconfirmed claims that the diagnosis still depends on)
 - **Ticket:** `synced` | `not synced` | `N/A`
 
@@ -865,7 +865,6 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 - prism-code-dev (Clove)
 - prism-code-review-pr (Eric)
 - prism-code-review-self (Briar)
-- prism-debugger (Sasha)
 - prism-documentation (Eli)
 - prism-design (Pixel)
 - prism-qa-test-plan (Reese)
@@ -1048,7 +1047,6 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 - **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
 - **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
 - **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
-- **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 - **`prism-review-loop`** — carries a stricter disposition: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. Its own Ledger set is this section's set plus two loop-local additions — the PR body and the readiness line the loop itself emits. See its § Review surfaces.
 
@@ -1214,7 +1212,6 @@ Personas don't create empty or header-only placeholder files at install time or 
 
 ## Canonical patterns
 
-- **Theo's state file** (`.prism/theo-state.json`) — returns `null` on absent; created on first phase advance. Atomic-write via `.tmp` + rename. See `.prism/skills/prism-doc-walker/lib/state.md`.
 - **Pixel's mock directory** (`.prism/design/mocks/`) — created on first mode 2 spec save.
 - **Zoe's audits directory** (`.prism/audits/`) — created on first audit run (see `prism-surface-audit/shared.md` § Output format).
 - **Atlas's onboarding state** (`.ai-skills/registry/onboarding-state.json`) — written on first answer; not seeded at session start.
@@ -1460,7 +1457,6 @@ When a user works without invoking a specific skill, detect what they're doing a
 | -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Writing or modifying code              | **Clove** (`prism-code-dev`)         | "fix this", "implement", "add a feature", "make this work", starts editing files, writes code directly                                                                                                                                                                                                          |
 | Architecture or design questions       | **Winston** (`prism-architect`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
-| Debugging a bug                        | **Sasha** (`prism-debugger`)         | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior                                                                                                                                                                                            |
 | Reviewing a PR                         | **Eric** (`prism-code-review-pr`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
 | Starting a ticket                      | **Nora** (`prism-ticket-start`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
 | Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
@@ -1486,8 +1482,6 @@ When a user works without invoking a specific skill, detect what they're doing a
 These personas route on their name or an explicit trigger phrase only — never on bare-agent intent detection. Each is cadence-driven or ceremony-shaped (invoked at a bound event, not a conversational signal), so an ambient-intent match would misfire (e.g. "how did that go?" firing a retrospective).
 
 - **Zoe** (`prism-surface-audit`) — audits the `.prism/` surface on cadence; explicit invocation only. Triggers: "weekly audit", "what's stale", "what can we archive".
-- **Theo** (`prism-doc-walker`) — walks a target directory and drafts architect docs. Triggers: "find architect doc candidates", "what should we document", "scan for architect docs".
-- **Ren** (`prism-refactor-scout`) — scouts refactor candidates and writes a refactor plan. Triggers: "find refactor candidates", "what should we refactor", "where's the dead weight".
 - **Iris** (`prism-retro`) — runs the retro charter at plan close. Triggers: "retrospective", "post-mortem", "retro this epic".
 
 ## How to route
@@ -1689,7 +1683,7 @@ Lead with the answer. When the reader asked a question, the first sentence answe
 Two carve-outs:
 
 - Scope discipline still governs what gets *built*. "Build the asked-for one" doesn't license absorbing the bigger version — [`followup-scope.md`](followup-scope.md) and [`code-standards.md` § Refactor scope](code-standards.md) decide what's in scope; this section only shapes how the bigger version gets *mentioned*.
-- Deliberate decision gates are exempt. Menus that *are* the product at a designed decision point — an architect's approve/adjust/cancel gate, a doc-walker's write/skip/defer prompt — stay menus. The anti-pattern is a menu standing in for an answer, not a menu placed as a gate.
+- Deliberate decision gates are exempt. Menus that *are* the product at a designed decision point — an architect's approve/adjust/cancel gate — stay menus. The anti-pattern is a menu standing in for an answer, not a menu placed as a gate.
 
 ---
 

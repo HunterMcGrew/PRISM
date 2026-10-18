@@ -41,7 +41,7 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | AC Sync Log                                   | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
 | `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
 | `## History`                                  | All (append-only)                                                      | All                                         |
-| `## Debugged Issues`                          | Sasha (creates), Clove (marks fixed)                                   | Clove, Briar, Eric                          |
+| `## Debugged Issues`                          | Clove (creates and marks fixed; any implementer may write it)          | Clove, Briar, Eric                          |
 | `## Review Issues`                            | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
 | `## Cleanup Items`                            | Briar                                                                  | Clove                                       |
 | `## PR Readiness`                             | Briar                                                                  | Clove, Eric                                 |

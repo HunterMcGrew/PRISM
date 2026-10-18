@@ -33,7 +33,6 @@ const SKILL_ID_RENAMES: ReadonlyArray<readonly [string, string]> = [
 	["thrive-code-dev", "prism-code-dev"],
 	["thrive-code-review-pr", "prism-code-review-pr"],
 	["thrive-code-review-self", "prism-code-review-self"],
-	["thrive-debugger", "prism-debugger"],
 	["thrive-documentation", "prism-documentation"],
 	["thrive-pixel", "prism-design"],
 	["thrive-qa-test-plan", "prism-qa-test-plan"],

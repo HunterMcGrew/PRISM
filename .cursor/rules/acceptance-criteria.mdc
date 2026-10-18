@@ -39,7 +39,7 @@ AC is written for non-technical testers with access to the running application a
 
 ## AC citation discipline
 
-Every AC item traces back to one of three sources: a user story written by Mira, a debug finding recorded by Sasha, or a stated requirement captured during planning. The trace appears as a parenthetical citation at the end of the item.
+Every AC item traces back to one of three sources: a user story written by Mira, a debugged issue recorded in the plan, or a stated requirement captured during planning. The trace appears as a parenthetical citation at the end of the item.
 
 **Citation format:**
 

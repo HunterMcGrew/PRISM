@@ -3,7 +3,7 @@ title: "The PRISM Workflow"
 description: "How work moves from ticket to ship in PRISM: who to call, when, and what each persona hands off."
 category: "workflow"
 audience: "developer-user"
-last_updated: "2026-06-27"
+last_updated: "2026-10-17"
 ---
 
 # The PRISM Workflow
@@ -34,7 +34,7 @@ Winston reads the branch plan, evaluates the approach against codebase patterns,
 
 Say: "Clove, implement this." or describe what you want built.
 
-Clove reads the branch plan, works through the implementation tasks in order, and updates the plan after each meaningful change. When work surfaces a design question, Clove loops in Pixel. When a bug surfaces mid-implementation, Clove loops in Sasha.
+Clove reads the branch plan, works through the implementation tasks in order, and updates the plan after each meaningful change. When work surfaces a design question, Clove loops in Pixel. When a bug surfaces mid-implementation, Clove confirms the root cause and records it in `## Debugged Issues` before fixing it.
 
 **Clove hands off to:** Briar for self-review before opening a PR.
 
@@ -67,9 +67,6 @@ The tier system is built so rules load at the right scope rather than all at onc
 | **Mira** | Writing user stories before planning |
 | **Pixel** | You need a UI/UX design, a mock, or layout direction |
 | **Reese** | You need a QA test plan or release checklist |
-| **Sasha** | Something is broken and you need a diagnosis |
-| **Theo** | Walking a directory for architect-doc coverage |
-| **Ren** | Scouting the codebase for refactor candidates |
 | **Parker** | Writing a PRD from scratch or synthesizing one from existing code |
 | **Lilac** | Generating a standup summary |
 | **Sage** | Generating a changelog between releases |

@@ -2,7 +2,7 @@
 
 Three gates that determine whether a decision warrants ADR-class documentation. All three must fire — one alone is not enough.
 
-**Source:** Adapted from Matt Pocock's `grill-with-docs` skill via Phase 1.5e of the bmad-pocock pattern absorption pass. Wave 2 extracts the criterion to a dedicated reference doc so Theo can cite it directly (his `shared.md` already points at this file) and Winston's inlined version can become a single citation.
+**Source:** Adapted from Matt Pocock's `grill-with-docs` skill via Phase 1.5e of the bmad-pocock pattern absorption pass. Wave 2 extracts the criterion to a dedicated reference doc so any persona can cite it directly and Winston's inlined version can become a single citation.
 
 ## The three gates
 
@@ -31,21 +31,18 @@ A decision that fails the triple-gate still goes somewhere — just not into an 
 
 ## When to apply
 
-Apply the gate at decision-promotion time — typically Winston during plan close, sometimes Theo when surfacing a walking candidate that might warrant an ADR rather than (or in addition to) an architect doc.
+Apply the gate at decision-promotion time — typically Winston during plan close.
 
 - **Winston** — `.prism/references/architect/plan-mode.md` § Immediate Decision Promotion cites this reference and applies the gate after each `## Decisions` entry.
-- **Theo** — `.ai-skills/skills/prism-doc-walker/shared.md` § "When to write an ADR vs architect doc" cites this reference; Theo flags ADR candidates during walks and hands off to Winston, who applies the gate and writes the ADR.
 
 ## Who cites this pattern
 
 - **Winston** — applies the gate at plan close for every `## Decisions` entry.
-- **Theo** — flags ADR candidates during architect-doc walks; defers gate application to Winston.
 - **Briar** and **Eric** — apply the gate when reviewing whether a Decision in a plan should have been promoted to an ADR but wasn't (or vice versa). Flag as Minor in review when the gate is misapplied.
 
 ## Why a reference doc rather than inlining
 
-Phase 1.5e inlined the gate in Winston's `## Immediate Decision Promotion` section and asked Theo to cite the Phase 1.5e roadmap entry until the dedicated doc landed. Wave 2 extracts it for three reasons:
+Phase 1.5e inlined the gate in Winston's `## Immediate Decision Promotion` section. Wave 2 extracts it for two reasons:
 
-- Theo's `shared.md` (line 55) already names this exact file path; the roadmap fallback was always temporary.
 - Future personas that need ADR criteria (Briar review checks, Eric PR review checks, the Iris retrospective persona) can cite one source instead of three.
 - The gate is the canonical PRISM criterion for ADR promotion. Canonical criteria belong in `.prism/references/`, not inlined in one persona that other personas have to read around.

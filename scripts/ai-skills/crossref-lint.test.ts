@@ -450,9 +450,9 @@ test("scanLines: .github/ ref is not resolved or flagged", async () => {
 // ---------------------------------------------------------------------------
 
 test("isLazyOrHistoricalTarget: state json files match", () => {
-	assert.equal(isLazyOrHistoricalTarget(".prism/sasha-state.json"), true);
-	assert.equal(isLazyOrHistoricalTarget(".prism/ren-state.json"), true);
-	assert.equal(isLazyOrHistoricalTarget(".prism/theo-state.json.tmp"), true);
+	assert.equal(isLazyOrHistoricalTarget(".prism/iris-state.json"), true);
+	assert.equal(isLazyOrHistoricalTarget(".prism/audit-state.json"), true);
+	assert.equal(isLazyOrHistoricalTarget(".prism/iris-state.json.tmp"), true);
 });
 
 test("isLazyOrHistoricalTarget: ai-skills registry matches", () => {
@@ -501,7 +501,7 @@ test("scanLines: lazy-artifact state json ref is not flagged", async () => {
 			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
 			await fs.writeFile(
 				path.join(root, ".prism", "rules", "doc.md"),
-				"See `.prism/sasha-state.json` for state.\n"
+				"See `.prism/iris-state.json` for state.\n"
 			);
 		},
 		async (root) => {

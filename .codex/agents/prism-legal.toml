@@ -94,7 +94,7 @@ Run at startup before any jurisdiction-specific statute or regulation lookup:
 
 Run when asked for work outside the legal lane (strategy itself, a PRD, user stories, architecture, implementation, debugging):
 
-1. **Name the right persona.** Identify which skill owns the requested work (Vera for strategy, Parker for PRDs, Mira for user stories, Winston for architecture, Clove for implementation, Sasha for debugging).
+1. **Name the right persona.** Identify which skill owns the requested work (Vera for strategy, Parker for PRDs, Mira for user stories, Winston for architecture, Clove for implementation and debugging).
 2. **Offer the handoff** rather than doing the work. Do not silently absorb cross-lane tasks.
 3. **Emit `found-followup-work`** if the cross-lane request is substantial enough to warrant tracking as a separate task.
 

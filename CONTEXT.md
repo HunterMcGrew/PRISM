@@ -84,7 +84,6 @@ The human-facing companion to an [architect doc](#architect-doc), stored at `doc
 - **Avoid:** "user doc" (dev docs are for engineers, not end users; user-facing docs live elsewhere in `docs/`), "human doc", "public doc".
 - **Relationships:**
   - One dev doc per architect doc — exactly one-to-one, enforced by a build-time gate (ADR-0038).
-  - Authored and synced by Theo (`prism-doc-walker`); Winston pairs manually until Theo runs.
 
 ## ADR
 
@@ -125,7 +124,7 @@ A distinct operating shape a single [skill](#skill) switches between, selected f
 
 ## Lane (persona lane)
 
-The set of work a [persona](#persona) owns — Clove owns implementation, Eli owns documentation, Sasha owns debugging. In a plan, `## Implementation Tasks` is grouped under persona headings (`### Clove`, `### Eli`); the heading is the source of truth for who owns that task. A skill works within its named heading and treats other personas' headings as out-of-scope by default. Crossing a lane is allowed only via skip, documented absorption (a `## Decisions` entry), or an explicit handoff — silent cross-lane edits are the failure mode. Owned by ADR-0018 and `AGENTS.md` § Ownership & Handoff.
+The set of work a [persona](#persona) owns — Clove owns implementation, Eli owns documentation. In a plan, `## Implementation Tasks` is grouped under persona headings (`### Clove`, `### Eli`); the heading is the source of truth for who owns that task. A skill works within its named heading and treats other personas' headings as out-of-scope by default. Crossing a lane is allowed only via skip, documented absorption (a `## Decisions` entry), or an explicit handoff — silent cross-lane edits are the failure mode. Owned by ADR-0018 and `AGENTS.md` § Ownership & Handoff.
 
 - **Avoid:** "role" used interchangeably (a role names the persona; a lane names the work the persona owns), "domain" used loosely, "scope" (scope is broader — a lane is a persona-bounded scope).
 - **Relationships:**

@@ -38,7 +38,7 @@ When looking for an existing plan:
 3. If not found, look for `.prism/plans/epic-<ticket-id>.md`.
 4. If not found, scan all plan files for a matching `## Ticket` field.
 5. If still not found:
-   - **code-dev / architect / self-review / debugger**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
+   - **code-dev / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
    - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
 
 ---
@@ -288,7 +288,7 @@ Silent cross-lane edits are the failure mode. Documented absorption is fine; und
 
 1. <task description — docs changes go here>
 
-Tasks may reference other personas as needed (e.g. `### Briar`, `### Sasha`). Cross-persona dependencies are noted inline.
+Tasks may reference other personas as needed (e.g. `### Briar`, `### Reese`). Cross-persona dependencies are noted inline.
 
 ---
 
@@ -356,7 +356,7 @@ Examples:
 
 ## Debugged Issues
 
-Add entries here via the debugger skill. Each entry has a structured format. Non-trivial CI/build failures fixed during implementation earn an entry here even when no debugger session ran — the plan is the durable content bus, and a failure fixed inline without a record starves anything that reads this section later (the retro charter, an audit, a future debugger session).
+Add entries here when a bug's root cause is confirmed. Any implementer (Clove by default) writes them. Each entry has a structured format. Non-trivial CI/build failures fixed during implementation earn an entry here even when no separate diagnosis was run — the plan is the durable content bus, and a failure fixed inline without a record starves anything that reads this section later (the retro charter, an audit, a future debugging session).
 
 ### <short issue title>
 
@@ -373,7 +373,7 @@ Add entries here via the debugger skill. Each entry has a structured format. Non
 - **Refuted hypotheses:** (optional — list hypotheses tested and eliminated; skip when there were no real alternatives)
   - <hypothesis> — refuted by <evidence>
 - **Recommended fix:** minimal description
-- **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags Winston/Ren follow-up)
+- **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags Winston follow-up)
 - **Missing evidence:** (optional — Gap / Impact / How to Obtain mini-table for any unconfirmed claims that the diagnosis still depends on)
 - **Ticket:** `synced` | `not synced` | `N/A`
 

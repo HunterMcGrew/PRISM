@@ -117,10 +117,10 @@ can only be re-checked, and re-checking checked work is over-verification.
 **Worth challenging** — Winston's implementation plan and decisions; Parker's
 PRD; Vera's strategy and OKRs; Ellis's pricing and unit-economics model
 (assumption stacks are what this skill is best at); Kora's market sizing and
-competitive claims; Sasha's root-cause diagnosis (*"what has to be true for
+competitive claims; a root-cause diagnosis (*"what has to be true for
 this to work"* reads as *"what has to be true for this to be the root
-cause"*); Ren's refactor proposal and its deletion-test argument; Theo's
-architect docs; Mira's stories, when they carry a challengeable requirements
+cause"*); a refactor proposal and its deletion-test argument; architect
+docs; Mira's stories, when they carry a challengeable requirements
 bet Winston and Clove will build against.
 
 **Not worth challenging** — Eric, Briar, and Reese, whose output is already

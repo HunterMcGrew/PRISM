@@ -41,7 +41,7 @@ A ticket is "ready" when the next skill in the chain can start without coming ba
 - [ ] Acceptance criteria exist or can be derived from the description
 - [ ] No unresolved blockers or dependencies
 - [ ] Estimate exists or the ticket is estimable from the description
-- [ ] Downstream skill can start from what's here (Winston can plan / Mira can write stories / Sasha can investigate)
+- [ ] Downstream skill can start from what's here (Winston can plan / Mira can write stories / Clove can start)
 
 **Bug-specific additions:**
 - [ ] Steps to reproduce are present and verified (or marked suspected)
@@ -49,7 +49,7 @@ A ticket is "ready" when the next skill in the chain can start without coming ba
 - [ ] Expected vs actual behavior described
 - [ ] Severity classified (S1-S4) with rationale
 - [ ] Blast radius assessed (affected sites, features, users, regression risk)
-- [ ] Root cause identified (verified or suspected) — or flagged for Sasha
+- [ ] Root cause identified (verified or suspected) — or flagged for Clove to confirm
 
 **Feature-specific additions:**
 - [ ] User and their goal identified (not just "the system should...")

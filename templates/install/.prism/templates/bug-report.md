@@ -29,7 +29,7 @@ Critical / High / Medium / Low
 
 ## Suspected Fix
 
-[Nora's best guess based on verification. Sasha will confirm before implementation.]
+[Nora's best guess based on verification. Clove will confirm before implementation.]
 
 ## Additional Context
 

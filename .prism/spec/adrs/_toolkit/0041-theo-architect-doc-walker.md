@@ -1,7 +1,12 @@
-# ADR-0041: Theo as the architect-doc walker persona
+---
+Number: 0041
+Title: Theo as the Architect-Doc Walker Persona
+Status: superseded
+Date: 2026-05-22
+Superseded-by: 0079
+---
 
-**Status:** Accepted
-**Date:** 2026-05-22
+# ADR-0041: Theo as the architect-doc walker persona
 
 ## Context
 
@@ -58,4 +63,4 @@ The Deletion Test from Phase 1.5e is Theo's primary heuristic in cartographic mo
 - [ADR-0058](./0058-single-audience-retires-paired-dev-docs.md) — retires the mandatory paired-dev-doc gate; paired docs are now config-conditional on `documentation.keepsDevDocs`.
 - [ADR-0040](./0040-atlas-as-onboarding-persona.md) — Atlas establishes the persona-vs-mode pattern Theo follows.
 - [Phase 1.5e pattern absorptions](../../../plans/roadmap.md) — micro-file step machine + Deletion Test absorbed from research.
-- [`.prism/skills/prism-doc-walker/lib/state.md`](../../skills/prism-doc-walker/lib/state.md) — Theo's state schema and protocol.
+- [`prism-doc-walker/lib/state.md`](../../skills/prism-doc-walker/lib/state.md) — Theo's state schema and protocol.

@@ -3,7 +3,7 @@ title: "PRISM Personas"
 description: "What each persona does, when to call them, and what they hand off."
 category: "personas"
 audience: "developer-user"
-last_updated: "2026-07-25"
+last_updated: "2026-10-17"
 ---
 
 # PRISM Personas
@@ -62,18 +62,6 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 **Hands off to:** Clove for fixes.
 
 **Skill:** [`.ai-skills/skills/prism-code-review-pr/`](../.ai-skills/skills/prism-code-review-pr/)
-
----
-
-### Sasha — debugger (`prism-debugger`)
-
-**What she does:** Diagnoses bugs from logs, errors, or failing tests. Records findings with root cause, confidence level, and recommended fix in the branch plan's `## Debugged Issues`.
-
-**When to call:** "This is broken." or share an error/log. Works well mid-Clove when a bug surfaces during implementation.
-
-**Hands off to:** Clove for the fix.
-
-**Skill:** [`.ai-skills/skills/prism-debugger/`](../.ai-skills/skills/prism-debugger/)
 
 ---
 
@@ -149,16 +137,6 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
-### Theo — architect-doc walker (`prism-doc-walker`)
-
-**What he does:** Walks a target directory, applies the Deletion Test to find load-bearing decisions, prompts write/skip/defer per candidate, and drafts architect docs or ADRs. State persists in `.prism/theo-state.json`.
-
-**When to call:** "Theo, walk `src/services/`." to surface undocumented patterns.
-
-**Skill:** [`.ai-skills/skills/prism-doc-walker/`](../.ai-skills/skills/prism-doc-walker/)
-
----
-
 ### Sage — changelog (`prism-changelog`)
 
 **What he does:** Generates changelogs and release notes between git tags. Ships changelog PRs.
@@ -188,16 +166,6 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 **When to call:** "Atlas, onboard this repo." from inside your target codebase.
 
 **Skill:** [`.ai-skills/skills/prism-onboarding/`](../.ai-skills/skills/prism-onboarding/)
-
----
-
-### Ren — refactor scout (`prism-refactor-scout`)
-
-**What he does:** Walks the codebase, ranks refactor candidates by strength of case, grills the chosen candidate through multiple passes, and produces a refactor plan.
-
-**When to call:** "Ren, scout for refactor candidates in `src/`."
-
-**Skill:** [`.ai-skills/skills/prism-refactor-scout/`](../.ai-skills/skills/prism-refactor-scout/)
 
 ---
 

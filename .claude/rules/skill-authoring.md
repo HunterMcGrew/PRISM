@@ -44,7 +44,7 @@ The name goes in sentence 1 (as role) and again in the `Triggers:` line. This is
 
 ### Exclusions stay when they're concrete behavioral constraints
 
-The general preference is positive framing. Negation clauses are the exception when they're load-bearing for routing — `"Never writes code"` (Pixel, Sasha), `"Reports in chat only — never posts to GitHub"` (Briar), `"Never approves"` (Eric). These steer the router away from the wrong skill when a user asks for code, a GitHub post, or a PR approval. Keep one short exclusion on the skills where it marks a real behavioral boundary; drop it everywhere else. The test: does omitting the clause let the router pick this skill for work it doesn't do? If yes, the exclusion is load-bearing — it's a behavioral constraint, not a stylistic preference.
+The general preference is positive framing. Negation clauses are the exception when they're load-bearing for routing — `"Never writes code"` (Pixel), `"Reports in chat only — never posts to GitHub"` (Briar), `"Never approves"` (Eric). These steer the router away from the wrong skill when a user asks for code, a GitHub post, or a PR approval. Keep one short exclusion on the skills where it marks a real behavioral boundary; drop it everywhere else. The test: does omitting the clause let the router pick this skill for work it doesn't do? If yes, the exclusion is load-bearing — it's a behavioral constraint, not a stylistic preference.
 
 ### Example
 
@@ -77,11 +77,11 @@ Never externalize these, regardless of length:
 
 ## Persona name vs. slash-command ID
 
-The skill's slash-command ID is function-descriptive (`prism-design`, `prism-doc-walker`, `prism-surface-audit`, `prism-onboarding`, `prism-prd`, `prism-retro`, `prism-refactor-scout`). It describes what the skill does, so a user who doesn't know the persona name can still find and route to it. The persona keeps her human name and announces it on intro — that's how voice and continuity show up in conversation.
+The skill's slash-command ID is function-descriptive (`prism-design`, `prism-surface-audit`, `prism-onboarding`, `prism-prd`, `prism-retro`). It describes what the skill does, so a user who doesn't know the persona name can still find and route to it. The persona keeps her human name and announces it on intro — that's how voice and continuity show up in conversation.
 
 Persona-name trigger phrases (`"invoke whenever the user mentions 'Pixel'"`) live in the frontmatter `description` field, not in the ID. The auto-routing layer reads `description` for the name match; the slash-command surface reads the ID for the function match. Both paths reach the same skill.
 
-**Why:** Function-descriptive IDs let a user who's never met the persona discover the skill by what it does; persona-name triggers let returning users invoke by name. Collapsing the two into one (ID = persona name) loses the discovery path; collapsing the other direction (no name triggers) loses the named-handoff pattern every persona's `## Next persona` section depends on. The Slice 4 rename in `epic-lean-skill-architecture` (pixel→design, theo→doc-walker, zoe→surface-audit, atlas→onboarding, parker→prd, iris→retro, ren→refactor-scout) is the establishing precedent — see that epic's `## Decisions` → "Naming."
+**Why:** Function-descriptive IDs let a user who's never met the persona discover the skill by what it does; persona-name triggers let returning users invoke by name. Collapsing the two into one (ID = persona name) loses the discovery path; collapsing the other direction (no name triggers) loses the named-handoff pattern every persona's `## Next persona` section depends on. The Slice 4 rename in `epic-lean-skill-architecture` (pixel→design, zoe→surface-audit, atlas→onboarding, parker→prd, iris→retro) is the establishing precedent — see that epic's `## Decisions` → "Naming."
 
 ## Utility skills
 

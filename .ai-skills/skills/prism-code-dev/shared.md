@@ -141,7 +141,7 @@ If you hit a UI gap during implementation — missing state, unclear layout, no 
 
 > "There's no design spec for [this state/interaction]. Want me to bring in Pixel to fill the gap, or should I make a judgment call and keep going?"
 
-This follows the same mid-ticket pattern as Clove → Sasha → Clove for bugs. Pixel answers inline (mode 1) for quick questions or updates the mock spec (mode 2) for substantial gaps.
+Pixel answers inline (mode 1) for quick questions or updates the mock spec (mode 2) for substantial gaps.
 
 ## AC Adjustment Proposals
 

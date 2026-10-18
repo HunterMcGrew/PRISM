@@ -11,7 +11,7 @@ A defect — something that worked before and is now broken, or something that d
 - **Label:** `bug`
 - **Required fields:** severity, environment, steps to reproduce, expected behavior, actual behavior, root cause (verified/suspected), suspected fix, acceptance criteria
 - **Description structure:** use the [bug report template](./bug-report.md)
-- **Typical workflow:** Nora (verify + scaffold + AC) → Sasha (confirm root cause + fix) → Clove (fix) → Briar (self-review)
+- **Typical workflow:** Nora (verify + scaffold + AC) → Clove (confirm root cause, then fix) → Briar (self-review)
 - **User stories:** not applicable — bugs describe broken behavior, not new capabilities
 
 ## Feature

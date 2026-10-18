@@ -25,7 +25,7 @@ Skip the pattern when the workflow is short (≤3 phases), single-session, or wh
 Each workflow has a top-level state file (e.g. `.prism/workflows/<workflow-id>/state.json` or YAML frontmatter on the workflow's entry doc) tracking completion:
 
 ```yaml
-workflowId: ren-walk-2026-05-22
+workflowId: prd-intake-2026-05-22
 stepsCompleted: [1, 2, 3]
 currentStep: 4
 status: in-progress
@@ -47,13 +47,11 @@ The skill never silently overwrites a prior state file. Resumption is always off
 
 ## Who cites this pattern
 
-- **Theo** (Phase 2.5, architect-doc walker) — uses the pattern for the multi-phase scan → identify candidates → present → write loop. State at `.prism/architect-walker-state.json`.
-- **Ren** (Phase 2.6, refactor scout) — uses the pattern for the explore → categorize → present → grill loop. State at `.prism/ren-state.json`.
 - **Parker** (Phase 3, PRD persona) — uses the pattern for greenfield mode's brain-dump → stakes calibration → draft → rubric → finalize sequence. State at `.prism/prds/<slug>/state.yaml`.
 - **Winston** (existing) — does not currently use the pattern, but if plan mode grows beyond its current shape, this is the pattern it should grow into.
 
 ## Why a reference doc rather than inlining
 
-Three downstream consumers (Theo, Ren, Parker) need the same pattern shape with workflow-specific instantiations. Inlining the pattern into each skill triples the maintenance surface and guarantees drift. The reference doc owns the pattern; each skill cites it and documents only what's specific to its workflow.
+Each downstream consumer (Parker, Iris) needs the same pattern shape with workflow-specific instantiations. Inlining the pattern into each skill triples the maintenance surface and guarantees drift. The reference doc owns the pattern; each skill cites it and documents only what's specific to its workflow.
 
 The pattern is also relevant outside PRISM's current persona set — any future skill that grows multi-thousand-line SKILL.md should compare against this pattern before bloating further.

@@ -299,14 +299,14 @@ Whenever Pixel produces a mock spec, close with a handoff paragraph the dev can 
 
 ## Where Pixel fits in the team flow
 
-For reference — the team's standard flow is: **Nora → Mira → [Pixel] → Winston → Clove → Briar → [Eric] → [Sage/Eli/Reese]**, with Sasha for bug investigation and Sage/Eli/Reese for release work.
+For reference — the team's standard flow is: **Nora → Mira → [Pixel] → Winston → Clove → Briar → [Eric] → [Sage/Eli/Reese]**, with Sage/Eli/Reese for release work.
 
 Pixel is **invoke-only** — no other skill auto-recommends her in handoffs. The user explicitly invokes Pixel when she's needed, or auto-routing detects UI/UX intent from the user's message.
 
 Pixel slots in here:
 
 - **After Mira, before Winston** — when a ticket needs UI that doesn't exist yet (no mock, no Figma, new feature). Winston can't plan architecture for a screen that hasn't been designed, so Pixel goes first. Flow becomes: **Nora → Mira → Pixel → Winston → Clove → Briar → Eric**. This is now the only canonical path for mode 2 saved specs — direct-to-Clove was removed in [ADR-0034](../../spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md).
-- **Mid-ticket, while Clove is implementing** — when Clove hits a UI gap ("there's no spec for the error state here"). Pause Clove → Pixel → Clove. Same pattern the team uses for Clove → Sasha → Clove on bugs. Pixel writes inline (mode 1), Clove picks it back up. The mid-ticket carve-out applies to mode 1 inline sketches only — if the gap grows into a mode 2 spec, the spec routes through Winston.
+- **Mid-ticket, while Clove is implementing** — when Clove hits a UI gap ("there's no spec for the error state here"). Pause Clove → Pixel → Clove. Pixel writes inline (mode 1), Clove picks it back up. The mid-ticket carve-out applies to mode 1 inline sketches only — if the gap grows into a mode 2 spec, the spec routes through Winston.
 - **After a review surfaces a UX concern** — Briar or Eric catches a UX problem, not just a code problem (missing empty state, confusing flow, poor hierarchy). Flow: **Briar/Eric → Pixel → Winston → Clove → Briar → Eric** (similar to the Winston replanning loop). If Pixel resolves it via mode 1 inline sketch, Clove picks up directly without Winston.
 
 Pixel does **not** replace an approved Figma/XD mock. When an approved visual design exists, Pixel's job is to fill gaps (states not in the mock) and translate the visual intent into an implementable spec — not to redesign what's already been signed off.
