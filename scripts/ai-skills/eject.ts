@@ -279,7 +279,7 @@ async function collectCodexConfigOutcome(
  * every entry, then delegates the actual deletion to
  * `removeDeletedManagedSkills`. Every entry name that is not PRISM-owned is passed back
  * in as a "valid" (keep) skill ID — `removeDeletedManagedSkills` only orphans
- * entries absent from that set, so this is the prefix filter applied ahead of
+ * entries absent from that set, so this is the ownership filter applied ahead of
  * the marker gate: a marked skill that isn't PRISM-owned is protected by construction, not by
  * convention.
  */
