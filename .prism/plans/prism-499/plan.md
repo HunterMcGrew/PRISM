@@ -619,7 +619,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 - [x] **AC-1** No live file references Sol, Sasha, Ren, or Theo by name or skill ID. The only exceptions are the superseded ADRs that recorded their decisions, the ADRs that supersede them, and the 1.0.0 migration note.
   - Evidence (machine): a `git grep` for each name and ID, excluding plans, lessons, retros, audits, archived history, `.prism/qa/`, `.prism/research/`, `.prism/spec/adrs/` and its generated copies under `.claude/`, `.codex/`, and `.cursor/`, and the migration note, returns no file. The same grep with no exclusions returns at least one file, which proves the pattern matches.
-  - Result (2026-10-18, `594f08d4`): Met. With the exclusions widened per AC Adjustment: AC-1 excludes the QA and research records, the grep returns 0 files. The same grep with no exclusions returns 128 files, so the pattern matches. No migration note exists yet, so that exclusion matched nothing.
+  - Result (2026-10-18, `594f08d4`): Met. With the exclusions widened per the accepted AC Adjustment, the grep returns 0 files. The same grep with no exclusions returns 128 files, so the pattern matches. No migration note exists yet, so that exclusion matched nothing.
 - [x] **AC-2** Each ADR whose decision a deletion retires carries `Status: superseded` and names its successor.
   - Evidence (machine): PR 3 and PR 4 each list their retired ADRs in their own tasks, and `grep` finds `Status: superseded` and a successor in each one listed.
   - Result (2026-10-18, `594f08d4`): Met. All 14 ADRs the plan lists as retired (0048 to 0056, 0061, 0066, and 0069 by PR 3, 0041 and 0042 by PR 4) carry `Status: superseded`, and each names `Superseded-by: 0078` or `0079`.
