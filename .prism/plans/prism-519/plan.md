@@ -241,6 +241,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **The plan is a folder `plan.md` with the flat-plan sections.** The spec puts each child in `.prism/plans/prism-<n>/`. The folder templates and task grammar arrive in child 4, so this plan uses the `branch-plan.md` template, the only one on `main`. `resolveLivePlan` already finds `prism-519/plan.md`. The plan cites sections by name only and never points History at a Decision, so child 4's plan-folder citation lint will not need to allowlist it.
 - **One PR, though it crosses the 10-file mark.** About 10 hand-written files change. The rest are generated: `AGENTS.md`, `.codex/config.toml`, and the `.claude/`, `.codex/`, and `.cursor/` copies of two architect docs. The spec defines child 3 as one PR, and its parts share one purpose. If Hunter wants a stack, the cut goes after task 4: ordering, report, and budget test in the first PR; config write, doctor, and docs in the second.
 - **AC was not synced to issue #519 in this run.** Editing a public issue needs Hunter's go-ahead, and this run had none. Sync it when the plan is approved, or let Clove sync it when implementation starts.
+- **`compatibility.md` gains `config.toml` in its `.codex/` bullet, though it is outside this plan's files.** The file is the one `install-layout.md` cites for the committed-vs-ignored contract, and this change made its `.codex/` bullet false by committing `.codex/config.toml`. The edit is one sentence and shares the PR's purpose; a separate PR would leave the two files disagreeing until it merged.
 - **OPEN — TBD, needs a live Codex run (Hunter).** Whether Codex honors `project_doc_max_bytes` in a repo-level `.codex/config.toml`. The Codex docs show a repo-level file and do not list this key among those it ignores there, but they do not say it is honored. **Default path (used until resolved):** child 3 writes the key, and `prism doctor` prints the per-developer `~/.codex/config.toml` setting as a fallback (task 6). Task 8 is the probe.
 
 ---
@@ -249,6 +250,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — plan child 3 (Codex AGENTS.md budget) from the epic spec; Bounds — this plan folder only, commit and push, no PR, no code; Approach — measure the real byte layout, order inside `renderTier1Block`, one line-based TOML writer shared by build and update, one doctor check · close: scope held
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — build tasks 1–7 of this plan; Bounds — the plan's files only, no dependency, task 8 (live Codex run) skipped because Codex is not installed here; Approach — one commit per task, generated outputs rebuilt in tasks 3 and 7 · close: scope held
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the three Minor self-review findings plus the merge-signature cleaner path; Bounds — doctor gate and test, compatibility.md, budget-test JSDoc, `mergeProjectDocMaxBytes`, this plan · close: scope held
 
 ---
 
@@ -256,6 +258,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Plan created from the epic spec at `origin/huntermcgrew/prism-499-approve-once`. It has eight tasks, all Clove's, and one carried OPEN; the AC was not synced to #519 in this run.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Built tasks 1–7: lead-first block order, the `.codex/config.toml` limit sync in build and `prism update`, the budget test, the doctor check, and the docs. Task 8 was not run, so the OPEN Decision stays on its default path; the lead sections end at byte 30,549 of 32,768 on this branch.
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the three Minor self-review findings in 0b142e12: doctor's codex-doc-limit check runs only for an adopted repo, compatibility.md lists `.codex/config.toml`, and the budget-test JSDoc no longer names child 5's block. `mergeProjectDocMaxBytes` now takes the already-read setting, so the config is parsed once.
 
 ---
 
@@ -268,26 +271,29 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 ### Doctor's codex-doc-limit check prescribes `prism update` on a never-adopted repo
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:1404`
 - **Problem:** `checkCodexDocLimit` runs before the repo is adopted. A never-adopted repo whose own `AGENTS.md` is over 32 KiB gets a warning that says to run `prism update`, but the right command there is `prism adopt`. `install-layout.md` (the `runDoctor` call-site gate paragraph) warns against exactly this. It is Minor because the finding is a warning, `healthy` stays true, and it only fires on a pre-adopt repo with a large AGENTS.md.
 - **Suggested fix:** wrap the call in the same `syncResult.syncState.manifest !== null` gate that `checkSeedDelivery` uses, and add a no-manifest test.
+- **Fixed in:** 0b142e12 — `runDoctor` gates `checkCodexDocLimit` on `syncResult.syncState.manifest !== null`, and a no-manifest test covers it.
 
 ### compatibility.md's per-tool ownership list omits `.codex/config.toml`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.ai-skills/docs/compatibility.md:42`
 - **Problem:** `install-layout.md` now lists `.codex/config.toml` as committed, and it cites compatibility.md § Per-Tool Directory Ownership as the source of that contract. That section's `.codex/` bullet does not mention the file, so the source and its summary disagree. It is Minor because only the docs disagree. Behavior is unaffected.
 - **Suggested fix:** add `config.toml` (PRISM sets only `project_doc_max_bytes`) to the tracked list in that bullet.
+- **Fixed in:** 0b142e12 — the `.codex/` bullet in compatibility.md now lists `config.toml`.
 
 ### Budget test JSDoc names a workflow block that does not exist
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/agents-md-budget.test.ts:7`
 - **Problem:** The JSDoc says "The workflow block added to the same list must fit too", but `AGENTS_MD_LEAD_RULES` has no workflow block. A reader coming to this cold cannot resolve the reference, because it describes child 5's future work. It is Minor because only the comment is affected.
 - **Suggested fix:** cut the clause so the sentence reads "Growing the list means shortening a lead rule or moving one out."
+- **Fixed in:** 0b142e12 — the JSDoc clause is cut.
 
 ---
 
@@ -335,7 +341,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
 ## PR Readiness
 
-- [x] No critical or major issues (three Minors open)
+- [x] No critical or major issues (the three Minors are fixed)
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` clean)
 - [x] No stray console.logs or debug artifacts (the build's size line and the update/build warnings are intended output)
 - [x] Tests written for new logic and edge cases
