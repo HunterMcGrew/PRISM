@@ -3,7 +3,7 @@ title: "What PRISM writes"
 description: "The complete inventory of every path prism adopt, update, and eject can create or modify in your repo — grouped by who owns it."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-11-17"
+last_updated: "2026-11-18"
 ---
 
 # What PRISM writes
@@ -22,7 +22,7 @@ Every path PRISM manages falls into one of three buckets:
 
 ## PRISM-owned paths (synced on every update)
 
-These live under `.prism/` and are kept current by `prism update`. If you edit one directly, your edit is preserved in a `.bak` file the next time PRISM syncs — it's never silently discarded (see [Diverged files and `.bak` backups](#diverged-files-and-bak-backups) below).
+These are kept current by `prism update`. Most live under `.prism/`; the last two rows are the git hooks. If you edit one directly, your edit is preserved in a `.bak` file the next time PRISM syncs — it's never silently discarded (see [Diverged files and `.bak` backups](#diverged-files-and-bak-backups) below).
 
 | Path | What's there |
 |---|---|
@@ -34,6 +34,10 @@ These live under `.prism/` and are kept current by `prism update`. If you edit o
 | `.prism/templates/**` | PR description, acceptance-criteria, and bug-report templates |
 | `.prism/references/**` | Operational reference docs shared across skills (startup sequences, doc-writing guides, and similar) |
 | `.prism/SPEC.md` | The top-level spec file describing how the tier system works |
+| `.claude/hooks/git-hooks/*.mjs` | The pre-commit hook, the pre-push hook, and the installer, delivered with the agent hook runtime when `hosts` includes `claude` or `codex`. A copy carrying PRISM's marker line is replaced in place; one without it is backed up to `.bak` first |
+| `.githooks/pre-commit`, `.githooks/pre-push` | The two shims git runs. A `.githooks` file without PRISM's marker line is yours and is never touched, `.bak` included. Delivered under the same `hosts` condition as the row above |
+
+`prism adopt` and `prism update` also set `core.hooksPath` to `.githooks` in this clone's local git config, but only when it is unset or already points at a `.githooks` in this repo. A value pointing anywhere else, at any git config scope, is left alone and reported, so husky, lefthook, and a team-wide hooks path keep working. `prism hooks install` runs the same step by hand. The hooks run the formatter and linter you name under `gitHooks` in `.ai-skills/config.json` and skip when that block is absent. See [Parameterization](./parameterization.md).
 
 ## PRISM-owned platform mirrors (synced on every update)
 
@@ -78,7 +82,7 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 
 ## What `prism doctor` does — nothing gets written
 
-`prism doctor` is read-only. It validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports drift between your sync manifest and what's actually on disk (including pairing diverged files with any `.bak` siblings already sitting there from a prior update), confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` were actually delivered under those names rather than left as their seed names, and checks your installed version against the latest on npm. It never writes a file — running `prism doctor` as often as you like is always safe.
+`prism doctor` is read-only. It validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports drift between your sync manifest and what's actually on disk (including pairing diverged files with any `.bak` siblings already sitting there from a prior update), confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` were actually delivered under those names rather than left as their seed names, checks your installed version against the latest on npm, and reports whether PRISM's git hooks are installed in this clone, left alone because another hooks path is in force, or delivered but not yet installed. It never writes a file — running `prism doctor` as often as you like is always safe.
 
 ## What `prism eject` removes
 
