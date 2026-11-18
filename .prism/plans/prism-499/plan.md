@@ -617,6 +617,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter re-approved the intent in chat at `7c37fe08`, after the review fixes edited it. The edits were a `stage` field, the Eric wording, four restated bullets under what the amendment changes, a Cursor sentence, and one heading name.
 - 2026-11-18 [huntermcgrew/prism-499-approve-once]: Second intent amendment: once the intent is approved, only a question that changes the intent reaches Hunter, per his chat rulings that day. The spec now ports thrive's approve-once change and the gaps a coverage pass found at the 2026-11-18 tips of #2844 and #2859.
 - 2026-11-18 [huntermcgrew/prism-499-approve-once]: Review fixes changed the intent after its 2026-11-18 stamp, aligning the confirm round and the architect routing with thrive's db3570975 tip. Hunter's re-approval in chat is pending.
+- 2026-11-18 [huntermcgrew/prism-499-approve-once]: Hunter re-approved the intent in chat at `4a597785`, covering the review fixes made after its stamp.
 
 ---
 
