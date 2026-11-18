@@ -1475,6 +1475,30 @@ test("token arm denies a Codex apply_patch that adds the token file", () => {
 	});
 });
 
+test("token arm denies a Codex apply_patch that edits another file when the patch text names the token file", () => {
+	const root = makeGitRepo();
+	assertTokenDenied("codex", {
+		tool_name: "apply_patch",
+		tool_input: {
+			command: `*** Begin Patch\n*** Update File: docs/notes.md\n@@\n-old\n+see ${TOKEN}\n*** End Patch`,
+		},
+		cwd: root,
+	});
+});
+
+test("token arm passes a Claude Edit that names the token file only in new_string", () => {
+	const root = makeGitRepo();
+	assertPasses("claude", {
+		tool_name: "Edit",
+		tool_input: {
+			file_path: path.join(root, "docs/notes.md"),
+			old_string: "old",
+			new_string: `see ${TOKEN}`,
+		},
+		cwd: root,
+	});
+});
+
 const TOKEN_SHELL_PASSES = [
 	`cat ${TOKEN}`,
 	"grep -n UserPromptSubmit .claude/settings.json",

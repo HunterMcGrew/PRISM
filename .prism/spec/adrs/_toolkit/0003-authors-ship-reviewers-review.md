@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-04-19
 ---
 
+> Amended by [ADR-0082](./0082-session-ships-on-folder-plan-branches.md) for folder-plan branches: `prism-implement` and `prism-docs` commit only there, and the session's PR stage pushes once and opens the draft PR. This ADR stands unchanged on flat-plan branches.
+
 ## Context
 
 The skill ecosystem initially had ambiguous ownership around PR creation. Clove wrote code but paused before pushing to ask "Want me to push this up?" Briar, reviewing the branch, sometimes absorbed PR creation when asked. Eli, Sage, and Reese produced artifacts but stopped at file creation — shipping was a separate step the user had to request.

@@ -85,7 +85,7 @@ test("every canonical skill has a matching role definition", async () => {
 	}
 	for (const role of roles.skills) {
 		assert.ok(role.id, "Role missing id field");
-		if (role.type !== "utility") {
+		if (role.type !== "utility" && role.type !== "agent") {
 			assert.ok(role.persona, `Role '${role.id}' missing persona field`);
 		}
 	}

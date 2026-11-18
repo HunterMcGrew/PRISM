@@ -1,0 +1,9 @@
+name: prism-spec
+description: >
+  The spec stage. Run as a subagent: it reads an approved intent.md, design.md
+  when present, the routed architect docs, and the code in a fresh context, then
+  writes spec.md with requirements, design, and the Affected systems globs the
+  plan stage is checked against. For an epic intent it writes the epic spec with
+  children and merge order. Dispatched by the workflow, never routed off a
+  phrase.
+argument-hint: "[plan folder path]"

@@ -7,6 +7,10 @@
  *
  * Usage: tasks.mjs <plan.md> [--base <ref>] [--json]
  *
+ * With `--base`, the range is `<ref>..HEAD` and also follows first parents only,
+ * so refreshing a branch from its parent by merge never counts the parent's
+ * later `T<n>:` commits.
+ *
  * Without `--base`, the range starts at the commit that first added the plan
  * folder's `intent.md`, because no task can finish before its plan existed,
  * and it follows first parents only. A branch stacked on another plan's
@@ -351,7 +355,12 @@ export function loadPlanState(planPath, base) {
 	/** @type {string} */
 	let log;
 	if (base || !existsSync(path.join(dir, "intent.md"))) {
-		log = git(["log", "--format=%s", `${base ?? `origin/${defaultBranch}`}..HEAD`]);
+		log = git([
+			"log",
+			...(base ? ["--first-parent"] : []),
+			"--format=%s",
+			`${base ?? `origin/${defaultBranch}`}..HEAD`,
+		]);
 	} else {
 		const added = git([
 			"log",

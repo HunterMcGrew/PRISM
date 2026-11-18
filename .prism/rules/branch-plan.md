@@ -41,7 +41,7 @@ When looking for an existing plan:
    - **implement / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
    - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
 
-A folder resolves to its latest-stage file (`plan.md`, else `spec.md`, `design.md`, `intent.md`), and `.prism/archived/` never resolves as a live plan.
+A folder resolves to its latest-stage file (`plan.md`, else `spec.md`, `design.md`, `intent.md`), and `.prism/archived/` never resolves as a live plan. `.prism/references/plan-lookup.md` holds the same steps as a checklist for skills that resolve a plan.
 
 ---
 
@@ -136,7 +136,7 @@ The brevity default in step 5 is correct for routine entries. Verified fixes and
 
 **Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
 
-**How to apply:** When Winston records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
+**How to apply:** When the plan stage (`prism-plan`) records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 
 - **Root cause** — what the underlying problem turned out to be.
 - **Alternatives considered** — what other approaches were on the table.
@@ -168,7 +168,7 @@ For each ticket or epic:
 
 ## Landing a plan-only commit
 
-A persona that writes plan content but does not own the branch's code lane, such as a reviewer, lands its own plan-file commit: stage the plan file alone, commit it, push it. This is a narrow, machine-checkable exception to "authors ship, reviewers review" (`skill-routing.md` § Authors ship, reviewers review), and it is scoped by the *file set*, not by judgment: if the staged set contains anything other than the one plan file, the exception does not apply and the persona stops.
+A persona that writes plan content but does not own the branch's code lane, such as a reviewer, lands its own plan-file commit: stage the plan file alone, commit it, and on a flat plan push it. This is a narrow, machine-checkable exception to "authors ship, reviewers review" (`skill-routing.md` § Authors ship, reviewers review), and it is scoped by the *file set*, not by judgment: if the staged set contains anything other than the one plan file, the exception does not apply and the persona stops.
 
 **Why:** a review record that exists only in a torn-down worktree is not a durable plan entry — it defeats `## Review Issues` and `## PR Readiness` as the ticket's working memory. In the 2026-07-20 run a reviewer's plan write was stranded three times (twice committed-but-unpushed, once uncommitted in a worktree) and needed manual recovery each time. Having a separate session land the record was considered and rejected: it re-institutionalizes exactly the manual recovery that failed three times, and it leaves a standalone reviewer session with no landing path at all.
 
@@ -176,8 +176,9 @@ A persona that writes plan content but does not own the branch's code lane, such
 
 - Stage only the plan file: `git add <plan-path>`.
 - Verify the staged set before committing: `git diff --cached --name-only` must print exactly that one path. Anything else — abort, leave the tree alone, and report the unexpected paths in chat.
+- On a plan folder, the staged set is the files under `.prism/plans/<ticket>/` only, checked with the same `git diff --cached --name-only`, and the subject is `plan: <persona> record` in place of the `chore:` subject below. Commit through `node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "<subject>" <paths>`, which stages exactly the named files. The commit stays local, because the session's PR stage pushes once for the whole branch ([ADR-0082](../spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md)). That holds on a later review round too, when the session's next push re-enters `.prism/references/shipping-flow.md` at step 1 and carries the record.
 - Commit with `chore: <persona> plan record for <ticket-id>` per `git-conventions.md` § Commit Messages.
-- Push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — because a plain `git push origin HEAD` fails from detached HEAD.
+- On a flat plan, push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — because a plain `git push origin HEAD` fails from detached HEAD.
 - The exception covers the plan file only. It never extends to source, docs, config, or lockfiles — those stay the author's lane.
 
 ---
@@ -203,7 +204,7 @@ The close ceremony runs in two phases: **reflect**, then **close**.
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
 0. **Reflect** — grain-adaptive per above. Record the outcome as `> Retro: <path>` or `> Retro: declined — <reason>` beside the plan's `> Closed:` line (added in step 2 below).
-1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add each one to the doc that owns its subject. Read `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes before writing the `→ promoted to` verdict. A plan edit does not load that guide on its own. Without this read, the target gets picked before the placement order is in context, and content drifts into the nearest broad doc. Consume any `## Promotion cautions` from a retro report for this plan: a Decision the execution record refuted is promoted as corrected or demoted to a lesson, never promoted unchanged.
+1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add each one to the doc that owns its subject, and apply `.prism/references/triple-gated-adr-criterion.md` before writing a `→ promoted to ADR-NNNN` verdict. Read `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes before writing the `→ promoted to` verdict. A plan edit does not load that guide on its own. Without this read, the target gets picked before the placement order is in context, and content drifts into the nearest broad doc. Consume any `## Promotion cautions` from a retro report for this plan: a Decision the execution record refuted is promoted as corrected or demoted to a lesson, never promoted unchanged.
 2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line and the `> Retro:` line from step 0 under the plan's title, and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
 
 Decisions that should be promoted:
@@ -232,13 +233,13 @@ Before promoting decisions and marking the plan closed (steps 1–2 above), ever
 
 **Why:** Without an explicit verdict, decisions get promoted mentally, the plan closes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
 
-**How to apply:** Winston runs this gate during plan close. A missing verdict is his to fill, not a reviewer finding — Briar and Eric file a plan observation only when the plan contradicts the diff, per each reviewer skill's § Plan-file scope. The same holds for a missing `> Retro:` line under § Before Closing above.
+**How to apply:** The plan stage runs this gate during plan close. A missing verdict is its to fill, not a reviewer finding — Briar and Eric file a plan observation only when the plan contradicts the diff, per each reviewer skill's § Plan-file scope. The same holds for a missing `> Retro:` line under § Before Closing above.
 
 ---
 
 # Plan File Template
 
-When creating a new plan, use the following structure.
+When creating a new plan, use the following structure. A folder plan uses the four templates in `.prism/templates/`, and this flat template stays for legacy plans.
 
 ---
 
@@ -256,7 +257,7 @@ One sentence. What this ticket or epic achieves.
 
 ## User Stories
 
-Add entries here via the user stories skill (Mira). Optional — not all tickets need user stories.
+Legacy section on flat plans, with no current writer: a plan folder's intent replaces user stories with its Proposed outcome and acceptance criteria. Optional — not all tickets need user stories.
 
 - As a [user type], I want to [action], so that [benefit]
 
@@ -270,7 +271,7 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 
 ## Implementation Tasks
 
-Added by the architect skill (Winston). Tasks are grouped by persona — each group has a heading naming the skill that owns those tasks. The persona heading is the source of truth for ownership: a skill works within its named heading and treats other personas' headings as out-of-scope by default. See ADR-0018.
+Added by the plan stage (`prism-plan`). Tasks are grouped by persona — each group has a heading naming the skill that owns those tasks. The persona heading is the source of truth for ownership: a skill works within its named heading and treats other personas' headings as out-of-scope by default. See ADR-0018.
 
 Tasks must meet the detail bar in `.prism/rules/implementation-task-detail.md` — front-load every decision (file path, exact change, verification command, sequence), no judgment calls left to the implementer. See ADR-0033.
 
@@ -375,7 +376,7 @@ Add entries here when a bug's root cause is confirmed. Any implementer (Clove by
 - **Refuted hypotheses:** (optional — list hypotheses tested and eliminated; skip when there were no real alternatives)
   - <hypothesis> — refuted by <evidence>
 - **Recommended fix:** minimal description
-- **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags Winston follow-up)
+- **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags a Winston (`prism-architect`) follow-up)
 - **Missing evidence:** (optional — Gap / Impact / How to Obtain mini-table for any unconfirmed claims that the diagnosis still depends on)
 - **Ticket:** `synced` | `not synced` | `N/A`
 
@@ -399,7 +400,7 @@ Add entries here via the `prism-self-review` or `prism-pr-review` skills. Briar 
 
 ## Acceptance Criteria
 
-Add entries here via the architect skill (Winston). Reference `.prism/templates/acceptance-criteria.md` for format details.
+Add entries here via the plan stage (`prism-plan`). Reference `.prism/templates/acceptance-criteria.md` for format details.
 
 ### Behavioral
 

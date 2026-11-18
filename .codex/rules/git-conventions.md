@@ -16,6 +16,15 @@ Variants:
 - Follow-up commits after the main PR has merged: `PRISM-NNNN followup: <summary>`
 - Chores not tied to a ticket (plan updates, CI config, tooling): `chore: <summary>`
 
+### Folder-plan branches
+
+On a branch with a plan folder, the task ID carries the ticket, so the subject adds no ticket prefix. One bundle is one commit.
+
+- `T3: <summary>`, `T3-T5: <summary>`, or `T11,T15,T22: <summary>` for task work
+- `T3 fix: <summary>` for a review fix to a task that is already done
+- `plan: <summary>` for plan-only commits, which stage only files inside the plan folder
+- `retro: <summary>` for the retro's promotions, which stage only the retro's paths
+
 ### Body
 
 Optional. When included, separate from the subject with a blank line. Explain **why**, not what — the diff shows what changed. Wrap at 80 characters.
@@ -55,7 +64,7 @@ EOF
 
 Default to one clean commit per unit of work. Three exceptions earn multiple commits on a branch:
 
-- **Multi-task work** — when the plan's `## Implementation Tasks` has multiple distinct tasks, commit per task as each completes. Branch-level `git log` is read by Briar, Eric, and human reviewers during development — readable commit boundaries help review, even though `main` only sees the squash (§ Merge Strategy).
+- **Multi-task work** — when the plan's `## Implementation Tasks` has multiple distinct tasks, commit as each completes: one commit per bundle on a folder plan, and per task on a flat plan. Branch-level `git log` is read by Briar, Eric, and human reviewers during development — readable commit boundaries help review, even though `main` only sees the squash (§ Merge Strategy).
 - **Post-review follow-ups** — review fixes and `lessons.md` appends are separate commits, not amends to the prior commit. The reviewer diffs what changed since their last pass; an amend hides it.
 - **User-requested mid-implementation commits** — if the user asks for one, honor it without prompting again.
 

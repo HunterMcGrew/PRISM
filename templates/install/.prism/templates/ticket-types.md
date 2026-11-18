@@ -21,8 +21,8 @@ A new capability that doesn't exist yet.
 - **Label:** `feature`
 - **Required fields:** objective, scope, user-facing behavior description
 - **Description structure:** objective paragraph, scope bullets, link to plan if available
-- **Typical workflow:** Nora → Mira (user stories) → Winston (plan) → Clove (implement) → Briar (self-review)
-- **User stories:** recommended — Mira writes them before Winston plans
+- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review)
+- **Intent:** Mira writes it, with its acceptance criteria, before the spec stage
 
 ## Improvement
 
@@ -31,8 +31,8 @@ An enhancement to existing functionality — it works, but could work better.
 - **Label:** `improvement`
 - **Required fields:** current behavior, proposed change, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z."
-- **Typical workflow:** Nora → Winston (plan) or Mira (requirements) → Clove (implement) → Briar (self-review)
-- **User stories:** optional — depends on scope
+- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review)
+- **Intent:** Mira writes it before the spec stage, unless the change is a small fix with known scope, which skips the chain
 
 ## DX (Developer Experience)
 
@@ -43,9 +43,9 @@ The trap: "improves the codebase" is colloquial; Improvement as a ticket type is
 - **Label:** `DX`
 - **Required fields:** current state, what changed, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z." — matches the Improvement format. File-level change details live in the GitHub diff, not the ticket description.
-- **Typical workflow:** Nora → Winston (plan, if non-trivial) → Clove (implement) → Briar (self-review)
+- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review), or Clove → Briar for a trivial change. The intent holds the criteria the developer proves with machine evidence.
 - **User stories:** not applicable
-- **Acceptance criteria:** always "None for this ticket." — DX work is verified by the developer, not QA.
+- **Acceptance criteria:** the tracker's AC field says "None for this ticket." because QA has nothing to click through. The intent's criteria are the developer's, each proved by a machine check such as a passing build or test or a lint rule that fires, and they are not synced to the tracker. The approval script refuses an intent whose criteria open with "none", so the intent never says it.
 
 **Examples:**
 - Architect docs and ADRs (`.prism/architect/`, `.prism/spec/adrs/`)

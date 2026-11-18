@@ -82,6 +82,7 @@
 		"spec/adrs/_toolkit/0079-debugger-refactor-scout-and-doc-walker-are-retired.md",
 		"spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md",
 		"spec/adrs/_toolkit/0081-git-hooks-ship-beside-the-agent-gates.md",
+		"spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md",
 		"architect/_toolkit/npm-packaging.md",
 		"architect/_toolkit/token-substitution.md"
 	],
@@ -97,7 +98,6 @@
 		"architect/_toolkit/ticket-workflows.md",
 		"architect/_toolkit/worktree-hygiene.md",
 		"references/architect-context.md",
-		"references/plan/plan-mode.md",
 		"rules/architect-doc-verification.md",
 		"rules/branch-plan.md",
 		"rules/implementation-task-detail.md",

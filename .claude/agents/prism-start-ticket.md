@@ -24,7 +24,7 @@ compatibility: Needs a local git environment. Uses the session's ticket tracker 
 <!-- Source: .ai-skills/skills/prism-start-ticket -->
 <!-- Target: claude | Regenerate with: pnpm prism:build -->
 
-Prepares a ticket for work: fetches or creates it in the session's tracker, checks it is ready, creates the branch, and summarizes the requirements. It writes no code or stories and no plan section beyond `## Goal`, bug AC, and the AC Sync Log, so those go to `prism-implement`, `prism-plan`, or `prism-user-stories`. Task: $ARGUMENTS
+Prepares a ticket for work: fetches or creates it in the session's tracker, checks it is ready, creates the branch, and summarizes the requirements. It writes no code or intent and no plan section beyond `## Goal`, bug AC, and the AC Sync Log, so those go to `prism-implement`, `prism-plan`, or `prism-intent`. Task: $ARGUMENTS
 
 ## Startup
 
@@ -38,7 +38,7 @@ A ticket is ready when the next skill can start without questions. Name every ga
 
 - **Problem, not solution.** Restate a prescribed solution ("add a dropdown") as the problem. If the user insists, record "framed as solution per user request" and move on.
 - **Bounded scope.** In and out are explicit. For each vague word ("improve", "fast", "appropriate", "etc.", "handle errors gracefully"), ask the question that pins it down.
-- **Criteria and blockers.** Acceptance criteria exist or can be derived (a DX ticket's are always "None for this ticket."), and no blocker or dependency is open. Flag blocked-by and blocking tickets, since a blocking ticket's priority rises.
+- **Criteria and blockers.** Acceptance criteria exist or can be derived (a DX ticket's tracker field says "None for this ticket.", and its criteria live in the intent, per the DX rule in `ticket-types.md`), and no blocker or dependency is open. Flag blocked-by and blocking tickets, since a blocking ticket's priority rises.
 - **Estimate set before the branch exists:** 1 for one file, 2 for two or three files in one system, 3 for several files or a shared component, 5 for multiple systems, and 8 means consider splitting. Default to 1, and take the user's number without pushback.
 - **Priority, when unset,** follows reach × severity × frequency plus business cost. Cite the reasoning ("High: every site, manual workaround"). Accept the user's override without re-arguing.
 - **Placement.** For a ticket in Triage or Backlog, say whether it is ready to move to Todo or the current cycle, or what is missing first.
@@ -66,11 +66,11 @@ For "I found a bug" or "file a ticket": get the type, collect its required field
 
 Show every write to the tracker in full and wait for a yes: create, status, labels, links, duplicate close, comments, assignment, and description, estimate, or AC updates. Reads need no confirmation, and a recommendation the user already confirmed (estimate, priority) counts for its field. Print the proposed change with the ticket, field, before, and after, then ask `Confirm? (yes / no / modify)`. `modify` adjusts the value without restarting, and `no` leaves nothing half-written. The tracker is shared state, and a wrong status, label, or duplicate close misroutes someone else's queue. If the user says to skip confirmations for the session, log each write in chat as you make it.
 
-**Sync AC to the ticket** on request or after generating it. Strip the `**AC-N**` ids and Evidence sub-bullets from the plan's `## Acceptance Criteria`, because the ticket's copy is for stakeholders. Replace the ticket's `## Acceptance Criteria` section or append it at the bottom, and add a row to the plan's AC Sync Log: `| YYYY-MM-DD | Nora | Synced AC | updated | synced |`.
+**Sync AC to the ticket** on request or after generating it, except on a DX ticket, whose tracker field stays "None for this ticket." Strip the `**AC-N**` ids and Evidence sub-bullets from the plan's `## Acceptance Criteria`, because the ticket's copy is for stakeholders. Replace the ticket's `## Acceptance Criteria` section or append it at the bottom, and add a row to the plan's AC Sync Log: `| YYYY-MM-DD | Nora | Synced AC | updated | synced |`.
 
 ## Summary and handoff
 
-Report the objective (problem or outcome), scope (in and out), complexity signals (shared component, cross-boundary change, novel pattern, wide blast radius), dependencies, and open readiness gaps. Then propose the next skill by type and never invoke it: a bug goes to `prism-implement`. A feature goes to `prism-user-stories` when requirements are thin, to `prism-design` when it has UI and no mock, and otherwise to `prism-plan`. An improvement or DX ticket goes to `prism-plan`. Name open gaps in the handoff so the next skill is not surprised.
+Report the objective (problem or outcome), scope (in and out), complexity signals (shared component, cross-boundary change, novel pattern, wide blast radius), dependencies, and open readiness gaps. Then propose the next skill by type and never invoke it: a bug goes to `prism-implement`. A feature goes to `prism-intent`, whose Design line decides whether `prism-design` runs. An improvement or DX ticket goes to `prism-intent` too, because `prism-plan` refuses a folder with no `spec.md`. A DX intent carries machine-checked criteria, never "none". Name open gaps in the handoff so the next skill is not surprised.
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.

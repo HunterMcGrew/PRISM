@@ -1399,9 +1399,9 @@ const HOOK_STATE_GITIGNORE_LINES = [
 
 /**
  * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`
- * whatever `hosts` holds, because a Cursor user runs the plan-chain scripts from
- * a terminal. Registrations, the git hook shims, and the hook state-file
- * `.gitignore` lines follow `hosts`: each host's registration merges into
+ * whatever `hosts` holds, because the skills a consumer receives name the
+ * plan-chain scripts and a Cursor user runs them from a terminal. Registrations,
+ * the git hook shims, and the hook state-file `.gitignore` lines follow `hosts`: each host's registration merges into
  * `.claude/settings.json` or `.codex/hooks.json` (never overwriting an existing
  * registration block) only for that host. Shared by `prism:adopt` and
  * `prism:update` through this one `runUpdate` seam, so both inherit the same

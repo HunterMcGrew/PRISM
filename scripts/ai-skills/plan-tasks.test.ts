@@ -361,6 +361,35 @@ describe("tasks.mjs CLI", () => {
 		]);
 	});
 
+	test("a --base range follows first parents, so a merged parent's task commits stay uncounted", () => {
+		const repo = mkdtempSync(path.join(os.tmpdir(), "plan-tasks-"));
+		tempDirs.push(repo);
+		git(repo, "init", "-q");
+		git(repo, "commit", "-q", "--allow-empty", "-m", "ACME-1: Base");
+		mkdirSync(path.join(repo, "child"));
+		writeFileSync(path.join(repo, "child/plan.md"), PLAN);
+		git(repo, "add", "child");
+		git(repo, "commit", "-q", "-m", "plan: child draft");
+		const planAdded = git(repo, "rev-parse", "HEAD").trim();
+		git(repo, "checkout", "-q", "-b", "parent", "HEAD~1");
+		git(repo, "commit", "-q", "--allow-empty", "-m", "T1: later parent work");
+		git(repo, "checkout", "-q", "-");
+		git(repo, "commit", "-q", "--allow-empty", "-m", "T2 fix: child work");
+		git(repo, "merge", "-q", "--no-edit", "parent");
+
+		const result = spawnSync(
+			process.execPath,
+			[TASKS_CLI, path.join(repo, "child/plan.md"), "--base", planAdded, "--json"],
+			{ env: GIT_ENV, encoding: "utf8" }
+		);
+
+		assert.equal(result.status, 0, result.stderr);
+		assert.deepEqual(JSON.parse(result.stdout), [
+			{ id: "T1", summary: "Parse the subjects", status: "open" },
+			{ id: "T2", summary: "Bundle the tasks", status: "open" },
+		]);
+	});
+
 	describe("without --base", () => {
 		const runDefault = (repo: string) => {
 			const result = spawnSync(

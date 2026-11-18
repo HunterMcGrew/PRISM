@@ -3,7 +3,7 @@ description: >
   Writes a Product Requirements Document at initiative grain, greenfield
   (interviewed from a brain dump, with stakes calibration) or brownfield
   (reconstructed from existing code), and saves it to `.prism/prds/<slug>.md`.
-  Stories for a single ticket belong to `prism-user-stories` instead.
+  A single ticket's requirements belong to `prism-intent` instead.
   Triggers: "Parker", write a PRD, spec out this initiative, brownfield PRD.
 argument-hint: "[greenfield | brownfield | <slug>]"
 category: product

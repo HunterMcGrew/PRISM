@@ -70,7 +70,7 @@ Codex's skills root, `.agents/skills/`, resolves repo-relative — not `~/.agent
 
 PRISM ships a hook runtime that does two things: it names the architect docs that govern a file you just read, and it blocks an edit to a routed path until those docs are read.
 
-`prism adopt` and `prism update` copy the runtime files into `.claude/hooks/` on every install, whatever `hosts` holds, because a Cursor user runs the plan-chain scripts from a terminal. The registrations follow `hosts`, and each host gets its own: `.claude/settings.json` for Claude Code and `.codex/hooks.json` for Codex. On Codex the delivery is verified, but PRISM's deny response follows the format OpenAI documents for Codex hooks. That format has not yet been observed reaching the model in a live Codex session.
+`prism adopt` and `prism update` copy the runtime files into `.claude/hooks/` on every install, whatever `hosts` holds, because the skills you receive name those scripts and a Cursor user runs them from a terminal. The registrations follow `hosts`, and each host gets its own: `.claude/settings.json` for Claude Code and `.codex/hooks.json` for Codex. On Codex the delivery is verified, but PRISM's deny response follows the format OpenAI documents for Codex hooks. That format has not yet been observed reaching the model in a live Codex session.
 
 Cursor has no delivery path. The runtime can read Cursor's hook payload, but no install step writes a Cursor registration, and no Cursor deny format has been verified. Wiring it up is unshipped work, not a setting to flip.
 
