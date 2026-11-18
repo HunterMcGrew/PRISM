@@ -4,13 +4,13 @@ This is the shared plan resolution logic used by all skills that need to find th
 
 ## Steps
 
-1. **Extract a ticket ID** from the branch name using the `thr-NNNN` pattern (case-insensitive). If the branch name doesn't contain a ticket ID, check the PR title or user input for one.
+1. **Extract a ticket ID** from the branch name using the ticket prefix set as `ticketPrefix` in `.ai-skills/config.json` (case-insensitive). If the branch name doesn't contain a ticket ID, check the PR title or user input for one.
 
-2. **Look for the plan file** at `<repo-root>/.prism/plans/<ticket-id>.md` (lowercase ticket ID).
+2. **Look for the plan** at `<repo-root>/.prism/plans/<ticket-id>/` (lowercase ticket ID) when that folder holds a chain file (`intent.md`, `design.md`, `spec.md`, or `plan.md`), then at `<repo-root>/.prism/plans/<ticket-id>.md`.
 
-3. **If not found**, check for an epic plan at `<repo-root>/.prism/plans/epic-<ticket-id>.md`. Epics use this naming convention when the ticket is a parent story with multiple sub-tasks.
+3. **If not found**, check for an epic plan at `<repo-root>/.prism/plans/epic-<ticket-id>/` the same way, then at `<repo-root>/.prism/plans/epic-<ticket-id>.md`. Epics use this naming convention when the ticket is a parent story with multiple sub-tasks.
 
-4. **If still not found by filename**, scan all `.md` files in `<repo-root>/.prism/plans/` for a `## Ticket` heading whose content matches the ticket ID. Some plans may have been created with a different filename convention.
+4. **If still not found by name**, scan all `.md` files in `<repo-root>/.prism/plans/` for a `## Ticket` heading whose content matches the ticket ID, and each plan folder's chain files for a `ticket:` frontmatter line that matches it. Some plans may have been created with a different name convention. A folder resolves to its latest-stage file (`plan.md`, else `spec.md`, `design.md`, `intent.md`), and `.prism/archived/` never resolves as a live plan.
 
 5. **If a plan exists**: read it. The plan is the authoritative source for intent, decisions, and constraints on this branch. Treat `## Decisions` entries as intentional — do not second-guess or override them without explicit user approval.
 
