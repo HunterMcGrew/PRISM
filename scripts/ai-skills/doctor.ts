@@ -1067,8 +1067,13 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 	// A lead rule cannot end past the end of the file, so a file inside the
 	// default window and inside any lower configured limit has nothing to
 	// measure. A configured limit above the default does not end the check,
-	// because the file may be past the default and rely on that limit.
-	if (size <= Math.min(CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES, readLimitInForce(setting))) {
+	// because the file may be past the default and rely on that limit. An
+	// unplaced limit line never ends it either: a hidden top-level limit below
+	// the default may cut a file that fits the default window.
+	if (
+		setting.kind !== "unplaced" &&
+		size <= Math.min(CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES, readLimitInForce(setting))
+	) {
 		return [];
 	}
 
@@ -1099,6 +1104,16 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 				check: "codex-doc-limit",
 				severity: "warning",
 				message: `${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes to ${setting.raw}, which PRISM cannot read. Set it to ${computed} or more. ${fallback}`,
+			},
+		];
+	}
+
+	if (setting.kind === "unplaced") {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `${CODEX_CONFIG_RELATIVE_PATH} has a project_doc_max_bytes line PRISM cannot place at the top level (under a table, or after a multi-line value), so the limit Codex reads from AGENTS.md (${size} bytes) is unknown. Move the line to the top level and set it to ${computed} or more. ${fallback}`,
 			},
 		];
 	}

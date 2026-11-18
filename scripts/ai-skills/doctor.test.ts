@@ -2275,6 +2275,40 @@ test("runDoctor warns when a configured limit below 32 KiB cuts an AGENTS.md tha
 	});
 });
 
+test("runDoctor warns that the limit is unknown when the only limit line sits under a table", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			'model = "x"\n\n[profiles.x]\nproject_doc_max_bytes = 999999\n'
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /cannot place at the top level/);
+		assert.match(findings[0].message, /is unknown/);
+		assert.match(findings[0].message, /set it to 131072/i);
+		assert.doesNotMatch(findings[0].message, /prism update/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns for a hidden top-level limit that a lone-value array element masks, even when AGENTS.md fits the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			30_000,
+			"matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 16384\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /AGENTS\.md \(30000 bytes\)/);
+		assert.match(findings[0].message, /is unknown/);
+	});
+});
+
 test("runDoctor reports no codex-doc-limit finding when a configured limit below 32 KiB still covers AGENTS.md", async () => {
 	await withTempRoots(async (roots) => {
 		const { findings } = await runCodexDocLimitDoctor(

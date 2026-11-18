@@ -4,6 +4,7 @@
  *   - reading only the top-level key, never one inside a table, and not mistaking
  *     an array element that starts with `[` for a table header
  *   - an unreadable value reported as `unparseable`, not guessed at
+ *   - a limit line the top-level scan cannot place reported as `unplaced`, not `absent`
  *   - the line-based merge: other lines untouched, trailing comments and CRLF kept
  *   - `syncCodexProjectDocLimit`: no AGENTS.md, a fresh write, nothing written for
  *     an AGENTS.md inside Codex's default window, a larger existing value left
@@ -54,10 +55,16 @@ test("readProjectDocMaxBytes is absent for null input and for a file with no key
 	assert.deepEqual(readProjectDocMaxBytes('model = "x"\n'), { kind: "absent" });
 });
 
-test("readProjectDocMaxBytes ignores a key that sits only under a table", () => {
+test("readProjectDocMaxBytes reports a key that sits only under a table as unplaced", () => {
 	const toml = 'model = "x"\n\n[profiles.x]\nproject_doc_max_bytes = 999999\n';
 
-	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "absent" });
+	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "unplaced" });
+});
+
+test("readProjectDocMaxBytes reports a key hidden behind a lone-value array element as unplaced", () => {
+	const toml = "matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 16384\n";
+
+	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "unplaced" });
 });
 
 test("readProjectDocMaxBytes finds the key below a multi-line array whose elements start with a bracket", () => {
@@ -70,7 +77,7 @@ test("readProjectDocMaxBytes treats dotted, quoted, and array-of-tables headers 
 	for (const header of ["[a.b]", '[ "a b" . c ]', "[[servers]]", "[t]  # comment"]) {
 		const toml = `${header}\nproject_doc_max_bytes = 999999\n`;
 
-		assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "absent" }, header);
+		assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "unplaced" }, header);
 	}
 });
 
@@ -239,7 +246,7 @@ test("syncCodexProjectDocLimit leaves a config alone when a lone-value array ele
 		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
 		const existing = "matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 65536\n";
 		await fs.writeFile(configPath, existing, "utf8");
-		assert.deepEqual(readProjectDocMaxBytes(existing), { kind: "absent" });
+		assert.deepEqual(readProjectDocMaxBytes(existing), { kind: "unplaced" });
 
 		const result = await syncCodexProjectDocLimit(repoRoot, false);
 
@@ -269,6 +276,7 @@ test("readLimitInForce is the configured integer when set and Codex's default ot
 	assert.equal(readLimitInForce({ kind: "set", value: 16_384 }), 16_384);
 	assert.equal(readLimitInForce({ kind: "absent" }), 32_768);
 	assert.equal(readLimitInForce({ kind: "unparseable", raw: "0x1" }), 32_768);
+	assert.equal(readLimitInForce({ kind: "unplaced" }), 32_768);
 });
 
 test("syncCodexProjectDocLimit with dryRun reports the outcome and writes nothing", async () => {

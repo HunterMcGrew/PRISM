@@ -33,7 +33,8 @@ const LIMIT_VALUE_DIGITS = new RegExp(`^(\\s*${LIMIT_KEY}\\s*=\\s*)[0-9][0-9_]*`
 export type ProjectDocMaxBytesSetting =
 	| { kind: "absent" }
 	| { kind: "set"; value: number }
-	| { kind: "unparseable"; raw: string };
+	| { kind: "unparseable"; raw: string }
+	| { kind: "unplaced" };
 
 /**
  * Rounds `agentsMdBytes` up to the next 64 KiB multiple, then adds one more
@@ -47,7 +48,8 @@ export function computeProjectDocMaxBytes(agentsMdBytes: number): number {
 /**
  * The number of bytes Codex reads from `AGENTS.md`: the configured
  * `project_doc_max_bytes` when `setting` is a readable integer, otherwise
- * Codex's default.
+ * Codex's default. For `unplaced` the default is a guess, not a reading: the
+ * limit in force is unknown there, and callers branch on the kind first.
  */
 export function readLimitInForce(setting: ProjectDocMaxBytesSetting): number {
 	return setting.kind === "set" ? setting.value : CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES;
@@ -73,6 +75,10 @@ function topLevelLines(toml: string): string[] {
  * Reads the top-level `project_doc_max_bytes` from `toml`. A value that is not a
  * plain integer (hex, a string, an inline expression) is `unparseable` so the
  * caller leaves it alone instead of rewriting something it does not understand.
+ * A limit line the top-level scan cannot reach (under a table, or below a
+ * lone-value array element read as a table header) is `unplaced`: the line
+ * exists, but which value Codex applies is unknown, and adding a top-level key
+ * beside it could make the TOML invalid.
  */
 export function readProjectDocMaxBytes(toml: string | null): ProjectDocMaxBytesSetting {
 	if (toml === null) {
@@ -93,16 +99,9 @@ export function readProjectDocMaxBytes(toml: string | null): ProjectDocMaxBytesS
 			: { kind: "unparseable", raw };
 	}
 
-	return { kind: "absent" };
-}
+	const anyDepth = toml.split("\n").some((line) => LIMIT_LINE.test(line.replace(/\r$/, "")));
 
-/**
- * True when any line of `toml`, at any depth, sets `project_doc_max_bytes`.
- * A key the top-level reader missed shows up here, so the caller can avoid
- * adding a second one.
- */
-function hasLimitLine(toml: string): boolean {
-	return toml.split("\n").some((line) => LIMIT_LINE.test(line.replace(/\r$/, "")));
+	return anyDepth ? { kind: "unplaced" } : { kind: "absent" };
 }
 
 /**
@@ -115,7 +114,7 @@ function hasLimitLine(toml: string): boolean {
  */
 export function mergeProjectDocMaxBytes(
 	toml: string | null,
-	setting: Exclude<ProjectDocMaxBytesSetting, { kind: "unparseable" }>,
+	setting: Extract<ProjectDocMaxBytesSetting, { kind: "absent" | "set" }>,
 	value: number
 ): string {
 	const eol = toml !== null && toml.includes("\r\n") ? "\r\n" : "\n";
@@ -145,8 +144,8 @@ export function mergeProjectDocMaxBytes(
  *
  * A larger existing value is kept, because a team may have raised it for nested
  * `AGENTS.md` files. A value this module cannot read is left unchanged with a
- * warning, and so is a config whose `project_doc_max_bytes` line the top-level
- * reader cannot see, since adding another key would make the TOML invalid.
+ * warning, and so is an `unplaced` limit line, since adding another key would
+ * make the TOML invalid.
  * Nothing is written when `dryRun` is set.
  */
 export async function syncCodexProjectDocLimit(
@@ -164,7 +163,7 @@ export async function syncCodexProjectDocLimit(
 	const existing = await readFileIfExists(configPath);
 	const setting = readProjectDocMaxBytes(existing);
 
-	if (existing === null && agentsMdBytes <= readLimitInForce(setting)) {
+	if (existing === null && agentsMdBytes <= CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES) {
 		return null;
 	}
 
@@ -177,7 +176,7 @@ export async function syncCodexProjectDocLimit(
 		};
 	}
 
-	if (setting.kind === "absent" && existing !== null && hasLimitLine(existing)) {
+	if (setting.kind === "unplaced") {
 		return {
 			outcome: { relativePath: CODEX_CONFIG_RELATIVE_PATH, action: "no-op" },
 			warning: `${CODEX_CONFIG_RELATIVE_PATH} has a ${LIMIT_KEY} line PRISM cannot place at the top level (under a table, or after a multi-line value); left unchanged. Set it to ${computed} or more at the top level.`,
