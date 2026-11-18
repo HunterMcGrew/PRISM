@@ -908,6 +908,16 @@ Owner: Clove. This task edits `.prism/plans/prism-499/intent.md`, which is inten
 
 ## Challenge
 
+round 1: blocking 1
+  - T20 (blocking): lines 320, 347, 366, 390, and 512 of `resolve-live-plan.test.ts`, and line 1022 of `spec-scope-lint.test.ts` (T19), are all the branch literal `huntermcgrew/prism-review-loop-self-audit`. That is neither a skill-name stand-in nor quoted plan text, so the task's swap-or-leave rule decides none of them and two builds diverge. Left alone, they also fail T20's own `git grep -n prism-review-loop` allowed list and AC-10's evidence. Name the replacement branch string, or add both test files to the allowed list.
+  - T21 (non-blocking): the self-review resume row still fires on "`## Review` empty". After a non-clean `self-review round 1` line, a fresh session skips to the PR row with fixes still owed. That is the same flaw the final PR-review Decision fixed for PR review. Key the row on a final self-review line instead: `clean`, or round 3.
+  - T9, T14 (non-blocking): porting intent-scope's "Plan drift is reconciled, not reported" lets the review edit `## Tasks` and Decisions in place. An edit to `## Tasks` of an approved folder plan goes back through `auto-approve.mjs --check`, which always fails on a child folder with no `spec.md`, so the review would re-ask Hunter mid-run. It also reverses today's self-review rule that a difference is a finding and `intent.md` is never edited, and no Decision records that. Scope fix-in-place to sections outside `## Tasks` and outside `intent.md`.
+  - T25 (non-blocking): intent line 50 ("Every skill stays at 120 loaded lines or less") still states a hard cap. T25 edits only lines 65 and 140, and its sweep skips plans. The fix touches `intent.md` and records the same soft-cap ruling.
+  - T13, T21 (non-blocking): `agents-md-budget.test.ts` asserts 32,768, not 31,744. No proof enforces the 31,744 line the tasks say "must" hold, so only the History record shows it.
+  - T14 (non-blocking): "Fix and re-run up to the 3-round cap" reads as if self-review fixes code. Thrive's body says a round fixes nothing in source and the author fixes, and today's line 1 says it never fixes. Say who fixes.
+  - T5, T12 (non-blocking): the retro-line check is PRISM's own lint and is not delivered, so a consumer's folder plans have no enforcement. The spec's Retro sentence names no scope. Record this as a Decision, or route it to `prism-architect`.
+  - plan (non-blocking): AC-1 and AC-13 have only human evidence, AC-14 only CI, and no task's proof runs AC-9's `git grep` or its check that the file is absent.
+
 ## Decisions
 
 - **The plan uses the folder shape and the chain task shape, as children 4 and 5 do.** It was written before child 5's challenge-round runner landed, so `## Challenge` is empty and `status` stays `draft`.
