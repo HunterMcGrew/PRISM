@@ -1,0 +1,813 @@
+---
+title: Port the chain skills, the workflow block, and approval
+ticket: https://github.com/HunterMcGrew/PRISM/issues/522
+stage: plan
+status: draft
+---
+
+Child 5 of the Kitchen Line epic (#499). The design comes from the epic spec on `huntermcgrew/prism-499-approve-once` (PR #518), at `.prism/plans/prism-499/spec.md`. The parts that apply are:
+
+- the Children table row 5 and the paragraph saying approval, chat approval, and the guard ship together
+- the Skill ID map, Plan folder, "Workflow block and resume table", and Personas sections
+- the approve-guard row of "Agent hooks", "AGENTS.md and Codex", and "Always-on rule edits"
+- the Child 5 entry under "Carried in from the 2026-11-18 tips"
+
+The thrive reference is TracTru/thrive at `db3570975431fa1d6114cc5f4170c126f6be7e97`.
+
+**Goal:** a ticket runs on a plan folder from a typed `approve` on its intent to committed task bundles with no person starting a stage, and an agent that runs the approval script without a fresh chat approval is denied.
+
+## Tasks
+
+Parallel groups, worked out by hand. Each group's tasks touch disjoint files. Tasks that edit `roles.json`, `skill-routing.md`, `skills-ecosystem.md`, or `AGENTS.md` are chained by `depends on`, because those files are shared.
+
+- Group 1: T1, T2, T9, T17
+- Group 2: T3, T10, T18
+- Group 3: T4, T11
+- Group 4: T5, T12
+- Group 5: T6, T13
+- Group 6: T7, T14
+- Group 7: T8, T15
+- Group 8: T16
+- Group 9: T19, T20
+- Group 10: T21, T23
+- Group 11: T22
+- Group 12: T24
+
+T1 to T8 are the approval mechanics, and T9 to T24 are the skills, rules, and docs. That boundary is the proposed stack cut (see the stack Decision).
+
+Every task is Clove's except T8 and T24, which are Eli's. These conventions hold for every task:
+
+- **Precondition.** Children 2 (#516), 3 (#519), and 4 (#520) are merged to `main`. Start the build with `git merge origin/main`. Stop and report the build as blocked if any of these is missing on `main`:
+  - `readRepoConfig` in `scripts/ai-skills/hooks/lib/command.mjs`
+  - `AGENTS_MD_LEAD_RULES` in `scripts/ai-skills/agents-md-block.ts`
+  - `scripts/ai-skills/hooks/plan/frontmatter.mjs`
+  - `scripts/ai-skills/hooks/lib/tokenize.mjs`
+  - `.prism/templates/intent.md`
+- **Reading thrive.** `gh api "repos/TracTru/thrive/contents/<path>?ref=db3570975431fa1d6114cc5f4170c126f6be7e97" -q .content | base64 -d`. "Port" means copy the file and change only the swaps the task names, plus the JSDoc types `checkJs` asks for.
+- **Swaps that apply to every port.**
+  - `.ai-spec/` becomes `.prism/`, and `.ai-spec/plans/archive` becomes `.prism/archived/plans`.
+  - `thrive-<stage>` becomes the PRISM id from the spec's Skill ID map, and `thrive-devils-advocate` becomes `prism-challenge`.
+  - `thrive-chat-approval.json` becomes `prism-chat-approval.json`, and a `thrive.*` git-config key becomes `${PROJECT_LOWERCASE}.*` in skill text.
+  - "Linear parent" becomes "tracker parent". `THRN-1` and `THR-123` test ids become `acme-1` and `ACME-123`. The container name `thrive-admin-1` becomes `app-1`.
+- **Runtime modules** follow child 4's rule:
+  - the three-line `@prism-hook-runtime` header from `scripts/ai-skills/hooks/lib/match.mjs`
+  - `node:` builtins and sibling runtime modules only
+  - a `.d.mts` sidecar
+  - `pnpm prism:check-types` passing
+- **Tests** are top-level `scripts/ai-skills/<name>.test.ts` files using `node:test` and `node:assert/strict`, ported case for case.
+  - Fixture git repos set `GIT_CONFIG_NOSYSTEM=1` and point `GIT_CONFIG_GLOBAL` at an empty temp file.
+  - A symlink case skips on `win32` when `symlinkSync` throws `EPERM`.
+  - Spawned processes get an env with every host marker deleted: `CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`, `CODEX_THREAD_ID`, `CODEX_SESSION_ID`, `CODEX_CI`, `PRISM_HOOK_DISABLE`, and `PRISM_HOOK_DENY_DISABLE`. A case that needs a marker sets it explicitly.
+- **Skill line budgets.** Every skill this child writes stays at or under the 120-line loaded-line cap that `scripts/ai-skills/skill-loaded-lines.test.ts` enforces.
+  - A skill's budget for its own body is 120 minus the lines of every file it cites. A rule is charged only when it is `load: skill`.
+  - Cut content that fails the four skill tests. Never move it into an uncited file to dodge the count, because the intent rules that out.
+  - Measure with `measureSkillLoad` from `scripts/ai-skills/lib/skill-loaded-lines.ts`.
+- **Shared mechanics live in the workflow rule.** Stage order, stops, approval, caps, the build report, and the resume table live in `.prism/rules/workflow.md` (T10). That rule is `load: always`, so citing it costs a skill nothing. A skill points at the workflow rule rather than restating any of these.
+- **Script paths in skill and rule text** are spelled `${HOOK_RUNTIME_DIR}/plan/<name>.mjs` (T1). That renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer.
+- **Generated output.** Every task that edits a skill, rule, reference, template, architect doc, ADR, or `roles.json` runs `pnpm prism:build` and commits what the build writes from its sources. The files list names the expected copies. Add any other copy the build writes from these sources to the same commit and name it in `## History`.
+  - A skill's copies are `.claude/skills/<id>/SKILL.md`, `.claude/skills/<id>/.ai-skill-generated`, `.cursor/skills/<id>/SKILL.md`, and `.cursor/skills/<id>/.ai-skill-generated`. A non-utility role adds `.claude/agents/<id>.md` and `.codex/agents/<id>.toml`.
+  - A rule's copies are `.claude/rules/<name>.md`, `.codex/rules/<name>.md`, `.cursor/rules/<name>.mdc`, and `AGENTS.md`.
+  - A reference's copies are `.claude/references/<path>`, `.codex/references/<path>`, and `.cursor/references/<path>`.
+  - The seed twin is `templates/install/.prism/<path>`. The build writes it for a non-curated file. Edit it by hand when `seed-curation.json` lists the file as curated.
+- **Commits.** One commit per task, subject `PRISM-522: <summary> (T<n>)`.
+
+### T1: Add the hookRuntimeDir config key and the HOOK_RUNTIME_DIR token
+
+- files: .ai-skills/config.schema.json, .ai-skills/config.json, scripts/ai-skills/lib/tokens.ts, scripts/ai-skills/hook-runtime-dir-token.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/hook-runtime-dir-token.test.ts scripts/ai-skills/optional-token-coverage.test.ts
+- proof fails on main: yes
+- depends on: none
+
+Owner: Clove. Skills and rules name the chain scripts by path, and the path differs between PRISM's tree and a consumer's.
+
+- **Schema.** Add a top-level optional `hookRuntimeDir` string to `.ai-skills/config.schema.json`. Its description: the repo-relative directory holding the hook runtime, default `.claude/hooks`, set only by a repo that runs the runtime from its source tree.
+- **Type and token.** Add `hookRuntimeDir?: string` to `PrismConfig` in `scripts/ai-skills/lib/tokens.ts`. In `deriveTokenMap`, add `tokenMap.set("HOOK_RUNTIME_DIR", config.hookRuntimeDir ?? ".claude/hooks")`, the default form `token-substitution.md` requires.
+- **PRISM's config.** Set `"hookRuntimeDir": "scripts/ai-skills/hooks"` in `.ai-skills/config.json`.
+
+The test covers four cases:
+
+- a config with no key maps `HOOK_RUNTIME_DIR` to `.claude/hooks`
+- `scripts/ai-skills/hooks` maps through
+- `config-schema-validate.ts` rejects `hookRuntimeDir: 3`
+- PRISM's own config still validates
+
+### T2: Port chat approval
+
+- files: scripts/ai-skills/hooks/plan/chat-approval.mjs, scripts/ai-skills/hooks/plan/chat-approval.d.mts, scripts/ai-skills/plan-chat-approval.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-chat-approval.test.ts
+- proof fails on main: yes
+- depends on: none
+
+Owner: Clove. Port thrive's `scripts/plan/chat-approval.mjs`, which is the content-hash form with no expiry. Keep these as they are:
+
+- `parseApprovePrompt`, with its approve word, harness-opener, quoted-text, negation, and contraction rules
+- `findTokenPath`, which puts the token in `git rev-parse --absolute-git-dir`, so it is never committed and needs no `.gitignore` line
+- `hashFile`, `readChatToken`, and `takeChatToken`
+
+The swaps:
+
+- `TOKEN_FILE = "prism-chat-approval.json"`.
+- `hashChainFiles` walks `.prism/plans` and `.prism/archived/plans`, one folder deep. `CHAIN_STAGES` stays `intent.md`, `design.md`, and `plan.md`, because a spec is never approved.
+
+Port `scripts/plan/chat-approval.test.mjs` case for case with the path swaps.
+
+### T3: Port the approval script with every host's agent markers
+
+- files: scripts/ai-skills/hooks/plan/approve.mjs, scripts/ai-skills/hooks/plan/approve.d.mts, scripts/ai-skills/plan-approve.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-approve.test.ts
+- proof fails on main: yes
+- depends on: T2
+
+Owner: Clove. Port thrive's `scripts/plan/approve.mjs`. It imports `./chat-approval.mjs` and child 4's `./frontmatter.mjs`. Keep these as they are:
+
+- the keypress path and the one-use chat-token path
+- the refusals: a spec, a non-chain file, a missing required intent field or section, a bare "none" on a surface, a file changed since the approve message, and a token from another session or naming another file
+- re-approval replacing the old approval lines
+- the `approved_via: chat` stamp
+- every message
+
+The swaps:
+
+- **Agent detection.** It reads every host's marker, not only Claude's. `viaChat` is true when `env.CLAUDECODE`, `env.CODEX_THREAD_ID`, `env.CODEX_SESSION_ID`, or `env.CODEX_CI` is set, or stdin is not a TTY. The missing-token message names "an agent session" where thrive's names Claude Code.
+- **Session id.** `process.env.CLAUDE_CODE_SESSION_ID || process.env.CODEX_THREAD_ID || null`.
+- **Path comparison.** `comparablePath` uses `realpathSync.native`, so a Windows 8.3 short name compares equal to its long form.
+- **Error text.** The not-a-chain-file message names `.prism/plans/<folder>/{intent,design,plan}.md`.
+- **Usage.** `Usage: approve.mjs <path>`, with no directory.
+
+Port `scripts/plan/approve.test.mjs` case for case, with the path and id swaps. Then adapt it for Windows:
+
+- Drop the shebang case, because the module carries the runtime header instead.
+- Create a directory symlink with type `"junction"`.
+- Skip the file-symlink case on `win32`.
+
+Add these cases:
+
+- With `CODEX_THREAD_ID` set, a TTY, and no token, the script refuses.
+- A token whose `sessionId` equals `CODEX_THREAD_ID` is accepted when `CLAUDE_CODE_SESSION_ID` is unset.
+
+### T4: Port the approve guard as its own entry point
+
+- files: scripts/ai-skills/hooks/approve-guard.mjs, scripts/ai-skills/hooks/approve-guard.d.mts, scripts/ai-skills/approve-guard.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/approve-guard.test.ts
+- proof fails on main: yes
+- depends on: T2, T3
+
+Owner: Clove. Port thrive's `scripts/hooks/approve-guard/hook.mjs`. Keep every arm and its order:
+
+- the token arm, which runs first
+- the execution arm, which allows exactly one bare `node <approve script> <artifact>` per unused same-session token and fails closed on shell it cannot read
+- the frontmatter arm, which denies an edit that changes the `status`, `approved_by`, `approved_at`, or `approved_via` lines
+- the prompt arm, which records a chat approval on the prompt-submit event and adds the context line
+
+Keep the known-misses header, the read-only command set, the brace-expansion budget, and every deny text except the swaps below.
+
+The swaps:
+
+- **Imports.** `./plan/chat-approval.mjs`, `./plan/frontmatter.mjs`, and `./lib/tokenize.mjs`. Do not import `./lib/segments.mjs`, because thrive's guard has its own segment reader. Child 4 named this guard as the walker's first caller, and that turns out not to hold, so record it in `## History`.
+- **Script location.** `APPROVE_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "plan/approve.mjs")`.
+  - Every deny and context text names the command as `node <rel> <artifact>`. `<rel>` is `path.relative(<git toplevel>, APPROVE_SCRIPT)` with `\` turned into `/`, computed at run time.
+  - `CHAT_APPROVE_COMMAND` matches that relative spelling and the absolute one.
+- **Local harness table.** No Cursor row, because PRISM delivers no Cursor hooks.
+  - `claude`: `sessionKey: "session_id"`, `cwdKey: "cwd"`, `shellTools: ["Bash", "PowerShell"]`, `editTools: ["Edit", "Write", "MultiEdit"]`, `promptEvent: "UserPromptSubmit"`.
+  - `codex`: `sessionKey: "session_id"`, `cwdKey: "cwd"`, `shellTools: ["Bash"]`, `editTools: ["apply_patch", "Edit", "Write"]`, `promptEvent: "UserPromptSubmit"`.
+  - Do not use `harnesses.mjs`'s `scopeId`. It appends the Claude agent id, and a chat approval belongs to the session, not to one subagent.
+- **Foreign payloads.** Keep a local `declineForeignPayload` that declines a payload whose event is `beforeSubmitPrompt`, Cursor's prompt event, as well as thrive's list.
+- **Deny envelope.** Emit the deny the way `hook.mjs` does for the same harness, reusing `emitDeny` from `./harnesses.mjs` for `claude` and `codex`.
+- **Kill switches are ignored.** The guard never reads `PRISM_HOOK_DISABLE` or `PRISM_HOOK_DENY_DISABLE`, per the spec's kill-switch line. This is why it is a separate entry point and not an arm of `hook.mjs`, which checks the switches before it parses stdin.
+- **Text.** The header and texts name the script only through `<rel>`, so they hold in both trees. "Hunter's ruling" in the header becomes "the approve-once rule".
+
+Port `scripts/hooks/approve-guard/hook.test.mjs` case for case, with these changes:
+
+- Drop the Cursor rows.
+- Fixtures use `acme-1`.
+- The command under test is built from `<rel>`.
+- A case with an absolute `D:\` path in the approve command skips on `win32` unless the fixture sits on the checkout drive.
+
+Add these cases:
+
+- **Kill switches.** With `PRISM_HOOK_DISABLE=1` set, the no-token execution still denies.
+- **Bad prompt.** A `UserPromptSubmit` payload whose prompt is "don't approve" writes no token.
+- **Codex.** A payload with `--tool=codex` and `tool_name: "apply_patch"` that edits `status:` in an approved `intent.md` denies.
+
+### T5: Register and deliver the approve guard
+
+- files: scripts/ai-skills/update.ts, scripts/ai-skills/doctor.ts, templates/install/.claude/settings.json, templates/install/.codex/hooks.json, .claude/settings.json, scripts/ai-skills/update.test.ts, scripts/ai-skills/doctor.test.ts, scripts/ai-skills/hook-gate.test.ts, scripts/ai-skills/plan-runtime-delivery.test.ts, scripts/ai-skills/approve-guard-registration.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/approve-guard-registration.test.ts scripts/ai-skills/update.test.ts scripts/ai-skills/doctor.test.ts scripts/ai-skills/hook-gate.test.ts scripts/ai-skills/plan-runtime-delivery.test.ts && pnpm run prism:verify-pack
+- proof fails on main: yes
+- depends on: T4
+- behavior change: a consumer's update now delivers and registers a third hook entry point, and doctor reports it like the other two.
+
+Owner: Clove. Edits to `update.ts`:
+
+- `HOOK_RUNTIME_FILES` gains `"approve-guard.mjs"`, `"plan/approve.mjs"`, and `"plan/chat-approval.mjs"`.
+- `HOOK_RUNTIME_ENTRY_POINTS` gains `"approve-guard.mjs"`, so it gets the executable bit.
+- `PRISM_HOOK_COMMAND_PATTERN` and `PRISM_CODEX_HOOK_COMMAND_PATTERN` change their entry-name group to `(?:hook|git-gates|approve-guard)`, so the merge claims and refreshes the new entries.
+
+Registrations. Append each new entry after the existing ones in its event, so `hook-gate.test.ts`'s `PreToolUse[0]` assertion still holds. Each command is node, the quoted guard path, then the flags:
+
+- **`templates/install/.claude/settings.json`.**
+  - A new `UserPromptSubmit` event running `node "$CLAUDE_PROJECT_DIR/.claude/hooks/approve-guard.mjs" --tool=claude --event=UserPromptSubmit`.
+  - A `PreToolUse` matcher `Bash|PowerShell|Edit|Write|MultiEdit` running the same path with `--event=PreToolUse`.
+- **`templates/install/.codex/hooks.json`.**
+  - `UserPromptSubmit` running `node ".claude/hooks/approve-guard.mjs" --tool=codex --event=UserPromptSubmit`.
+  - A `PreToolUse` matcher `^(Bash|apply_patch|Edit|Write)$` running the same path with `--event=PreToolUse`.
+- **PRISM's own `.claude/settings.json`** is hand-maintained. It gets the same two entries with the path `$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/approve-guard.mjs`. PRISM has no root `.codex/hooks.json`, so nothing changes for Codex here.
+
+`doctor.ts`:
+
+- Widen `HOOK_COMMAND_PATH_RE` to the same three entry names.
+- Add `approve-guard.mjs` to the per-entry-point checks for a runtime without its registration and a registration pointing at a missing file, beside the `git-gates.mjs` case.
+
+Tests:
+
+- **`update.test.ts`.** Add the three paths to `HOOK_RUNTIME_RELATIVE_PATHS`.
+- **`hook-gate.test.ts`.** Extend the registration assertions to the new event and matcher. Keep every existing assertion.
+- **`doctor.test.ts`.** Add a missing-guard warning case and a dead-registration case.
+- **`plan-runtime-delivery.test.ts`** (child 4's). Add the three files to its delivered list.
+- **New `approve-guard-registration.test.ts`.** It pins each host template's event, matcher, and command for the guard. A second `prism update` leaves exactly one guard entry per event, and a consumer's own `UserPromptSubmit` entry survives.
+
+### T6: Deliver the hook runtime files on every host
+
+- files: scripts/ai-skills/update.ts, scripts/ai-skills/doctor.ts, scripts/ai-skills/update.test.ts, scripts/ai-skills/doctor.test.ts, scripts/ai-skills/plan-runtime-delivery.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/update.test.ts scripts/ai-skills/doctor.test.ts scripts/ai-skills/plan-runtime-delivery.test.ts
+- proof fails on main: yes
+- depends on: T5
+- behavior change: a Cursor-only install (`hosts: ["cursor"]`) now receives the runtime files under `.claude/hooks/` with no registration, where before it received nothing. The intent requires that a Cursor user approve from a terminal, and the skills it receives name these scripts.
+
+Owner: Clove. In `update.ts`, `refreshHookRuntime` delivers `HOOK_RUNTIME_FILES` and appends the state-file `.gitignore` lines whatever `hosts` holds. Two things stay host-gated:
+
+- merging each host's registration
+- removing a dropped host's registration
+
+The branch that removes the runtime files when both `claude` and `codex` have left `hosts` is deleted. The runtime files now stay for Cursor, and `pruneStaleHookRuntimeFiles` still prunes marked files at unrecognized paths.
+
+In `doctor.ts`, delete the warning that the runtime remains after both `claude` and `codex` left `hosts`. Keep the per-host installed and registered report.
+
+Tests:
+
+- **`update.test.ts`.** Flip the cases that assert no delivery or removal on a Cursor-only host to assert delivery with no `.claude/settings.json` or `.codex/hooks.json` written.
+- **`doctor.test.ts`.** Delete the matching warning case. Add one: a Cursor-only install with the runtime reports no warning.
+- **`plan-runtime-delivery.test.ts`.** Flip child 4's "Cursor only delivers none" case to "Cursor only delivers every file and writes no registration". `node .claude/hooks/plan/tasks.mjs <fixture>/plan.md --base HEAD` exits 0 there too.
+
+### T7: Document approval in the hook-runtime and chain-scripts docs
+
+- files: .prism/architect/_toolkit/hook-runtime.md, .prism/architect/_toolkit/plan-chain-scripts.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/plan-chain-scripts.md, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md, .claude/architect/_toolkit/plan-chain-scripts.md, .codex/architect/_toolkit/plan-chain-scripts.md, .cursor/architect/_toolkit/plan-chain-scripts.md
+- proof: pnpm run prism:build && pnpm run prism:crossref-lint
+- depends on: T1, T5, T6
+
+Owner: Clove. Write every claim against T1 to T6's merged source. Edit existing paragraphs, except the one new `###` named below, because `hook-runtime.md` is a topic doc rather than an umbrella. Make the same edits by hand in the curated `hook-runtime.md` twin wherever it carries the paragraph.
+
+**`hook-runtime.md`:**
+
+- **Delivery path.**
+  - The runtime files reach every install whatever `hosts` holds. Registrations stay per host.
+  - The three entry points are `hook.mjs`, `git-gates.mjs`, and `approve-guard.mjs`.
+  - Delete the sentences saying the runtime files are removed when both hosts are gone.
+- **Switches.** Add that the approve guard ignores both kill switches, with the reason: an approval path an agent can turn off is not a control.
+- **New `### Approve guard` subsection,** after Git gates:
+  - its four arms and what each denies
+  - the token's home in the git directory, its content hash, and that it never expires
+  - the one bare command it allows
+  - that it fails closed on shell it cannot read
+  - that it is an accident backstop and not a sandbox
+  - the known-misses list's location
+  - a host note: Cursor has no prompt-submit delivery, so a Cursor user approves from a terminal with the keypress
+  - a write-gate note: the approve command names a plan path, which the write gate routes, so a session that has not read the plan docs gets a read deny first, and the remedy is the read
+
+**`plan-chain-scripts.md`:**
+
+- Add one Contracts line each for `approve.mjs` and `chat-approval.mjs`.
+- Replace the paragraph saying a Cursor-only consumer does not receive these modules with one saying every install receives them.
+- Name `${HOOK_RUNTIME_DIR}` as how skill and rule text spells the path.
+
+### T8: Document the config key and the delivered approval files for consumers
+
+- files: docs/parameterization.md, docs/what-prism-writes.md
+- proof: pnpm run prism:crossref-lint
+- depends on: T1, T6
+
+Owner: Eli. Set `last_updated` to the edit date.
+
+- **`parameterization.md`.** Add a field-reference row for `hookRuntimeDir`, using T1's schema description. Say a consumer never sets it.
+- **`what-prism-writes.md`.**
+  - Add rows for `.claude/hooks/approve-guard.mjs`, `.claude/hooks/plan/approve.mjs`, and `.claude/hooks/plan/chat-approval.mjs`.
+  - Change the hook-runtime rows to say the files reach every install and registrations follow `hosts`.
+  - Add one line saying the chat approval token lives inside the repo's git directory and never appears in the working tree.
+
+### T9: Add the agent role type and preloads to the registry
+
+- files: scripts/ai-skills/generate-skills.ts, scripts/ai-skills/claude-agent-def.test.ts, scripts/ai-skills/discovery-metadata.test.ts, scripts/ai-skills/role-preloads.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/role-preloads.test.ts scripts/ai-skills/claude-agent-def.test.ts scripts/ai-skills/discovery-metadata.test.ts && pnpm run prism:check-types
+- proof fails on main: yes
+- depends on: none
+
+Owner: Clove. `RoleDefinition` gains two things:
+
+- **The `"agent"` type,** in `type?: "persona" | "utility" | "agent"`. An agent role has no persona, generates both agent files (Claude `.md` and Codex `.toml`), and is dispatched as a subagent.
+- **`preloads?: string[]`.**
+
+Validation in the roles loader:
+
+- An agent role must not carry a persona, with a message shaped like the utility one.
+- `preloads` must be an array of distinct ids. Each must name a role in `roles.json`, and none may be the role itself. Otherwise the build fails with `Role '<id>' preloads '<x>', which ...` and the reason.
+
+Agent-def builder changes:
+
+- Where it reads the persona name, an agent role uses its id.
+- When `preloads` is non-empty, the frontmatter gains `skills:` followed by one `  - <id>` line per entry. The Claude Code subagent docs define that field as a list of skill names whose content is injected at start.
+- The Codex `.toml` builder is unchanged.
+
+Tests:
+
+- **`claude-agent-def.test.ts`.** Its one-def-per-persona expectation widens to one per non-utility role.
+- **`discovery-metadata.test.ts`.** Its non-utility-has-a-persona assertion excludes `agent`.
+- **New `role-preloads.test.ts`.**
+  - A role with `preloads: ["tdd"]` renders `skills:` then `  - tdd` in its Claude agent def.
+  - Its Codex `.toml` is byte-identical to the same role without preloads.
+  - An unknown preload, a self preload, and a duplicate each throw.
+  - An agent role with a persona throws.
+  - An agent role gets both agent files and no persona line.
+
+Leave `scripts/ai-skills/build.ts` alone unless `pnpm prism:check-types` fails on the widened union. If it does, fix the type there, add the file to the commit, and say so in `## History`.
+
+### T10: Add the workflow rule, put it first in AGENTS.md, and compact skill routing
+
+- files: .prism/rules/workflow.md, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, scripts/ai-skills/agents-md-block.ts, scripts/ai-skills/agents-md-budget.test.ts, .claude/rules/workflow.md, .codex/rules/workflow.md, .cursor/rules/workflow.mdc, templates/install/.prism/rules/workflow.md, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, AGENTS.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/agents-md-budget.test.ts scripts/ai-skills/routing-coverage.test.ts && pnpm run prism:crossref-lint
+- proof fails on main: yes
+- depends on: T1
+
+Owner: Clove. These are the spec's workflow block and resume table, delivered as a `load: always` rule. Claude reads it from `.claude/rules/`, Cursor from an `alwaysApply` `.mdc`, and Codex from the first lead section of `AGENTS.md`. The Claude Code subagent docs say rules without `paths` reach subagents too, so a dispatched stage reads the build report shape from here.
+
+**`.prism/rules/workflow.md`.** It opens with `load: always` frontmatter and a `# Workflow` title. Port thrive's `## Workflow` block from `AGENTS.md` at the ref (its Limits, Approval, Advancing, Scope changes, Commit subjects, and Resume parts) with the global swaps, plus these:
+
+- **Approval.**
+  - The command is `node ${HOOK_RUNTIME_DIR}/plan/approve.mjs <artifact>`.
+  - "Refuses inside Claude Code" becomes "refuses inside an agent session".
+  - Add: "A Cursor user runs the command in their own terminal."
+- **Advancing.**
+  - Drop every `watch-ci.mjs` and `REVIEW.md` sentence. Child 6 brings those.
+  - Keep the run goal, the resume rule, the stops, and the four review-pause triggers, worded without the `REVIEW.md` citation.
+  - Keep "fix a red CI result and push again, at most 3 times, then put it on the PR".
+- **Scope changes.** Apply PRISM's one difference from the spec Decision on approve-once. A change that contradicts a person's ruling, or changes an acceptance criterion, goes to `prism-architect` first, and the architect forwards it to the person.
+- **Limits.** Add "2 re-dispatches of one `blocked` bundle".
+- **Commit subjects.** Legacy flat-plan branches keep `${TICKET_PREFIX}-NNNN:`.
+- **New "Build report" paragraph** for the implement and docs stages. Give the shape as a fenced block:
+  - `verdict: done | needs-replan | blocked`
+  - `tasks:`
+  - `commit:` (a SHA, or none)
+  - `files:` (each changed path, or `unlisted: <path>`)
+  - `checks:`
+  - `history:` (one `## History` line)
+  - then one paragraph
+
+  Then the routing:
+  - `done`: rerun `bundles.mjs <plan.md> --base <base>`, dispatch the next bundles, and after each wave append the reports' History lines to `plan.md` and commit `plan: <summary>`.
+  - `blocked`: fix the environment and re-dispatch, at most 2 times.
+  - `needs-replan`: the plan stage's re-plan, where a second one on the same task asks the person.
+  - An unlisted file, or an acceptance criterion the tasks cannot meet, is `needs-replan`.
+  - The session checks that a report arrived before routing it.
+- **Resume table.** Thrive's fourteen rows, with these changes:
+  - "devil's advocate" becomes "challenge".
+  - The `verify` row runs the `.prism/rules/verification-commands.md` checks on the head and records them under `## Verification`.
+  - The `review` row runs `prism-self-review`.
+  - The `PR` row follows `.prism/references/shipping-flow.md` (T20).
+  - The `PR review` row dispatches `prism-pr-review` as a subagent.
+  - The `retro` row runs `prism-retro`, then the session writes `Retro: <report path>` under `## PR Readiness` and commits it as `retro: <summary>`, because `prism-retro` is read-only on plans.
+
+Target 7,000 bytes or less. It cites sections by heading text in backticks, never with the section sign, and never points at a plan Decision.
+
+**`.prism/rules/skill-routing.md`.** Rewrite to thrive's compact shape at 8,700 bytes or less. These must hold:
+
+- The four headings `routing-coverage.test.ts` reads (`## Routing table`, `## Onboarding intent routing`, `## Named-invocation personas`, `## Utility skills`) stay, with the same membership rules.
+- **Routing table.** One row per current `auto` role, as Persona, Skill, Signal phrases, with signals trimmed to the distinguishing ones. The business rows stay.
+- **Named invocation** keeps Zoe and Iris with their triggers.
+- **Utility skills.** One line each for `prism-handoff`, `prism-review-loop`, `prism-forge-skill`, `tdd`, and `prism-challenge`.
+- **How to route,** the built-in `/review` override, and skip-routing stay, one short paragraph each.
+- **Authors ship, reviewers review** gains the folder-plan sentence. On a folder-plan branch, the session's PR stage pushes and opens the draft PR for code and docs together, while `prism-implement` and `prism-docs` only commit. Flat-plan branches keep the authoring persona shipping.
+- The plan-only-commit exception sentence stays.
+- Every backticked id-shaped token is a `roles.json` id.
+
+The seed twin is curated. Apply the same rewrite by hand, with consumer-unreachable references dropped per the curation boundary.
+
+**`agents-md-block.ts`.** Put `workflow.md` first in `AGENTS_MD_LEAD_RULES`.
+
+**`agents-md-budget.test.ts`.** Add an assertion that `workflow.md` is the first lead section.
+
+Record both byte sizes, and the byte offset where the last lead section ends, in `## History`. If that offset is past 31,744 (1 KiB under the Codex limit), cut skill-routing prose until it is not.
+
+### T11: Add prism-architect and make prism-plan persona-less
+
+- files: .ai-skills/skills/prism-architect/frontmatter.yml, .ai-skills/skills/prism-architect/shared.md, .ai-skills/skills/prism-architect/claude.md, .ai-skills/skills/prism-architect/codex.md, .ai-skills/skills/prism-architect/cursor.md, .ai-skills/definitions/roles.json, .ai-skills/skills/prism-plan/frontmatter.yml, scripts/ai-skills/generate-skills.ts, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, .claude/skills/prism-architect/SKILL.md, .claude/skills/prism-architect/.ai-skill-generated, .cursor/skills/prism-architect/SKILL.md, .cursor/skills/prism-architect/.ai-skill-generated, .claude/agents/prism-architect.md, .codex/agents/prism-architect.toml, .claude/agents/prism-plan.md, .codex/agents/prism-plan.toml, .claude/skills/prism-plan/SKILL.md, .cursor/skills/prism-plan/SKILL.md, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, AGENTS.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/routing-coverage.test.ts scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/claude-agent-def.test.ts
+- proof fails on main: yes
+- depends on: T9, T10
+
+Owner: Clove. **`roles.json`:**
+
+- Add `{ "id": "prism-architect", "persona": "Winston", "routing": "auto" }`.
+- `prism-plan` becomes `{ "id": "prism-plan", "type": "utility", "routing": "named-only" }`.
+
+The build then deletes `.claude/agents/prism-plan.md` and `.codex/agents/prism-plan.toml`. Commit the deletions.
+
+**`generate-skills.ts`.** In `CLAUDE_AGENT_MODEL_DEFAULTS`, move the `prism-plan` entry to `prism-architect`, keeping its tier and comment. A utility gets no agent def, and the architect is where Winston's judgment now runs.
+
+**`prism-plan/frontmatter.yml`.** Its description becomes thrive-plan's, with the swaps: writes `plan.md` and runs the challenge rounds, and with no plan folder writes the plan in chat. The trigger words drop "Winston" and "evaluate the approach". The body rewrite is T14.
+
+**`prism-architect`.** Port thrive's `thrive-architect` (`shared.md` and `frontmatter.yml`), with the evaluation content taken from the current `prism-plan/shared.md`. It has two modes.
+
+- **Chat consult.** A person asks "is this the right approach?", with or without a plan folder. The output is these five sections, and nothing in this mode writes a file:
+  - **Verdict:** proceed, proceed with changes, or don't proceed.
+  - **Evaluation:** one line each for fit with existing patterns and why the pattern exists, data flow and boundaries, coupling, abstraction level and the deletion test, accessibility architecture, testability, and risk with the "what am I assuming" check.
+  - **Suggested approach.**
+  - **Watch for:** the devil's-advocate risks and tradeoffs, condensed.
+  - **Open items.**
+
+  The premise gate (does the proposal earn its existence) runs before Evaluation.
+- **Dispatched.** A stage sends a plan folder plus a scope idea or a challenge finding. It reads that folder's `intent.md` and `spec.md` and returns a fit verdict to the stage. It also says whether the finding changes the intent or its foundation (an acceptance criterion, the spec's approach or Affected systems, a shared type, a public API, or a dependency), which is what "intent-level" means. It offers nothing and hands off to no one.
+- **Startup** cites `.prism/references/architect-context.md` for loading routed docs. It never writes code, and it never writes a plan file.
+
+Budget: 120 minus `architect-context.md`'s lines. `structural-remedies.md` is not cited. Its one principle ("push for the simpler design before writing proceed") is a single line in the body.
+
+**`skill-routing.md` and its twin.** The architect row takes Winston's signal phrases plus "Winston". The `prism-plan` row leaves the routing table and gets a Utility skills line: "write the plan", "plan this out"; in a plan folder it runs as the plan stage.
+
+**`skills-ecosystem.md` and its curated twin.**
+
+- Roster: replace the `prism-plan` Winston row with a `prism-architect` Winston row (approach questions in chat, and fit verdicts for a running stage), and add `prism-plan` to the Utility skills paragraph.
+- Replace the whole "Winston's quick-consult mode" section with two sentences. A quick approach question goes to `prism-architect`, which needs no plan folder. Anything that grows into planned work starts an intent.
+
+### T12: Add prism-intent
+
+- files: .ai-skills/skills/prism-intent/frontmatter.yml, .ai-skills/skills/prism-intent/shared.md, .ai-skills/skills/prism-intent/claude.md, .ai-skills/skills/prism-intent/codex.md, .ai-skills/skills/prism-intent/cursor.md, .ai-skills/definitions/roles.json, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, .claude/skills/prism-intent/SKILL.md, .claude/skills/prism-intent/.ai-skill-generated, .cursor/skills/prism-intent/SKILL.md, .cursor/skills/prism-intent/.ai-skill-generated, .claude/agents/prism-intent.md, .codex/agents/prism-intent.toml, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, AGENTS.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/routing-coverage.test.ts scripts/ai-skills/skill-loaded-lines.test.ts
+- proof fails on main: yes
+- depends on: T11
+
+Owner: Clove. `roles.json`: add `{ "id": "prism-intent", "persona": "Mira", "routing": "auto" }`. Two roles carry "Mira" until T19 removes `prism-user-stories`. No name-uniqueness check exists before child 7.
+
+Port thrive's `thrive-intent`, trimmed to budget: 120 minus `.prism/templates/intent.md`'s lines. Cite no other file. The acceptance-criteria template is 121 lines, so the intent template's comment carries the pointer to it and this skill does not. The body covers:
+
+- **Where an intent comes from:** a ticket, a person, or a diagnosis report.
+- **The folder.** `.prism/plans/<ticket>/` for standard, and `epic-<ticket>/` for epic, using the configured `ticketPrefix`.
+- **Grilling.** One question at a time. Read the code before asking, and state an understanding rather than asking where the code answers.
+- **Writing `intent.md`** from the template:
+  - the proposed size
+  - each surface filled or `none — <why>`
+  - the Design line, `needed`, `supplement`, or `not needed`, with its reason
+  - acceptance criteria with stable IDs and Evidence lines
+  - open questions
+- **Approval.** Land every pending edit, then ask once for `approve`. On approval, run `node ${HOOK_RUNTIME_DIR}/plan/approve.mjs <path>` as its own command, and commit the stamp as `plan: approve intent`. Approval rules beyond that are the workflow rule's.
+- **After approval.**
+  - Offer to sync the acceptance criteria to the ticket. It is a tracker write, so it waits for a yes.
+  - Start the next stage from the workflow rule's resume table.
+- **No user stories.** The Proposed outcome and the criteria replace them.
+
+**`skill-routing.md` and its twin.** Add a Mira row for `prism-intent` with "write the intent", "define the scope", "grill me", "what are the requirements", and "Mira". Move "write user stories" and "flesh out the requirements" from the `prism-user-stories` row to this one. Leave `prism-user-stories`'s row with only its name trigger until T19.
+
+**`skills-ecosystem.md` and its twin.** Add a `prism-intent` Mira roster row.
+
+### T13: Add prism-spec as a dispatched agent
+
+- files: .ai-skills/skills/prism-spec/frontmatter.yml, .ai-skills/skills/prism-spec/shared.md, .ai-skills/skills/prism-spec/claude.md, .ai-skills/skills/prism-spec/codex.md, .ai-skills/skills/prism-spec/cursor.md, .ai-skills/definitions/roles.json, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .claude/skills/prism-spec/SKILL.md, .claude/skills/prism-spec/.ai-skill-generated, .cursor/skills/prism-spec/SKILL.md, .cursor/skills/prism-spec/.ai-skill-generated, .claude/agents/prism-spec.md, .codex/agents/prism-spec.toml, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, AGENTS.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/routing-coverage.test.ts scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/role-preloads.test.ts
+- proof fails on main: yes
+- depends on: T12
+
+Owner: Clove. `roles.json`: add `{ "id": "prism-spec", "type": "agent", "routing": "named-only" }`.
+
+Port thrive's `thrive-spec`, trimmed to budget: 120 minus `.prism/templates/spec.md`'s lines. The body covers:
+
+- **Precondition.** It runs as a fresh subagent on an approved `intent.md`, plus an approved `design.md` when one is required. It refuses otherwise and says which approval is missing.
+- **What it reads:** the intent, the design, the routed architect docs for the paths it expects to touch, and the code those paths hold.
+- **What it writes.** `spec.md` from the template: Requirements, Design, and an Affected systems fenced block of one glob per line in the manifest route syntax. An epic adds Children, Merge order, and Decisions. A spec is never approved.
+- **Commit.** `node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "plan: write spec" <spec path>`.
+- **Return** a one-paragraph summary and any scope idea it found, for the session to send to `prism-architect`.
+
+`skill-routing.md` and its twin: add `prism-spec` to the Utility skills section's dispatched-stages line. It is never routed off a phrase.
+
+### T14: Rewrite prism-plan as the plan stage and delete its old references
+
+- files: .ai-skills/skills/prism-plan/shared.md, .ai-skills/skills/prism-plan/claude.md, .ai-skills/skills/prism-plan/codex.md, .ai-skills/skills/prism-plan/cursor.md, .prism/references/plan/plan-mode.md, .prism/references/plan/replan-mode.md, .prism/references/plan/evaluate-checks.md, templates/install/.prism/references/plan/plan-mode.md, templates/install/.prism/references/plan/replan-mode.md, templates/install/.prism/references/plan/evaluate-checks.md, .claude/references/plan/plan-mode.md, .claude/references/plan/replan-mode.md, .claude/references/plan/evaluate-checks.md, .codex/references/plan/plan-mode.md, .codex/references/plan/replan-mode.md, .codex/references/plan/evaluate-checks.md, .cursor/references/plan/plan-mode.md, .cursor/references/plan/replan-mode.md, .cursor/references/plan/evaluate-checks.md, .ai-skills/definitions/seed-curation.json, .prism/references/triple-gated-adr-criterion.md, templates/install/.prism/references/triple-gated-adr-criterion.md, .claude/references/triple-gated-adr-criterion.md, .codex/references/triple-gated-adr-criterion.md, .cursor/references/triple-gated-adr-criterion.md, scripts/ai-skills/skill-loaded-lines.test.ts, .claude/skills/prism-plan/SKILL.md, .cursor/skills/prism-plan/SKILL.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && pnpm run prism:crossref-lint
+- proof fails on main: yes
+- depends on: T13
+
+Owner: Clove. Port thrive's `thrive-plan`, trimmed to budget: 120 minus `.prism/templates/plan.md`'s lines. `implementation-task-detail.md` is `load: paths`, so citing it is free. The body covers:
+
+- **Precondition.** Approved `intent.md`, `spec.md` present, and an approved `design.md` when one is required.
+- **Writing `plan.md`** from the template, with tasks at the detail bar in `.prism/rules/implementation-task-detail.md`, test-first per `tdd`, and a bug's failing test as its own earlier task.
+- **Grouping.** Run `node ${HOOK_RUNTIME_DIR}/plan/bundles.mjs <plan.md>` and record the groups it prints. A duplicate claim or a cycle is fixed before going on.
+- **Challenge rounds.**
+  - Dispatch `prism-challenge` with the folder and the round number. Rounds 1 and 2 always run, then up to round 3, then the confirm round, per the workflow rule.
+  - Fix each blocking finding before the next round, and commit `plan: challenge round <n>`.
+  - A major finding goes to `prism-architect` as a subagent with the folder and the finding.
+- **Approval.** Run `node ${HOOK_RUNTIME_DIR}/plan/auto-approve.mjs <folder>`. When it fails, land every pending edit and ask the person once.
+- **Re-plan on `needs-replan`.**
+  - Append tasks, never renumbering, and mark changed ones `amended:`.
+  - Rerun `bundles.mjs`, then one challenge round and its confirm round, then `auto-approve.mjs --check`.
+  - A second `needs-replan` on one task asks the person.
+- **No plan folder.**
+  - A person asking to plan something small gets the plan in chat.
+  - A branch with a legacy flat plan keeps that plan's own shape, per `branch-plan.md`, including its close.
+- It never writes code and never edits `intent.md` or `spec.md`. A needed change there goes to `prism-architect`.
+
+Delete the three files under `.prism/references/plan/`, their seed twins, and their platform copies. Then:
+
+- Remove the `references/plan/plan-mode.md` entry from `seed-curation.json`.
+- In `triple-gated-adr-criterion.md` and its twin, replace the citation of plan-mode's Immediate Decision Promotion with plain words ("the plan stage's decision promotion at close").
+- In `skill-loaded-lines.test.ts`, delete the `prism-plan` entry from `OVER_CAP_ALLOWLIST`. The allowlist ratchets, so the entry has to go once the skill fits.
+
+ADR-0045 mentions `plan-mode.md` inside a quoted history line that `crossref-lint` skips. Leave it.
+
+### T15: Turn prism-challenge into the round-grammar agent
+
+- files: .ai-skills/skills/prism-challenge/frontmatter.yml, .ai-skills/skills/prism-challenge/shared.md, .ai-skills/definitions/roles.json, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .claude/skills/prism-challenge/SKILL.md, .cursor/skills/prism-challenge/SKILL.md, .claude/agents/prism-challenge.md, .codex/agents/prism-challenge.toml, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, AGENTS.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/routing-coverage.test.ts scripts/ai-skills/skill-loaded-lines.test.ts
+- proof fails on main: yes
+- depends on: T14
+
+Owner: Clove. `roles.json`: `prism-challenge` becomes `{ "id": "prism-challenge", "type": "agent", "routing": "named-only" }`.
+
+Keep the four passes and the output rules. Add thrive-devils-advocate's round mechanics from the ref:
+
+- **Plan round.** Dispatched by the plan stage with a folder and `<n>`. It reads `intent.md`, `spec.md`, and `plan.md` cold, and the code the tasks name.
+- **The one edit it makes to `plan.md`** is to append, under `## Challenge`, the line `round <n>: clean`, `round <n>: resolved <count>`, `round <n>: carried <count>`, or `round <n>: blocking <count>`. The grammar is `auto-approve.mjs`'s `ROUND_LINE`.
+  - `carried` is valid only for `<n>` of 4 or more.
+  - A major finding always makes the round `blocking`, where "major" is the intent-level definition from T11.
+- **Return.** Each finding with its severity, major or not, and the task it touches. The plan stage owns the fix and the commit.
+- **Standalone use.** A person invoking "devil's advocate" or "poke holes in this" on any artifact gets the chat output and no file edit.
+
+Budget: 120 lines, with no citations.
+
+`skill-routing.md` and its twin: move `prism-challenge` to the dispatched-stages line, and keep its trigger phrases on its Utility line.
+
+### T16: Make implement and docs commit-only stages on a folder plan
+
+- files: .ai-skills/skills/prism-implement/shared.md, .ai-skills/skills/prism-docs/shared.md, .ai-skills/definitions/roles.json, .claude/skills/prism-implement/SKILL.md, .cursor/skills/prism-implement/SKILL.md, .claude/agents/prism-implement.md, .codex/agents/prism-implement.toml, .claude/skills/prism-docs/SKILL.md, .cursor/skills/prism-docs/SKILL.md, .claude/agents/prism-docs.md, .codex/agents/prism-docs.toml
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/role-preloads.test.ts
+- proof fails on main: yes
+- depends on: T9, T15
+- behavior change: on a folder-plan branch, prism-implement and prism-docs commit their bundle and return a build report instead of pushing and opening a PR. Flat-plan branches keep the ship behavior.
+
+Owner: Clove. `roles.json`: `prism-implement` gains `"preloads": ["tdd"]`.
+
+**`prism-implement`.** Add a folder-plan bullet group near the top of Startup:
+
+- On a plan folder, refuse unless `plan.md`'s frontmatter `status` is `approved`, and return `blocked` naming the missing approval.
+- Build only the tasks in the dispatched bundle, test-first per `tdd`.
+- Commit each bundle with `node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "<T-subject>" <paths>`, after the cleanup pass. The subject is a task form from the workflow rule.
+- Never edit `plan.md` and never push. Return the build report from the workflow rule, whose `history:` line the session appends.
+- A file outside the tasks' lists, or an acceptance criterion the tasks cannot meet, returns `needs-replan`.
+
+The Record and Ship parts gain "On a flat plan" as their lead-in.
+
+**`prism-docs`.** Add the same folder-plan bullet with "docs task" in place of "tasks". Its Ship bullet gains "On a flat plan" as its lead-in.
+
+To stay under the cap, delete the "Describe observable behavior, not implementation" bullet. `user-doc-template.md`'s Writing rules already say it ("Observable behavior only", "no code, no file names").
+
+Record both measured totals in `## History`. `prism-docs` must be at 120 or less.
+
+### T17: Give tdd the test-first rules
+
+- files: .ai-skills/skills/tdd/shared.md, .claude/skills/tdd/SKILL.md, .cursor/skills/tdd/SKILL.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts
+- depends on: none
+- behavior change: tdd no longer asks the user to confirm a test seam. On a plan, the task's proof names the seam.
+
+Owner: Clove. Port thrive-testing's "Test-first rules", "Changing an existing test", and "Test efficacy" sections from the ref:
+
+- characterization tests first on untested code the task changes
+- a bug fix's failing test in its own earlier task with `proof fails on main: yes`
+- an existing test line changed only when the task's `files:` names the file and it carries `behavior change:`, otherwise return `needs-replan` naming the test
+- a mutation check on every new test: break what it pins, see it fail, restore, and confirm with `git diff`
+
+Drop thrive's "Where tests live" list. It is thrive's stack, and PRISM's commands come from `.prism/rules/verification-commands.md`.
+
+Replace the "Test only at pre-agreed seams" paragraph:
+
+- On a plan, the task's `proof` names the seam.
+- With no plan, pick the defensible seam, name it and the rejected alternative in the closing message, and proceed.
+
+Keep the loop and the three anti-patterns.
+
+### T18: Make prism-design write design.md as a stage
+
+- files: .ai-skills/skills/prism-design/shared.md, .claude/skills/prism-design/SKILL.md, .cursor/skills/prism-design/SKILL.md, .claude/agents/prism-design.md, .codex/agents/prism-design.toml
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts
+- proof fails on main: yes
+- depends on: none
+
+Owner: Clove. Budget: 120 minus `.prism/templates/design.md`'s lines.
+
+- **Mode 2.** Becomes "Mode 2, saved design".
+  - On a plan folder whose approved intent says `Design: needed` or `supplement`, write `.prism/plans/<ticket>/design.md` from `.prism/templates/design.md`.
+  - Otherwise write `.prism/design/mocks/<slug>.md` with the same sections.
+  - Drop the inline section list and the plan `## Design` summary, which the template now carries.
+- **Approval.** When the design needs approval, land every pending edit, ask once, then run `node ${HOOK_RUNTIME_DIR}/plan/approve.mjs <path>`.
+- **Handoff.** "Architectural inputs for Winston" becomes "Architectural inputs for the spec". On a plan folder, the handoff is the next resume-table row.
+- **States** stays the source of the state list that the template cites.
+
+### T19: Remove prism-user-stories
+
+- files: .ai-skills/skills/prism-user-stories/frontmatter.yml, .ai-skills/skills/prism-user-stories/shared.md, .ai-skills/skills/prism-user-stories/claude.md, .ai-skills/skills/prism-user-stories/codex.md, .ai-skills/skills/prism-user-stories/cursor.md, .ai-skills/definitions/roles.json, .prism/references/user-stories/frameworks.md, .prism/references/user-stories/prd-decompose.md, templates/install/.prism/references/user-stories/frameworks.md, templates/install/.prism/references/user-stories/prd-decompose.md, .claude/references/user-stories/frameworks.md, .claude/references/user-stories/prd-decompose.md, .codex/references/user-stories/frameworks.md, .codex/references/user-stories/prd-decompose.md, .cursor/references/user-stories/frameworks.md, .cursor/references/user-stories/prd-decompose.md, .claude/skills/prism-user-stories/SKILL.md, .claude/skills/prism-user-stories/.ai-skill-generated, .cursor/skills/prism-user-stories/SKILL.md, .cursor/skills/prism-user-stories/.ai-skill-generated, .claude/agents/prism-user-stories.md, .codex/agents/prism-user-stories.toml, .ai-skills/skills/prism-prd/frontmatter.yml, .ai-skills/skills/prism-prd/shared.md, .ai-skills/skills/prism-start-ticket/shared.md, .claude/skills/prism-prd/SKILL.md, .cursor/skills/prism-prd/SKILL.md, .claude/agents/prism-prd.md, .codex/agents/prism-prd.toml, .claude/skills/prism-start-ticket/SKILL.md, .cursor/skills/prism-start-ticket/SKILL.md, .claude/agents/prism-start-ticket.md, .codex/agents/prism-start-ticket.toml, .prism/rules/context-reuse.md, templates/install/.prism/rules/context-reuse.md, .claude/rules/context-reuse.md, .codex/rules/context-reuse.md, .cursor/rules/context-reuse.mdc, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, .prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, scripts/ai-skills/bootstrap-from-claude.ts, scripts/ai-skills/skill-loaded-lines.test.ts, AGENTS.md
+- proof: pnpm run prism:build && pnpm run prism:test && pnpm run prism:crossref-lint
+- proof fails on main: yes
+- depends on: T16
+
+Owner: Clove. The spec folds this skill into `prism-intent`, and no skill writes user stories any more. Delete the skill directory, its two references with their seed twins and platform copies, its generated outputs, and its `roles.json` entry. Then sweep every reference the tree search found:
+
+- **`prism-prd`.** Its frontmatter line naming `prism-user-stories` and its two body mentions hand a finished PRD to `prism-intent`, one intent per story-sized slice or one epic intent.
+- **`prism-start-ticket`.** Its two mentions hand a feature ticket to `prism-intent`.
+- **`context-reuse.md`.** Drop the citation-list line. Add `prism-intent` and `prism-architect` in its place.
+- **`skill-routing.md`** and its twin: delete the row.
+- **`skills-ecosystem.md`** and its twin: delete the roster row and its handoff-phrase line.
+- **`bootstrap-from-claude.ts`.** `thrive-architect` maps to `prism-architect`. Delete the `thrive-user-stories` pair.
+- **`skill-loaded-lines.test.ts`.** Delete the `prism-user-stories` allowlist entry. Only `prism-review-loop` remains.
+
+Run `git grep -n prism-user-stories` after the build. Only plans, retros, audits, ADRs, `CHANGELOG.md`, and `.prism/lessons.md` may still match.
+
+### T20: Add the PR stage reference and the review record
+
+- files: .prism/references/shipping-flow.md, templates/install/.prism/references/shipping-flow.md, .claude/references/shipping-flow.md, .codex/references/shipping-flow.md, .cursor/references/shipping-flow.md, .ai-skills/skills/prism-self-review/shared.md, .claude/skills/prism-self-review/SKILL.md, .cursor/skills/prism-self-review/SKILL.md, .claude/agents/prism-self-review.md, .codex/agents/prism-self-review.toml
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && pnpm run prism:crossref-lint
+- proof fails on main: yes
+- depends on: T10
+
+Owner: Clove. **New `.prism/references/shipping-flow.md`.** Port thrive's `.ai-spec/references/shipping-flow.md`, keeping only the PR-stage row and the flow. Its new non-curated file prints the expected build warning. The changes:
+
+- **Opening.** The session runs this on a folder-plan branch. Sage and Reese keep their own flows.
+- **Drop:** `watch-ci.mjs`, the `REVIEW.md` citations, and the Sage and Reese rows.
+- **Step 1.** On the first push, no verification beyond the verify row. On a later push, rerun the verification commands when a commit since `## Verification` touches a file they cover.
+- **Step 2.** The pause preference is `git config --global --get ${PROJECT_LOWERCASE}.pauseBeforeCommit`, read at the push here because the build commits are already made.
+- **Body.** The PR title is `${TICKET_PREFIX}-NNNN: <imperative subject>`, and the body follows `.prism/rules/pr-description.md`. The body lists every `OPEN` Decision and every scope change since the intent.
+- **Close.** Dispatch `prism-pr-review` as a subagent, without waiting for a reply.
+
+It cites sections by heading text, never with the section sign.
+
+**`prism-self-review`.** Add one bullet: on a plan folder, record the result under `plan.md`'s `## Review` (the findings in the Review Issues entry shape, or `No issues found — <date>`) instead of `## Review Issues`, and commit it as `plan: review`. The cap must still hold.
+
+### T21: Teach the git and plan rules the folder-plan commit forms
+
+- files: .prism/rules/git-conventions.md, .prism/rules/branch-plan.md, templates/install/.prism/rules/git-conventions.md, templates/install/.prism/rules/branch-plan.md, .prism/architect/_toolkit/closing-messages.md, templates/install/.prism/architect/_toolkit/closing-messages.md, .claude/rules/git-conventions.md, .codex/rules/git-conventions.md, .cursor/rules/git-conventions.mdc, .claude/rules/branch-plan.md, .codex/rules/branch-plan.md, .cursor/rules/branch-plan.mdc, .claude/architect/_toolkit/closing-messages.md, .codex/architect/_toolkit/closing-messages.md, .cursor/architect/_toolkit/closing-messages.md, AGENTS.md
+- proof: pnpm run prism:build && pnpm run prism:crossref-lint && pnpm run prism:spec-scope-lint
+- depends on: T19
+
+Owner: Clove. Edit existing paragraphs. The one exception is the new heading named below, because `git-conventions.md` is a rule file.
+
+- **`git-conventions.md`.**
+  - Under Commit Messages, add a `### Folder-plan branches` subsection with the task subject forms from the workflow rule (`T3:`, `T3-T5:`, `T11,T15,T22:`, `T3 fix:`, `plan:`, `retro:`). Note that the task id carries the ticket, so no ticket prefix is added. A `plan:` commit stages only files inside the plan folder, and `retro:` only the retro's paths.
+  - Under Commit Granularity, "commit per task" becomes "one commit per bundle on a folder plan, and per task on a flat plan".
+- **`branch-plan.md`.**
+  - Under "Landing a plan-only commit", add the folder form. The staged set is files under `.prism/plans/<ticket>/` only, checked with `git diff --cached --name-only`. The subject is `plan: <persona> record`.
+  - Under the Plan File Template intro, add one sentence. A folder plan uses the four templates in `.prism/templates/`, and this flat template stays for legacy plans.
+  - The curated twin gets both edits by hand.
+- **`closing-messages.md`.** "No persona auto-invokes another" gains its scope. That holds outside a plan folder. On a folder-plan run, the session starts the next stage from the workflow rule's resume table without asking.
+
+### T22: Sweep the planner role off Winston's name
+
+- files: .prism/SPEC.md, templates/install/.prism/SPEC.md.tmpl, .prism/architect/_toolkit/audit-workflow.md, .prism/architect/_toolkit/closing-messages.md, .prism/architect/_toolkit/lesson-promotion.md, .prism/architect/_toolkit/onboarding.md, .prism/architect/_toolkit/plan-authoring.md, .prism/architect/_toolkit/skills-ecosystem.md, .prism/architect/_toolkit/ticket-workflows.md, .prism/architect/_toolkit/business-layer.md, .prism/references/structural-remedies.md, .prism/references/triple-gated-adr-criterion.md, .prism/references/qa-plan/verdict-contract.md, .prism/rules/acceptance-criteria.md, .prism/rules/architect-doc-verification.md, .prism/rules/branch-plan.md, .prism/rules/code-standards.md, .prism/rules/design-governance.md, .prism/rules/followup-scope.md, .prism/rules/implementation-task-detail.md, .prism/rules/pr-description.md, .prism/templates/acceptance-criteria.md, .prism/templates/ticket-types.md, templates/install/.prism/architect/_toolkit/audit-workflow.md, templates/install/.prism/architect/_toolkit/closing-messages.md, templates/install/.prism/architect/_toolkit/lesson-promotion.md, templates/install/.prism/architect/_toolkit/plan-authoring.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/ticket-workflows.md, templates/install/.prism/architect/_toolkit/business-layer.md, templates/install/.prism/architect/_toolkit/qa-test-planning.md, templates/install/.prism/references/structural-remedies.md, templates/install/.prism/references/triple-gated-adr-criterion.md, templates/install/.prism/references/qa-plan/verdict-contract.md, templates/install/.prism/rules/acceptance-criteria.md, templates/install/.prism/rules/architect-doc-verification.md, templates/install/.prism/rules/branch-plan.md, templates/install/.prism/rules/code-standards.md, templates/install/.prism/rules/design-governance.md, templates/install/.prism/rules/followup-scope.md, templates/install/.prism/rules/implementation-task-detail.md, templates/install/.prism/rules/pr-description.md, templates/install/.prism/rules/verification-commands.md, templates/install/.prism/templates/acceptance-criteria.md, templates/install/.prism/templates/ticket-types.md, templates/install/AGENTS.md.tmpl, .ai-skills/skills/prism-handoff/shared.md, .ai-skills/skills/prism-onboard/shared.md, AGENTS.md
+- proof: pnpm run prism:build && pnpm run prism:check
+- depends on: T21
+
+Owner: Clove. "Winston" now names `prism-architect`. `prism-plan` is persona-less, and the code-standards removal-and-rename rule asks for every reference to be swept. The files list is the `git grep -c Winston` and `git grep -l prism-plan` result over the spec surfaces on 2026-11-18. Add the platform copies the build writes for each, and rerun both greps after the precondition merge to catch lines added since.
+
+Apply one test to each mention:
+
+- **Writing or changing a plan.** Writing tasks, writing AC, the decision verdict gate, plan close, or epic detection becomes "the plan stage (`prism-plan`)". AC authorship on a folder plan becomes "the intent stage (`prism-intent`)".
+- **Judging an approach.** An architecture question, a fit verdict, or a structural escalation stays Winston and names `prism-architect`.
+- **Mira writing user stories** becomes `prism-intent` writing the intent.
+
+Further edits:
+
+- **`skills-ecosystem.md`** and its twin:
+  - Rule 9 (AC sync) and rule 15 (PR-body sync) name the intent stage and the PR stage.
+  - The Cross-skill Handoffs table gets an intent row, an architect row, and a plan row.
+  - The Utility skills paragraph defines the `agent` type (no persona, dispatched as a subagent, both agent files) and lists `prism-spec` and `prism-challenge`.
+- **`ticket-workflows.md`** and its twin. Add one sentence above Common Workflows: on a plan folder, the workflow rule's stage order replaces these sequences.
+- **`AGENTS.md.tmpl`.**
+  - The routing rows for Winston and Mira name `prism-architect` and `prism-intent`.
+  - Add a `prism-plan` utility line.
+  - The ownership table rows follow the same test.
+
+Curated twins (`hook-runtime`, `plan-authoring`, `skills-ecosystem`, `ticket-workflows`, `branch-plan`, `skill-routing`) are edited by hand. Leave `CONTEXT.md`, `README.md`, `CHANGELOG.md`, `SECURITY.md`, `.prism/prds/`, `.prism/qa/`, and `.prism/research/` alone. The first four sit outside the spec's Affected systems, and the rest are dated records. Note them in `## History` for child 9.
+
+### T23: Record that the session ships on a folder-plan branch
+
+- files: .prism/spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md, .prism/spec/adrs/_toolkit/0003-authors-ship-reviewers-review.md, .prism/spec/adrs/_toolkit/README.md, .claude/spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md, .codex/spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md, .cursor/spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md, .claude/spec/adrs/_toolkit/0003-authors-ship-reviewers-review.md, .codex/spec/adrs/_toolkit/0003-authors-ship-reviewers-review.md, .cursor/spec/adrs/_toolkit/0003-authors-ship-reviewers-review.md, .claude/spec/adrs/_toolkit/README.md, .codex/spec/adrs/_toolkit/README.md, .cursor/spec/adrs/_toolkit/README.md
+- proof: pnpm run prism:build && pnpm run prism:crossref-lint
+- depends on: T20
+
+Owner: Clove. Take the number from the directory after the precondition merge: the highest plus one. Child 2 takes 0081, so expect 0082, and rename the file and every files entry if it differs. Confirm the ADR-0003 filename with `ls` and fix the files entries to match.
+
+The ADR follows `TEMPLATE.md`:
+
+- **Context.** ADR-0003 has the authoring persona push. A folder-plan run builds in bundles from several dispatched agents, and one push per bundle would open a PR before the code and its docs are whole.
+- **Decision.** On a folder-plan branch, `prism-implement` and `prism-docs` commit only, and the session's PR stage pushes once and opens the draft PR. Reviewers never ship. Flat-plan branches keep ADR-0003. Alternatives:
+  - each stage pushes, rejected because it opens a half-built PR
+  - `prism-docs` ships its own PR, rejected because docs ride the feature PR per the spec
+- **Consequences.** The pause preference fires once, at the push, and not per commit. A session that stops before the PR stage leaves local commits. The resume table's PR row picks them up.
+
+Add `Amended by ADR-0082 for folder-plan branches.` to ADR-0003's status line, and add the new ADR's row to the README index.
+
+### T24: Update the persona guide
+
+- files: docs/personas.md
+- proof: pnpm run prism:crossref-lint
+- depends on: T19
+
+Owner: Eli. Set `last_updated`.
+
+- Mira's entry becomes `prism-intent`, which writes the intent and grills the person.
+- Winston's entry becomes `prism-architect`, which answers approach questions in chat and gives a running stage a fit verdict.
+- Add short entries for the `prism-plan`, `prism-spec`, and `prism-challenge` stages, each with no persona.
+- Delete every `prism-user-stories` mention.
+
+`docs/workflow.md` is child 9's and stays as it is.
+
+## Challenge
+
+## Decisions
+
+- **The plan uses the folder shape and the chain task shape, as child 4's does.** The round runner lands in this child, so no challenge rounds ran and `status` stays `draft`. Commits use `PRISM-522: <summary> (T<n>)`, because the `T<n>:` subject rule lands here in T21.
+- **The shared workflow mechanics live in one always-on rule, `.prism/rules/workflow.md`, first in the AGENTS.md lead list.**
+  - **Root cause.** The spec asks for the workflow block in `AGENTS.md` and `CLAUDE.md` as generated content. PRISM's `CLAUDE.md` is a pointer, and Claude reads always-on rules from `.claude/rules/`.
+  - **Alternatives considered.** Hand-written blocks in the preamble and in `CLAUDE.md`, which drift. A reference file each skill cites, which charges every stage skill's line cap.
+  - **Chosen approach.** One rule source reaches Claude (`.claude/rules/`, and per the Claude Code subagent docs, subagents too), Cursor (`alwaysApply`), and Codex (inlined first). That is the spec's "cannot drift" by construction.
+  - **Implementation guidance.** The build-report shape and its routing live here too, so `prism-docs`, which sits at 117 of 120 lines, pays nothing for them. The Claude subagent claim is from the docs, not from a live run.
+- **The Codex budget is met by compacting `skill-routing.md`, not by dropping lead sections.** The lead rules end near byte 30,549. Adding the workflow rule (target 7,000 bytes or less) and cutting skill-routing from 14,676 to 8,700 bytes or less leaves the last lead section near 31,600, under the 32,768 limit with about 1 KiB of headroom. Thrive's routing rule is 8,190 bytes in the same shape, so the target is reachable.
+- **`roles.json` gains an `agent` type and `preloads`.**
+  - **Root cause.** The spec makes `prism-spec` and `prism-challenge` dispatched subagents with no persona. PRISM's two types are `persona`, which needs a name, and `utility`, which gets no agent file. Neither fits.
+  - **Alternatives considered.** Giving each stage a persona name, which contradicts the spec. A `utility` that still emits agent files, which breaks the meaning `utility` has in ADR-0046.
+  - **Chosen approach.** A third type, plus the `preloads` field the spec names.
+  - **Implementation guidance.** `RoleDefinition` is build-internal (`generate-skills.ts` and its tests), not a public API. Flagged here because it is a shared type inside the build.
+- **Skills spell script paths with a `${HOOK_RUNTIME_DIR}` token from a new `hookRuntimeDir` config key.** Child 4 left the spelling to this child. Alternatives:
+  - A hard-coded `.claude/hooks/`, rejected because PRISM's own sessions would point at a path that does not exist in this tree.
+  - Prose naming both paths, rejected because every reader pays for a path they can't use.
+  - A `prism` subcommand, rejected because it adds public CLI surface and needs `npx` per call.
+
+  The token defaults to `.claude/hooks`, so no consumer sets anything.
+- **The hook runtime files now reach Cursor-only installs, and only registrations stay per host.** The intent says a Cursor user approves from a terminal and that every skill keeps working on all three hosts. Child 4 left Cursor-only reach to this child. Alternatives:
+  - A separate host-neutral directory, rejected for the same second-copy-path cost child 4 recorded.
+  - Leaving Cursor-only installs on flat plans, rejected because the skills they receive would name scripts they don't have.
+
+  The cost is a `.claude/hooks/` directory in a Cursor-only repo.
+- **The approve guard is its own entry point and ignores both kill switches.** `hook.mjs` checks the switches before parsing stdin, and the spec exempts the approve guard from them. It does not use `segments.mjs`, because thrive's guard reads shell through its own segment walk over `tokenize.mjs`. That contradicts child 4's note that the guard would be the walker's first caller, and the walker stays callerless until child 8.
+- **Cursor rows are dropped from the guard's harness table.** PRISM delivers no Cursor hooks, and `emitDeny` returns null for Cursor by policy. The local `declineForeignPayload` still declines Cursor's `beforeSubmitPrompt`, so a stray Cursor payload never writes a token.
+- **`prism-architect` keeps prism-plan's evaluation coverage, trimmed to the cap.** The spec says the evaluation sections move unchanged. The intent says the 120-line cap counts everything and cut content is not moved, and the current skill loads 1,108 lines. Every evaluation heading survives as one line, while the A/P/C gate and the long output template do not, since the spec gives the architect five output sections.
+- **The three `references/plan/` files are deleted, not slimmed.**
+  - Plan mode's procedure is now `prism-plan` plus the workflow rule.
+  - Re-plan is a workflow-rule paragraph.
+  - The design-aware flag is replaced by the intent's Design line, and the scope-fit check already lives in `followup-scope.md`.
+- **The resume table's later rows use existing skills until child 6.** Verify runs `verification-commands.md`, review runs `prism-self-review` writing `## Review`, PR runs the new `shipping-flow.md`, and retro runs `prism-retro`, then the session writes `Retro:`. Every merged step works before `prism-verify` and `REVIEW.md` exist, and child 6 swaps the rows.
+- **The pause-before-commit preference fires at the PR push on a folder plan.** The stages commit through `commit.mjs` many times per run, and a pause per bundle would put the person back in the loop the intent removes. ADR-0082 records it.
+- **The "Winston" sweep (T22) runs over spec surfaces only.** Root files outside the spec's Affected systems (`CONTEXT.md`, `README.md`, `CHANGELOG.md`, `SECURITY.md`) and dated records (`.prism/prds/`, `.prism/qa/`, `.prism/research/`) are left alone. Child 9 owns the user docs.
+- **The issue's acceptance criteria were not synced.** Issue #522 states its proof in one line. Writing the criteria below into it is a tracker edit, so it waits for a person's go-ahead.
+- **OPEN — TBD, needs a live Codex run.** Whether a Codex hook payload's `session_id` equals the `CODEX_THREAD_ID` a command sees. **Default path (used until resolved):** `approve.mjs` compares a chat token's session against `CODEX_THREAD_ID`, so a mismatch fails closed, and a Codex user approves from a terminal.
+- **OPEN — TBD, needs Hunter's input.** Whether child 5 ships as a stack of two PRs. It is far past ten files and five hundred lines. The approval trio alone is about 1,800 lines of source and 2,600 of tests. **Default path (used until resolved):** propose two PRs. PR A is T1 to T8, the approval mechanics, registered and delivered but called by no skill, so it ships inert and self-consistent. PR B is T9 to T24, the skills, rules, and docs that use it. Whoever opens the PR asks Hunter first.
+
+## History
+
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Plan created: approval script, chat approval, and guard with delivery; registry agent type and preloads; workflow rule; architect, intent, spec, plan, and challenge skills; commit-only stages; user-stories removal; rule, ADR, and doc edits; as 24 tasks.
+
+## Sessions
+
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: plan child 5 (chain skills and approval) to the detail bar from the epic spec and thrive at db3570975. Bounds: plan file only, no code, no PR, nothing outside the spec's Affected systems, no new dependency, and flag any shared-type or public-surface change. Approach: put shared mechanics in one always-on workflow rule so stage skills fit the cap, port the approval trio onto PRISM's runtime, and order tasks so the approval mechanics form a clean first stack PR. · close: scope held
+
+## Verification
+
+## Review
+
+## Acceptance Criteria
+
+The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
+
+- [ ] **AC-1** On a plan folder, after the person types `approve` on the intent, the run reaches committed task bundles with no person starting a stage.
+  - Evidence (human): on a scratch ticket in a Claude Code session, the person types `approve` once on `intent.md`, and nothing else unless auto-approval fails. `git log` then shows `plan:` commits for the spec, challenge rounds, and approval, followed by `T<n>:` commits for every task. The transcript shows no stage started by the person · UNMET looks like: a stage that waited for the person, or a task with no commit.
+- [ ] **AC-2** An agent running the approval script with no fresh chat approval is denied, and one typed `approve` allows exactly one run.
+  - Evidence (machine): in `approve-guard.test.ts`, a `PreToolUse` shell payload running the approve command with no token is denied with a message naming the command. After a `UserPromptSubmit` "approve", the same command is allowed once and denied on the second run. With `PRISM_HOOK_DISABLE=1`, the no-token case still denies · UNMET looks like: an allow with no token, or a second allow.
+- [ ] **AC-3** The approval script itself refuses an agent session with no token, on Claude Code and Codex markers alike.
+  - Evidence (machine): in `plan-approve.test.ts`, the run is refused with `CLAUDECODE=1` and with `CODEX_THREAD_ID` set, both with no token, and the file is byte-identical afterward · UNMET looks like: a stamp written under either marker.
+- [ ] **AC-4** The workflow rule leads `AGENTS.md`, and every lead section ends inside the first 32 KiB.
+  - Evidence (machine): `agents-md-budget.test.ts` passes with `workflow.md` asserted first, and `## History` records the end offset · UNMET looks like: a lead section past byte 32,768, or another section first.
+- [ ] **AC-5** Every skill this child writes or rewrites fits the 120-line cap, and the over-cap allowlist holds only `prism-review-loop`.
+  - Evidence (machine): `skill-loaded-lines.test.ts` passes, and `OVER_CAP_ALLOWLIST` has one entry · UNMET looks like: a `prism-plan` or `prism-user-stories` entry left, or a new one added.
+- [ ] **AC-6** "Winston" routes to `prism-architect`, "write the intent" or "write user stories" routes to `prism-intent`, and `prism-user-stories` no longer exists.
+  - Evidence (machine): `routing-coverage.test.ts` passes. `git grep -l prism-user-stories` matches only plans, retros, audits, ADRs, `CHANGELOG.md`, and `.prism/lessons.md`. No `prism-user-stories` directory exists under `.claude/skills/` or `.cursor/skills/` · UNMET looks like: a routing failure, or a live reference left.
+- [ ] **AC-7** A consumer update delivers and registers the approve guard, and a Cursor-only install receives the runtime files with no registration.
+  - Evidence (machine): `approve-guard-registration.test.ts` and `plan-runtime-delivery.test.ts` pass, including the Cursor-only case · UNMET looks like: a missing guard entry on Claude or Codex, or a registration written for Cursor.
+- [ ] **AC-8** The implement agent preloads `tdd`, and a preload naming no skill fails the build.
+  - Evidence (machine): `.claude/agents/prism-implement.md` frontmatter holds `skills:` with `- tdd`, and `role-preloads.test.ts` passes its unknown-preload throw case · UNMET looks like: no `skills:` line, or an unknown preload that builds.
+- [ ] **AC-9** Approval from Claude Code's own shell mode counts as an agent session, not a terminal, answering the intent's open question on Claude Code.
+  - Evidence (human): in a Claude Code session with no chat approval, running the approve command through the `!` shell prefix is refused. Record the observed result in `## History`, and if it was accepted, record that and open an `OPEN` Decision · UNMET looks like: the run not done, or its result not recorded.
+- [ ] **AC-10** The whole check suite passes on both CI platforms.
+  - Evidence (machine): the PR's `prism-check` CI is green on `ubuntu-latest` and `windows-latest` · UNMET looks like: either leg red.
+
+### AC Sync Log
+
+| Date | Agent | Action | Plan | Ticket |
+| ---- | ----- | ------ | ---- | ------ |
+| 2026-11-18 | Winston | Generated AC from the issue's proof line | written | not synced (awaiting go-ahead) |
+
+## PR Readiness
+
+Retro:
