@@ -126,9 +126,8 @@ Pixel specs the fix (mode 2). The spec stage reads the design, and the plan stag
 ## Epic vs Story
 
 - **Default to story.** Most tickets are stories.
-- **Promote to epic** when: >5 implementation tasks AND they cross system boundaries (frontend + backend + infrastructure, or multiple unrelated components).
-- The plan stage detects epic candidates after building implementation tasks and flags them for the user.
-- Epic plans use the filename `epic-<name>.md` and contain a `## Stories` section referencing individual story plans.
+- **On a plan folder,** the intent stage proposes the size, `standard` or `epic`, with its reason, and the person approves it with the intent. An epic is an `epic-<ticket>/` folder holding `intent.md` and `spec.md` and no `plan.md`, and each child is a standard ticket with its own folder, per `.prism/rules/workflow.md`.
+- **On a legacy flat plan,** promote to epic when there are more than 5 implementation tasks and they cross system boundaries (frontend + backend + infrastructure, or multiple unrelated components). An epic plan uses the filename `epic-<name>.md` and contains a `## Stories` section referencing individual story plans.
 
 
 
