@@ -306,6 +306,26 @@ describe("failing conditions print one line, exit 1, and write nothing", () => {
 		assert.equal(readPlan(folder), before);
 	});
 
+	test("the CLI exits 2 on a config that does not parse instead of using the default stop paths", () => {
+		const folder = copyFixture("contract-path");
+		const configDir = path.join(repoRootOf(folder), ".ai-skills");
+		mkdirSync(configDir);
+		writeFileSync(
+			path.join(configDir, "config.json"),
+			'{ "stopPaths": { "contract": ["src/contracts/**"] }, }'
+		);
+		const before = readPlan(folder);
+
+		const child = run(folder, "--check");
+
+		assert.equal(child.status, 2);
+		assert.match(
+			child.stderr,
+			/^auto-approve: \.ai-skills\/config\.json exists but is not a readable JSON object/
+		);
+		assert.equal(readPlan(folder), before);
+	});
+
 	test("a config that sets dependency paths replaces the default list", () => {
 		const folder = copyFixture("dependency-file");
 		const configDir = path.join(repoRootOf(folder), ".ai-skills");
