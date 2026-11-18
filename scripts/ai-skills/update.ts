@@ -1120,6 +1120,15 @@ const HOOK_RUNTIME_FILES = [
 	"git-hooks/pre-commit.mjs",
 	"git-hooks/pre-push.mjs",
 	"git-hooks/install.mjs",
+	"lib/tokenize.mjs",
+	"lib/segments.mjs",
+	"plan/frontmatter.mjs",
+	"plan/lookup.mjs",
+	"plan/tasks.mjs",
+	"plan/bundles.mjs",
+	"plan/commit.mjs",
+	"plan/auto-approve.mjs",
+	"plan/stop-paths.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */
