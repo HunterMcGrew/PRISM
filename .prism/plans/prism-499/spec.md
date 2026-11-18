@@ -72,11 +72,12 @@ Port thrive's four templates into `.prism/templates/`: `intent.md`, `design.md`,
   - Design opens with `needed`, `supplement`, or `not needed`, plus a reason. A supplement adds `approval: required` or `not-required`. A `needed` design always requires approval.
   - Acceptance criteria may be `none — <why>` only on an epic.
 - **`design.md`** adds `approval`. Its sections are thrive's, with the state list cited from `prism-design` and not restated.
-- **`spec.md`** is never approved. Sections: Requirements, Design, Affected systems. Affected systems is a fenced block with one glob per line. An epic spec adds Children, Merge order, and Decisions.
+- **`spec.md`** is never approved. Sections: Requirements, Design, Affected systems. Affected systems is a fenced block with one glob per line. An epic spec adds Children, Merge order, and Decisions, and gains a Retro section when the epic's retro runs.
 - **`plan.md`** sections: Tasks, Challenge, Decisions, History, Sessions, Verification, Review, PR Readiness. The `Retro:` line lives under PR Readiness.
 - **Task shape:** heading `### T<n>: <summary>`, with fields `files`, `proof`, `proof fails on main`, `depends on`, and `behavior change`. The parser also accepts `amended` and `new dependency`.
 - A folder counts as a plan only when it holds a chain file.
-- **Lookup order:** `<id>/`, `<id>.md`, `epic-<id>/`, `epic-<id>.md`, a `ticket:` field scan, then the same over the archive. This extends the folder tier phase 1 added to `resolveLivePlan`.
+- **Lookup order:** `<id>/`, `<id>.md`, `epic-<id>/`, `epic-<id>.md`, then a `ticket:` field scan. This extends the folder tier phase 1 added to `resolveLivePlan`.
+- `resolveLivePlan` keeps its contract and never reads `.prism/archived/`, because the gates that call it must not treat a frozen record as a branch's live plan. A separate archive search serves the readers that want history, such as the audit and the retro.
 - The existing flat-plan template in `branch-plan.md` stays for legacy plans. The rule gains the folder shape and loses nothing a flat plan needs.
 
 ### Workflow block and resume table
@@ -105,9 +106,11 @@ Commit subjects on a folder-plan branch: `T3:`, `T3-T5:`, `T11,T15,T22:`, `T3 fi
 | `watch-ci.mjs` | Waits for CI on a PR | Adapt. The required check name comes from config |
 | `check-report.mjs` | Checks the shape of a Verification section | Port. Thrive's planted fixture is not ported |
 | `reconcile.mjs` | Resolves addressed agent threads, corrects labels, reports unanswered human comments | Adapt. Markers, labels, and the PR template path come from PRISM |
-| `plan-folder-citations.ts` | Fails a plan folder that holds a section-sign citation | Port into the existing lint set |
+| `plan-folder-citations.ts` | Fails a plan folder that holds a section-sign citation | Port into the existing lint set, with an allowlist |
 
-Each script ships with a `node --test` suite wired into `pnpm prism:test`.
+The citation lint carries an allowlist of plan files written before it existed. `prism-499/plan.md` is on it, because the phase-1 plan is the record of a finished phase, full of section-sign citations and rewriting it would change history for no reader. The allowlist can only shrink.
+
+Each script ships with a suite named `*.test.ts`, the only pattern `run-tests.ts` discovers, so `pnpm prism:test` runs it. Thrive's suites are `*.test.mjs` and are renamed on the way in.
 
 ### Review
 
@@ -136,10 +139,11 @@ Each script ships with a `node --test` suite wired into `pnpm prism:test`.
 
 - **Voice block.** Port thrive's ADR-0054 shape: an identity line, an optional scene line, a tone line, three or four signature lines, and one greeting instruction. It sits right after the job statement.
 - **Cap.** `measureSkillLoad` skips the first 16 lines of each `## Voice` section. Nothing else about the count changes.
-- **Agent roles may carry a persona.** `roles.json` and the sync code allow `persona` on an agent-type role and keep persona names unique. This is what lets `prism-pr-review` be Eric.
+- **Eric needs no registry change.** PRISM's `roles.json` has two role types, `persona` and `utility`, and `prism-pr-review` is already a persona role named Eric. Thrive had to widen its registry to name him, and PRISM does not. What he gains here is a Voice block that shows in chat and never in a GitHub comment.
+- **Persona names stay unique.** A build check fails when two roles share a persona name, since `prism-architect` takes "Winston" from `prism-plan` in the same change.
 - **`prism-architect`.** Chat-only output: Verdict, Evaluation, Suggested approach, Watch for, Open items. It replaces the quick-consult mode inside `prism-plan`. The evaluation sections move from `prism-plan` unchanged.
 - **`prism-debug`.** Port thrive's body and trim it to the cap. It changes no file except a lessons entry, and it tags and removes its own temporary logging. The routing phrases for broken behavior move from the implement row to it. This supersedes ADR-0079 for the debugger only.
-- **Batteries.** A one-line pointer to `session-orientation.md` loads that rule under PRISM's count. The persona child decides per skill whether the pointer earns its lines.
+- **Batteries.** A pointer to `session-orientation.md` costs one line. `measureSkillLoad` charges a cited rule only when it is `load: skill`, and that rule is `load: always`. The persona child decides per skill whether the line earns its place.
 
 ### Git hooks
 
@@ -148,14 +152,18 @@ Each script ships with a `node --test` suite wired into `pnpm prism:test`.
 - **Pre-push** runs the configured lint command over the files the push carries. It skips a ref that is not the checked-out head.
 - **Config.** A new `gitHooks` key holds each hook's command and globs. Onboarding fills it from the detected stack. A hook with no command skips with a notice.
 - **Skip, don't block,** when node, the tool, or the default branch is missing.
-- **Installer.** `prism adopt` and `prism update` set `core.hooksPath` to `.githooks`. They replace only an empty value or one that already points at a `.githooks` directory in the same repo. Any other value is left alone and reported, so husky and lefthook users lose nothing.
-- **Doctor** reports whether the hooks are installed.
-- **Agent pushes.** The existing `hooks.pushVerification` gate and the pre-push hook would lint twice. The gate stops running lint when the git hook is installed.
+- **Installer.** A `prism hooks install` command sets `core.hooksPath` to `.githooks`. It replaces only an empty value or one that already points at a `.githooks` directory in the same repo. Any other value is left alone and reported, so husky and lefthook users lose nothing. `prism adopt` and `prism update` run it.
+- **Every clone needs it once.** `core.hooksPath` is local git config and is never committed, so a teammate's fresh clone has `.githooks/` with nothing pointing at it. Three things close most of that gap:
+  - Onboarding offers to add the install command to the consumer's own setup step, such as a `prepare` script.
+  - A new session-start agent hook runs the installer when the value is unset, so every clone an agent works in gets it.
+  - `prism doctor` reports a clone where the hooks are not installed.
+- **What is left.** A person who clones by hand and never runs setup, an agent, or doctor has no git hooks. CI stays the gate that decides a merge.
+- **Agent pushes.** The existing `hooks.pushVerification` gate runs lint and format. With the git hooks installed, pre-push covers lint and pre-commit covers format, so the gate skips whichever of the two an installed hook already runs.
 - **ADR.** A new ADR records the reversal of ADR-0076's rejection of real git hooks. ADR-0076's agent-side gates stand.
 
 ### Agent hooks
 
-Base: PRISM's runtime in `scripts/ai-skills/hooks/`. Port thrive's `tokenize.mjs` and `segments.mjs` as library modules, and move the existing gates onto them. The existing read-credit path keeps its current behavior.
+Base: PRISM's runtime in `scripts/ai-skills/hooks/`. Thrive's `tokenize.mjs` and `segments.mjs` are ported as library modules in the chain-scripts child, because the approve guard needs them before the other gates do. The agent-hooks child moves the existing gates onto them. The existing read-credit path keeps its current behavior.
 
 | Gate | Event | Denies | Needs |
 | --- | --- | --- | --- |
@@ -168,6 +176,8 @@ Base: PRISM's runtime in `scripts/ai-skills/hooks/`. Port thrive's `tokenize.mjs
 | Approve guard | prompt submit, shell, and edit tools | Running the approval script except once under a fresh token. Edits to approval fields. Any touch of the token | chain |
 | Reconcile stop | subagent stop for `prism-pr-review` | Stopping while reconcile reports unclean, up to three times | review |
 
+- **Defaults.** The secrets gate, the brief gate, the approve guard, and the commit gate are on wherever the hook runtime is delivered. The plan-dependent commit checks fire only on a folder-plan branch, so a consumer who has not started using plan folders sees only the flag denies. ADR-0076's two gates, `hooks.commitCleanupPass` and `hooks.pushVerification`, stay opt-in.
+- **`gated` roles.** `roles.json` gains an optional `gated` flag, set on the roles that run as subagents from a plan folder. The agent-hooks child adds it.
 - Every gate fails open on its own errors.
 - Remedy text names one action that clears the deny.
 - Thrive's screenshot gate, its Docker arms of the secrets gate, and its dev-port work are not ported.
@@ -177,12 +187,13 @@ Base: PRISM's runtime in `scripts/ai-skills/hooks/`. Port thrive's `tokenize.mjs
 
 ### Architect routes for consumer code
 
-The write gate is already on by default. The gap is that a fresh install routes only PRISM's own paths. Onboarding writes at least one route over the consumer's source tree, pointing at an architect doc it drafts from the detected stack. A consumer with no architect docs gets a stub doc and one route, per the structural-stub exception in `lazy-artifacts.md`.
+The write gate is already on by default. The gap is that a fresh install routes only PRISM's own paths. Onboarding writes a route over the consumer's source tree only when it has drafted an architect doc with real content from the detected stack. It writes no stub. A route to an empty doc would hold up a consumer's first edit to read nothing, and `lazy-artifacts.md` does not allow a placeholder file.
 
 ### AGENTS.md and Codex
 
-- The generator orders `AGENTS.md` so the workflow block, resume table, routing, and safety rules come first, ahead of the inlined rules.
-- A build test asserts those sections end inside the first 32 KiB.
+- The generator orders `AGENTS.md` from a named list of lead sections, which come first, ahead of the inlined rules.
+- A build test asserts every lead section ends inside the first 32 KiB.
+- The Codex child builds the list and the test with the sections that exist today: routing and the behavioral norms. The chain-skills child adds the workflow block and resume table to the same list, and the test covers them from then on.
 - The build prints the size of `AGENTS.md` and of the always-on set. Nothing fails on the number.
 - When `codex` is among the hosts, onboarding and `prism update` write `project_doc_max_bytes` to the repo's `.codex/config.toml`, merged with any keys already there. The value is the file size rounded up to the next 64 KiB, with one step of headroom.
 - `prism doctor` warns when `AGENTS.md` is larger than the configured limit, or larger than 32 KiB with no limit configured.
@@ -212,8 +223,7 @@ No other rule or architect doc is rewritten. A child edits one only where its ow
 .prism/review/**
 .prism/metrics/**
 .prism/spec/adrs/_toolkit/**
-.prism/plans/prism-499/**
-.prism/plans/prism-499-*/**
+.prism/plans/prism-*/**
 .prism/lessons.md
 .githooks/**
 scripts/ai-skills/**
@@ -232,21 +242,23 @@ The three host directories are generated by `pnpm prism:build`. They are listed 
 
 ## Children
 
-Each child is a standard ticket with its own plan folder at `.prism/plans/prism-499-<slug>/`.
+Each child is a standard ticket with its own GitHub issue, filed under #499 when the child starts. Its plan folder is `.prism/plans/prism-<n>/`, named for that issue, and its branch carries the same number. A child cannot share the epic's number: `extractTicketId` reads one ticket ID from a branch name, so every `prism-499-*` branch would resolve to the epic folder.
 
-| # | Slug | What lands | Proves |
+Child 1 is this PR. It edits the epic folder and has no folder of its own.
+
+| # | Name | What lands | Proves |
 | --- | --- | --- | --- |
-| 1 | `kitchen-line-intent` | The amended intent and this spec | Nothing to run. The stack has an agreed design on `main` |
-| 2 | `git-hooks` | `.githooks/`, the `gitHooks` config key, the installer, the doctor check, the superseding ADR, the push-gate dedupe | A commit with an unformatted staged file is refused. A foreign `core.hooksPath` is left alone |
-| 3 | `codex-budget` | `AGENTS.md` ordering, the size report, the `.codex/config.toml` write, the doctor warning | The workflow sections end inside 32 KiB. A live Codex run reads the raised limit, or the fallback is recorded |
-| 4 | `chain-scripts` | Templates, frontmatter, lookup, tasks, bundles, commit, approve, chat approval, auto-approve, stop paths, the citation lint | Every suite passes. A plan with two tasks on one file is rejected |
-| 5 | `chain-skills` | `prism-intent`, `prism-spec`, `prism-architect`, the `prism-plan` and `prism-challenge` rewrites, `prism-implement` and `prism-docs` as commit-only stages, `prism-design` as a stage, the workflow block, the rule edits, `prism-user-stories` removed, the approve guard | A ticket runs from a typed `approve` to committed bundles with no person starting a stage |
-| 6 | `review-verify` | `REVIEW.md`, the pass files, `prism-verify`, the two review rewrites, reconcile, the misses log, watch-ci, the fixed retro and its check, grading moved out of `prism-qa-plan`, `prism-review-loop` removed, `prism-audit` reading plan folders | Both reviews print one coverage line per pass. A plan with an empty `Retro:` line fails the check |
-| 7 | `personas` | Voice blocks, the cap allowance, personas on agent roles, `prism-debug`, the ADRs | The build check passes with Voice blocks in place. "Eric" routes to `prism-pr-review` |
-| 8 | `agent-hooks` | The tokenizer port, the secrets, brief, commit, and reconcile gates, the kill-switch behavior, consumer architect routes | Each gate passes its three-leg test on Claude Code. Codex gaps are recorded |
-| 9 | `release` | Version `1.0.0`, the migration note, the docs | A fresh `prism adopt` and an upgrade both pass `prism doctor` |
+| 1 | Intent and spec | The amended intent and this spec | Nothing to run. The stack has an agreed design on `main` |
+| 2 | Git hooks | `.githooks/`, the `gitHooks` config key, `prism hooks install`, the session-start install, the doctor check, the superseding ADR, the push-gate dedupe | A commit with an unformatted staged file is refused. A foreign `core.hooksPath` is left alone |
+| 3 | Codex budget | The lead-section list and its test, the size report, the `.codex/config.toml` write, the doctor warning | Routing and the behavioral norms end inside 32 KiB. A live Codex run reads the raised limit, or the fallback is recorded |
+| 4 | Chain scripts | Templates, frontmatter, lookup, the archive search, tasks, bundles, commit, auto-approve, stop paths, the citation lint, the shell parser port | Every suite passes. A plan with two tasks on one file is rejected |
+| 5 | Chain skills | `prism-intent`, `prism-spec`, `prism-architect`, the `prism-plan` and `prism-challenge` rewrites, `prism-implement` and `prism-docs` as commit-only stages, `prism-design` as a stage, the workflow block and its lead-section entries, the rule edits, `prism-user-stories` removed, the approval script, chat approval, and the approve guard | A ticket runs from a typed `approve` to committed bundles with no person starting a stage. An agent running the approval script with no token is denied |
+| 6 | Review and verify | `REVIEW.md`, the pass files, `prism-verify`, the two review rewrites, reconcile, the misses log, watch-ci, the fixed retro and its check, grading moved out of `prism-qa-plan`, `prism-review-loop` removed, `prism-audit` reading plan folders | Both reviews print one coverage line per pass. A plan with an empty `Retro:` line fails the check |
+| 7 | Personas | Voice blocks, the cap allowance, the unique-name check, `prism-debug`, the ADRs | A skill with a 12-line Voice block passes the cap and one whose Voice block runs past 16 lines is charged for the rest. "Sasha" routes to `prism-debug` |
+| 8 | Agent hooks | The existing gates moved onto the shell parser, the secrets, brief, commit, and reconcile gates, the `gated` flag, the kill-switch behavior, consumer architect routes | Each gate passes its three-leg test on Claude Code. Codex gaps are recorded |
+| 9 | Release | Version `1.0.0`, the migration note, the docs | A fresh `prism adopt` and an upgrade both pass `prism doctor` |
 
-Child 5 carries the approve guard because the guard and the approval script must not ship apart: a script an agent can run freely is worse than no script.
+The approval script, chat approval, and the approve guard all land in child 5. They must not ship apart: a script an agent can run freely is worse than no script. The guard reads shell commands through the parser child 4 ports.
 
 Children 4 and 5 are thrive's one large PR cut in two. Child 4 is inert until child 5 uses it, and it is reviewable as code with tests. If the cut makes child 4's review harder than it is worth, `prism-plan` may merge them.
 
@@ -255,9 +267,10 @@ Children 4 and 5 are thrive's one large PR cut in two. Child 4 is inert until ch
 1, then 2 and 3 in either order, then 4, 5, 6, 7, 8, 9.
 
 - 2 and 3 depend on nothing but the intent. They go first so every later child commits through the git hooks.
+- 5 needs the parser and the templates from 4, and extends the lead-section list from 3.
 - 6 needs the plan folder from 4 and 5.
 - 7 comes after 6 so the Voice block is added once to each rewritten skill.
-- 8 needs the task parser, the approval script, and reconcile.
+- 8 needs the task parser and stop paths from 4, and reconcile from 6.
 
 After child 9 merges, the npm package is published by hand, per the publishing guide.
 
@@ -270,6 +283,11 @@ After child 9 merges, the npm package is published by hand, per the publishing g
 - **Plans stay undeletable.** Considered: thrive's rule that a closed plan may be deleted. Rejected, because ADR-0047's reasons still hold here: audits and retros walk the live tree.
 - **Merge authority is unchanged.** Thrive lets no agent merge. PRISM keeps `mainSessionMayMerge` for its own PRs, which a consumer has to set by hand.
 - **No small size, so no size gate on commits.** The amended intent has two sizes. The earlier rule that a commit outgrowing the small limits is blocked has nothing left to check.
-- **Git hooks ship, reversing part of ADR-0076.** Hunter asked for them on 2026-11-17. ADR-0076's objections were that a git hook cannot prompt the model, can be skipped with `--no-verify`, needs a per-clone step, and fires for humans. The commit gate now denies `--no-verify` for agents, the installer runs inside `prism adopt`, and firing for humans is the point.
+- **Git hooks ship, reversing part of ADR-0076.** Hunter asked for them on 2026-11-17. ADR-0076's objections were that a git hook cannot prompt the model, can be skipped with `--no-verify`, needs a per-clone step, and fires for humans. The commit gate now denies `--no-verify` for agents, and firing for humans is the point. The per-clone step is reduced, not removed: setup scripts, the agent session-start hook, and doctor cover most clones, and a person who uses none of them has no git hooks. Child 2 writes the ADR.
+- **Voice returns, reversing part of ADR-0080.** That ADR rejected "a thin opening line" of persona voice by name. The amended intent brings back a block of about a dozen lines, on thrive's finding that voice is what makes a persona recognizable across a long session and that only the "how this persona thinks" sections repeated rules. The four tests and the cap stand. Child 7 writes the ADR.
+- **The session ships on a folder-plan branch, amending ADR-0003.** That ADR has the authoring persona commit, push, and open the PR. On a folder-plan branch the implement and docs stages commit only, and the session's PR stage pushes once for code and docs together. Reviewers still never ship. Flat-plan branches keep ADR-0003 as written. Child 5 writes the ADR.
+- **The retro cannot be declined on a folder plan, amending ADR-0068.** That ADR made the retro a nudge a person may decline with a recorded reason. A folder plan runs it as a fixed stage. Flat plans keep the declinable form. Child 6 writes the ADR.
+- **The epic folder keeps its name and its phase-1 plan.** The convention is `epic-<id>/` with no `plan.md`. This epic's folder is `prism-499/` and holds the phase-1 plan, which the shipped code and ADRs cite by path. Renaming or moving it would break those citations for no gain. New epics follow the convention.
+- **Chat approval is Claude Code and Codex only.** It needs a prompt-submit hook, and Cursor has no hook delivery. A Cursor user approves from a terminal with the keypress, which works on every host.
 - **`AGENTS.md` may exceed 32 KiB.** Hunter decided this on 2026-11-17. The file is ordered so the first 32 KiB holds what drives the run, and the limit is raised in the repo's Codex config.
 - **OPEN — TBD, needs a live Codex run.** Whether Codex honors `project_doc_max_bytes` in a repo-level config. **Default path (used until resolved):** child 3 writes the key and `prism doctor` prints the per-developer setting as a fallback.

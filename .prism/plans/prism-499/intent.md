@@ -1,6 +1,7 @@
 ---
 title: AI-native SDLC for PRISM — thin skills, artifact chains, and enforced gates
 author: Hunter McGrew
+stage: intent
 status: approved
 approved_by: Hunter McGrew
 approved_at: 2026-11-17
@@ -120,7 +121,7 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 - **New stage skills:** `prism-intent`, `prism-spec`, and `prism-verify`.
 - **`prism-architect` is new and is Winston.** It answers "is this the right approach?" at any time, in chat, with no plan folder and no approval. `prism-plan` becomes a persona-less utility that writes `plan.md` and runs the challenge rounds.
 - **`prism-debug` is new and is Sasha.** It diagnoses and changes no source. Its report becomes the Problem section of an intent. This reverses the phase-1 deletion.
-- **`prism-pr-review` is Eric again**, with a chat voice that stays out of his GitHub comments.
+- **`prism-pr-review` stays Eric** and gains a chat voice that stays out of his GitHub comments.
 - `prism-challenge` runs the plan challenge rounds. `tdd` holds the test-first rules the implement stage loads.
 - **Folded:** `prism-user-stories` into `prism-intent`. No skill writes user stories.
 - **Deleted:** `prism-review-loop`, once `REVIEW.md` and the review rounds inside the stages replace it. Sol, Ren, and Theo stay deleted.
@@ -171,7 +172,11 @@ Against the version approved on 2026-10-17:
 - **Sizes.** Small, standard, and epic become standard and epic.
 - **Stages.** A design stage, two challenge rounds, and a fixed retro are added. The reconcile step becomes a script and a stop gate inside PR review.
 - **Intent.** It gains the required regression, security, and design fields, and holds the acceptance criteria.
-- **Personas.** "No personality" becomes a short Voice block. Sasha returns as `prism-debug`. Winston moves to a new `prism-architect`. Eric is named again.
+- **Personas.** "No personality" becomes a short Voice block. Sasha returns as `prism-debug`. Winston moves to a new `prism-architect`.
+- **Approval.** "A keypress the model cannot supply" gains a second route: a typed `approve` in chat, tied to the file's content.
+- **Who pushes.** On a plan-folder branch the implement and docs stages commit only, and the session pushes and opens the PR. Before, each authoring skill shipped its own PR.
+- **Acceptance criteria.** Grading moves from `prism-qa-plan` into review.
+- **Cursor.** Hooks were to be registered on Cursor wherever it exposed the event. Cursor hook delivery is now out of scope.
 - **Commit gate.** It no longer holds staged paths to a task's file list.
 - **Git hooks.** They are added, reversing the earlier rejection.
 - **Size targets.** The 200-line `REVIEW.md` ceiling and the always-on, `CLAUDE.md`, and `AGENTS.md` line targets are dropped. The skill cap stays.
@@ -184,7 +189,7 @@ Against the version approved on 2026-10-17:
 
 - An unfinished migration must not freeze routine work. Legacy flat plans keep working until the last one is archived.
 - A consumer's own skills, docs, plans, and git-hook setup are never touched by the port.
-- Every always-on rule and skill keeps working on all three hosts at every merged step.
+- Every always-on rule and skill keeps working on all three hosts at every merged step. Hooks and chat approval reach Claude Code and Codex only, and a Cursor user approves from a terminal.
 - A skill is deleted only once its replacement exists.
 - Design calls that do not change this intent stay with the session or `prism-architect`. Anything that would change it comes back to Hunter.
 
