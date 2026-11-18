@@ -847,7 +847,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: `docs/ai-skills/compatibility.md` still says the runtime is copied only when `hosts` includes `claude` or `codex` and that a Cursor-only repo gets no `.claude/hooks/`. It is outside PR A's task lists, so it was left for a follow-up call.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed PR A: 1 major (five Windows-only test failures from 8.3 temp paths and a slash regex) and 6 minor, recorded under `## Review`. The thrive port of the approval trio diffed clean apart from the listed swaps.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the self-review of PR A: the five Windows test failures (`a169e985`), three new guard cases and the ported shebang case (`8e45f6d4`), the stale `compatibility.md` and Codex session claims (`8951e24b`), and a generic config error (`b6d8920c`). Two new Decisions record the drive-letter spelling and the T25 message amendment, and the build wrote the three `hook-runtime.md` mirrors.
-- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed the fixes (`c5dcdaa6..42adaf81`). All seven hold, and CI is green on both legs. Two minors are open (a missed 8.3 site in `approveCommandPath`, the stale PR body) and one is deferred to PR B, under `## Review` § Second pass.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed the fixes (`c5dcdaa6..42adaf81`). All seven hold, and CI is green on both legs. Two minors are open (a missed 8.3 site in `approveCommandPath`, the stale PR body) and one is deferred to PR B, recorded in the second pass under `## Review`.
 
 ## Sessions
 
@@ -1007,7 +1007,7 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 
 ## PR Readiness
 
-- [x] No critical or major issues. Two minors are open: the `approveCommandPath` 8.3 site and the stale PR body. See `## Review` § Second pass.
+- [x] No critical or major issues. Two minors are open: the `approveCommandPath` 8.3 site and the stale PR body. See the second pass under `## Review`.
 - [x] Types: `pnpm run prism:check-types` passes, as part of `prism:check`.
 - [x] No stray console.logs or debug artifacts in the diff.
 - [x] Tests written for new logic. The `approved_via`, drive-letter, and shebang cases are in. A mutation probe fails both `approved_via` cases.
