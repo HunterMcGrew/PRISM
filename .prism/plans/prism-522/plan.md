@@ -865,6 +865,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed the fixes (`c5dcdaa6..42adaf81`). All seven hold, and CI is green on both legs. Two minors are open (a missed 8.3 site in `approveCommandPath`, the stale PR body) and one is deferred to PR B, recorded in the second pass under `## Review`.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the second pass: `approveCommandPath` takes its base from the git toplevel (`11aa142d`), ADR-0081 carries a dated amendment note for the hook modules reaching every install (`7835ad89`), and the PR body was synced. Added the plan-citations lesson to `.prism/lessons.md` (`00ea6f97`).
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed Eric's PR review of PR A: the architect-doc claims (`7ac8b7f2`), two stale Cursor-only comments and the `readPlanConfig` JSDoc (`6f939bf6`), and the duplicated guard edit check (`2b971c5d`). The delivery clause dropped from PR A is a new Decision, and T12 now re-adds it in PR B.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed Eric's re-review: the Token bullet and its curated twin now say a Codex `apply_patch` target is its whole patch text, so a patch naming the token file is denied (`fbfd5092`). Probed the guard on both halves of the sentence first, and added the half-rewording lesson to `.prism/lessons.md`.
 
 ## Sessions
 
@@ -874,6 +875,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review PR A (T1-T8, T25) against the plan, the rules, and thrive. Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts. Approach: run `prism:check`, diff the ported trio against thrive at db357097, and source-verify the edited architect docs. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review the PR A fix commits (`c5dcdaa6..42adaf81`). Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts, no merge. Approach: wait on CI for both legs, run `prism:check`, mutation-probe the new guard cases, and source-verify the edited Hosts claim and `compatibility.md`. · close: scope held; the frontmatter probe edit was reverted and the tree left clean
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's findings on PR A (three Major architect-doc claims, three Minor, and the PR body). Bounds: the named files and their build mirrors, the plan, and the PR body; no resolving threads, no merge, no flipping the PR ready, no CI polling. Approach: probe the guard to confirm the token-arm claim before rewording it, fix in three commits, then the plan in its own. · close: scope held; the `refreshHookRuntime` comment in `update.ts` carried the dropped clause too and was fixed with it
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's one remaining major on PR A, the Token bullet's file-edit half. Bounds: `hook-runtime.md` and its curated twin with their mirrors, the plan's third-pass entry, one lesson, and the PR body; no other files, no merge, PR stays draft. Approach: probe the guard on both halves of the sentence before rewording, then record it in the plan after the doc commit. · close: scope held
 
 ## Verification
 
@@ -992,7 +994,7 @@ Eric's review of PR #531 at `ad4f3d68`, range `bd666c58..ad4f3d68`, 2026-11-18. 
 
 - **Severity:** `major`
 - **Status:** `fixed`
-- **Fixed in:** `7ac8b7f2`: the bullet and the curated twin's "What it denies" bullet now say a shell command is denied for naming the token file or a prompt-submit event, and a file edit only when its target is the token file. The architect doc names the known miss, and says the Codex `apply_patch <<EOF` form is a shell command and is denied.
+- **Fixed in:** `7ac8b7f2`: the bullet and the curated twin's "What it denies" bullet now say a shell command is denied for naming the token file or a prompt-submit event, and a file edit only when its target names the token file. This fixed the event half and narrowed the target half too far: a Codex `apply_patch` target is the whole patch text, so any patch naming the token file is denied. The fourth pass below corrects it. The architect doc names the known miss, and says the Codex `apply_patch <<EOF` form is a shell command and is denied.
 - **File:** `.prism/architect/_toolkit/hook-runtime.md:59`
 - **Problem:** `touchesToken` checks a file edit's target against the token file name and never checks for an event name, so a Claude `Edit` or Codex `apply_patch` call adding `UserPromptSubmit` to a registration file passes. The header of `approve-guard.mjs` lists edits to the harness settings files as a known miss.
 - **Suggested fix:** split the sentence into shell commands and file edits, and name the known miss.
@@ -1041,6 +1043,19 @@ Eric's review of PR #531 at `ad4f3d68`, range `bd666c58..ad4f3d68`, 2026-11-18. 
 - **File:** PR #531 body
 - **Problem:** the body cited run 44353891936 on `7345ce2b` where the head had moved, and left out the amendment and the lesson.
 - **Suggested fix:** cite the head's run, mention both, and tick the Build box.
+
+### Fourth pass: Eric's re-review
+
+Eric's re-review of PR #531 at `7390d3d8`, 2026-11-18. 1 major, now fixed.
+
+### The Token bullet of `hook-runtime.md` understates the Codex deny
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `fbfd5092`: the bullet and the curated twin's "What it denies" bullet now say a file edit is denied when its target names the token file, a Claude `Edit` or `Write` is judged on its `file_path` alone, and a Codex `apply_patch` call's target is its whole patch text, so a patch naming the token file anywhere is denied. Probed against `approve-guard.mjs` before rewording: Codex `apply_patch` with an added line naming the token file in a hunk for another file denies, Claude `Edit` with `new_string` naming it passes, Codex `apply_patch` or Claude `Edit` adding `UserPromptSubmit` to a registration file passes, a Claude `Write` or Codex patch creating the token file denies, and a shell `grep` or `cat` passes while a shell write or the `apply_patch <<EOF` form denies.
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:59`
+- **Problem:** the third-pass fix reworded the file-edit half to "whose target is the token file". `touchesToken` tests a Codex patch's whole text against the token file name, so a patch that only mentions the file in another hunk is denied. This doc and its twin both name the file, so a Codex patch to either is denied.
+- **Suggested fix:** keep the target rule for Claude and add the Codex patch-text case to both bullets.
 
 ## Acceptance Criteria
 
@@ -1095,13 +1110,13 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 
 ## PR Readiness
 
-- [x] No critical or major issues. No minors are open. Eric's three majors and three minors are fixed, see the third pass under `## Review`.
+- [x] No critical or major issues. No minors are open. Eric's three majors and three minors are fixed, see the third pass under `## Review`, and so is the re-review's major under the fourth pass.
 - [x] Types: `pnpm run prism:check-types` passes, as part of `prism:check`.
 - [x] No stray console.logs or debug artifacts in the diff.
 - [x] Tests written for new logic. The `approved_via`, drive-letter, and shebang cases are in. A mutation probe fails both `approved_via` cases.
 - [x] No `open` debugged issues.
-- [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18, after the third pass fixes). CI run 44355266762 on ad4f3d68 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
-- [x] PR description up to date: it cites run 44355266762 on ad4f3d68 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
+- [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18, after the fourth pass fix). CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
+- [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
 
 **Last updated:** 2026-11-18
