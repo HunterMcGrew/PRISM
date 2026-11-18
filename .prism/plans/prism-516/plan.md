@@ -9,6 +9,9 @@ Child 2 of the Kitchen Line epic (#499). The design comes from the "Git hooks" p
 
 **Goal:** PRISM ships a pre-commit hook and a pre-push hook, for its own repo and for every consumer, that run the consumer's own commands, skip with a notice when something is missing, and never replace a hook setup PRISM does not recognize.
 
+> Closed: 2026-11-18
+> Retro: declined — ticket grain; the lightweight charter-fidelity check ran inline during this close (all 15 tasks landed, AC-1 to AC-6 met by their suites in CI run 44275791883 green on both legs, Eric's re-review at 632035e5 left no finding standing, AC-7's macOS human check still pending), so a separate report would restate it.
+
 ## Tasks
 
 Parallel groups, worked out by hand because `bundles.mjs` does not exist until child 4. Each group's tasks touch disjoint files.
@@ -431,15 +434,15 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - **Doctor reuses the `hook-registration` check id.** Adding a `git-hooks` id would widen the exported `DoctorFinding` union, a shared type, for a label nobody filters on.
   - → no promotion needed (a tactic that keeps the shared `DoctorFinding` union unchanged, visible in `doctor.ts`)
 - **PRISM's own config gets no `gitHooks` block.** PRISM has no formatter, and its linter (`prism:crossref-lint`) does not take a file list. Adding Prettier or ESLint would be a new dependency, outside this child's limits. PRISM's hooks install and print their skip notice. That proves delivery and install on PRISM itself, but it means PRISM's own commits are not format-checked until a tool is chosen.
-  - → no promotion needed (the absence is visible in PRISM's own `.ai-skills/config.json`; choosing a formatter for PRISM is a separate call with no home yet)
-- **`prism eject` does not remove the shims or unset `core.hooksPath`.** Eject today leaves the whole hook runtime in place, so this matches it. A left shim skips with a notice once its runtime is gone. Removing hook delivery on eject is a follow-up PR off `main` per `followup-scope.md`, covering the runtime and the shims together.
-  - → no promotion needed (the consumer docs already say what eject leaves, in `docs/adopt-prism.md` and `docs/what-prism-writes.md` since dcd7caf6; the eject follow-up PR has no home yet)
+  - → no promotion needed (the absence is visible in PRISM's own `.ai-skills/config.json`; choosing a formatter for PRISM is tracked in #527)
+- **`prism eject` does not remove the shims or unset `core.hooksPath`.** Eject today leaves the whole hook runtime in place, so this matches it. A left shim skips with a notice once its runtime is gone. Removing hook delivery on eject is a follow-up covering the runtime and the shims together, tracked in #525.
+  - → no promotion needed (the consumer docs already say what eject leaves, in `docs/adopt-prism.md` and `docs/what-prism-writes.md` since dcd7caf6; removing hook delivery on eject is tracked in #525)
 - **This child ships as one PR, not a stack.** It touches more than ten files, but the modules have no value until the installer and delivery reach a repo, and the epic is already split at child grain.
   - → no promotion needed (ticket tactic)
 - **OPEN — TBD, needs a live Codex run (Hunter).** Whether Codex fires `SessionStart` with `source: "startup"` for the install arm. The event and its `source` values come from a summarized read of the Codex hooks page on 2026-11-18, not verbatim text. **Default path (used until resolved):** register it on Codex as T9 says, record it as documentation-summarized in `git-hooks.md`, and rely on adopt and update, the setup-script line, and doctor to cover Codex clones meanwhile. Child 8's per-host registration test is the natural place to confirm it.
   - → no promotion needed (open question — exit condition: a live Codex session fires `SessionStart` with `source: "startup"`, which child 8's per-host registration test can show; `git-hooks.md` § The installer already says the Codex registration is unverified)
 - **The config validator is not tightened for `gitHooks`.** `validateOnDiskConfig` does not enforce `additionalProperties: false` or `minItems`, so a typo under `gitHooks` passes validation and the hook skips with its notice. `git-hooks-config.test.ts` pins the schema keywords instead. Changing the validator would change a shared function, which is outside this child's limits. Follow-up: make the validator enforce those two keywords.
-  - → no promotion needed (a limit of this child; the validator follow-up has no home yet)
+  - → no promotion needed (a limit of this child; tightening the validator for `gitHooks` is tracked in #526)
 - **The pre-push hook pipes the lint command's stderr instead of inheriting it.** `isCommandNotFound` has to read `cmd.exe`'s "is not recognized" text, which exists only on stderr. The hook re-emits what it read, so the user still sees it.
   - → no promotion needed (implementation tactic; the observable behavior, the command's output reaching the terminal, is in `git-hooks.md` § Pre-push)
 - **`hook-gate.test.ts` was edited though the plan does not list it.** It pinned the Claude `SessionStart` matcher at `compact`, and T9 changed that to `startup|resume|compact`. The commit body for T9 says so.
@@ -470,6 +473,9 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
   - → no promotion needed (scope record for this branch)
 - **`installGitHooks` with `dryRun` prefixes its message with `would`.** `prism update --dry-run` prints what it would do and writes nothing.
   - → no promotion needed (message wording, visible in `install.mjs` and pinned by its tests)
+- **The close markers are the `>` lines under the opening paragraph, and frontmatter `status: closed` stays as a placeholder.** `branch-plan.md` § Before Closing step 2 and Zoe's plan-archive lane read `> Closed:` and `> Retro:`, not frontmatter, so those two lines are what make this plan closed today. The frontmatter `status: closed` stays because the epic spec defines no closed value; child 4 or child 6 defines folder-plan close and settles it.
+  - **Alternatives considered:** dropping the frontmatter `status`. Rejected, because the folder-plan close that child 4 or 6 defines may read it, and removing it now would be an edit they reverse. The trailing `Retro:` line stays for the same reason.
+  - → no promotion needed (bridge until the folder-plan close lands)
 
 ## History
 
@@ -480,6 +486,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed Eric's six Minor findings on PR #523 in three commits (installer and worktree code, `unknown` config types, docs and mirrors); see Decisions on the shim mode and on dropping both hosts. The installer now repairs a non-executable shim, and the `core.hooksPath` unset waits for sibling worktrees.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed Eric's Major on PR #523 in 07f234b5: `otherWorktreeHasShim` takes the current worktree from `git rev-parse --show-toplevel`, since Windows spells Node's and git's paths differently and CI went red on 874d5d99. The same commit corrects the dry-run wording and the partial-chmod message. The new test failed on the previous head, and Windows was not run locally.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Closed the plan: a verdict on all 26 Decisions, 11 of them already promoted to `git-hooks.md`, the ticket-grain retro run inline, and AC-1 to AC-6 ticked on CI run 44275791883. AC-7's macOS check stays open for a person.
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed the plan-close findings: added the `> Closed:` and `> Retro:` markers under the opening paragraph, and filed #525, #526, and #527 for the three follow-ups whose verdicts had no home. Each verdict now cites its issue.
 
 ## Sessions
 
