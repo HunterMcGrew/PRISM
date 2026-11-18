@@ -2,7 +2,10 @@
 title: Port the chain skills, the workflow block, and approval
 ticket: https://github.com/HunterMcGrew/PRISM/issues/522
 stage: plan
-status: draft
+status: approved
+approved_by: Hunter McGrew
+approved_at: 2026-11-18
+approved_via: chat
 ---
 
 Child 5 of the Kitchen Line epic (#499). The design comes from the epic spec on `huntermcgrew/prism-499-approve-once` (PR #518), at `.prism/plans/prism-499/spec.md`. The parts that apply are:
@@ -775,7 +778,7 @@ Tests:
 
 ## Decisions
 
-- **The plan uses the folder shape and the chain task shape, as child 4's does.** The round runner lands in this child, so no challenge rounds ran and `status` stays `draft`. Commits use `PRISM-522: <summary> (T<n>)`, because the `T<n>:` subject rule lands here in T21.
+- **The plan uses the folder shape and the chain task shape, as child 4's does.** The round runner lands in this child, so no challenge rounds ran, and Hunter McGrew approved the plan by hand in chat on 2026-11-18 ("Yes, all of it"). Commits use `PRISM-522: <summary> (T<n>)`, because the `T<n>:` subject rule lands here in T21.
   - **Where the bridge ends.** Child 4's closed plan named this child as the end of the folder-shape bridge, because this child lands approval, the round runner, and the `T<n>:` subject rule. This plan still can't use them on itself. It has no `intent.md` or `spec.md`, so `auto-approve.mjs` has nothing to check, and the tools are not merged while it builds. The first plan off the bridge is the next child's.
   - **Done is tracked by hand.** `tasks.mjs` reads `PRISM-522:` subjects as ticket subjects that complete nothing, so it reports every task open for the whole build. The session tracks done tasks from `## History` and `git log`, and builds the groups listed under `## Tasks` rather than running `bundles.mjs` on this plan. The groups match `analyzeBundles` run one stack PR at a time.
 - **The shared workflow mechanics live in one always-on rule, `.prism/rules/workflow.md`, first in the AGENTS.md lead list.**
@@ -789,17 +792,20 @@ Tests:
   - **Alternatives considered.** Giving each stage a persona name, which contradicts the spec. A `utility` that still emits agent files, which breaks the meaning `utility` has in ADR-0046.
   - **Chosen approach.** A third type, plus the `preloads` field the spec names.
   - **Implementation guidance.** `RoleDefinition` is build-internal (`generate-skills.ts` and its tests), not a public API. Flagged here because it is a shared type inside the build.
+  - **Approved:** Hunter McGrew, in chat on 2026-11-18: "Yes, all of it".
 - **Skills spell script paths with a `${HOOK_RUNTIME_DIR}` token from a new `hookRuntimeDir` config key.** Child 4 left the spelling to this child. Alternatives:
   - A hard-coded `.claude/hooks/`, rejected because PRISM's own sessions would point at a path that does not exist in this tree.
   - Prose naming both paths, rejected because every reader pays for a path they can't use.
   - A `prism` subcommand, rejected because it adds public CLI surface and needs `npx` per call.
 
   The token defaults to `.claude/hooks`, so no consumer sets anything.
+  - **Approved:** Hunter McGrew, in chat on 2026-11-18: "Yes, all of it".
 - **The hook runtime files now reach Cursor-only installs, and only registrations stay per host.** The intent says a Cursor user approves from a terminal and that every skill keeps working on all three hosts. Child 4 left Cursor-only reach to this child. Alternatives:
   - A separate host-neutral directory, rejected for the same second-copy-path cost child 4 recorded.
   - Leaving Cursor-only installs on flat plans, rejected because the skills they receive would name scripts they don't have.
 
   The cost is a `.claude/hooks/` directory in a Cursor-only repo.
+  - **Approved:** Hunter McGrew, in chat on 2026-11-18: "Yes, all of it". The approval covers the runtime files only. Git hook shims and `.gitignore` lines stay out of Cursor-only installs (see the shim-gating Decision below).
 - **The approve guard is its own entry point and ignores both kill switches.** `hook.mjs` checks the switches before parsing stdin, and the spec exempts the approve guard from them. It does not use `segments.mjs`, because thrive's guard reads shell through its own segment walk over `tokenize.mjs`. That contradicts child 4's note that the guard would be the walker's first caller, and the walker stays callerless until child 8.
 - **Cursor rows are dropped from the guard's harness table.** PRISM delivers no Cursor hooks, and `emitDeny` returns null for Cursor by policy. The local `declineForeignPayload` still declines Cursor's `beforeSubmitPrompt`, so a stray Cursor payload never writes a token.
 - **`prism-architect` keeps prism-plan's evaluation coverage, trimmed to the cap.** The spec says the evaluation sections move unchanged. The intent says the 120-line cap counts everything and cut content is not moved, and the current skill loads 1,108 lines. Every evaluation heading survives as one line, while the A/P/C gate and the long output template do not, since the spec gives the architect five output sections.
@@ -810,27 +816,32 @@ Tests:
 - **The resume table's later rows use existing skills until child 6.** Verify runs `verification-commands.md`, review runs `prism-self-review` writing `## Review`, PR runs the new `shipping-flow.md`, and retro runs `prism-retro`, then the session writes `Retro:`. Every merged step works before `prism-verify` and `REVIEW.md` exist, and child 6 swaps the rows.
 - **The pause-before-commit preference fires at the PR push on a folder plan.** The stages commit through `commit.mjs` many times per run, and a pause per bundle would put the person back in the loop the intent removes. ADR-0082 records it.
 - **The "Winston" sweep (T22) runs over spec surfaces only.** Root files outside the spec's Affected systems (`CONTEXT.md`, `README.md`, `CHANGELOG.md`, `SECURITY.md`) and dated records (`.prism/prds/`, `.prism/qa/`, `.prism/research/`) are left alone. Child 9 owns the user docs.
+  - **Approved:** Hunter McGrew, in chat on 2026-11-18: "Yes, all of it".
 - **`tasks.mjs` and `bundles.mjs` fail closed on a config that does not parse, through one reader shared with `auto-approve.mjs` (T25).**
   - **Root cause.** Child 4 left this to the child that writes the first callers, which is this one. Both scripts read config through `readRepoConfig`, which returns null for a broken file, so a trailing comma silently drops `importAliases`, `ticketPrefix`, and `defaultBranch`. Dropped aliases lose import edges, so two tasks that should run in order can run side by side. A dropped `defaultBranch` reads the wrong commit range for a plan with no `intent.md`, which can mark a task done that isn't.
   - **Alternatives considered.** Leaving them lenient, since `auto-approve.mjs` exits 2 on the same file before any build starts. Rejected, because the plan stage runs `bundles.mjs` before approval, and a config broken after approval reaches `bundles.mjs --base` and `tasks.mjs` with no check in front. A new `plan/config.mjs` module was the other home. Rejected, because `tasks.mjs` is already imported by both other scripts, and a new module adds a `HOOK_RUNTIME_FILES` entry and a delivery test for one function.
   - **Chosen approach.** `readStopPathConfig` moves to `tasks.mjs` as `readPlanConfig`, throwing `PlanConfigError`. Every chain command then gives one answer for a broken config: exit 2.
   - **Implementation guidance.** `readRepoConfig` stays unchanged for the git hooks. T25 sits in PR A because it changes runtime code the PR B skills call.
 - **Exit 2 from a chain script stops the run, and exit 1 is the only failure that reaches the person as an approval ask.** Thrive's workflow says `plan.md` goes to the person "when `auto-approve.mjs` fails". Child 4's script now has two failures. Exit 1 means a condition failed, such as a stop path or a missing challenge round, and a person can judge the plan instead. Exit 2 means the config couldn't be read, so no stop path was checked, and an approval ask would have the person approve without knowing that. The same split applies in a build: a chain script's exit 2, or a `commit.mjs` git failure, returns `blocked`. T10, T14, and T16 carry it.
-- **Git hook shims and the `.gitignore` lines stay gated on `claude` or `codex` when Cursor-only installs receive the runtime files (T6).** `git-hooks.md` records child 2's call that a Cursor-only consumer gets no git hooks, and the shim removal and `core.hooksPath` unset live in the same branch T6 removes. Deleting that branch whole would hand Cursor-only consumers git hooks as a side effect. T6 therefore narrows the branch to the runtime files, and `git-hooks-delivery.test.ts`'s Cursor-only cases stay unchanged as the proof. The `.gitignore` lines cover state files that only the registered entry points write, so a Cursor-only repo has nothing to ignore. This refines how T6 delivers, and leaves the pending call on Cursor-only delivery itself as it was.
+- **Git hook shims and the `.gitignore` lines stay gated on `claude` or `codex` when Cursor-only installs receive the runtime files (T6).** `git-hooks.md` records child 2's call that a Cursor-only consumer gets no git hooks, and the shim removal and `core.hooksPath` unset live in the same branch T6 removes. Deleting that branch whole would hand Cursor-only consumers git hooks as a side effect. T6 therefore narrows the branch to the runtime files, and `git-hooks-delivery.test.ts`'s Cursor-only cases stay unchanged as the proof. The `.gitignore` lines cover state files that only the registered entry points write, so a Cursor-only repo has nothing to ignore. This refines how T6 delivers. The call on Cursor-only delivery itself is approved in the Decision above.
 - **`plan-chain-scripts.md` keeps its Templates paragraph after the skills cite the templates.** Child 4 cited the four templates there so `ship-closure` could reach them before any skill did, and named this child as the end of that bridge. T12, T13, T14, and T18 cite them from skills, so the bridge reason ends. The paragraph stays, because what it says about the headings and frontmatter keys the scripts read by name is a contract a template editor needs, whatever cites the files.
-- **The issue's acceptance criteria were not synced.** Issue #522 states its proof in one line. Writing the criteria below into it is a tracker edit, so it waits for a person's go-ahead.
+- **The issue's acceptance criteria were synced after Hunter approved the plan.** Writing them into issue #522 is a tracker edit, so it waited for his go-ahead, which came in chat on 2026-11-18 ("Yes, all of it"). The sync log records it.
 - **OPEN — TBD, needs a live Codex run.** Whether a Codex hook payload's `session_id` equals the `CODEX_THREAD_ID` a command sees. **Default path (used until resolved):** `approve.mjs` compares a chat token's session against `CODEX_THREAD_ID`, so a mismatch fails closed, and a Codex user approves from a terminal.
-- **OPEN — TBD, needs Hunter's input.** Whether child 5 ships as a stack of two PRs. It is far past ten files and five hundred lines. The approval trio alone is about 1,800 lines of source and 2,600 of tests. **Default path (used until resolved):** propose two PRs. PR A is T1 to T8 plus T25, the approval mechanics and the chain scripts' config check, registered and delivered but called by no skill, so it ships inert and self-consistent. PR B is T9 to T24, the skills, rules, and docs that use it. The groups under `## Tasks` build PR A first, so its commits form a prefix of the branch. Whoever opens the PR asks Hunter first.
+- **Child 5 ships as a stack of two PRs.** The change is far past ten files and five hundred lines, and the approval trio alone is about 1,800 lines of source and 2,600 of tests. PR A is T1 to T8 plus T25, the approval mechanics and the chain scripts' config check, registered and delivered but called by no skill, so it ships inert and self-consistent. PR B is T9 to T24, the skills, rules, and docs that use it. The groups under `## Tasks` build PR A first, so its commits form a prefix of the branch.
+  - **Whose call.** Stacking is the orchestrator's call under Hunter's 2026-11-18 ruling, so no separate approval is asked. The split above is the one chosen.
+  - **Resolves** the earlier open question on whether child 5 stacks.
 
 ## History
 
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Plan created: approval script, chat approval, and guard with delivery; registry agent type and preloads; workflow rule; architect, intent, spec, plan, and challenge skills; commit-only stages; user-stories removal; rule, ADR, and doc edits; as 24 tasks.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Merged `origin/main` with child 4 (bd666c58) and reconciled every task against its source: T3, T4, T6, T7, T10, T14, and T16 changed, T25 added for the config check, and the groups were rebuilt per stack PR and checked with `analyzeBundles`. The new Decisions cover the config check, exit-code routing, shim gating, and the Templates paragraph.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Recorded Hunter's chat approval of the plan, the four calls, and the two AC adjustments; the stacking Decision is now settled as A = T1-T8 + T25, B = T9-T24; synced the 11 criteria to issue #522.
 
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: plan child 5 (chain skills and approval) to the detail bar from the epic spec and thrive at db3570975. Bounds: plan file only, no code, no PR, nothing outside the spec's Affected systems, no new dependency, and flag any shared-type or public-surface change. Approach: put shared mechanics in one always-on workflow rule so stage skills fit the cap, port the approval trio onto PRISM's runtime, and order tasks so the approval mechanics form a clean first stack PR. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: refresh this plan against what child 4 merged (#528, bd666c58). Bounds: plan file only, no code; keep the two-PR stack unless the refresh changes what ships together; leave Hunter's four pending calls as they are. Approach: merge main, diff every task's named module, export, flag, exit code, and config key against child 4's source, decide child 4's two hand-offs as Decisions, and recheck the groups with `analyzeBundles`. · close: scope held; PR A gains T25, and T6 narrowed to keep child 2's git hook gating
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: build PR A (T1-T8, T25) of this plan, after recording Hunter's approvals. Bounds: PR A's task files and generated copies only; no PR B tasks, no new dependency, no merge, draft PR only. Approach: approvals commit first, then one commit per task in the plan's group order, porting thrive's approval trio onto PRISM's runtime.
 
 ## Verification
 
@@ -863,12 +874,29 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [ ] **AC-11** A chain command run against a config file that does not parse stops with a config error instead of reading the defaults.
   - Evidence (machine): in `plan-tasks.test.ts` and `plan-bundles.test.ts`, the CLI exits 2 naming `.ai-skills/config.json` on a config with a trailing comma, and exits 0 on the same config without it · UNMET looks like: an exit 0 or 1 on the broken config, or a nonzero exit on the valid one.
 
+### AC Adjustments
+
+### AC Adjustment: AC-7 also forbids git hook shims on a Cursor-only install
+
+- **Original:** A consumer update delivers and registers the approve guard, and a Cursor-only install receives the runtime files with no registration.
+- **Proposed:** The same, ending "with no registration and no git hook shims", and its evidence adds `git-hooks-delivery.test.ts`.
+- **Reason:** Child 2 decided a Cursor-only consumer gets no git hooks. Delivering the runtime files to Cursor-only installs (T6) must not hand them shims as a side effect.
+- **Status:** accepted. Hunter McGrew, in chat on 2026-11-18: "Yes, all of it".
+
+### AC Adjustment: AC-11 added for the config check
+
+- **Original:** none. The criterion did not exist.
+- **Proposed:** AC-11, a chain command run against a config file that does not parse stops with a config error instead of reading the defaults.
+- **Reason:** T25 makes `tasks.mjs` and `bundles.mjs` fail closed on an unreadable config, and no earlier criterion covers it.
+- **Status:** accepted. Hunter McGrew, in chat on 2026-11-18: "Yes, all of it".
+
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC from the issue's proof line | written | not synced (awaiting go-ahead) |
 | 2026-11-18 | Winston | Refreshed against child 4: AC-7 adds the git hook shims, AC-11 added for T25 | written | not synced (awaiting go-ahead) |
+| 2026-11-18 | Clove | Accepted both AC adjustments on Hunter's approval, then synced all 11 criteria to issue #522 with IDs and Evidence stripped | synced | synced |
 
 ## PR Readiness
 
