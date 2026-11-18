@@ -1111,6 +1111,7 @@ async function refreshPlatformDirs(
 const HOOK_RUNTIME_FILES = [
 	"hook.mjs",
 	"git-gates.mjs",
+	"approve-guard.mjs",
 	"architect-route.mjs",
 	"compact-handoff.mjs",
 	"harnesses.mjs",
@@ -1129,10 +1130,16 @@ const HOOK_RUNTIME_FILES = [
 	"plan/commit.mjs",
 	"plan/auto-approve.mjs",
 	"plan/stop-paths.mjs",
+	"plan/approve.mjs",
+	"plan/chat-approval.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */
-const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs", "git-gates.mjs"];
+const HOOK_RUNTIME_ENTRY_POINTS = [
+	"hook.mjs",
+	"git-gates.mjs",
+	"approve-guard.mjs",
+];
 
 /**
  * The line every delivered runtime file carries near its top, identifying the
@@ -1529,8 +1536,8 @@ export async function refreshHookRuntime(
 /**
  * Matches a command string that *is* one of PRISM's own hook invocations,
  * end to end: `node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs"` (or
- * `git-gates.mjs`, the second entry point) followed by PRISM's `--flag=value`
- * arguments and nothing else.
+ * `git-gates.mjs` or `approve-guard.mjs`, the other entry points) followed by
+ * PRISM's `--flag=value` arguments and nothing else.
  *
  * Anchored at both ends on purpose. A substring test for the entry-point path
  * also claims a command that merely mentions it — a consumer's wrapper
@@ -1544,18 +1551,18 @@ export async function refreshHookRuntime(
  * own replacement.
  */
 export const PRISM_HOOK_COMMAND_PATTERN =
-	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/(?:hook|git-gates)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/(?:hook|git-gates|approve-guard)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
 
 /**
  * Matches a command string that is one of PRISM's own Codex hook
  * invocations, end to end — `node ".claude/hooks/hook.mjs"` (or
- * `git-gates.mjs`, the second entry point) followed by PRISM's
- * `--flag=value` arguments and nothing else. Anchored at both ends for the
+ * `git-gates.mjs` or `approve-guard.mjs`, the other entry points) followed by
+ * PRISM's `--flag=value` arguments and nothing else. Anchored at both ends for the
  * same reason `PRISM_HOOK_COMMAND_PATTERN` is: a loose match would claim
  * (and later delete) a consumer's own wrapper around the entry point.
  */
 export const PRISM_CODEX_HOOK_COMMAND_PATTERN =
-	/^node "\.claude\/hooks\/(?:hook|git-gates)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+	/^node "\.claude\/hooks\/(?:hook|git-gates|approve-guard)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
 
 /**
  * Reports whether a `hooks[eventName]` array entry is one of PRISM's own

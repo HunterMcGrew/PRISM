@@ -53,6 +53,9 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/plan/commit.mjs",
 	".claude/hooks/plan/auto-approve.mjs",
 	".claude/hooks/plan/stop-paths.mjs",
+	".claude/hooks/plan/approve.mjs",
+	".claude/hooks/plan/chat-approval.mjs",
+	".claude/hooks/approve-guard.mjs",
 ];
 
 const FIXTURE_PLAN = [

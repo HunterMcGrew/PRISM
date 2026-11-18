@@ -1100,6 +1100,101 @@ test("runDoctor reports a git-gates runtime on disk that settings.json never reg
 	});
 });
 
+test("runDoctor reports an approve-guard runtime on disk that settings.json never registers", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/hooks/approve-guard.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1, "the warning replaces the installed-and-registered line");
+		assert.match(
+			messages[0],
+			/approve-guard\.mjs is present but \.claude\/settings\.json registers no hook command/
+		);
+	});
+});
+
+test("runDoctor reports an approve-guard runtime on disk that .codex/hooks.json never registers", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/hooks/approve-guard.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /approve-guard\.mjs is present but \.codex\/hooks\.json registers no hook command/);
+	});
+});
+
+test("runDoctor reports an approve-guard registration pointing at a file that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(
+				{
+					hooks: {
+						UserPromptSubmit: [
+							{
+								hooks: [
+									{
+										type: "command",
+										command:
+											'node "$CLAUDE_PROJECT_DIR/.claude/hooks/approve-guard.mjs" --tool=claude --event=UserPromptSubmit',
+									},
+								],
+							},
+						],
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /approve-guard\.mjs, which is not on disk/);
+	});
+});
+
 test("runDoctor says the git gates are delivered and off when the config has no hooks block", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await seedGitGatesConsumer(consumerRepoRoot, {});
