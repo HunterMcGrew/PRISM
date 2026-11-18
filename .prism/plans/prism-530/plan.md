@@ -363,6 +363,7 @@ The swaps:
 
   `<verdict>` is `clean`, or the open counts as `<c> critical, <m> major, <n> minor, <k> nit`. A legacy flat plan records under `## Review Issues` instead.
 - **The final PR-review verdict.** One sentence: the PR review is final when its last line is `clean` or is the confirm line. Until then fixes and another round are coming, so the retro is not due.
+- **The final self-review line.** One sentence: the self-review is final when its last `self-review` line is `clean` or is round 3. Until then the author fixes and self-review runs again, so the PR stage is not due.
 - **Pause triggers.** These four, citing `.prism/rules/worktree-git.md` for destructive git:
   - a file outside the plan
   - a new dependency
@@ -415,7 +416,7 @@ Owner: Clove. Port each thrive `.ai-spec/review/<name>.md` with the global swaps
 
   Its trigger is a change to a render path, data fetching, a query, a loop over external data, or a shipped bundle.
 - **`intent-scope.md` absorbs AC grading.**
-  - Keep thrive's "Grade every acceptance criterion" checklist and its `## Plan drift is reconciled, not reported` part.
+  - Keep thrive's "Grade every acceptance criterion" checklist and its `## Plan drift is reconciled, not reported` part, with one narrowing. The review fixes drift in place only in `plan.md` sections other than `## Tasks`. A task whose stated approach the code did not take, including a task a later Decision contradicts, is reported as a Minor finding and left as written. A difference from `intent.md` is a finding, and the review never edits `intent.md`. Rewrite thrive's two examples that edit a task to say this.
   - Fold in the verdict semantics from `.prism/references/qa-plan/verdict-contract.md`: met, unmet, or ungradeable, the evidence each needs, and that only a person grades a `human` Evidence line as met. T17 deletes that reference, so read it here first.
   - Grades are recorded with the review's record line under `## Review`, or under `## Review Issues` on a flat plan.
 
@@ -520,7 +521,7 @@ The existing `scripts/ai-skills/hooks/**` route keeps naming `hook-runtime.md`.
 ### T13: Add prism-verify as a dispatched agent
 
 - files: .ai-skills/skills/prism-verify/frontmatter.yml, .ai-skills/skills/prism-verify/shared.md, .ai-skills/skills/prism-verify/claude.md, .ai-skills/skills/prism-verify/codex.md, .ai-skills/skills/prism-verify/cursor.md, .ai-skills/definitions/roles.json, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .claude/skills/prism-verify/SKILL.md, .claude/skills/prism-verify/.ai-skill-generated, .cursor/skills/prism-verify/SKILL.md, .cursor/skills/prism-verify/.ai-skill-generated, .claude/agents/prism-verify.md, .codex/agents/prism-verify.toml, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, AGENTS.md
-- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/routing-coverage.test.ts scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/claude-agent-def.test.ts scripts/ai-skills/agents-md-budget.test.ts
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/routing-coverage.test.ts scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/claude-agent-def.test.ts scripts/ai-skills/agents-md-budget.test.ts && pnpm exec tsx -e "import('./scripts/ai-skills/agents-md-block.ts').then(m=>{const e=m.measureLeadSectionEnds(require('fs').readFileSync('AGENTS.md','utf8'));const b=Math.max(...e.map(x=>x.endByte??Infinity));console.log(b);if(b>31744)process.exit(1)})"
 - proof fails on main: yes
 - depends on: T4, T12, T20
 
@@ -551,12 +552,12 @@ Port thrive's `thrive-verify`, trimmed to 120 with no counted citation. The body
 
 Drop thrive's Touched packages, linked-worktree, and Visual parts. The spec does not port workspace mapping, and PRISM has no screenshot script.
 
-**`skill-routing.md` and its curated twin.** `routing-coverage.test.ts` needs every `named-only` id named in the Utility skills section of both. In each, the dispatched-stages bullet changes from "`prism-spec` writes `spec.md` for an approved intent and is never routed off a phrase, and `prism-challenge` also runs the plan stage's challenge rounds." to "`prism-spec` writes `spec.md` for an approved intent, and `prism-verify` records the checks under `## Verification`. Neither is routed off a phrase, and `prism-challenge` also runs the plan stage's challenge rounds." After the build, measure the `AGENTS.md` lead-section end offset with `measureLeadSectionEnds` from `scripts/ai-skills/agents-md-block.ts` and record it in `## History`. It must be at most 31,744.
+**`skill-routing.md` and its curated twin.** `routing-coverage.test.ts` needs every `named-only` id named in the Utility skills section of both. In each, the dispatched-stages bullet changes from "`prism-spec` writes `spec.md` for an approved intent and is never routed off a phrase, and `prism-challenge` also runs the plan stage's challenge rounds." to "`prism-spec` writes `spec.md` for an approved intent, and `prism-verify` records the checks under `## Verification`. Neither is routed off a phrase, and `prism-challenge` also runs the plan stage's challenge rounds." After the build, measure the `AGENTS.md` lead-section end offset with `measureLeadSectionEnds` from `scripts/ai-skills/agents-md-block.ts` and record it in `## History`. It must be at most 31,744, and the proof's last command prints it and fails past that line.
 
 ### T14: Rewrite prism-self-review to run REVIEW.md
 
 - files: .ai-skills/skills/prism-self-review/frontmatter.yml, .ai-skills/skills/prism-self-review/shared.md, .claude/skills/prism-self-review/SKILL.md, .cursor/skills/prism-self-review/SKILL.md, .claude/agents/prism-self-review.md, .codex/agents/prism-self-review.toml
-- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/routing-coverage.test.ts
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/routing-coverage.test.ts && grep -q -i "coverage line" .ai-skills/skills/prism-self-review/shared.md
 - proof fails on main: yes
 - depends on: T8, T9
 - behavior change: self-review now runs the ten `REVIEW.md` passes by trigger through subagents and grades the acceptance criteria. The checks it ran inline before are now passes.
@@ -577,8 +578,9 @@ Owner: Clove. Port thrive's `thrive-review` with the global swaps, minus its Voi
 - **Write the plan before the chat.**
   - On a folder plan, line 47's bullet keeps its `## Review` target, its `plan: self-review record` subject, and its "do not push", and its content becomes the `REVIEW.md` record line, `- self-review round <n> at <short sha>: <verdict>`, with each open finding under it in the finding shape `REVIEW.md` sets.
   - On a flat plan, findings go under `## Review Issues` as today.
+  - Keep line 50's folder-plan clause: the criteria live in `intent.md`, which this skill never edits, so a difference from one is a finding under `## Review`.
 - **Report.** The coverage line from `REVIEW.md`, one token per pass, then findings by severity.
-- **Rounds.** Fix and re-run up to the 3-round cap, per `REVIEW.md`.
+- **Rounds.** Self-review fixes nothing in source, as line 1 says today. The author fixes each round's findings, which on a folder plan is the implement stage dispatched by the session, and self-review runs again on the new head, up to the 3-round cap per `REVIEW.md`. Its only writes are the record line and the in-place plan-drift fixes `.prism/review/intent-scope.md` allows outside `## Tasks`.
 - **Guardrails.** Keep "never posts to GitHub" and the four pause triggers by reference to `REVIEW.md`.
 
 Thrive's `.ai-spec/references/review/run.md` is not ported as a reference, because the cap would charge it. Its range pin and inventory steps are one bullet each in the body. Its `scripts/pre-review.sh`, `pnpm skills:check`, and frontend build steps are thrive's stack and are dropped.
@@ -588,7 +590,7 @@ Delete every mention of `prism-review-loop`, which is lines 13 and 27 on `2aec90
 ### T15: Rewrite prism-pr-review with reconcile, the agent marker, and the misses log
 
 - files: .ai-skills/skills/prism-pr-review/frontmatter.yml, .ai-skills/skills/prism-pr-review/shared.md, .prism/references/pr-review/github-writes.md, templates/install/.prism/references/pr-review/github-writes.md, .claude/references/pr-review/github-writes.md, .codex/references/pr-review/github-writes.md, .cursor/references/pr-review/github-writes.md, .claude/skills/prism-pr-review/SKILL.md, .cursor/skills/prism-pr-review/SKILL.md, .claude/agents/prism-pr-review.md, .codex/agents/prism-pr-review.toml
-- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/routing-coverage.test.ts && pnpm run prism:crossref-lint
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/routing-coverage.test.ts && pnpm run prism:crossref-lint && grep -q "### Pass coverage" .prism/references/pr-review/github-writes.md
 - proof fails on main: yes
 - depends on: T3, T8, T9
 - behavior change: Eric now runs the `REVIEW.md` passes, marks every comment, writes a verdict line into the summary, runs reconcile, logs human catches, and records one line in the plan.
@@ -639,7 +641,7 @@ Budget: 120 minus `github-writes.md`'s lines, measured after its edit. Severity,
 ### T16: Teach prism-audit plan folders and promotion checks
 
 - files: .ai-skills/skills/prism-audit/frontmatter.yml, .ai-skills/skills/prism-audit/shared.md, .prism/architect/_toolkit/audit-workflow.md, templates/install/.prism/architect/_toolkit/audit-workflow.md, .claude/architect/_toolkit/audit-workflow.md, .codex/architect/_toolkit/audit-workflow.md, .cursor/architect/_toolkit/audit-workflow.md, .claude/skills/prism-audit/SKILL.md, .cursor/skills/prism-audit/SKILL.md, .claude/agents/prism-audit.md, .codex/agents/prism-audit.toml
-- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && pnpm run prism:crossref-lint
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && pnpm run prism:crossref-lint && grep -q "broken-promotion-claim-in-plan" .ai-skills/skills/prism-audit/shared.md
 - proof fails on main: yes
 - depends on: none
 
@@ -665,7 +667,7 @@ Owner: Clove. Adapt thrive's `thrive-surface-audit` and its `plan-reconciliation
 ### T17: Move acceptance-criteria grading out of prism-qa-plan
 
 - files: .ai-skills/skills/prism-qa-plan/frontmatter.yml, .ai-skills/skills/prism-qa-plan/shared.md, .prism/references/qa-plan/verdict-contract.md, templates/install/.prism/references/qa-plan/verdict-contract.md, .claude/references/qa-plan/verdict-contract.md, .codex/references/qa-plan/verdict-contract.md, .cursor/references/qa-plan/verdict-contract.md, .prism/templates/acceptance-criteria.md, templates/install/.prism/templates/acceptance-criteria.md, .claude/templates/acceptance-criteria.md, .codex/templates/acceptance-criteria.md, .cursor/templates/acceptance-criteria.md, .prism/architect/_toolkit/plan-authoring.md, templates/install/.prism/architect/_toolkit/plan-authoring.md, .claude/architect/_toolkit/plan-authoring.md, .codex/architect/_toolkit/plan-authoring.md, .cursor/architect/_toolkit/plan-authoring.md, .prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, .ai-skills/skills/prism-implement/shared.md, .ai-skills/skills/prism-challenge/shared.md, .claude/skills/prism-qa-plan/SKILL.md, .cursor/skills/prism-qa-plan/SKILL.md, .claude/agents/prism-qa-plan.md, .codex/agents/prism-qa-plan.toml, .claude/skills/prism-implement/SKILL.md, .cursor/skills/prism-implement/SKILL.md, .claude/agents/prism-implement.md, .codex/agents/prism-implement.toml, .claude/skills/prism-challenge/SKILL.md, .cursor/skills/prism-challenge/SKILL.md, .claude/agents/prism-challenge.md, .codex/agents/prism-challenge.toml
-- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/routing-coverage.test.ts && pnpm run prism:crossref-lint
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts scripts/ai-skills/routing-coverage.test.ts && pnpm run prism:crossref-lint && ! git grep -q "AC Verification" -- .ai-skills/skills/prism-qa-plan && test ! -e .prism/references/qa-plan/verdict-contract.md && grep -q "Grade every acceptance criterion" .prism/review/intent-scope.md
 - proof fails on main: yes
 - depends on: T9, T14, T15
 - behavior change: Reese no longer grades acceptance criteria and no longer writes `.prism/qa/ac-verification-*.md` reports.
@@ -751,7 +753,8 @@ Owner: Clove.
 - **`spec-scope-lint.test.ts`.**
   - Swap the `review-docs-impact.md` and `review-frameworks.md` fixtures for `.prism/review/correctness.md` and `REVIEW.md`.
   - Add a case where `.prism/review/stack/correctness.md` does not fire.
-  - Rewrite the `prism-review-loop` fixture strings (lines 276, 279, 710, 716, 729, and 1022) to name `prism-self-review` where they stand in for a skill.
+  - Rewrite the `prism-review-loop` fixture strings (lines 276, 279, 710, 716, and 729) to name `prism-self-review` where they stand in for a skill.
+  - Line 1022 is the branch literal `huntermcgrew/prism-review-loop-self-audit`, not a skill name. In that test case (lines 1022 to 1042) make the same rename T20 makes in `resolve-live-plan.test.ts`: the branch becomes `huntermcgrew/prism-plan-lookup-self-audit`, `review-loop-self-audit` becomes `plan-lookup-self-audit`, and `review-loop-self` becomes `plan-lookup-self`, including the expected message on line 1042.
 - **`followup-scope.md`** and its seed twin:
   - Line 70's list names `REVIEW.md` and `.prism/review/*.md` (not `stack/`) in place of `.prism/references/review-*.md`.
   - The bookkeeping set gains `## Review` and `## Verification`.
@@ -771,14 +774,18 @@ Owner: Clove. The intent deletes `prism-review-loop` once `REVIEW.md` and the re
 - **`skill-routing.md`** and its curated twin: delete its Utility skills line.
 - **`skills-ecosystem.md`** and its curated twin: delete its sentence from the Utility skills paragraph.
 - **`skill-loaded-lines.test.ts`.** Delete the `prism-review-loop` entry from `OVER_CAP_ALLOWLIST`, and only that entry. The allowlist and its ratchet stay, as the mechanism for reasoned overages. Any entry another task in this child added for a skill over 120 stays too. If the constant ends up empty and the test's type or loop rejects an empty object, keep it as `{}` with its type annotation and change nothing else. T25 rewrites the test's comment.
-- **`resolve-live-plan.test.ts`.** Read lines 320, 347, 366, 390, and 512. Where the string stands in for a skill name, swap it for `prism-self-review`. Where it is quoted plan text whose content the test does not assert on, leave it and note that in `## History`.
+- **`resolve-live-plan.test.ts`.** Lines 320, 347, 366, 390, and 512 hold the branch literal `huntermcgrew/prism-review-loop-self-audit`. It is fixture data for the unfiled-plan slug tier, not a skill name, so rename the fixture's theme in those five test cases:
+  - the branch becomes `huntermcgrew/prism-plan-lookup-self-audit`
+  - every `review-loop-self-audit` in their plan paths, titles, and expected values becomes `plan-lookup-self-audit`, and every `review-loop-self` becomes `plan-lookup-self`
+
+  The slug tier matches whole hyphen tokens, and the new plan slugs' tokens are still a subset of the branch's, so every assertion holds with no other change.
 
 Run `git grep -n prism-review-loop` after the build. Only plans, retros, audits, ADRs, `.prism/qa/`, `CHANGELOG.md`, `.prism/lessons.md`, `CONTEXT.md`, and `docs/` (T24's) may still match. `CONTEXT.md` sits outside the spec's Affected systems. Note it in `## History` for child 9.
 
 ### T21: Wire the review stages into the workflow rule and the PR stage
 
 - files: .prism/rules/workflow.md, templates/install/.prism/rules/workflow.md, .claude/rules/workflow.md, .codex/rules/workflow.md, .cursor/rules/workflow.mdc, .prism/references/shipping-flow.md, templates/install/.prism/references/shipping-flow.md, .claude/references/shipping-flow.md, .codex/references/shipping-flow.md, .cursor/references/shipping-flow.md, AGENTS.md
-- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/agents-md-budget.test.ts scripts/ai-skills/routing-coverage.test.ts && pnpm run prism:crossref-lint
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/agents-md-budget.test.ts scripts/ai-skills/routing-coverage.test.ts && pnpm run prism:crossref-lint && pnpm exec tsx -e "import('./scripts/ai-skills/agents-md-block.ts').then(m=>{const e=m.measureLeadSectionEnds(require('fs').readFileSync('AGENTS.md','utf8'));const b=Math.max(...e.map(x=>x.endByte??Infinity));console.log(b);if(b>31744)process.exit(1)})"
 - proof fails on main: yes
 - depends on: T13, T14, T15, T18, T20
 - behavior change: the resume table now routes verify to `prism-verify` and lets `prism-retro` write the `Retro:` line, and the PR stage watches CI.
@@ -796,12 +803,12 @@ Owner: Clove. Child 5 left the `watch-ci.mjs` and `REVIEW.md` sentences out of t
 | Row (folder state) | New next stage |
 | --- | --- |
 | standard, `## Verification` empty | verify: dispatch `prism-verify` |
-| standard, `## Review` empty | review: run `prism-self-review` against `REVIEW.md` |
+| standard, no final self-review line under `## Review` | review: run `prism-self-review` against `REVIEW.md` |
 | standard, PR open with no final PR-review verdict under `## Review` | PR review: dispatch `prism-pr-review` as a subagent |
 | standard, `Retro:` line empty under `## PR Readiness` | retro: run `prism-retro`, which writes the line and commits `retro: <summary>`, then push |
 | epic, every child in `## Children` merged, no `## Retro` in `spec.md` | retro: run `prism-retro`, which appends `## Retro` to `spec.md` |
 
-The PR-review row is the only one whose folder-state cell changes. The other four change only their next-stage cell. "Final" has the meaning T8 gives it in `REVIEW.md`: the last `pr-review` line is `clean`, or is the confirm line. Without it, a fresh session that found one non-clean round recorded would skip to the retro row while fixes were still owed.
+The review and PR-review rows are the two whose folder-state cell changes. The other three change only their next-stage cell. "Final" has the meaning T8 gives it in `REVIEW.md`: the last `self-review` line is `clean` or is round 3, and the last `pr-review` line is `clean` or is the confirm line. Without it, a fresh session that found one non-clean round recorded would skip ahead, to the PR row or the retro row, while fixes were still owed.
 
 **`shipping-flow.md`.** Three edits:
 
@@ -809,7 +816,7 @@ The PR-review row is the only one whose folder-state cell changes. The other fou
 - After step 8, add step 9: "**Watch CI.** Start `node ${HOOK_RUNTIME_DIR}/plan/watch-ci.mjs <pr>` in the background, and read a failed job with `gh run view <run-id> --log-failed`."
 - The Close part already dispatches `prism-pr-review` again after review fixes, so it stays as it is.
 
-**Byte budget.** Measure the `AGENTS.md` lead-section end offset with `measureLeadSectionEnds` after the build, and record it and `workflow.md`'s byte size in `## History`. It must be at most 31,744. The net change in this task should be about zero or less: the watch-ci and confirm-pass sentences add bytes, and the shorter pause sentence and the shorter verify and retro rows give them back. If the offset still passes 31,744, cut `workflow.md` prose until it does not. Never cut a resume row or a cap. `agents-md-budget.test.ts` must pass.
+**Byte budget.** Measure the `AGENTS.md` lead-section end offset with `measureLeadSectionEnds` after the build, and record it and `workflow.md`'s byte size in `## History`. It must be at most 31,744. The net change in this task should be about zero or less: the watch-ci and confirm-pass sentences add bytes, and the shorter pause sentence and the shorter verify and retro rows give them back. If the offset still passes 31,744, cut `workflow.md` prose until it does not. Never cut a resume row or a cap. `agents-md-budget.test.ts` must pass, and the proof's last command prints the offset and fails past 31,744.
 
 ### T22: Make the retro fixed for folder plans in the plan rule, template, and an ADR
 
@@ -895,7 +902,8 @@ Owner: Eli. Set `last_updated` to the edit date.
 
 Owner: Clove. This task edits `.prism/plans/prism-499/intent.md`, which is intent-level. Hunter's chat ruling of 2026-11-18 counts as his approval of the intent edit that records it. Name that ruling in the commit body, and do not edit the intent for anything else.
 
-- **`.prism/plans/prism-499/intent.md`, two lines.** Find them by their text, since line numbers drift (65 and 140 on `2aec908e`).
+- **`.prism/plans/prism-499/intent.md`, three lines.** Find them by their text, since line numbers drift (50, 65, and 140 on `2aec908e`).
+  - The Skill size line in the priority list becomes: "3. **Skill size.** Every skill aims for 120 loaded lines or less, enforced by the existing build check as a soft cap: a skill may go over with an allowlist entry that gives a one-line reason. A persona skill's `## Voice` block does not count, up to 16 lines."
   - The Phase-1 skills line becomes: "The 120-line build check keeps passing. It is a soft cap: a skill may go over 120 with an allowlist entry that gives a one-line reason, and no text is cut only to fit the number."
   - The cap line under the thinning list becomes: "The 120-line cap is soft, and it keeps counting everything a skill loads. A skill may go over it with an allowlist entry and a one-line reason. Thrive reached its numbers partly by moving text into references its check does not count. PRISM does not copy that. Content that fails the tests is still cut, not moved."
 - **`.prism/plans/prism-499/plan.md`.** Under the phase-1 Decision "The 120-line cap is enforced by a check, not by review" (line about 325), add a sub-bullet: "Hunter ruled on 2026-11-18 that the cap is soft with reasoned overages. The ruling is recorded in the Decisions of `.prism/plans/prism-530/plan.md`, and it supersedes this Decision going forward."
@@ -958,6 +966,11 @@ round 1: blocking 1
   - **Alternatives considered.** Keeping "any round line" and teaching the CI loop to ignore a retro-line failure was rejected, because it puts an exception in the always-on rule and hides a real failure in the same check. Moving the check out of `prism:check` was rejected, because the spec and AC-2 put it there.
   - **Chosen approach.** Only a final verdict makes the retro due. The run commits the final PR-review record and the retro with no push between them, so CI sees both together.
   - **Implementation guidance.** T8 adds the confirm form of the record line and the one-sentence definition. T5 reads the last PR-review line. T15 writes the confirm line. T21 names "final" in the PR-review row. AC-2's wording is adjusted as a proposal, below.
+- **The self-review resume row also keys on a final line: the last `self-review` line is `clean`, or is round 3.** Challenge round 1 found the row still fired on "`## Review` empty", so a fresh session that found a non-clean round 1 would skip to the PR row with fixes owed, the same flaw the PR-review Decision above fixed. Round 3 is final because the workflow rule caps a stage at 3 rounds and sends what is left to the PR, and self-review has no confirm pass. T8 defines it in `REVIEW.md`, and T21 changes the row. Keeping "`## Review` empty" and relying on the session to remember a non-clean round lost, because the resume table exists for a session that remembers nothing.
+- **The review fixes plan drift in place only outside `## Tasks`, and never edits `intent.md`.** Thrive's intent-scope pass fixes a stale task in place. On a folder plan an edit to approved `## Tasks` goes back through `auto-approve.mjs --check`, which always fails on a child folder with no `spec.md`, so the review would stop to ask Hunter mid-run. `intent.md` is the person's approved file, and today's self-review already reports a difference from it as a finding. So a stale task is a Minor finding, and drift in `## PR Readiness`, `## History`, Decision verdict sub-bullets, and Decision wording is still fixed in place (T9, T14). Porting thrive whole lost to the mid-run ask, and reporting every drift lost to the round trips thrive's rule was written to stop.
+- **The retro-line check stays PRISM's own lint, and consumer folder plans get no mechanical check from this child.** The spec's sentence names no scope, and AC-2 grades it through `pnpm prism:check`, PRISM's command. A consumer's fixed retro comes from the delivered workflow rule, whose retro row keeps sending a fresh session back until `Retro:` is filled, and from `prism-retro` itself. A consumer check needs a delivered surface the spec's Scripts table does not name, a `prism doctor` check or CI wiring PRISM does not own, so delivering it here would widen the child past its spec. A `prism doctor` check that reads the same rule is the natural follow-up if consumer runs are seen ending with an empty `Retro:`. Decided by Winston at challenge round 1.
+- **AC-1, AC-13, and AC-14 keep the evidence they have, and tasks carry the structural proofs they can.** T14 and T15's proofs check the skill and `github-writes.md` name the coverage line, T16's checks the audit skill names `broken-promotion-claim-in-plan`, and T17's runs AC-9's three checks. Whether a review prints ten entries, or the audit flags a false claim, is behavior a grep cannot show, so AC-1 and AC-13 stay human. AC-14 is the CI result on both platforms, and no local proof can produce the Windows leg. The criteria themselves are unchanged.
+- **Two test files keep their fixture logic and lose the `prism-review-loop` branch literal.** `huntermcgrew/prism-review-loop-self-audit` in `resolve-live-plan.test.ts` (T20) and `spec-scope-lint.test.ts` (T19) is a slug-tier fixture, neither a skill name nor quoted plan text, so T20's swap-or-leave rule decided nothing. Both become `huntermcgrew/prism-plan-lookup-self-audit`, with the plan slugs renamed to match, so T20's `git grep` allowed list and AC-10's evidence hold. Adding the two files to the allowed list lost, because it would leave a deleted skill's name in live test code.
 - **Child 5's handoffs (issue #530, comment 6990125591) each land in a task or are already covered.**
   - **Who writes an epic's `## Retro`.** `prism-retro` does, at full grain, in the epic's `spec.md` (T18). T21's epic resume row names it, which ends the loop where an epic resume sat at retro forever.
   - **`prism-pr-review` pushing the plan file alone in worktree mode.** On a folder plan Eric writes the record in the session's own checkout, whichever mode he read in, commits it with `commit.mjs`, and never pushes. The session pushes, per ADR-0082 and the routing rule's reviewer exception. A record written in his `/tmp` worktree would be stranded when the worktree is removed. A flat plan keeps today's plan-only commit and push (T15).
@@ -968,7 +981,7 @@ round 1: blocking 1
   - **Which files count.** Only lead rules move the offset, and this plan edits two: `workflow.md` and `skill-routing.md`. `followup-scope.md` (T19) and `branch-plan.md` (T22) render after the lead block, so they change the file's size and not the offset.
   - **The cuts.** T20 deletes the 166-byte `prism-review-loop` line from `skill-routing.md` and runs first. T13 then adds `prism-verify` to the dispatched-stages bullet. T21 replaces the inline pause-trigger list with a pointer to `REVIEW.md` and shortens the verify and retro rows, which pays for the watch-ci and confirm-pass sentences. The expected end offset after T21 is near 31,600.
   - **Alternatives considered.** Moving the watch-ci text into `shipping-flow.md` only was rejected, because the CI loop runs after every push, review fixes included, and the session reads the workflow rule for that, not the PR-stage reference. Raising the working line was rejected, because the 1 KiB margin is what absorbs a consumer's own text above the generated block.
-  - **Implementation guidance.** T13, T20, and T21 each measure the offset after their build and record it in `## History`. A task that lands past 31,744 cuts prose in the rule it edited, never a resume row or a cap.
+  - **Implementation guidance.** T13, T20, and T21 each measure the offset after their build and record it in `## History`. A task that lands past 31,744 cuts prose in the rule it edited, never a resume row or a cap. `agents-md-budget.test.ts` only asserts 32,768, so T13 and T21, the two tasks that add lead-rule bytes, end their proofs with a `measureLeadSectionEnds` command that prints the offset and fails past 31,744. T20 only removes bytes and needs no such proof.
 - **`check-report.mjs` is adapted, not ported verbatim.** Thrive's version checks a section against planted failures. The spec drops the planted fixture and the workspace mapping, so the package column goes and the expected list becomes optional, which leaves a shape check the verify stage can run on itself.
 - **Verify's checks are the non-empty `commands.*` keys, and extra keys are consumer checks.** The schema already describes `commands` as the team's verification commands, open to extra keys. A separate list key was considered and rejected as a second place to name the same commands.
 - **The CI watcher reads a new optional `ci.requiredCheck` key and waits for every check when it is unset.** The spec says the name comes from config, and no key held it. This is a consumer-facing schema addition, so it is flagged. `retroEvidence.ci` was considered and rejected, because it describes evidence for the retro, not what the PR stage waits on.
@@ -1000,11 +1013,13 @@ round 1: blocking 1
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Recorded Hunter's chat rulings: the 120-line cap does not count `REVIEW.md` or `.prism/review/*.md`, and five items are approved. The plan approval stays OPEN and `status` stays `draft`.
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Recorded Hunter's soft-cap ruling ("O1, reasoned overages") as a Decision that supersedes the phase-1 cap Decision. T20 now removes only the review-loop allowlist entry, and new T25 rewords the intent, rules, and test comment; AC-10 and AC-11 were adjusted and AC-15 added, logged in the AC Sync Log as not synced to issue #530.
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Refreshed the plan against `main` at `2aec908e` after child 5 merged: line citations, child 5's landed names and subjects, T1's validator limits, T6, T21, T23, T24, and T25 were corrected, and T10's unclosed comment literal, which hid T10 to T15 from `tasks.mjs`, was rewritten. Child 5's four handoffs now land in T15, T17, T18, and T21, the PR-review verdict now means the final one, and T20 runs before T13 to pay for the lead-rule bytes. The groups now come from `bundles.mjs`, three import edges were written into `depends on`, AC-2 has a proposed adjustment, and the main session's AC sync is logged.
+- 2026-11-18 [huntermcgrew/prism-530-review-verify]: Acted on challenge round 1: T19 and T20 rename the `prism-review-loop` branch literal in two test fixtures, T8 and T21 key the self-review resume row on a final line, and T9 and T14 scope in-place drift fixes outside `## Tasks` and name the author as fixer. T25 adds intent line 50, T13 and T21 prove the 31,744 offset, and T14 to T17 gained structural AC proofs; the retro-line check's PRISM-only scope and the AC evidence limits are recorded as Decisions.
 
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: plan child 6 (review and verify) to the detail bar from the epic spec and thrive at db3570975, against child 5's plan as written. Bounds: plan file only, no code, nothing outside the spec's Affected systems, no new dependency, and flag shared-type, public-surface, and intent-level questions. Approach: port the rulebook and the review scripts as an inert first PR, then rewrite the stages on top, naming every child 5 dependency. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: refresh the child 6 plan against `main` after child 5 merged, so Hunter approves it once. Bounds: the plan file and a merge of `main` only, Hunter's existing rulings kept, nothing that changes the PRISM-499 intent or spec. Approach: verify every task claim on `2aec908e`, fold child 5's four handoffs into existing tasks, and name the lead-rule cuts. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: dispose of challenge round 1, fixing the blocking T20 finding and fixing or recording each non-blocking one. Bounds: `plan.md` only, never `## Challenge`, nothing that changes the PRISM-499 intent or spec beyond Hunter's recorded soft-cap ruling. Approach: verify each finding against the code, then fix in the owning task or record a Decision. · close: scope held
 
 ## Verification
 
