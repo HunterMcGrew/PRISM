@@ -2,7 +2,7 @@
 title: Ship git pre-commit and pre-push hooks with an installer
 ticket: https://github.com/HunterMcGrew/PRISM/issues/516
 stage: plan
-status: draft
+status: closed
 ---
 
 Child 2 of the Kitchen Line epic (#499). The design comes from the "Git hooks" part of the epic spec on `huntermcgrew/prism-499-approve-once` (PR #518), at `.prism/plans/prism-499/spec.md`. The thrive reference is TracTru/thrive #2847 at 2bbbbcf49.
@@ -407,44 +407,70 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
   - **Alternatives considered.** A flat `prism-516.md` with persona headings, the shape `plan-mode.md` prescribes. Rejected, because child 4 would then be unable to read the plan it is meant to govern.
   - **Chosen approach.** Folder plan, `### T<n>:` tasks with only the parser's fields, and the owning persona named in each task's first prose line in place of `### Clove` / `### Eli` headings.
   - **Implementation guidance.** No `intent.md` is written here, because only a person can approve one. The acceptance criteria live below in this file, mirroring the issue's checklist word for word, so no tracker sync was needed.
+  - → no promotion needed (a bridge until child 4's tooling reads plan folders; the epic spec owns the folder shape)
 - **No challenge rounds were run, and `status` stays `draft`.** The challenge round grammar and `auto-approve.mjs` land in children 4 and 5. Until then this plan goes through today's review flow, and `## Challenge` stays empty, not filled with invented rounds.
+  - → no promotion needed (temporary until children 4 and 5 land the round grammar and approval; at close `status` moved from `draft` straight to `closed`, since this plan was never approved through the chain)
 - **Commits use `PRISM-516: <summary> (T<n>)`, one per task.** The rule that changes subjects to `T3:` on a folder-plan branch lands in child 5, so `git-conventions.md` as it stands governs this branch. Putting the task ID in the subject keeps every task traceable.
+  - → no promotion needed (`git-conventions.md` as it stands governed this branch; child 5 owns the folder-plan subject form)
 - **Git hooks ride the agent hook runtime's delivery.**
   - **Root cause.** The `.mjs` modules have to live somewhere zero-dependency and already delivered.
   - **Alternatives considered.** A host-independent delivery into `.githooks/lib/`. Rejected. It would need a second copy path, a second ownership rule, and a second prune list, all to serve Cursor-only consumers, and the intent already says those consumers get no hooks.
   - **Chosen approach.** The modules join `HOOK_RUNTIME_FILES` under `.claude/hooks/git-hooks/`. The shims are delivered only when `claude` or `codex` is a host, and a Cursor-only consumer gets no git hooks.
   - **Implementation guidance.** The shim's second candidate path is what lets the same file work in PRISM's own tree, where agent hooks run from `scripts/ai-skills/hooks/`.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § Shape: a shim over a module
 - **The pre-commit command contract is stdin to stdout with a `{path}` hint, not a `--check` flag.** This is what lets the hook judge the staged copy with any formatter without writing anything. It is also thrive's finding: Prettier's `--check` with stdin exits 0 on a parse error. Considered: materializing staged copies into a temp directory. Rejected, because formatter configs and ignore files resolve relative to the file's real path.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § Pre-commit
 - **An unmarked `.githooks/<name>` in a consumer is left alone, not backed up and replaced.** Runtime files under `.claude/hooks/` get `.bak` and replace, but `.githooks/` is the one directory where a consumer's own git hooks are likely to live, and the intent forbids touching them.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § Shape: a shim over a module
 - **The installer treats a foreign value at any of the four scopes as "leave alone", global and system included.** Thrive checked local and worktree only. A local `.githooks` would silently shadow a team-wide global hooks path, which is the same harm as overwriting a local one. Each scoped read passes `--includes`, because a team-wide path is often set in a file that a global config pulls in through `include.path`, and a scoped read ignores includes by default.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § The installer
 - **`left-alone` exits 0 everywhere.** It is a report, not a failure. A non-zero exit would break `prism update` and a consumer's `prepare` script for a repo that is set up correctly in its own way.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § The installer
 - **Session start installs only when every scope is unset, and prints nothing otherwise.** A foreign value reported at every session start is noise. Doctor carries that report.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § The installer
 - **Doctor reuses the `hook-registration` check id.** Adding a `git-hooks` id would widen the exported `DoctorFinding` union, a shared type, for a label nobody filters on.
+  - → no promotion needed (a tactic that keeps the shared `DoctorFinding` union unchanged, visible in `doctor.ts`)
 - **PRISM's own config gets no `gitHooks` block.** PRISM has no formatter, and its linter (`prism:crossref-lint`) does not take a file list. Adding Prettier or ESLint would be a new dependency, outside this child's limits. PRISM's hooks install and print their skip notice. That proves delivery and install on PRISM itself, but it means PRISM's own commits are not format-checked until a tool is chosen.
+  - → no promotion needed (the absence is visible in PRISM's own `.ai-skills/config.json`; choosing a formatter for PRISM is a separate call with no home yet)
 - **`prism eject` does not remove the shims or unset `core.hooksPath`.** Eject today leaves the whole hook runtime in place, so this matches it. A left shim skips with a notice once its runtime is gone. Removing hook delivery on eject is a follow-up PR off `main` per `followup-scope.md`, covering the runtime and the shims together.
+  - → no promotion needed (the consumer docs already say what eject leaves, in `docs/adopt-prism.md` and `docs/what-prism-writes.md` since dcd7caf6; the eject follow-up PR has no home yet)
 - **This child ships as one PR, not a stack.** It touches more than ten files, but the modules have no value until the installer and delivery reach a repo, and the epic is already split at child grain.
+  - → no promotion needed (ticket tactic)
 - **OPEN — TBD, needs a live Codex run (Hunter).** Whether Codex fires `SessionStart` with `source: "startup"` for the install arm. The event and its `source` values come from a summarized read of the Codex hooks page on 2026-11-18, not verbatim text. **Default path (used until resolved):** register it on Codex as T9 says, record it as documentation-summarized in `git-hooks.md`, and rely on adopt and update, the setup-script line, and doctor to cover Codex clones meanwhile. Child 8's per-host registration test is the natural place to confirm it.
+  - → no promotion needed (open question — exit condition: a live Codex session fires `SessionStart` with `source: "startup"`, which child 8's per-host registration test can show; `git-hooks.md` § The installer already says the Codex registration is unverified)
 - **The config validator is not tightened for `gitHooks`.** `validateOnDiskConfig` does not enforce `additionalProperties: false` or `minItems`, so a typo under `gitHooks` passes validation and the hook skips with its notice. `git-hooks-config.test.ts` pins the schema keywords instead. Changing the validator would change a shared function, which is outside this child's limits. Follow-up: make the validator enforce those two keywords.
+  - → no promotion needed (a limit of this child; the validator follow-up has no home yet)
 - **The pre-push hook pipes the lint command's stderr instead of inheriting it.** `isCommandNotFound` has to read `cmd.exe`'s "is not recognized" text, which exists only on stderr. The hook re-emits what it read, so the user still sees it.
+  - → no promotion needed (implementation tactic; the observable behavior, the command's output reaching the terminal, is in `git-hooks.md` § Pre-push)
 - **`hook-gate.test.ts` was edited though the plan does not list it.** It pinned the Claude `SessionStart` matcher at `compact`, and T9 changed that to `startup|resume|compact`. The commit body for T9 says so.
+  - → no promotion needed (scope record for this branch)
 - **ADR-0081 is classified `excluded` in `seed-curation.json`, and the consumer stub manifest routes `.githooks/**` to `git-hooks.md`.** Neither file is in T14's list. The build would otherwise ship the ADR to consumers, and `verify-manifest-coverage` rejects a shipped doc that no stub route names. The route is `.githooks/**` only. `.claude/hooks/` stays unrouted in a consumer, because `hook-runtime.md` treats those files as the consumer's own territory. `.githooks/` is routed even though a consumer's own hooks can live there, because the doc it loads is what an agent editing that directory needs. It says which files `prism update` overwrites (marked ones), which it never touches (unmarked ones), and that `core.hooksPath` decides whether any of them run. The cost is one forced read of `git-hooks.md` per session that edits a consumer hook. Routing `.claude/hooks/git-hooks/**` instead was considered and rejected: it satisfies `verify-manifest-coverage` but routes a path no consumer edits, so the doc would never load where it helps.
+  - → no promotion needed (the exclusion follows `install-layout.md` § Test 2, under which no numbered ADR ships; the stub route lives in `manifest.stub.json`, and child 8, which owns consumer architect routes, is where its rationale gets revisited)
 - **`git-hooks.md` carries no numbered ADR links and no maintainer-only commands.** It ships to consumers verbatim as a non-curated mirror, and the install ADR gate rejects an ADR citation there.
+  - → no promotion needed (the general rule already lives in `install-layout.md` § Test 2, and `prism:crossref-lint` enforces it)
 - **Hooks in `.git/hooks` are a foreign setup the installer leaves alone.** This reverses the earlier call to only document the bypass and defer detection to a follow-up.
   - **Root cause.** With `core.hooksPath` unset at every scope, git runs `.git/hooks`. Setting the value made git stop reading that directory, so a hook manager that installs there was bypassed with no report.
   - **Alternatives considered.** Documenting it and checking `ls .git/hooks` by hand, the earlier call. Rejected, because the bypass is silent and the doc is not read at install time. Treating only known hook names as foreign. Rejected, because git runs any file under a hook name and a name list goes stale.
   - **Chosen approach.** While every scope is unset, any file in `git rev-parse --git-path hooks` that is not a `.sample` makes the installer `left-alone`, with the file names in its message. Once any scope holds a value of ours, git already skips that directory, so the check does not run.
   - **Implementation guidance.** `describeForeignHooks` in `install.mjs` is the one search. The installer, doctor, and the session-start arm all go through it, so doctor no longer keeps its own copy of the scope walk.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § The installer
 - **A git hook counts as active only when git will run PRISM's own shim for it.** That means the effective `core.hooksPath` is ours, and the shim at that path carries the marker and, off Windows, the executable bit. Git silently skips a hook without the bit, and judging both push-gate slots on the `pre-commit` shim let a consumer's own `pre-push` turn off the gate's lint. `readGitHooksState` reports `active` per hook, and the push gate checks the slot's own hook.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § Relationship to the agent gates
 - **Delivery sets the shims' mode on every pass, the no-op included.** A byte-identical shim can still have lost its mode, because a `core.fileMode=false` clone adds a new path as `100644` (an ordinary commit from one keeps an existing `100755`). This matches how `HOOK_RUNTIME_ENTRY_POINTS` are chmodded on every update. The installer repairs the mode too, off Windows, before it reports `set` or `already`: a marked shim without the bit is chmodded, and when that fails the result is `left-alone` naming the shim, because git would skip it.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § Shape: a shim over a module
 - **Dropping both hosts unsets a local `core.hooksPath` of `.githooks` whenever `.githooks/` is gone.** Left set, it points git at a missing directory, so git runs no hooks and still skips `.git/hooks`. It stays set while a consumer's own file remains in `.githooks/`, because that file may rely on it. The check runs on every pass, not only the one that emptied the directory, because the value is per-clone config and a teammate's clone pulls the deletion without ever running that pass.
   - **Root cause of the sibling-worktree limit.** The local value is shared by every worktree of the clone, while `.githooks/` is checked per worktree. Unsetting on every pass in a worktree that lacks the directory disabled a sibling worktree whose branch still delivers the shims, until that sibling's next session start set the value again.
   - **Alternatives considered.** Naming the multi-worktree case as a known limit in `git-hooks.md` and leaving the code. Rejected, because the check is a few lines and the limit would be a flip-flop between two worktrees' updates, not a stable state.
   - **Chosen approach.** `removeGitHooksPath` skips the unset while `git worktree list --porcelain` shows another worktree with a PRISM-marked shim in its `.githooks/`. The current worktree is excluded from the check, because a dry run still has its shims on disk. A sibling's own unmarked hook does not count.
   - **Implementation guidance.** The cost is that the Cursor-only worktree keeps a value pointing at a missing directory, so it runs no git hooks, until the last worktree with shims drops them and one more update runs. `git-hooks.md` and `docs/what-prism-writes.md` say so.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § Shape: a shim over a module
 - **The setup-script line PRISM offers imports `install.mjs` and calls `runInstallCli`.** A plain `node .claude/hooks/git-hooks/install.mjs` exits 1 when the file is gone, which fails every `pnpm install` through `prepare` after `hosts` drops to Cursor only. Considered: `test -f ... && node ... || true`. Rejected, because `prepare` runs under `cmd.exe` on Windows, where `test` does not exist.
+  - → promoted to `.prism/architect/_toolkit/git-hooks.md` § The installer (the guarded line and why the plain form fails; the rejected `test -f` form stays here)
 - **The review's docs findings were absorbed from Eli's lane into this child.** They are short corrections to pages this PR already edits, and handing them off would cost a separate docs round for a few sentences. Two files outside T15's list were touched for them: `README.md` and `docs/adopt-prism.md`, the two command references that did not list `prism hooks install`. The curated seed `templates/install/.prism/architect/_toolkit/hook-runtime.md` was also corrected, since its "other session starts print nothing" went false once startup runs the installer.
+  - → no promotion needed (scope record for this branch)
 - **`installGitHooks` with `dryRun` prefixes its message with `would`.** `prism update --dry-run` prints what it would do and writes nothing.
 
+  - → no promotion needed (message wording, visible in `install.mjs` and pinned by its tests)
 ## History
 
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Plan created: git hooks, installer, delivery, session-start install, doctor check, push-gate dedupe, ADR, and docs, as 15 tasks.
@@ -453,6 +479,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed the three re-review findings in two commits: the `core.hooksPath` unset now runs when `.githooks/` is already gone, the installer follows `include.path` on scoped reads, and its stale header is corrected. Tests for the first two failed on the previous head.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed Eric's six Minor findings on PR #523 in three commits (installer and worktree code, `unknown` config types, docs and mirrors); see Decisions on the shim mode and on dropping both hosts. The installer now repairs a non-executable shim, and the `core.hooksPath` unset waits for sibling worktrees.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed Eric's Major on PR #523 in 07f234b5: `otherWorktreeHasShim` takes the current worktree from `git rev-parse --show-toplevel`, since Windows spells Node's and git's paths differently and CI went red on 874d5d99. The same commit corrects the dry-run wording and the partial-chmod message. The new test failed on the previous head, and Windows was not run locally.
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Closed the plan: a verdict on all 26 Decisions, 11 of them already promoted to `git-hooks.md`, the ticket-grain retro run inline, and AC-1 to AC-6 ticked on CI run 44275791883. AC-7's macOS check stays open for a person.
 
 ## Sessions
 
@@ -465,13 +492,14 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: self-review the re-review fixes `5594e724..acdc112f` on PR #523. Bounds: findings into `## Review` and `## PR Readiness` only, landed as a plan-only commit; no source fixes, no GitHub posts, no merge. Approach: run `prism:check`, run the new tests against the previous head's source, and source-verify each fix and changed doc claim. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix Eric's six Minor findings on PR #523. Bounds: this PR's files only, a failing test first for each behavior fix, fix commits separate from the plan record; no new dependency, no merge, PR stays draft, review threads left for Eric to resolve. Approach: repair the shim mode in the installer, skip the unset for sibling worktrees, narrow the config types, then correct the docs and rebuild the mirrors. · close: scope held, with the `hooks install` and session-start test fixtures now writing executable shims
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix Eric's Major on the worktree self-check, plus the dry-run grammar and partial-chmod message. Bounds: `install.mjs`, its test, the architect doc sentence and mirrors, the plan, and one lesson; no new dependency, no merge, PR stays draft, no review threads resolved. Approach: a failing test first, then take self from git, then the plan record in its own commit. · close: scope held, with the `git-hooks.md` sentence on unfixable shims corrected because the message behavior changed
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: close the plan on the final PR branch. Bounds: this plan file only, as a plan-only commit; any promotion outside `.prism/plans/` or `.prism/architect/` is reported, not made; no merge, PR stays draft. Approach: check the AC, CI, and review against the diff, then a verdict per Decision, the closed markers, and the Retro line. · close: scope held; every promotion was already in `git-hooks.md`, so no architect doc changed
 
 ## Verification
 
 Pre-flight against the diff, not the graded verdict. `pnpm prism:check` passes on the final tree, and the suite includes the tests each criterion's Evidence names.
 
 - AC-1 to AC-6: the named tests exist and pass, and each carries the positive control its Evidence asks for.
-- AC-7: the Linux run is local. The Windows CI leg and the macOS human check are pending the PR's CI.
+- AC-7: the Linux and Windows legs pass in CI run 44275791883 on 632035e5. The macOS human check is still pending.
 
 ## Review
 
@@ -679,27 +707,29 @@ Eric's cross-cutting observation is recorded in `git-hooks.md` § Configuration 
 
 The issue's checklist, with IDs and evidence added. The criterion text matches the issue word for word.
 
-- [ ] **AC-1** A commit that stages an unformatted file matching the configured globs is refused, and the message names the command that fixes it.
+- [x] **AC-1** A commit that stages an unformatted file matching the configured globs is refused, and the message names the command that fixes it.
   - Evidence (machine): `git-hooks-shim.test.ts` runs a real `git commit` through `.githooks/pre-commit` with a stub formatter → non-zero exit, stderr contains the configured `fix` command with the file path, and HEAD is unchanged · UNMET looks like: the commit succeeds, or stderr lacks the fix command.
-- [ ] **AC-2** A commit with no configured format command goes through, with a notice that the hook skipped.
+- [x] **AC-2** A commit with no configured format command goes through, with a notice that the hook skipped.
   - Evidence (machine): the same suite with no `gitHooks` block → the commit exits 0 and stderr contains `pre-commit: skipped (no gitHooks.preCommit` · UNMET looks like: the commit fails, or succeeds silently.
-- [ ] **AC-3** A push that carries a file with a lint error is refused.
+- [x] **AC-3** A push that carries a file with a lint error is refused.
   - Evidence (machine): `git-hooks-shim.test.ts` pushes to a bare remote with a `LINT_ERROR` file → non-zero exit and the remote ref is unchanged. The positive control is that a clean push moves the remote ref · UNMET looks like: the remote ref moves on the lint-error push.
-- [ ] **AC-4** Running the installer in a repo whose `core.hooksPath` points at husky or lefthook changes nothing and reports the value it left alone.
+- [x] **AC-4** Running the installer in a repo whose `core.hooksPath` points at husky or lefthook changes nothing and reports the value it left alone.
   - Evidence (machine): `hooks-cli.test.ts` with local `core.hooksPath=.husky` → afterward `git config --local --get core.hooksPath` prints `.husky` and stderr contains `'.husky'`. The positive control is that an unset repo gets `.githooks` · UNMET looks like: the value changes, or nothing is reported.
-- [ ] **AC-5** `prism doctor` reports a clone with the hooks not installed.
+- [x] **AC-5** `prism doctor` reports a clone with the hooks not installed.
   - Evidence (machine): `doctor.test.ts` on a fixture with marked shims and an unset hooks path → one warning finding containing `not installed in this clone`. The positive control is that after `installGitHooks` the warning is gone · UNMET looks like: no finding, or the warning stays after install.
-- [ ] **AC-6** An agent push with the git hooks installed runs lint once, not twice.
+- [x] **AC-6** An agent push with the git hooks installed runs lint once, not twice.
   - Evidence (machine): `git-gates.test.ts` with the hooks installed and `gitHooks.prePush.command` set → the `commands.lint` counter file is absent after the push arm runs. With `core.hooksPath` unset, the counter has exactly one line · UNMET looks like: the counter exists while the hooks are installed.
 - [ ] **AC-7** The hooks run on Windows, macOS, and Linux.
   - Evidence (machine): the PR's `prism-check` CI is green on both `ubuntu-latest` and `windows-latest`, and both run `git-hooks-shim.test.ts`'s real `git commit` and `git push` cases · UNMET looks like: either leg fails or skips that suite.
   - Evidence (human): on a Mac, `pnpm prism:test` passes `git-hooks-shim.test.ts`. CI has no macOS leg, and `.github/` is outside this child's Affected systems · UNMET looks like: a failure or skip on macOS.
+  - Status at close (2026-11-18): the machine evidence is met, with both legs green in CI run 44275791883 on 632035e5. The macOS human check is pending, so AC-7 stays unticked until a person runs it.
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC from the issue checklist | written | already matches; no write |
+| 2026-11-18 | Winston | Ticked AC-1 to AC-6 at close; AC-7 left open for the macOS check | ticked | not synced; the issue's checkboxes are left for a person |
 
 ## PR Readiness
 
@@ -708,10 +738,10 @@ The issue's checklist, with IDs and evidence added. The criterion text matches t
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases: the already-absent `.githooks/` case and the `include.path` case are covered, and both fail on 5594e724. The linked-worktree unset and the shim-mode repair each have tests that fail on 4021624a, and the worktree self-exclusion test fails on 874d5d99
 - [x] All debugged issues resolved (none recorded)
-- [ ] Build passes: `pnpm prism:check` is green locally on Linux at `07f234b5`, but CI went red on 874d5d99 (the Windows leg, `git-hooks-install.test.ts:417`). The fix is pushed and CI on the new head is pending. Windows was not run locally
+- [x] Build passes: CI run 44275791883 on 632035e5 is green on `ubuntu-latest` and `windows-latest`, after the Windows leg went red on 874d5d99 (`git-hooks-install.test.ts:417`)
 - [x] PR description up to date: the body covers the `.git/hooks` leave-alone and the per-hook executable-shim rule; its "any of four scopes" line still holds with includes followed
-- [ ] Lasting decisions promoted to architect context: at close
+- [x] Lasting decisions promoted to architect context: every Decision carries a verdict, and the 11 promotions were already in `git-hooks.md` before close
 
 **Last updated:** 2026-11-18
 
-Retro:
+Retro: ticket-grain charter-fidelity check, run inline at close on 632035e5. All 15 tasks landed; the only files outside their lists are the ones the Decisions record, plus generated manifest mirrors and a lesson. AC-1 to AC-6 are met by their named suites, and AC-7's machine evidence is met by CI run 44275791883, green on both legs. AC-7's macOS human check is pending. Eric's re-review at 632035e5 left no finding standing. No Decision was refuted, so there are no promotion cautions.
