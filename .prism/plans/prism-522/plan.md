@@ -870,6 +870,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T9: the `agent` role type and `preloads`, validated in `buildRoleMap` with no `build.ts` change. Persona-less roles skip the persona line, so the Codex builder needed no edit.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T10: `workflow.md` is 8,354 bytes, over its 7,000 target, and `skill-routing.md` went from 14,676 to 6,850 bytes (its seed twin is 6,476). The last lead section ends at byte 31,123, under the 31,744 line. The PR row names `shipping-flow.md` by filename because crossref-lint rejects the path until T20 creates the file, and T20 puts the path back.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T11: `prism-architect` (93 loaded lines) and `prism-plan` as a persona-less utility, with the build deleting `prism-plan`'s two agent files. `claude-agent-def.test.ts` moved its opus-tier cases to `prism-architect`, a file T9 listed but T11 did not, and `prism-plan`'s trigger words dropped the architecture phrases along with "Winston" and "evaluate the approach".
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T12: `prism-intent` at 117 loaded lines, and the delivery clause "the skills a consumer receives name these scripts" back in the five places T12 lists. `agents-md-budget.test.ts` also got its header comment updated, since the workflow rule now leads. `consumer-sync-flow.md` still says the lead rules are "routing and the behavioral norms", a stale line in a file no task lists, left for a follow-up.
 
 ## Sessions
 

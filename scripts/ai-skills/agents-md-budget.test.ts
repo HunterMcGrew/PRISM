@@ -2,7 +2,7 @@
  * Guards the 32 KiB window Codex reads of the repo's `AGENTS.md` by default.
  *
  * Every rule in `AGENTS_MD_LEAD_RULES` must end inside that window, so a default
- * Codex session still sees routing and the behavioral norms. A lead set that
+ * Codex session still sees the workflow, routing, and the behavioral norms. A lead set that
  * overflows fails here rather than silently dropping rules from Codex sessions.
  * Growing the list means shortening a lead rule or moving one out.
  */

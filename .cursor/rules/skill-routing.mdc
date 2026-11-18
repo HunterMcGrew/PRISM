@@ -18,7 +18,8 @@ A persona's own name always routes to it.
 | **Winston** | `prism-architect` | "Winston", "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
 | **Eric** | `prism-pr-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
 | **Nora** | `prism-start-ticket` | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID |
-| **Mira** | `prism-user-stories` | "write user stories", "what are the requirements", "define the scope" |
+| **Mira** | `prism-intent` | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements", "Mira" |
+| **Mira** | `prism-user-stories` | "Mira" |
 | **Briar** | `prism-self-review` | "review my changes", "is this ready for PR", "self-review", "check my work" |
 | **Pixel** | `prism-design` | "what should this look like", "I don't have a mock", "how should I lay this out", "propose a UI", "what should the empty state look like" |
 | **Reese** | `prism-qa-plan` | "QA plan for <release / sprint / PR / hotfix>", "release checklist for <tags>", "verify this bug fix", "retest", "what should QA test", any two version tags, a GitHub compare URL, a single PR or a list of PRs |

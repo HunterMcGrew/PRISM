@@ -11,6 +11,11 @@
 			"routing": "named-only"
 		},
 		{
+			"id": "prism-intent",
+			"persona": "Mira",
+			"routing": "auto"
+		},
+		{
 			"id": "prism-onboard",
 			"persona": "Atlas",
 			"routing": "auto"
