@@ -41,6 +41,8 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
   - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **`npm pack --json` is parsed in both shapes, in the cold-start test and `verify-pack-parity.ts`.** npm 12 prints an object keyed by package name where npm 10 printed an array, so slicing from the first `[` broke both gates locally while CI's npm 10 stayed green. Absorbed here because the cold-start leg is AC-1's evidence and the parity gate proves the new module ships.
   - → no promotion needed (the comment at each parse site carries the constraint)
+- **A filename miss sends the session to the full Plan Lookup instead of declaring no plan.** Ported from TracTru/thrive#2935. The hook skips the `## Ticket` scan, so "no branch plan found" overclaimed on a miss; the note now names `branch-plan.md` § Plan Lookup and the state block says "none found by filename".
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 
 ---
 
@@ -56,6 +58,8 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Fixed self-review pass 1: plan-lookup claims now match the four paths checked, a failed `git status` no longer reads as clean, and truncation is tested.
 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Closed on the final PR branch; decisions promoted to `hook-runtime.md`.
+- 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Ported thrive#2935's plan-miss wording and recorded its observed manual-compact behavior; see Decision: A filename miss sends the session to the full Plan Lookup.
+- 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Fixed self-review pass 1: the twin labels the manual-compact behavior as observed, and the multi-hook and stdout claims are scoped to what was verified.
 
 ---
 
@@ -87,6 +91,34 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 
 Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]. The three findings above are confirmed closed; the `PreCompact` stdout claim (summary instructions, 10,000-character cap per hook) was checked against Claude Code's hooks reference.
 
+### Curated twin states the manual-compact behavior as established fact
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/architect/_toolkit/hook-runtime.md:51`
+- **Problem:** The canonical doc, the module header, and the PR scope all label "text typed after a manual `/compact` reaches the summarizer" as observed once and not in the Claude Code docs. The twin drops that label and says it still reaches the summarizer, so consumers get an unverified observation as a documented contract. A diverged claim in an architect doc is Major under `architect-doc-verification.md`.
+- **Suggested fix:** Add the qualifier to the twin, e.g. "Text you type after a manual `/compact` appears to reach the summarizer alongside the template. That was observed in one live manual compact and is not stated in the Claude Code docs." It passes Test 2 and Test 3, since no unreachable reference is involved. Also give "A miss is a miss by filename only" an antecedent, since the twin never mentions the `## Ticket` scan it contrasts with.
+
+### Unverified "any other `PreCompact` hook" claim and an overstated "prints nothing"
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:64`
+- **Problem:** "Any other `PreCompact` hook that prints to stdout also becomes summary instruction" (also in the `compact-handoff.mjs` header at lines 25-26 and in the twin) is stated flat. The documented fact is per-hook stdout; combined behavior across hooks was not shown. "Prints nothing" is also loose: `runPostCompactArm` writes to stderr on a missing session id and on a failed reset (`hook.mjs:1128`, `hook.mjs:1159`). "Is the only way a second writer appears" ignores user-level and plugin `PreCompact` hooks.
+- **Suggested fix:** Say "prints nothing to stdout", mark the multi-hook claim as inferred from the per-hook behavior, and say "another `PreCompact` hook, from the consumer or a plugin" instead of "the only way".
+
+### PostCompact test title says "prints nothing" but asserts only stdout
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/compact-handoff.test.ts:235`
+- **Problem:** The test is named "the PostCompact arm prints nothing, leaving PreCompact stdout to one writer" and asserts `stdout === ""` only. `runPostCompactArm` writes to stderr on a missing session id and on a failed reset, which is the same overstatement pass 1 fixed in the docs and the module header.
+- **Suggested fix:** Rename to "the PostCompact arm prints nothing to stdout, leaving PreCompact stdout to one writer".
+
+Follow-up pass 2 (2026-11-17): both pass-1 findings confirmed closed in the canonical doc, its three mirrors, the twin, and the `compact-handoff.mjs` header; `pnpm prism:check` passed at HEAD and `compact-handoff.test.ts` passes all 12 tests.
+
+Follow-up pass 3 (2026-11-17): No issues found [huntermcgrew/prism-513-followup-plan-miss-lookup]. The `PostCompact` test rename closes the pass-2 Minor: the test asserts exit 0 and empty stdout, which its title now says. `pnpm run prism:test` (all pass), `prism:check-types`, and `prism:crossref-lint` pass at HEAD, and the canonical doc matches its three mirrors.
+
 ---
 
 ## Acceptance Criteria
@@ -106,9 +138,9 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [x] No critical or major issues — follow-up pass 3: none; no open findings
 - [x] Tests written for new logic and edge cases
-- [x] Build passes — last run: 2026-11-17
+- [x] Build passes — last run: 2026-11-17 (`pnpm prism:check` reported passing by the loop; pass 3 re-ran test, types, and crossref-lint, not the full build)
 - [x] Lasting decisions promoted to architect context
 
 **Last updated:** 2026-11-17

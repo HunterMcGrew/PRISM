@@ -20,6 +20,18 @@
  * unrecorded decisions in full instead, and the post-compact note has the
  * session write them down first.
  *
+ * Text the user types after `/compact` reaches the summarizer alongside this
+ * template, so the template does not repeat it. That was observed in one live
+ * manual compact, not stated by the Claude Code docs. The docs describe each
+ * `PreCompact` hook's stdout as summary instructions; how several hooks'
+ * output combines is unverified. PRISM's state reset runs on `PostCompact`
+ * and prints nothing to stdout, so this module is the runtime's only
+ * `PreCompact` stdout writer.
+ *
+ * A plan miss here is a miss by filename only. The `## Ticket` scan is
+ * skipped, so the post-compact note sends the session to the full lookup
+ * rather than saying no plan exists.
+ *
  * Both arms return `null` rather than throwing on anything unexpected. A
  * `PreCompact` exit code of 2 blocks the compaction, and a blocked compaction
  * that was recovering from a context-limit error fails the request.
@@ -161,7 +173,7 @@ function formatStateBlock(repoRoot, state) {
 	return [
 		`- Checkout: ${repoRoot}`,
 		`- Branch: ${state.branch}`,
-		`- Branch plan: ${state.plan ?? "no branch plan found"}`,
+		`- Branch plan: ${state.plan ?? "none found by filename"}`,
 		"- Uncommitted files (git status -s):",
 		"```",
 		state.status,
@@ -177,7 +189,7 @@ function formatStateBlock(repoRoot, state) {
 export function buildSummaryTemplate(repoRoot, state) {
 	const planRule = state.plan
 		? `Decisions already written in ${state.plan} are not copied into the summary. Point at that path instead.`
-		: "No branch plan was found for this branch, so the summary is the only record of this session's decisions. Keep all of them.";
+		: "No plan file named for this branch's ticket was found, so the summary may be the only record of this session's decisions. Keep all of them.";
 
 	return `Write the compaction summary with the sections below, in this order, using these headings. Use plain declarative sentences and bullets. Leave out greetings and persona voice. If the user typed their own compact instructions, those win where they conflict with these.
 
@@ -227,8 +239,8 @@ export function buildPostCompactNote(repoRoot, state) {
 				'2. If the summary has an "Unrecorded decisions" section, write each one into that plan\'s `## Decisions`, and add a `## History` line, before other work.',
 			]
 		: [
-				"1. No branch plan was found for this branch. Do not create one to hold the summary.",
-				'2. Keep the summary\'s "Unrecorded decisions" section as the record, and tell the user if a decision there needs a plan.',
+				"1. No plan file named for this branch's ticket was found. Run the lookup in `.prism/rules/branch-plan.md` § Plan Lookup before concluding there is none, and do not create a plan to hold the summary.",
+				'2. If the lookup finds a plan, re-read it in full and write the summary\'s "Unrecorded decisions" into its `## Decisions`. If it finds none, keep that section as the record and tell the user when a decision there needs a plan.',
 			];
 
 	return `Context was compacted. Before continuing:
