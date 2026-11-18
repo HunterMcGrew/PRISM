@@ -23,9 +23,14 @@ import { promisify } from "node:util";
 
 import {
 	collectTier1RuleBodies,
+	measureLeadSectionEnds,
 	renderTier1Block,
 	replaceTier1Block,
 } from "./agents-md-block";
+import {
+	CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES,
+	syncCodexProjectDocLimit,
+} from "./codex-project-doc";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { runBomGuard } from "./bom-guard";
@@ -539,7 +544,9 @@ export async function removeManagedContentAreas(
  *
  * Codex auto-loads only AGENTS.md; the generated block ensures every Tier-1
  * rule body (rules with no `paths:` frontmatter) is present in Codex sessions.
- * When AGENTS.md is absent the function returns early — lazy, no creation.
+ * When AGENTS.md is absent the function returns `null` early — lazy, no
+ * creation. Otherwise it returns the file content after replacement and the
+ * summed byte size of the always-on rule bodies, for the size report in `main()`.
  * Follows the same check-mode / changedPaths contract as `writeFileIfChanged`.
  */
 export async function syncAgentsMdTier1Block(
@@ -547,11 +554,11 @@ export async function syncAgentsMdTier1Block(
 	checkModeArg: boolean,
 	changedPathsArg: string[],
 	tokenMap: Map<string, string>
-): Promise<void> {
+): Promise<{ content: string; alwaysOnBytes: number } | null> {
 	const agentsPath = path.join(repoRootArg, "AGENTS.md");
 
 	if (!(await pathExists(agentsPath))) {
-		return;
+		return null;
 	}
 
 	const current = await fs.readFile(agentsPath, "utf8");
@@ -561,16 +568,17 @@ export async function syncAgentsMdTier1Block(
 	);
 	const block = renderTier1Block(rules);
 	const next = replaceTier1Block(current, block);
+	const alwaysOnBytes = rules.reduce((sum, rule) => sum + Buffer.byteLength(rule.body, "utf8"), 0);
 
-	if (next === current) {
-		return;
+	if (next !== current) {
+		changedPathsArg.push(agentsPath);
+
+		if (!checkModeArg) {
+			await fs.writeFile(agentsPath, next, "utf8");
+		}
 	}
 
-	changedPathsArg.push(agentsPath);
-
-	if (!checkModeArg) {
-		await fs.writeFile(agentsPath, next, "utf8");
-	}
+	return { content: next, alwaysOnBytes };
 }
 
 /**
@@ -1122,7 +1130,31 @@ async function main(): Promise<void> {
 		}
 	}
 
-	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
+	const agentsMdSync = await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
+
+	if (agentsMdSync !== null) {
+		const leadEnds = measureLeadSectionEnds(agentsMdSync.content)
+			.map((entry) => entry.endByte)
+			.filter((endByte): endByte is number => endByte !== null);
+		const leadClause =
+			leadEnds.length > 0
+				? `its lead sections end at byte ${Math.max(...leadEnds)} of the ${CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES} Codex reads by default`
+				: "no lead section was found";
+
+		console.log(
+			`${checkMode ? "prism:check" : "prism:build"}: AGENTS.md is ${Buffer.byteLength(agentsMdSync.content, "utf8")} bytes; ${leadClause}; the always-on rules total ${agentsMdSync.alwaysOnBytes} bytes.`
+		);
+
+		const codexDocLimit = await syncCodexProjectDocLimit(repoRoot, checkMode);
+
+		if (codexDocLimit !== null && codexDocLimit.outcome.action !== "no-op") {
+			changedPaths.push(path.join(repoRoot, ".codex", "config.toml"));
+		}
+
+		if (codexDocLimit?.warning !== undefined) {
+			console.warn(codexDocLimit.warning);
+		}
+	}
 
 	// Skill-content roots: shared base for both Thrive-literal and leftover-token scanning.
 	const skillContentRoots = [
