@@ -116,7 +116,7 @@ test("resolveLivePlan: a plan folder's plan.md wins over a flat plan of the same
 	);
 });
 
-test("resolveLivePlan: a plan folder with no plan.md falls through to the flat tier", async () => {
+test("resolveLivePlan: a plan folder holding only intent.md wins over a flat plan of the same id", async () => {
 	const branchName = "someone/prism-1003-fix-thing";
 
 	await withTempTree(
@@ -127,7 +127,44 @@ test("resolveLivePlan: a plan folder with no plan.md falls through to the flat t
 		async (tempRoot) => {
 			assert.equal(
 				await resolveLivePlan(branchName, tempRoot),
-				".prism/plans/prism-1003.md"
+				".prism/plans/prism-1003/intent.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: an epic plan folder resolves to its latest-stage file", async () => {
+	const branchName = "someone/prism-1004-epic-work";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/plans/epic-prism-1004/intent.md", "# Intent\n");
+			await writeFile(tempRoot, ".prism/plans/epic-prism-1004/spec.md", "# Spec\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/epic-prism-1004/spec.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: a plan folder resolves by its chain file's ticket field", async () => {
+	const branchName = "someone/prism-1005-renamed-slug";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/some-slug/intent.md",
+				"---\nticket: PRISM-1005\n---\n"
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/some-slug/intent.md"
 			);
 		}
 	);
