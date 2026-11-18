@@ -89,7 +89,7 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 - **Epic** has a folder with `intent.md` and `spec.md` and no `plan.md`. The spec names the children and their merge order. Each child is a standard ticket.
 - No orchestrator skill drives the run. The stage order and a resume table in the always-on workflow block do. A fresh session reads the plan folder and runs the first row that matches.
 - Four stages run as fresh subagents because their value is a cold read: spec, challenge, verify, and PR review. Everything else runs in the session.
-- Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage. A plan challenge that still blocks after round 3 gets one confirm round, which does not count against the 3.
+- Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage. A plan challenge that still blocks after round 3 gets a confirm round, rerun once after an architect verdict, and neither counts against the 3.
 
 ### Where the run stops for a person
 
@@ -98,13 +98,13 @@ Once the intent is approved, the run is meant to finish without the person. Ques
 - **The intent, always.** Approving it also approves the size.
 - **The design**, when the intent says it needs approval.
 - **The plan**, only when automatic approval fails. The plan stage asks once, after every pending edit has landed, because an edit made after the person's `approve` voids it.
-- **A change that would alter the approved intent or its foundation.** Only `prism-architect` can send one to the person, and only when the build cannot go on without the answer.
+- **A change that would alter the approved intent or its foundation.** This includes a changed acceptance criterion and a change that contradicts one of the person's rulings. Only `prism-architect` can send one to the person, and only when the build cannot go on without the answer.
 - **Ready and merge.** Every agent PR opens as a draft.
 
 What does not stop the run:
 
 - **Scope ideas.** A change that follows from the approved outcome goes ahead as a Decision. Anything else a stage thinks of goes to `prism-architect` for a fit verdict, and a "proceed" goes ahead as a recorded Decision.
-- **Challenge findings.** A blocking finding is fixed. When round 3 still blocks, the plan stage fixes it and runs one confirm round. When the confirm round still blocks, its findings are carried as open Decisions and the plan goes on. A major finding, one that touches an acceptance criterion, the outcome, the spec's approach, a shared type, a public API, or a dependency, goes to `prism-architect` first. Only one the architect judges to change the intent or its foundation reaches the person.
+- **Challenge findings.** A blocking finding is fixed. When round 3 still blocks, the plan stage fixes it and runs a confirm round, which lets the plan through unless a finding is major. Non-major findings are carried: each is fixed where it can be, or recorded as an open Decision, and the plan goes on. A major finding, one that looks like a change to the intent or its foundation, holds the plan and goes to `prism-architect`. When the architect says it is not intent-level, the stage fixes it that way or records it as an open Decision, then runs the confirm round again with the verdict. Only a finding the architect judges intent-level reaches the person.
 - **Review findings.** Anything only a person can decide lands on the draft PR.
 - **Open items.** Anything non-blocking is recorded as an open Decision and listed in the PR body and the closing summary, for the person to follow up after the run.
 
@@ -121,7 +121,7 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 - A commit subject names its tasks, such as `T3:` or `T3-T5:`. A task is done when a commit names it. Nothing edits the plan to mark a task done.
 - Approval is recorded by a script. In a terminal it needs a keypress. In chat, typing `approve` lets the agent run the script once. That approval is tied to the file's content, so a draft edited after the `approve` is not approved.
 - A person's answer in chat to a question the run asked counts as approval of the edit that records it. The agent writes the ruling into the file in the person's words, and the file stays approved. An approved `plan.md` also stays approved through an edit outside its tasks.
-- The plan approves automatically when it has at least one task, every file is inside the spec's affected systems, the last challenge round is clean or resolved, and no file is on a stop path. Otherwise it asks. There is no task limit, because a cap sends a sound plan to a person for its size alone.
+- The plan approves automatically when it has at least one task, every file is inside the spec's affected systems, the last challenge round is clean, resolved, or carried, and no file is on a stop path. Otherwise it asks. There is no task limit, because a cap sends a sound plan to a person for its size alone.
 - Plan folders hold no section-sign citations, because the files move and get renamed.
 
 ### Skills

@@ -616,6 +616,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Fixed the first PR review's findings. Children get their own issues and `prism-<n>/` folders, the approval script moved beside its guard in child 5, the shell parser port moved to child 4, and child 3 tests only the sections that exist when it lands. The spec now records the ADRs the amendment reverses in part and which child writes each successor.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter re-approved the intent in chat at `7c37fe08`, after the review fixes edited it. The edits were a `stage` field, the Eric wording, four restated bullets under what the amendment changes, a Cursor sentence, and one heading name.
 - 2026-11-18 [huntermcgrew/prism-499-approve-once]: Second intent amendment: once the intent is approved, only a question that changes the intent reaches Hunter, per his chat rulings that day. The spec now ports thrive's approve-once change and the gaps a coverage pass found at the 2026-11-18 tips of #2844 and #2859.
+- 2026-11-18 [huntermcgrew/prism-499-approve-once]: Review fixes changed the intent after its 2026-11-18 stamp, aligning the confirm round and the architect routing with thrive's db3570975 tip. Hunter's re-approval in chat is pending.
 
 ---
 
@@ -1115,7 +1116,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 ### PR 518 self-review record
 
-- No Critical or Major findings — 2026-11-18 [huntermcgrew/prism-499-approve-once]. The four Minor findings above are open.
+- No Critical or Major findings — 2026-11-18 [huntermcgrew/prism-499-approve-once]. The four Minor findings above were fixed in `604e4f03`.
 - Checked against source: thrive #2859's workflow-block patch (424dcbda2 to db3570975), `auto-approve.mjs` and its tests at db3570975, `plan-folder-citations.ts` at db3570975, and #2937's first commit.
 
 ## Cleanup Items
@@ -1128,7 +1129,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 PR #518 (intent and spec amendment, plan-folder files only):
 
-- [x] No critical or major issues (four minor, open)
+- [x] No critical or major issues (four minor, fixed in `604e4f03`)
 - [x] Types correct — n/a, no code in the diff
 - [x] No stray console.logs or debug artifacts — n/a
 - [x] Tests written for new logic — n/a, no code in the diff
