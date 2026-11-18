@@ -547,6 +547,13 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 	);
 	assert.ok(settings.hooks.PostToolUse, "PostToolUse registration delivered");
 	assert.ok(settings.hooks.PostCompact, "PostCompact registration delivered");
+	assert.ok(settings.hooks.PreCompact, "PreCompact registration delivered");
+	assert.equal(
+		settings.hooks.SessionStart?.[0]?.matcher,
+		"compact",
+		"SessionStart registration delivered, scoped to post-compact starts"
+	);
+	await fs.access(path.join(consumerRoot, ".claude", "hooks", "compact-handoff.mjs"));
 
 	// The gate reaches a real host only through this registration, so its
 	// matcher is asserted rather than just its presence: an entry that fires
@@ -671,9 +678,13 @@ test(
 			cwd: repoRoot,
 			shell: process.platform === "win32",
 		});
-		const packed = JSON.parse(
-			packOutput.stdout.slice(packOutput.stdout.indexOf("["))
-		) as { filename: string }[];
+		// npm 10 prints an array of pack results; npm 12 prints an object keyed
+		// by package name. Lifecycle-script lines can precede either.
+		const jsonStart = packOutput.stdout.search(/^[[{]/m);
+		const parsed = JSON.parse(packOutput.stdout.slice(jsonStart)) as
+			| { filename: string }[]
+			| Record<string, { filename: string }>;
+		const packed = Array.isArray(parsed) ? parsed : Object.values(parsed);
 		const tarballName = packed[0].filename;
 		const tarballPath = path.join(repoRoot, tarballName);
 

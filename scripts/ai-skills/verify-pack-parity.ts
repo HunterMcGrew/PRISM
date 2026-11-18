@@ -65,10 +65,15 @@ async function main(): Promise<void> {
 	// npm runs `prepare` and `prepack` before packing, and their stdout (e.g.
 	// "dist/cli.js built.") lands ahead of npm's own JSON on the same stream —
 	// `--ignore-scripts` does not suppress this for `npm pack` on npm 10. The
-	// JSON array is always the trailing well-formed block, so slice from its
-	// opening bracket rather than parsing the raw capture.
-	const parsed = JSON.parse(stdout.slice(stdout.indexOf("["))) as { files: { path: string }[] }[];
-	const packedList = [...new Set(parsed.flatMap((entry) => entry.files.map((f) => f.path)))];
+	// JSON is always the trailing well-formed block, so slice from the first
+	// line that opens it rather than parsing the raw capture. npm 10 prints an
+	// array of pack results; npm 12 prints an object keyed by package name.
+	type PackResult = { files: { path: string }[] };
+	const parsed = JSON.parse(stdout.slice(stdout.search(/^[[{]/m))) as
+		| PackResult[]
+		| Record<string, PackResult>;
+	const packResults = Array.isArray(parsed) ? parsed : Object.values(parsed);
+	const packedList = [...new Set(packResults.flatMap((entry) => entry.files.map((f) => f.path)))];
 
 	const missing = findMissingRuntimeReadPaths(packedList, RUNTIME_READ_PATHS);
 

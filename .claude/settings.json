@@ -40,6 +40,27 @@
 					}
 				]
 			}
+		],
+		"PreCompact": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/hook.mjs\" --tool=claude --event=PreCompact"
+					}
+				]
+			}
+		],
+		"SessionStart": [
+			{
+				"matcher": "compact",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/hook.mjs\" --tool=claude --event=SessionStart"
+					}
+				]
+			}
 		]
 	}
 }

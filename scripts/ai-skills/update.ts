@@ -1082,6 +1082,7 @@ const HOOK_RUNTIME_FILES = [
 	"hook.mjs",
 	"git-gates.mjs",
 	"architect-route.mjs",
+	"compact-handoff.mjs",
 	"harnesses.mjs",
 	"lib/match.mjs",
 	"lib/shell.mjs",
