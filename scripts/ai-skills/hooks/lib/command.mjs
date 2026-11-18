@@ -23,10 +23,13 @@ const CMD_EXE_COMMAND_NOT_FOUND = /is not recognized as an internal or external 
  * Quotes one argument for the shell `spawnSync(..., { shell: true })` runs:
  * `cmd.exe` on Windows, `/bin/sh` everywhere else.
  *
- * Windows filenames cannot contain `"`, so a double-quoted spelling is always
- * safe there and a name that carries one is not a real path. Everywhere else a
- * single-quoted spelling suppresses every expansion, and the one character it
- * cannot hold, `'`, is written as `'\''`.
+ * Windows filenames cannot contain `"`, so a name that carries one is not a
+ * real path. Double quotes keep spaces and `&`, `|`, `<`, `>` literal under
+ * `cmd.exe`, but not `%`: `cmd.exe` still expands `%NAME%` inside them when
+ * `NAME` is a set variable, and there is no escape for it on a command line.
+ * A filename like that reaches the command with the variable's value in it.
+ * Everywhere else a single-quoted spelling suppresses every expansion, and the
+ * one character it cannot hold, `'`, is written as `'\''`.
  *
  * @param {string} arg
  * @param {NodeJS.Platform} [platform]
