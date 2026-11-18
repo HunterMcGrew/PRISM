@@ -10,6 +10,9 @@ created: 2026-11-18
 
 # Plan: prism-519 — Codex AGENTS.md budget
 
+> Closed: 2026-11-18
+> Retro: declined — ticket grain; the lightweight charter-fidelity check ran inline during this close (AC-1, AC-2, and AC-9 re-checked on main at 8e1dabc7, the rest read from CI green on both legs, Eric's last pass left no finding standing), so a separate report would restate it.
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/519 — child 3 of epic #499.
@@ -270,7 +273,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
   - **Alternatives considered:** also skipping an existing config that has no key when the file fits (the review's cleaner path). Rejected for now, because the stated contract updates any existing config, and a config with no key costs one harmless line.
   - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution
 - **Doctor and the sync share one "limit in force" helper, `readLimitInForce`.** It is the configured value when readable, otherwise 32,768. Doctor's early return uses `min(32768, limit in force)`, not the limit alone, because a configured limit above the default must not silence a file past 32 KiB that relies on it (AC-6's `info` row).
-  - → no promotion needed (code-level; `codex-project-doc.ts` and the doctor tests pin the `min`, and the reason stays here)
+  - → no promotion needed (code-level; the `min` is in `scripts/ai-skills/doctor.ts:1075` and the doctor tests pin it, and the reason stays here)
 - **The merge skips with a warning when a limit line exists that the top-level reader cannot see.** The reader has no TOML parser, so a lone-value array element (`[3]`) reads as a table header and hides a real top-level key; prepending then writes a duplicate key. Alternatives considered: enumerating more array shapes in `TABLE_HEADER` (rejected, because each fix leaves a narrower shape, which is what the last two rounds found) and adding a parser (rejected, a new dependency). The cost is that a key that really sits under a table gets the warning too, instead of a prepended top-level key that would have been valid. That is a rare config and the warning names the value to set by hand.
   - **Third round:** the condition is now a fourth `ProjectDocMaxBytesSetting` kind, `unplaced`, returned by `readProjectDocMaxBytes`, so the sync and doctor branch on one value and neither rescans. Doctor warns that the limit in force is unknown and that a top-level `project_doc_max_bytes` line is needed (a key that belongs under a table like `[profiles.x]` must not be told to move), never "run `prism update`", which skips that config. Doctor's early return exempts `unplaced`, because a hidden top-level limit below 32 KiB can cut a file inside the default window. `readLimitInForce` does not accept `unplaced`, because there is no reading to return.
   - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution
@@ -282,8 +285,11 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
   - → no promotion needed (a bridge until child 4's folder templates exist)
 - **One PR, though it crosses the 10-file mark.** About 10 hand-written files change. The rest are generated: `AGENTS.md`, `.codex/config.toml`, and the `.claude/`, `.codex/`, and `.cursor/` copies of two architect docs. The spec defines child 3 as one PR, and its parts share one purpose. If Hunter wants a stack, the cut goes after task 4: ordering, report, and budget test in the first PR; config write, doctor, and docs in the second.
   - → no promotion needed (ticket tactic)
-- **AC was not synced to issue #519 in this run.** Editing a public issue needs Hunter's go-ahead, and this run had none. Sync it when the plan is approved, or let Clove sync it when implementation starts.
-  - → no promotion needed (still not synced at close; the issue's checklist is left for a person)
+- **The AC is synced to issue #519.** It was not synced when the plan was written, because editing a public issue needed Hunter's go-ahead. The issue body now carries all 10 criteria under `## Acceptance Criteria` (checked with `gh issue view 519` on 2026-11-18), so the AC Sync Log records it as synced.
+  - → no promotion needed (ticket bookkeeping; the AC Sync Log is the record)
+- **The close markers are the `>` lines, and frontmatter `status: closed` stays as a placeholder.** `branch-plan.md` § Before Closing step 2 and Zoe's plan-archive lane read `> Closed:` and `> Retro:`, not frontmatter, so those two lines are what make this plan closed today. The frontmatter `status: closed` stays because the epic spec defines no closed value; child 4 or child 6 defines folder-plan close and settles it.
+  - **Alternatives considered:** dropping the frontmatter `status`. Rejected, because the folder-plan close that child 4 or 6 defines may read it, and removing it now would be an edit they reverse. The trailing `Retro:` line stays for the same reason.
+  - → no promotion needed (bridge until the folder-plan close lands)
 - **`compatibility.md` gains `config.toml` in its `.codex/` bullet, though it is outside this plan's files.** The file is the one `install-layout.md` cites for the committed-vs-ignored contract, and this change made its `.codex/` bullet false by committing `.codex/config.toml`. The edit is one sentence and shares the PR's purpose; a separate PR would leave the two files disagreeing until it merged.
   - → no promotion needed (scope record; the edit itself landed in `compatibility.md`)
 - **OPEN — TBD, needs a live Codex run (Hunter).** Whether Codex honors `project_doc_max_bytes` in a repo-level `.codex/config.toml`. The Codex docs show a repo-level file and do not list this key among those it ignores there, but they do not say it is honored. **Default path (used until resolved):** child 3 writes the key, and `prism doctor` prints the per-developer `~/.codex/config.toml` setting as a fallback (task 6). Task 8 is the probe.
@@ -315,6 +321,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two accuracy nits in 3d76c875: doctor's `unplaced` warning now says a top-level `project_doc_max_bytes` line is needed instead of "move the line", and the adoption page states that `prism update` skips a limit line that is not at the top level. `readLimitInForce` now excludes `unplaced` in its type; see Decision on the merge skip.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two open PR #521 threads in 9623504f: the architect doc, its install twin, and the platform mirrors say a top-level `project_doc_max_bytes` line is needed, matching doctor. Amended Task 7 the same way; no other doc told the user to move the line.
 - 2026-11-18 [huntermcgrew/prism-519-followup-close]: Closed the plan after #521 merged: a verdict on all 18 Decisions, 7 of them already promoted, the ticket-grain retro run inline, and AC-1 to AC-10 ticked. Task 8's live Codex run is still open as the OPEN Decision.
+- 2026-11-18 [huntermcgrew/prism-519-followup-close]: Fixed the plan-close findings: added the `> Closed:` and `> Retro:` markers under the title, corrected the `min` citation to `doctor.ts:1075`, and recorded that #519 already carries the AC.
 
 ---
 
@@ -516,6 +523,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC | updated | not synced — needs Hunter's go-ahead to edit #519 |
 | 2026-11-18 | Winston | Ticked AC-1 to AC-10 at close, AC-8 through its fallback clause | ticked | not synced; #519 still needs Hunter's go-ahead |
+| 2026-11-18 | Clove | Checked #519 against the plan's AC | verified | synced — the issue body carries all 10 criteria under `## Acceptance Criteria` |
 
 ---
 
