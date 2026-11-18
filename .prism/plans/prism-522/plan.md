@@ -860,6 +860,11 @@ Tests:
   - T23 added ADR-0082 to the `excluded` list in `seed-curation.json`, because numbered ADRs never ship to consumers and the build otherwise mirrors it into the seed.
   - T23 amended ADR-0003 with a `> Amended by` note under its frontmatter instead of its `Status:` line. Twelve ADRs already use the note, none amend the status line, and the ADR guide's statuses are `accepted` and `superseded`.
   - T24 also rewrote Nora's, Parker's, and Pixel's hand-off lines and Pixel's mode 2 wording. They named Winston for planning, Mira for user stories, or only the mock-spec path, all false after T11, T18, and T19.
+- **The epic resume row that waits on `## Retro` stays as written, and child 6 owns the fix.**
+  - **Root cause:** nothing writes `## Retro` in `spec.md`, and `prism-retro` is read-only on plans, so an epic resume that waits on the section loops at retro.
+  - **Alternatives considered:** a stopgap where the session appends the section. Rejected, because it would pre-empt child 6's design of who writes it.
+  - **Chosen approach:** defer to child 6 (issue #530), which `prism-499/spec.md` gives the fixed retro and its check.
+  - **Implementation guidance:** leave `.prism/rules/workflow.md` as is. The loop is only reachable on an epic-size chain run, and none happens before child 6 lands.
 
 ## History
 
@@ -897,6 +902,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T23: ADR-0082 records that the session's PR stage pushes once on a folder-plan branch while `prism-implement` and `prism-docs` commit only, with its README row. ADR-0003 carries the amendment as a `> Amended by` note after its frontmatter, the form ADR-0014 and ADR-0043 use, not in its `Status:` line, which stays `accepted`. `seed-curation.json` also lists ADR-0082 as excluded, a file T23 does not name, because the build otherwise mirrors the ADR into the install seed.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T24: `docs/personas.md` points Mira at `prism-intent` and Winston at `prism-architect`, drops every `prism-user-stories` mention, and gains a "Chain stages (no persona)" section for `prism-spec`, `prism-plan`, and `prism-challenge`. Nora, Parker, and Pixel's hand-off lines and Pixel's mode 2 wording changed with them, and `prism-challenge` left the utility table, since it is now a stage as well as a direct skill.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed nine of Briar's eleven PR B findings and Winston's three scope items (`efc91b48`). `structural-remedies.md` is now cited from the architect's roster row and not from the skill, and findings 5 (the epic resume row) and 6 (the two plan-record subjects) stay open for a ruling.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Applied the rulings on the three open items: `prism-self-review` and `branch-plan.md` now agree on the folder-plan record subject (`9cf06720`), the Nora rows, Improvement and UX-concern flows, ticket-types lines, and personas line now route through the intent and spec stages (`d45f44d8`), and the epic resume row is deferred to child 6 with a Decision.
 
 ## Sessions
 
@@ -909,6 +915,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's one remaining major on PR A, the Token bullet's file-edit half. Bounds: `hook-runtime.md` and its curated twin with their mirrors, the plan's third-pass entry, one lesson, and the PR body; no other files, no merge, PR stays draft. Approach: probe the guard on both halves of the sentence before rewording, then record it in the plan after the doc commit. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: build PR B (T9-T24) of this plan, plus two stack A review fold-ins. Bounds: PR B's task files and generated copies only; no new dependency, no merge, no close of the plan, draft PR only. Approach: one commit per task in the plan's group order, porting thrive's skills at db357097 onto PRISM's registry and always-on rules. · close: drifted: a few edits fell outside a task's file list or text (`workflow.md` path in T20, the curated `branch-plan.md` twin in T21, three re-added citations and extra mentions in T22, the `seed-curation.json` entry in T23, and hand-off lines in T24), each recorded in `## History`
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: fix Briar's PR B findings and Winston's three scope items. Bounds: the files the findings and items name, with their twins and generated copies; no new dependency, no merge, draft PR only. Approach: verify each cited line against the current text before editing, rule on findings 5, 6, and 7 from the spec and ADR-0080, and commit the fixes before the plan record. · close: scope held; the same-class routes the finding 1 entry lists were left alone, and findings 5 and 6 stay open
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: apply the orchestrator's rulings on findings 6, 5, and 1's leftovers. Bounds: the files those three items name, with their twins and generated copies, and the plan record; no new dependency, no merge, draft PR only. Approach: grep every `plan: review` and every same-class route, fix them in two commits, then record both in the plan. · close: scope held; `prism-start-ticket`'s handoff line sends an improvement to `prism-plan` and was left for a call, since no item names it
 
 ## Verification
 
@@ -1098,7 +1105,7 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 
 - **Severity:** `major`
 - **Status:** `fixed`
-- **Fixed in:** `efc91b48`: the Mira and Pixel rows of `closing-messages.md`, the Feature sequence of `ticket-workflows.md` (a spec stage step added), the Mira and Pixel rows of `AGENTS.md.tmpl`, and the stale "always routes through Winston" clause of the `skills-ecosystem.md` seed twin. Each fixed directly, and the five handoff tables were not restructured. Same-class routes left for a call: the Nora rows (improvement to the plan stage), the Improvement and UX-concern flows of `ticket-workflows.md`, `ticket-types.md` lines 24, 25, and 34, and `docs/personas.md` line 76.
+- **Fixed in:** `efc91b48` and `d45f44d8`. `efc91b48`: the Mira and Pixel rows of `closing-messages.md`, the Feature sequence of `ticket-workflows.md` (a spec stage step added), the Mira and Pixel rows of `AGENTS.md.tmpl`, and the stale "always routes through Winston" clause of the `skills-ecosystem.md` seed twin. Each fixed directly, and the five handoff tables were not restructured. `d45f44d8` fixed the leftovers the same direct way, without restructuring the tables: the Nora rows of `closing-messages.md` and `skills-ecosystem.md` now send an improvement to Mira's intent, the Improvement and UX-concern flows of `ticket-workflows.md` add the spec stage, `ticket-types.md` lines 24, 25, and 34 do the same, and `docs/personas.md` line 76 names Mira for an improvement. The curated twins and generated copies carry the same edits.
 - **File:** `.prism/architect/_toolkit/closing-messages.md:26`
 - **Problem:** `closing-messages.md` lines 26-27 route Mira and Pixel to the plan stage, the Feature sequence in `ticket-workflows.md` line 36 runs Mira, Pixel, then the plan stage, the Mira row in `templates/install/AGENTS.md.tmpl` routes to `prism-plan`, and the install twin `skills-ecosystem.md` line 91 still says mode 2 "always routes through Winston". `prism-plan` refuses a folder with no `spec.md`, while `skills-ecosystem.md` and `docs/personas.md` route Mira to the spec stage, so these architect docs diverge from the skills and from each other. This is major because a reader following them stalls at a refusal.
 - **Suggested fix:** route an approved intent, and a saved design on a folder plan, to the spec stage in all four places and their generated copies.
@@ -1133,7 +1140,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### The epic resume row waits on a `## Retro` nothing writes
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `deferred`
+- **Deferred to:** child 6 (issue #530) defines who writes `## Retro` in `spec.md`, per `prism-499/spec.md`, which gives child 6 the fixed retro and its check.
 - **File:** `.prism/rules/workflow.md:62`
 - **Problem:** the row resumes an epic at retro until `spec.md` holds `## Retro`, but no skill writes that section and `prism-retro` is read-only on plans, so an epic resume loops at retro.
 - **Suggested fix:** key the row on the retro report or the `Retro:` line, or name the stage that writes `## Retro`. Child 6 owns later rows and may absorb this.
@@ -1141,7 +1149,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### Two commit subjects for a reviewer's folder-plan record
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `9cf06720`: `prism-self-review` now says `plan: self-review record`, the `plan: <persona> record` form `branch-plan.md` already gave. The `branch-plan.md` bullet after it, `chore: <persona> plan record for <ticket-id>`, is the flat-plan form, but it read as applying to a folder plan too, so the folder bullet now says its subject replaces that `chore:` subject, the same wording the skill uses. A search found no other `plan: review` instruction outside this plan.
 - **File:** `.prism/rules/branch-plan.md:179`
 - **Problem:** `branch-plan.md` gives the folder form as `plan: <persona> record`, while `prism-self-review/shared.md` says to commit as `plan: review`.
 - **Suggested fix:** pick one form and use it in both.
