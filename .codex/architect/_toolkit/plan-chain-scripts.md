@@ -13,11 +13,13 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 - **`plan/auto-approve.mjs`** approves a folder plan when every condition holds.
 - **`plan/stop-paths.mjs`** holds the dependency and contract path lists and the matcher for them.
 - **`plan/commit.mjs`** commits exactly the named paths.
+- **`plan/approve.mjs`** stamps a chain file's approval lines for a person, after a keypress in their terminal or, inside an agent session, on a chat approval token in place of the keypress. It stamps `intent.md`, `design.md`, and `plan.md` and never `spec.md`, and it refuses a file whose text changed after the person said `approve`.
+- **`plan/chat-approval.mjs`** holds the chat approval token's file name, the prompt parser, and the hash of every chain artifact, plus the helpers that find, read, and take the token. The approve guard writes the token and `approve.mjs` takes it ([`hook-runtime.md`](./hook-runtime.md) § Approve guard).
 - **`lib/tokenize.mjs`** and **`lib/segments.mjs`** turn a shell command into the simple commands bash would run.
 
 ## Invocation
 
-In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Only `tasks`, `bundles`, `auto-approve`, and `commit` are commands. The rest are imported. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `commit.mjs` passes any other git failure through with git's code.
+In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Skill and rule text spells that directory with the `HOOK_RUNTIME_DIR` token, which renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. It comes from `hookRuntimeDir` in `.ai-skills/config.json`, which a consumer never sets. Only `tasks`, `bundles`, `auto-approve`, `approve`, and `commit` are commands. The rest are imported. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `commit.mjs` passes any other git failure through with git's code. A `.ai-skills/config.json` that exists but does not parse is a config error, exit 2, for every command that reads it, so a typo in a config that sets `stopPaths` can't fall back to the default paths and approve a plan the configured ones would stop.
 
 ## Templates
 
@@ -98,4 +100,4 @@ A step that fails on a held `index.lock` is retried, because a sibling's git cal
 
 ## Hosts
 
-The modules arrive with the hook runtime, which is delivered only when `hosts` includes `claude` or `codex`. A Cursor-only consumer does not receive these modules yet.
+The modules arrive with the hook runtime, which reaches every install whatever `hosts` holds, so a Cursor user can run `approve.mjs` from a terminal. Only the registrations and the git hook shims follow `hosts`.
