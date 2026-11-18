@@ -914,6 +914,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Briar's fourth pass (`ed754b3f`): the no-folder design handoff sets the intent's Design line to `supplement` with approval required and names the mock's path, and every AC-to-tracker sync instruction now excepts a DX ticket. ADR-0034's title joined the child 9 list in the T22 entry.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Briar's fifth pass (`babcfcc9`): the design resume row in `workflow.md` now names the Design line values `needed` and `supplement`, so a supplement reaches the design stage from folder state. The `AGENTS.md` lead sections still fit the byte budget.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Eric's first PR B review (`87b536fe` to `029da976`, one commit per finding): a folder-plan review record now commits through `commit.mjs` and stays local until the PR stage pushes, and the epic claim in `ticket-workflows.md` names the intent stage. The PR stage pushes with `-u origin HEAD`, the workflow rule names the plan-add commit as the `--base` ref, and the four other minors are fixed in their files.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Folded in two follow-on rulings (`f6e79291`, `9790e29e`): `prism-implement` no longer records a root cause in a folder plan, and the routing rule says a folder-plan reviewer commits while the PR stage pushes. The PR body was synced to the new lead-section end, byte 32,045.
 
 ## Sessions
 
@@ -929,7 +930,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: apply the orchestrator's rulings on findings 6, 5, and 1's leftovers. Bounds: the files those three items name, with their twins and generated copies, and the plan record; no new dependency, no merge, draft PR only. Approach: grep every `plan: review` and every same-class route, fix them in two commits, then record both in the plan. · close: scope held; `prism-start-ticket`'s handoff line sends an improvement to `prism-plan` and was left for a call, since no item names it
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: apply the orchestrator's rulings on the leftovers of finding 1's class. Bounds: `prism-start-ticket`, the Pixel decision tree, the two optional-intent lines, and the plan record, with twins and generated copies; no merge, draft PR only. Approach: take the DX route from `ticket-types.md` where it gives one, and fix it too when it is the refused plan-stage route. · close: scope held; the DX workflow line of `ticket-types.md` named the plan stage, so it was changed with the skill
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: re-review PR B's commits `fb46a9c6..5a4069ff` and confirm the first pass's findings are closed. Bounds: the review record in this plan only; no source edits, no merge. Approach: tree-search each first-pass finding, verify the new routes against `approve.mjs` and the skills they name, run `prism:check`, and read the head's CI. · close: scope held
-- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: fix Eric's nine PR B review comments on eight findings. Bounds: the files the findings name, with their seed twins and generated copies, and the plan record; no new dependency, no merge, no thread replies, draft PR only. Approach: verify the push form and the base ref in scratch repos before wording them, then one commit per finding. · close: scope held, with two things left alone: the ADR-0012 sentence about epic detection and the `prism-implement` bug-ticket bullet that writes `## Debugged Issues` on a folder plan.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: fix Eric's nine PR B review comments on eight findings. Bounds: the files the findings name, with their seed twins and generated copies, and the plan record; no new dependency, no merge, no thread replies, draft PR only. Approach: verify the push form and the base ref in scratch repos before wording them, then one commit per finding. · close: scope held, with the ADR-0012 sentence about epic detection left alone (child 9's list). The orchestrator's follow-on rulings were folded in afterward.
 
 ## Verification
 
@@ -1369,6 +1370,24 @@ Eric's review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2
 - **Problem:** "of the work; The plan stage reads it" left a capital after the semicolon.
 - **Suggested fix:** lowercase it in the rule and its twin.
 
+### Fold-in: the Debugged Issues bullet in `prism-implement` writes the plan on a folder plan
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `f6e79291`: the folder-plan exemption now also covers recording a root cause under `## Debugged Issues`. A folder plan has no such section (`.prism/templates/plan.md` gives Tasks, Challenge, Decisions, History, Sessions, Verification, Review, and PR Readiness), and the build report in `workflow.md` has no field for one, so the bullet is flat-plan only. A confirmed root cause goes in the build report's paragraph instead, where the session reads it.
+- **File:** `.ai-skills/skills/prism-implement/shared.md:19`
+- **Problem:** same root as the Minor above it: a dispatched agent on a folder plan was told to write `plan.md`.
+- **Suggested fix:** exempt it on a folder plan and route the root cause to the report.
+
+### Fold-in: the routing rule says a reviewer "lands" its plan-only commit
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `9790e29e`: `skill-routing.md` now says a reviewer commits its plan-only commit, pushes it on a flat plan, and on a folder plan commits through `commit.mjs` while the session's PR stage pushes. The seed twin has no such sentence, so it is unchanged. The `AGENTS.md` lead sections now end at byte 32,045 of 32,768.
+- **File:** `.prism/rules/skill-routing.md:77`
+- **Problem:** "lands" still read as a push after the review stage stopped pushing on a folder plan.
+- **Suggested fix:** match the review-stage and `branch-plan.md` wording.
+
 ## Acceptance Criteria
 
 The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
@@ -1430,8 +1449,8 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
-- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both fixed. The fourth pass found 2 minor (the no-folder design route's claim that the spec stage reads the mock, and the DX sync exception missing from the Clove, Briar, and Nora syncs), both fixed. The fifth pass found 1 minor (the design resume row doesn't say it covers a supplement), fixed. Eric's first review found 2 major (the review stage's push on a folder plan, and the epic claim in `ticket-workflows.md`) and 6 minor, all fixed in `87b536fe` to `029da976`, and his re-review is pending.
-- [x] PR B build passes: `pnpm run prism:check` passes locally on Linux at `029da976` (2026-11-18), including `ship-closure` at 268 files, and `spec-scope-lint` passes with the branch name set. The `AGENTS.md` lead sections end at byte 31,917 of 32,768. CI run 44379629187 on `442fa713` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
+- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both fixed. The fourth pass found 2 minor (the no-folder design route's claim that the spec stage reads the mock, and the DX sync exception missing from the Clove, Briar, and Nora syncs), both fixed. The fifth pass found 1 minor (the design resume row doesn't say it covers a supplement), fixed. Eric's first review found 2 major (the review stage's push on a folder plan, and the epic claim in `ticket-workflows.md`) and 6 minor, all fixed in `87b536fe` to `029da976`, with two follow-on fixes in `f6e79291` and `9790e29e`, and his re-review is pending.
+- [x] PR B build passes: `pnpm run prism:check` passes locally on Linux at `9790e29e` (2026-11-18), including `ship-closure` at 268 files, and `spec-scope-lint` passes with the branch name set. The `AGENTS.md` lead sections end at byte 32,045 of 32,768. CI run 44379629187 on `442fa713` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
 - [x] PR B has no stray debug artifacts, and the new logic has tests: `role-preloads.test.ts`, the `agents-md-budget.test.ts` order case, and two `approve-guard.test.ts` token cases.
 - [ ] AC for PR B: AC-4, AC-5, AC-6, AC-8, and AC-10 are met, and AC-10 is met by CI run 44368244035. AC-1 and AC-9 need a live run and were not run.
 
