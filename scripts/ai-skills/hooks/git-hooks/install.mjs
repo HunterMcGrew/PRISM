@@ -195,6 +195,14 @@ function makeExecutable(shimPath) {
 }
 
 /**
+ * @param {string[]} shimPaths
+ * @returns {string} the shim file names, such as `pre-commit and pre-push`
+ */
+function joinShimNames(shimPaths) {
+	return shimPaths.map((shim) => path.basename(shim)).join(" and ");
+}
+
+/**
  * What git is configured to do about hooks in this repo, scope by scope, and
  * whether PRISM's own hooks are the ones that will run.
  *
@@ -295,8 +303,8 @@ export function describeForeignHooks(repoRoot, scopes) {
  * local one.
  *
  * Git skips a hook without the executable bit, so a marked shim that lacks it
- * is chmodded first, off Windows. When the bit cannot be set, nothing is
- * written and the result is `left-alone`, because `set` and `already` both
+ * is chmodded first, off Windows. When the bit cannot be set, no config value
+ * is written and the result is `left-alone`, because `set` and `already` both
  * tell the caller that PRISM's hooks will run.
  *
  * `shimsDelivered` lets `prism update --dry-run` preview the install on a
@@ -326,18 +334,23 @@ export function installGitHooks(repoRoot, { dryRun = false, shimsDelivered = fal
 	const nonExecutableShims = findNonExecutableShims(repoRoot);
 	const unfixableShims = dryRun ? [] : nonExecutableShims.filter((shim) => !makeExecutable(shim));
 	if (unfixableShims.length > 0) {
-		const names = unfixableShims.map((shim) => path.basename(shim)).join(" and ");
+		const fixedShims = nonExecutableShims.filter((shim) => !unfixableShims.includes(shim));
+		const verb = unfixableShims.length === 1 ? "is" : "are";
+		const outcome =
+			fixedShims.length === 0
+				? "Nothing was changed."
+				: `Made ${joinShimNames(fixedShims)} executable, but core.hooksPath was not changed.`;
 
 		return {
 			action: "left-alone",
-			message: `prism hooks: ${OUR_HOOKS_DIR}/${names} is not executable and could not be made so, and git skips a hook without the executable bit. Nothing was changed.`,
+			message: `prism hooks: ${OUR_HOOKS_DIR}/${joinShimNames(unfixableShims)} ${verb} not executable and could not be made so, and git skips a hook without the executable bit. ${outcome}`,
 		};
 	}
 
 	const executableNote =
 		nonExecutableShims.length === 0
 			? ""
-			: `made ${nonExecutableShims.map((shim) => path.basename(shim)).join(" and ")} executable`;
+			: `${dryRun ? "make" : "made"} ${joinShimNames(nonExecutableShims)} executable`;
 	const staleWorktreeValue = scopes.worktree;
 	const localIsCurrent = scopes.local === OUR_HOOKS_DIR;
 	if (localIsCurrent && staleWorktreeValue === null) {
@@ -369,8 +382,14 @@ export function installGitHooks(repoRoot, { dryRun = false, shimsDelivered = fal
 }
 
 /**
- * Whether a worktree of this clone other than `repoRoot` has a PRISM shim in
- * its own `.githooks/`.
+ * Whether a worktree of this clone other than the one `repoRoot` is in has a
+ * PRISM shim in its own `.githooks/`.
+ *
+ * Both sides of the comparison come from git, `--show-toplevel` for this
+ * worktree and `worktree list` for the rest, and both go through the same
+ * `realpathSync`. Node's own spelling of `repoRoot` is left out because
+ * Windows spells one directory differently in Node and in git, so the current
+ * worktree would read as a sibling.
  *
  * @param {string} repoRoot
  * @returns {boolean}
@@ -388,7 +407,7 @@ function otherWorktreeHasShim(repoRoot) {
 			return path.resolve(dir);
 		}
 	};
-	const self = resolve(repoRoot);
+	const self = resolve(git(["rev-parse", "--show-toplevel"], repoRoot) ?? repoRoot);
 
 	return porcelain
 		.split("\n")

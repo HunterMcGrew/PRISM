@@ -315,7 +315,7 @@ test(
 			assert.deepEqual(installGitHooks(root, { dryRun: true }), {
 				action: "set",
 				message:
-					"would prism hooks: set core.hooksPath to .githooks; made pre-commit executable",
+					"would prism hooks: set core.hooksPath to .githooks; make pre-commit executable",
 			});
 			assert.equal(isRunnableShim(shimPath), false);
 			assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
@@ -455,6 +455,33 @@ test("removeGitHooksPath keeps the value while another worktree still has a PRIS
 			"prism hooks: unset core.hooksPath, since .githooks/ was removed"
 		);
 		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+	});
+});
+
+test("removeGitHooksPath does not count the current worktree as another one, however it is reached", () => {
+	withFixture({}, ({ root, git }) => {
+		git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "init");
+		const linked = path.join(path.dirname(root), "linked");
+		git("worktree", "add", "-q", linked, "-b", "linked");
+		fs.mkdirSync(path.join(linked, ".githooks"));
+		fs.writeFileSync(path.join(linked, ".githooks", "pre-commit"), SHIM_WITH_MARKER, {
+			mode: 0o755,
+		});
+		git("config", "--local", "core.hooksPath", ".githooks");
+		fs.rmSync(path.join(root, ".githooks"), { recursive: true });
+		const unsetMessage = "would prism hooks: unset core.hooksPath, since .githooks/ was removed";
+
+		assert.equal(
+			removeGitHooksPath(linked, { dryRun: true }),
+			unsetMessage,
+			"the linked worktree's own shim is not a sibling's"
+		);
+
+		// A path inside the worktree is spelled differently from the toplevel git lists.
+		const inside = path.join(linked, ".githooks");
+		assert.equal(removeGitHooksPath(inside, { dryRun: true }), unsetMessage);
+
+		assert.equal(removeGitHooksPath(root, { dryRun: true }), null, "the main checkout sees the linked shim");
 	});
 });
 
