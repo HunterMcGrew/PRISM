@@ -57,6 +57,34 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 
 ---
 
+## Review Issues
+
+### Architect doc claims the hook follows Plan Lookup, but it skips the `## Ticket` scan
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:60`
+- **Problem:** The doc (and its curated twin) says the plan is "looked up in the order `branch-plan.md` § Plan Lookup gives, archived plans included", but `findPlanForBranch` stops after ticket and epic names in `plans/` then `archived/plans/`. It never runs Plan Lookup step 4 (scan plans for a matching `## Ticket` field), and § Plan Lookup itself has no archive step. A diverged architect-doc claim is Major under `architect-doc-verification.md`.
+- **Suggested fix:** Reword in the doc, the twin (`templates/install/.prism/architect/_toolkit/hook-runtime.md`), and the `findPlanForBranch` JSDoc to say what runs: `<id>.md`, then `epic-<id>.md`, then the same two under `.prism/archived/plans/`, with no `## Ticket` field scan. Rebuild the mirrors.
+
+### A failed or timed-out `git status` renders as "(clean)"
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/compact-handoff.mjs:123`
+- **Problem:** `git()` returns `""` on any failure or the 5 s timeout, so `readLiveState` reports `(clean)`, and the template tells the summarizer to copy these facts as written. A slow `git status` in a large repo would put a false clean-tree claim into the summary.
+- **Suggested fix:** Return `null` from `git()` on failure and render the status as `(git status unavailable)` in that case.
+
+### Status truncation and failure paths have no test
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/compact-handoff.test.ts:50`
+- **Problem:** Nothing exercises the `STATUS_LINE_LIMIT` branch (`… N more`), the detached-HEAD label, or a git failure, so the "under 10,000 characters" claim is only checked for a one-file status.
+- **Suggested fix:** Add one test with more than 40 untracked files asserting the `… N more` line and the length cap.
+
+---
+
 ## Acceptance Criteria
 
 ### Behavioral
