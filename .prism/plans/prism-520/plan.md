@@ -611,6 +611,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: full self-review of PR #528. Bounds: plan Review and PR Readiness only, no source fix, no GitHub post. Approach: run `prism:check`, read the Windows CI log, diff the ports against thrive at db35709, and verify the architect doc against source. · close: scope held
 
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix every open self-review finding on PR #528 under the orchestrator's decisions. Bounds: the findings and cleanup items only, no change to `lib/match.mjs` or the config validator, no merge, no ready flip. Approach: one fix commit per concern, each test shown red on the old head, then `prism:check`. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: self-review the review-fix commits 2c4f7de6..e9705bfc on PR #528. Bounds: plan Review and PR Readiness only, no source fix, no GitHub post, no merge. Approach: run `prism:check`, read both CI legs on the head, check each fix against its finding, and verify the changed architect-doc claims against source. · close: scope held
 
 ## Verification
 
@@ -749,6 +750,36 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 - The usage lines differ in case and form: `Usage: tasks.mjs …` in tasks, bundles, and commit, but `usage: node auto-approve.mjs …` in auto-approve. Fixed: auto-approve's line is `Usage: auto-approve.mjs …` (55b0b923) and commit's file header drops `node` (667ed2b0).
 - The AC-9 test checks `argv[0] === "git"` only through its `find()` lookup, not with its own assertion. Fixed in 7ce44412.
 
+### Second pass: the review-fix commits
+
+Briar self-review, 2026-11-18, of 2c4f7de6..e9705bfc (the seven fix commits and the plan record). One Major finding and two Minor ones. Every earlier fix holds: each one's code matches its suggested fix or the Decision that replaced it, and each new test fails on the old head where the plan says so. The faked-`win32` container test fails there because `toHostPath` turns `/w` into `W:/`. CI run 44289419823 on e9705bfc is green on `ubuntu-latest` and `windows-latest`, so AC-1 now holds, and AC-2 through AC-9 still hold. `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally: 1504 tests, 1503 pass, 0 fail, and 1 skipped. The skip is the existing `.agents` round-trip case, which waits on `prism:build`.
+
+#### The commit script's doc says a failed git status passes stdout through, and it drops it
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/plan-chain-scripts.md:93`
+- **Problem:** the doc says any other git failure, "including a failed `git status` during the unchanged-path check", exits with git's code, stdout, and stderr. `scripts/ai-skills/hooks/plan/commit.mjs:87` returns `stdout: ""` on that path. `architect-doc-verification.md` grades a diverged claim Major at minimum, because the next agent loads the doc as fact. The runtime cost is small: a failing `git status --porcelain` writes its error to stderr, which does pass through.
+- **Suggested fix:** return `stdout: status.stdout` at `commit.mjs:87`, which also matches the Decision that `commit.mjs` returns git's stdout on failure. The existing status-failure test can assert it. Editing the doc instead would leave the code and that Decision disagreeing.
+
+#### The post-compact note still says the plan was missed by name
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/compact-handoff.mjs:245`
+- **Problem:** the earlier fix in 7ce44412 reworded the PreCompact status line and template, but `buildPostCompactNote` still opens with "No plan file named for this branch's ticket was found". After T9, a miss means the name tiers, the ticket-field scan, and the archive all came up empty. This is Minor because the note still sends the session to the full Plan Lookup, so the only cost is a repeated scan.
+- **Suggested fix:** use the template's wording, "No plan file was found for this branch's ticket, by name, by ticket field, or in the archive", and pin it in `compact-handoff.test.ts`.
+
+#### resolveLivePlan's new JSDoc is written in changelog voice
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/lib/resolve-live-plan.ts:142`
+- **Problem:** "resolves as no plan, as it did before the lookup moved to `resolvePlan`" describes the commit, not the code. `code-comments.md` lists changelog voice under Not Allowed. This is Minor because the next sentence already gives the real reason, so only the clause misleads.
+- **Suggested fix:** keep the invariant and drop the history: "A plans directory that can't be read resolves as no plan, because `resolvePlan` throws on it and `spec-scope-lint` passes a branch whose plan is missing."
+
+**Considered and not filed.** The alias swap's `path.posix.join` maps a key that ends mid-segment differently from the old string paste: `{ "@lib": "src/lib" }` sends `@libfoo` to `src/lib/foo`, not `src/libfoo`. The Decision on the alias swap accepts that trade, and the documented key shape ends in `/`.
+
 ## Acceptance Criteria
 
 The issue's one-line proof ("every suite passes, and a plan with two tasks on one file is rejected"), expanded into checkable criteria.
@@ -791,13 +822,13 @@ The issue's one-line proof ("every suite passes, and a plan with two tasks on on
 
 ## PR Readiness
 
-- [ ] No critical or major issues — both Majors are fixed in 86e51eaa, and stay unchecked until the Windows leg runs green on it
+- [ ] No critical or major issues — the first pass's two Majors are fixed and the Windows leg is green on them. The second pass's Major (the commit script's doc claims stdout passes through on a failed `git status`) is open
 - [x] Types correct — `pnpm prism:check-types` passes for both tsconfigs, and the modules use JSDoc types with no `any`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — the missing T10 and T12 cases were added with the review fixes
 - [x] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run 2026-11-18: `pnpm prism:check` exits 0 on Linux with `GITHUB_HEAD_REF` set after the review fixes. The earlier Windows run (44285689295) failed 7 tests, and the leg has not run on the fix yet
-- [x] PR description up to date — its Windows note says the leg ran, failed, and awaits a rerun on the fix
+- [x] Build passes — last run 2026-11-18 on e9705bfc: `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally, and CI run 44289419823 is green on `ubuntu-latest` and `windows-latest`
+- [ ] PR description up to date — its Not-verified line still says the Windows leg needs a rerun, which run 44289419823 has now done green
 - [ ] Lasting decisions promoted to architect context (if applicable) — close-time work, not yet done
 
 **Last updated:** 2026-11-18
