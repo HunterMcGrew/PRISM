@@ -100,7 +100,7 @@ export function isCommandNotFound(result) {
  * crashed on a config typo would block a commit for a reason unrelated to it.
  *
  * @param {string} toplevel
- * @returns {Record<string, any> | null}
+ * @returns {Record<string, unknown> | null}
  */
 export function readRepoConfig(toplevel) {
 	try {
@@ -114,4 +114,17 @@ export function readRepoConfig(toplevel) {
 	} catch {
 		return null;
 	}
+}
+
+/**
+ * Narrows one block of a parsed config to an object, or to an empty one when
+ * it is absent or not an object, so a nested read never throws on a config typo.
+ *
+ * @param {unknown} value
+ * @returns {Record<string, unknown>}
+ */
+export function asRecord(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value)
+		? /** @type {Record<string, unknown>} */ (value)
+		: {};
 }

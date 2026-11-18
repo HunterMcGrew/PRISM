@@ -21,7 +21,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { fillCommand, isCommandNotFound, readRepoConfig } from "../lib/command.mjs";
+import { asRecord, fillCommand, isCommandNotFound, readRepoConfig } from "../lib/command.mjs";
 
 const MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 
@@ -90,9 +90,9 @@ export function runPrePush({
 	platform = process.platform,
 }) {
 	const config = readRepoConfig(toplevel);
-	const prePush = config?.gitHooks?.prePush;
-	const command = prePush?.command;
-	const globs = prePush?.globs;
+	const prePush = asRecord(asRecord(config?.gitHooks).prePush);
+	const command = prePush.command;
+	const globs = prePush.globs;
 	if (
 		typeof command !== "string" ||
 		command.trim().length === 0 ||

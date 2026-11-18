@@ -28,7 +28,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { fillCommand, isCommandNotFound, readRepoConfig } from "../lib/command.mjs";
+import { asRecord, fillCommand, isCommandNotFound, readRepoConfig } from "../lib/command.mjs";
 
 const MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 
@@ -116,9 +116,9 @@ function readContent(toplevel, env, all, filePath) {
  * @returns {HookResult}
  */
 export function runPreCommit({ toplevel, all = false, env = process.env, platform = process.platform }) {
-	const preCommit = readRepoConfig(toplevel)?.gitHooks?.preCommit;
-	const command = preCommit?.command;
-	const globs = preCommit?.globs;
+	const preCommit = asRecord(asRecord(readRepoConfig(toplevel)?.gitHooks).preCommit);
+	const command = preCommit.command;
+	const globs = preCommit.globs;
 	if (
 		typeof command !== "string" ||
 		command.trim().length === 0 ||

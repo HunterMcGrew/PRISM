@@ -44,7 +44,7 @@ import {
 	resolveHarnessFromArgv,
 } from "./hook.mjs";
 import { readGitHooksState } from "./git-hooks/install.mjs";
-import { isCommandNotFound } from "./lib/command.mjs";
+import { asRecord, isCommandNotFound } from "./lib/command.mjs";
 import { splitShellSegments, unquote } from "./lib/shell.mjs";
 
 const STATE_FILE_PREFIX = "git-gates-state.";
@@ -471,10 +471,7 @@ function runPushGate(spec, configRoot, config, hooks) {
 			? configuredTimeout
 			: DEFAULT_PUSH_VERIFICATION_TIMEOUT_MS;
 
-	const gitHooks =
-		typeof config.gitHooks === "object" && config.gitHooks !== null
-			? /** @type {Record<string, any>} */ (config.gitHooks)
-			: {};
+	const gitHooks = asRecord(config.gitHooks);
 	const activeGitHooks = readGitHooksState(configRoot).active;
 
 	for (const { slot, gitHook, gitHooksKey } of PUSH_VERIFICATION_SLOTS) {
@@ -483,7 +480,7 @@ function runPushGate(spec, configRoot, config, hooks) {
 			continue;
 		}
 
-		const gitHookCommand = gitHooks[gitHooksKey]?.command;
+		const gitHookCommand = asRecord(gitHooks[gitHooksKey]).command;
 		if (
 			activeGitHooks[gitHook] &&
 			typeof gitHookCommand === "string" &&

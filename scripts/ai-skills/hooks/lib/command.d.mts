@@ -12,4 +12,6 @@ export function isCommandNotFound(result: {
 	stderr?: string | Buffer | null;
 }): boolean;
 
-export function readRepoConfig(toplevel: string): Record<string, any> | null;
+export function readRepoConfig(toplevel: string): Record<string, unknown> | null;
+
+export function asRecord(value: unknown): Record<string, unknown>;
