@@ -294,6 +294,12 @@ export class PlanConfigError extends Error {}
  * `stopPaths` would then approve a plan the configured paths should stop, so
  * a file that exists but yields null throws instead.
  *
+ * `tasks.mjs` and `bundles.mjs` read through this too, and fail closed for
+ * their own reasons. A dropped `importAliases` loses the import edges that keep
+ * two dependent tasks from running side by side, and a dropped `defaultBranch`
+ * reads the wrong commit range for a plan with no `intent.md`, which can mark a
+ * task done that isn't.
+ *
  * @param {string} repoRoot
  * @returns {Record<string, unknown> | null}
  */

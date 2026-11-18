@@ -497,7 +497,8 @@ export function runSessionStartInstall(rawStdin) {
  * `prepare` script in a repo that is set up correctly in its own way.
  *
  * Exported so the guarded setup-script form can import this module and call
- * it, which also exits 0 when the file is absent (a Cursor-only consumer).
+ * it, which also exits 0 when the file is absent (a clone that never ran an
+ * update).
  */
 export function runInstallCli() {
 	const toplevel = git(["rev-parse", "--show-toplevel"], process.cwd());
