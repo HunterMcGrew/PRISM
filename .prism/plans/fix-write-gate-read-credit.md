@@ -65,6 +65,46 @@ The architect-doc write gate records every read it observes, follows a literal `
 
 ## Review Issues
 
+### A heredoc body is exempt when its reader hands the text to a process substitution
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:690`
+- **Problem:** `removeDataHeredocBodies` checks only the reader's head word and `piped`, so `tee <<'EOF' >(bash)` and `cat <<'EOF' > >(sh)` (and `cat > x.sh <<'EOF'` then `sh x.sh`) drop a body the shell runs. Probe against a manifest routing `scripts/hooks/**`: the branch allows `tee <<'EOF' >(bash)\nrm scripts/hooks/x\nEOF`, and `main`'s `hooks/` denies it. Run for real, `tee <<'EOF' >(bash)` deletes the file.
+- **Suggested fix:** keep the body when the command text holds `>(` or `<(`, or when any segment names a shell or interpreter. Add that row to `hook-gate-read-credit.test.ts`. Fix `hook-runtime.md` line 29, which says only a pipe keeps the body.
+
+### The state-lock wait loop spins forever on a stale lock it cannot remove
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.mjs:495`
+- **Problem:** `acquireStateLock` swallows a failed `rmdir` of a stale lock, then `continue`s past the deadline check with no sleep. A stale `.lock` that cannot be removed (a file, a non-empty directory, a handle held on Windows) spins the hook until the host kills it. Repro: `touch` `.prism/architect-route-state.s.json.lock`, set its mtime an hour back, call `withRouteStateLock`; it never returns (probe still running after 5 s). `hook-runtime.md` line 13 says a stuck lock never stalls a tool call.
+- **Suggested fix:** check the deadline before the stale branch, or return `false` when the stale `rmdir` fails. Add a stale-lock test and a lock-timeout test.
+
+### Literal `cd` is modelled only as a bare segment, and the doc presents that as complete
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:760`
+- **Problem:** `resolveCdTarget` needs the segment head to be exactly `cd`. `(cd scripts && tee hooks/x.mjs)`, `{ cd scripts && tee hooks/x.mjs; }`, `pushd scripts && tee hooks/x.mjs`, `builtin cd`, and `command cd` all still ALLOW, where `scripts/hooks/**` is routed. `hook-runtime.md` § Three gaps names only a non-literal target, so those literal forms read as covered. The code risk predates the branch, so the doc claim is the diverged part.
+- **Suggested fix:** list these forms as survivors in the doc, or strip a leading `(`/`{` and treat `pushd` like `cd`.
+
+### A failed `cd` over-credits when its target ends in `..`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:105`
+- **Problem:** the `checkShellReadSafe` comment says a failed `cd` can only under-credit. `parseShellReadTargets("cd missing/.. && cat .prism/architect/_toolkit/d.md")` returns the real doc with `credit: true`, yet bash fails that `cd` ("No such file or directory") and the `cat` never runs. `main` returns no target. Whether Claude Code fires `PostToolUse` after the failed command is host behavior I did not verify.
+- **Suggested fix:** return `undefined` from `resolveCdTarget` when the target holds a `..` segment, or correct the comment.
+
+### Changelog voice and an untested path in the changed doc and tests
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:27`
+- **Problem:** "Before that, the operand resolved to `hooks/x.mjs`... and the write went through" narrates the commit; `writing-voice.md` wants the current invariant. Separately, the lock's stale-removal and timeout branches have no test, which is where the spin above hides. A crashed hook also leaves a `.lock` directory that `pruneStaleRouteState` never reaps, since it matches only `.json` and `.json.tmp`.
+- **Suggested fix:** drop that sentence, add the two lock tests, and let the prune reap stale `.lock` directories.
+
 ---
 
 ## Acceptance Criteria
@@ -95,7 +135,9 @@ The architect-doc write gate records every read it observes, follows a literal `
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Tests written for new logic and edge cases
-- [ ] Build passes
-- [ ] PR description up to date
+- [ ] No critical or major issues (3 major open, see Review Issues)
+- [ ] Tests written for new logic and edge cases (lock stale and timeout paths, and process-substitution heredoc rows, are untested)
+- [x] Build passes: `prism:check-types` and `prism:crossref-lint` clean, `prism:test` 2177 tests with 0 fail, re-run 2026-11-18. `prism:build` not re-run by self-review.
+- [ ] PR description up to date (no PR yet)
+
+**Last updated:** 2026-11-18
