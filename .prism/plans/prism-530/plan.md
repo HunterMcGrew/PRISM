@@ -33,6 +33,7 @@ Parallel groups, worked out by hand. Each group's tasks touch disjoint files. Ta
 - Group 10: T21, T23
 - Group 11: T22
 - Group 12: T24
+- Group 13: T25
 
 T1 to T12 are the scripts, the rulebook, and their delivery. T13 to T24 are the skills, rules, ADR, and docs that use them. That boundary is the proposed stack cut. The stack is described under Decisions.
 
@@ -118,7 +119,7 @@ Every task is Clove's except T24, which is Eli's. These conventions hold for eve
 - Spawned processes get an env with every host marker deleted: `CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`, `CODEX_THREAD_ID`, `CODEX_SESSION_ID`, `CODEX_CI`, `PRISM_HOOK_DISABLE`, and `PRISM_HOOK_DENY_DISABLE`.
 - A `gh` call is never made for real. Each module takes an injected `gh` runner, as thrive's do.
 
-**Skill line budgets.** Every skill this child writes stays at or under the 120-line cap that `scripts/ai-skills/skill-loaded-lines.test.ts` enforces.
+**Skill line budgets.** Every skill this child writes aims for the 120-line cap that `scripts/ai-skills/skill-loaded-lines.test.ts` enforces. The cap is soft, per Hunter's ruling in the Decisions. A skill may go over it with an `OVER_CAP_ALLOWLIST` entry that gives a one-line reason, and no text is cut only to fit the number.
 
 - A skill's body budget is 120 minus the lines of every file it cites that `measureSkillLoad` charges. Today that is a file under `.prism/references/`, `.prism/templates/`, or `.prism/architect/`, a skill source, or a `load: skill` rule.
 - Root `REVIEW.md` and `.prism/review/*.md` are not charged under today's rules. The Decision on the cap records Hunter's ruling that they stay uncounted.
@@ -783,7 +784,7 @@ Owner: Clove. The intent deletes `prism-review-loop` once `REVIEW.md` and the re
 - Delete the skill directory, its generated outputs, and its `roles.json` entry. It is a utility, so it has no agent files.
 - **`skill-routing.md`** and its curated twin: delete its Utility skills line.
 - **`skills-ecosystem.md`** and its curated twin: delete its sentence from the Utility skills paragraph.
-- **`skill-loaded-lines.test.ts`.** Delete the `prism-review-loop` entry from `OVER_CAP_ALLOWLIST`. The allowlist is now empty. If the test's type or loop rejects an empty object, keep the constant as `{}` with its type annotation and change nothing else.
+- **`skill-loaded-lines.test.ts`.** Delete the `prism-review-loop` entry from `OVER_CAP_ALLOWLIST`, and only that entry. The allowlist and its ratchet stay, as the mechanism for reasoned overages. Any entry another task in this child added for a skill over 120 stays too. If the constant ends up empty and the test's type or loop rejects an empty object, keep it as `{}` with its type annotation and change nothing else. T25 rewrites the test's comment.
 - **`resolve-live-plan.test.ts`.** Read lines 320, 347, 366, 390, and 512. Where the string stands in for a skill name, swap it for `prism-self-review`. Where it is quoted plan text whose content the test does not assert on, leave it and note that in `## History`.
 
 Run `git grep -n prism-review-loop` after the build. Only plans, retros, audits, ADRs, `.prism/qa/`, `CHANGELOG.md`, `.prism/lessons.md`, `CONTEXT.md`, and `docs/` (T24's) may still match. `CONTEXT.md` sits outside the spec's Affected systems. Note it in `## History` for child 9.
@@ -896,6 +897,27 @@ Owner: Eli. Set `last_updated` to the edit date.
 
 `docs/workflow.md` is child 9's and stays as it is.
 
+### T25: Reword the 120-line cap as soft in the intent, the rules, and the test comment
+
+- files: .prism/plans/prism-499/intent.md, .prism/plans/prism-499/plan.md, scripts/ai-skills/skill-loaded-lines.test.ts, .prism/rules/skill-authoring.md, .prism/architect/_toolkit/business-layer.md, templates/install/.prism/rules/skill-authoring.md, .claude/rules/skill-authoring.md, .codex/rules/skill-authoring.md, .cursor/rules/skill-authoring.mdc
+- proof: grep -q -i "soft cap" .prism/plans/prism-499/intent.md && grep -q -i "soft cap" .prism/rules/skill-authoring.md && pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && pnpm run prism:crossref-lint
+- proof fails on main: yes
+- depends on: T20, T23, T24
+- behavior change: none to any skill or script. The cap's wording now says it is soft, and the check still enforces it.
+
+Owner: Clove. This task edits `.prism/plans/prism-499/intent.md`, which is intent-level. Hunter's chat ruling of 2026-11-18 counts as his approval of the intent edit that records it. Name that ruling in the commit body, and do not edit the intent for anything else.
+
+- **`.prism/plans/prism-499/intent.md`, two lines.** Find them by their text, since line numbers drift (65 and 140 on `bd666c58`).
+  - The Phase-1 skills line becomes: "The 120-line build check keeps passing. It is a soft cap: a skill may go over 120 with an allowlist entry that gives a one-line reason, and no text is cut only to fit the number."
+  - The cap line under the thinning list becomes: "The 120-line cap is soft, and it keeps counting everything a skill loads. A skill may go over it with an allowlist entry and a one-line reason. Thrive reached its numbers partly by moving text into references its check does not count. PRISM does not copy that. Content that fails the tests is still cut, not moved."
+- **`.prism/plans/prism-499/plan.md`.** Under the phase-1 Decision "The 120-line cap is enforced by a check, not by review" (line about 325), add a sub-bullet: "Hunter ruled on 2026-11-18 that the cap is soft with reasoned overages. The ruling is recorded in the Decisions of `.prism/plans/prism-530/plan.md`, and it supersedes this Decision going forward."
+- **`scripts/ai-skills/skill-loaded-lines.test.ts`.** Rewrite the header comment and the one above `OVER_CAP_ALLOWLIST`.
+  - Say the cap is soft: an entry lets a skill go over 120 for a stated reason, or until the change that thins it lands.
+  - Keep the ratchet sentence: a listed skill under the cap fails until its entry is removed, and one whose size moves fails until its `max` is updated.
+  - For a reasoned overage, the entry's `thinnedBy` text starts with `reasoned overage:` and then gives the one-line reason. Change no type and no test body.
+- **`.prism/rules/skill-authoring.md` and `.prism/architect/_toolkit/business-layer.md`.** Their Length test lines say the body "fits in 120 lines". Change each to say it aims for 120 lines, that the cap is soft, and that a reasoned overage takes an allowlist entry with a one-line reason. Keep the rest of the Length line.
+- **Other hits.** Run `git grep -n -i -E "120-line|120 line|hard cap" -- .prism .ai-skills scripts docs` and fix each hit that calls the cap hard. Leave plans, retros, audits, and ADRs alone, because they are records. Run `pnpm prism:build` and commit what it writes.
+
 ## Challenge
 
 ## Decisions
@@ -907,8 +929,13 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **Root `REVIEW.md` and `.prism/review/*.md` do not count toward the review skills' 120-line cap.** Hunter ruled on 2026-11-18, in chat: "Yes to both", on the question of whether they count.
   - **Root cause.** The intent says the cap "keeps counting everything a skill loads" and that PRISM does not move text into files its check ignores. The spec says nothing about the count changes except the Voice allowance, and `measureSkillLoad` charges neither path today. Counting them would put both review skills far over the cap, since thrive's `REVIEW.md` alone is 179 lines.
   - **Alternatives considered.** Counting both paths and adding the review skills to `OVER_CAP_ALLOWLIST`, rejected by Hunter's ruling.
-  - **Chosen approach.** Hunter's ruling: the rulebook is a shared artifact the intent itself names, read by subagents per pass, not skill text moved out to dodge the count. The skills cite it uncounted, and nothing is added to `OVER_CAP_ALLOWLIST`. The intent's cap sentence stays as written.
+  - **Chosen approach.** Hunter's ruling: the rulebook is a shared artifact the intent itself names, read by subagents per pass, not skill text moved out to dodge the count. The skills cite it uncounted, and nothing is added to `OVER_CAP_ALLOWLIST`. The intent's cap sentence was left as written by this ruling, and the later soft-cap ruling below rewords it through T25.
   - **Implementation guidance.** Cut skill text that fails the four skill tests. Never move it into an uncited file to dodge the count. Only the rulebook paths named here are exempt.
+- **The 120-line skill cap is a soft cap with reasoned overages.** Hunter ruled on 2026-11-18, in chat, that the cap is soft, not a hard limit he must hold to. He chose "O1, reasoned overages". This supersedes the phase-1 Decision in `.prism/plans/prism-499/plan.md` titled "The 120-line cap is enforced by a check, not by review" for everything going forward.
+  - **Root cause.** The phase-1 Decision made the check a hard gate with an allowlist expected to shrink one PR at a time, so a skill that needed more than 120 lines had to be cut to the number.
+  - **Alternatives considered.** The hard cap with a shrinking allowlist, which is the phase-1 Decision, superseded by this ruling.
+  - **Chosen approach.** The loaded-lines check and its allowlist stay. A skill may go over 120 by adding an allowlist entry with a one-line reason. Nobody cuts text just to fit the number. The four skill tests still cut content that fails them, and moving text into an uncited file to dodge the count stays wrong.
+  - **Implementation guidance.** T20 removes only the `prism-review-loop` entry, so the allowlist is not expected to end empty. T25 rewords the intent and the rules. The test's ratchet stays: a listed skill whose size moves updates its `max` in the same diff.
 - **The rulebook lives in root `REVIEW.md` and a new delivered `.prism/review/` area. Stack checks live in a consumer-owned `.prism/review/stack/`.**
   - **Root cause.** The spec puts pass files in `.prism/review/`, ships both to consumers, and has onboarding add stack checks. No delivered area covered `.prism/review/`, no path delivered a root file, and a refreshed pass file would overwrite a team's stack checks.
   - **Alternatives considered.** Pass files under `.prism/references/review/`, rejected because it contradicts the spec's path and the cap would charge them. Stack checks inside the pass files behind Atlas anchors, rejected because `prism update` rewrites PRISM-owned files.
@@ -954,6 +981,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Plan created for child 6 as 24 tasks: the CI watcher, reconcile, the report check, the retro-line check, `REVIEW.md` and ten pass files with their delivery, onboarding stack checks, `prism-verify`, the self-review, PR-review, retro, audit, and QA rewrites, the review-loop removal, rule and ADR edits, and docs.
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Recorded Hunter's chat rulings: the 120-line cap does not count `REVIEW.md` or `.prism/review/*.md`, and five items are approved. The plan approval stays OPEN and `status` stays `draft`.
+- 2026-11-18 [huntermcgrew/prism-530-review-verify]: Recorded Hunter's soft-cap ruling ("O1, reasoned overages") as a Decision that supersedes the phase-1 cap Decision. T20 now removes only the review-loop allowlist entry, and new T25 rewords the intent, rules, and test comment; AC-10 and AC-11 were adjusted and AC-15 added, logged in the AC Sync Log as not synced to issue #530.
 
 ## Sessions
 
@@ -986,22 +1014,45 @@ The issue's proof ("both reviews print one coverage line per pass; a plan with a
   - Evidence (machine): `review-stack-generator.test.ts` passes, and `atlas-dogfood.test.ts` stays green · UNMET looks like: an existing stack file rewritten.
 - [ ] **AC-9** `prism-qa-plan` no longer grades acceptance criteria, and the review's intent-conformance pass does.
   - Evidence (machine): `git grep -n "AC Verification" .ai-skills/skills/prism-qa-plan` prints nothing, and `.prism/references/qa-plan/verdict-contract.md` does not exist. `.prism/review/intent-scope.md` contains "Grade every acceptance criterion" · UNMET looks like: any match in the QA skill, or the reference still present.
-- [ ] **AC-10** `prism-review-loop` is gone, and the over-cap allowlist is empty.
-  - Evidence (machine): no `.ai-skills/skills/prism-review-loop/` exists, `OVER_CAP_ALLOWLIST` has no keys, and `skill-loaded-lines.test.ts` passes. `git grep -l prism-review-loop` matches only the files T20 lists · UNMET looks like: an allowlist entry, or a live reference left.
-- [ ] **AC-11** Every skill this child writes or rewrites fits the 120-line cap.
-  - Evidence (machine): `skill-loaded-lines.test.ts` passes, and `## History` records the measured totals for `prism-verify`, `prism-self-review`, `prism-pr-review`, `prism-retro`, `prism-audit`, `prism-qa-plan`, and `prism-onboard` · UNMET looks like: any total over 120.
+- [ ] **AC-10** `prism-review-loop` is gone, and its over-cap allowlist entry went with it.
+  - Evidence (machine): no `.ai-skills/skills/prism-review-loop/` exists, `OVER_CAP_ALLOWLIST` has no `prism-review-loop` key, and `skill-loaded-lines.test.ts` passes. `git grep -l prism-review-loop` matches only the files T20 lists · UNMET looks like: a review-loop allowlist entry, or a live reference left.
+- [ ] **AC-11** Every skill this child writes or rewrites fits the 120-line cap, or carries an allowlist entry with a one-line reason.
+  - Evidence (machine): `skill-loaded-lines.test.ts` passes, and `## History` records the measured totals for `prism-verify`, `prism-self-review`, `prism-pr-review`, `prism-retro`, `prism-audit`, `prism-qa-plan`, and `prism-onboard` · UNMET looks like: a total over 120 with no allowlist entry and no reason.
 - [ ] **AC-12** Every lead section of `AGENTS.md` still ends inside the first 32 KiB.
   - Evidence (machine): `agents-md-budget.test.ts` passes, and `## History` records the end offset after T21 · UNMET looks like: an offset past 32,768.
 - [ ] **AC-13** `prism-audit` reads Decisions from folder plans and epic specs, archives a plan folder whole, and flags a promotion claim whose text is missing from the named file.
   - Evidence (human): on a scratch branch, add a folder plan whose Decision says `→ promoted to .prism/rules/code-comments.md` for a phrase that file lacks. Run Zoe in plans mode. The report lists `broken-promotion-claim-in-plan` for it and lists Decisions from `prism-499/spec.md` · UNMET looks like: the folder plan skipped, or the false claim passing.
 - [ ] **AC-14** The whole check suite passes on both CI platforms.
   - Evidence (machine): the PR's `prism-check` CI is green on `ubuntu-latest` and `windows-latest` · UNMET looks like: either leg red.
+- [ ] **AC-15** The intent, the skill-authoring rule, and the loaded-lines test comment describe the 120-line cap as soft with reasoned overages.
+  - Evidence (machine): `git grep -n -i "soft cap" -- .prism/plans/prism-499/intent.md .prism/rules/skill-authoring.md scripts/ai-skills/skill-loaded-lines.test.ts` matches in all three, and `git grep -n -i "hard cap" -- .prism/rules .prism/architect .ai-skills scripts/ai-skills/skill-loaded-lines.test.ts` prints nothing · UNMET looks like: a file still calling the cap hard, or one of the three silent on overages.
+
+### AC Adjustments
+
+### AC Adjustment: AC-10, the allowlist need not end empty
+- **Original:** `prism-review-loop` is gone, and the over-cap allowlist is empty.
+- **Proposed:** `prism-review-loop` is gone, and its over-cap allowlist entry went with it.
+- **Reason:** Hunter ruled the cap soft with reasoned overages, so the allowlist stays as the mechanism for them.
+- **Status:** `accepted`, by Hunter's chat ruling on 2026-11-18.
+
+### AC Adjustment: AC-11, a reasoned overage is allowed
+- **Original:** Every skill this child writes or rewrites fits the 120-line cap.
+- **Proposed:** Every skill this child writes or rewrites fits the 120-line cap, or carries an allowlist entry with a one-line reason.
+- **Reason:** same ruling.
+- **Status:** `accepted`, by Hunter's chat ruling on 2026-11-18.
+
+### AC Adjustment: AC-15, added for the soft-cap wording task
+- **Original:** none.
+- **Proposed:** AC-15, which grades T25's wording changes.
+- **Reason:** same ruling. T25 needs a criterion to be graded against.
+- **Status:** `accepted`, by Hunter's chat ruling on 2026-11-18.
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC and wrote them, without IDs or Evidence, into issue #530 at creation | written | synced |
+| 2026-11-18 | Winston | Adjusted AC-10 and AC-11 and added AC-15 for the soft cap, as adjustments Hunter's chat ruling approved | written | not synced |
 
 ## PR Readiness
 
