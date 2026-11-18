@@ -22,6 +22,8 @@ import path from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { resolveFixtureRoot } from "./lib/fixture-root";
+
 type Tool = "claude" | "codex";
 type Payload = Record<string, unknown>;
 type ChatTokenFile = {
@@ -1093,7 +1095,7 @@ for (const tool of TOOLS) {
 		place(root, ".prism/plans/acme-2/plan.md", "---\nstatus: draft\n---\n");
 		runPromptHook(tool, prompt[tool]("approve", root));
 
-		const real = realpathSync(root);
+		const real = resolveFixtureRoot(root);
 		const sha = (relative: string) =>
 			createHash("sha256")
 				.update(readFileSync(path.join(root, relative)))

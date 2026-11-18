@@ -10,7 +10,6 @@ import {
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
-	realpathSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -18,6 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
 
+import { resolveFixtureRoot } from "./lib/fixture-root";
 import {
 	findTokenPath,
 	hashChainFiles,
@@ -156,7 +156,7 @@ test("puts the token in the checkout's own git directory", () => {
 
 	assert.equal(
 		findTokenPath(root),
-		path.join(realpathSync(root), ".git", TOKEN_FILE)
+		path.join(resolveFixtureRoot(root), ".git", TOKEN_FILE)
 	);
 });
 
@@ -243,7 +243,7 @@ test("hashes every chain artifact in the plan folders and the archive, and nothi
 		writeFileSync(path.join(root, relative), text);
 	}
 
-	const real = realpathSync(root);
+	const real = resolveFixtureRoot(root);
 	const hashes = hashChainFiles(path.join(root, ".prism"));
 	assert.deepEqual(Object.keys(hashes).sort(), [
 		path.join(real, ".prism/archived/plans/acme-0/plan.md"),

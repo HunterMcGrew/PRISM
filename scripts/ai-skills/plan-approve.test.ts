@@ -1086,5 +1086,5 @@ test("the CLI refuses a token that names a different draft", () => {
 
 	const child = runClaudeCli(root, ".prism/plans/acme-1/intent.md");
 	assert.equal(child.status, 1);
-	assert.match(child.stderr, /names .*acme-2\/intent\.md, not this file/);
+	assert.match(child.stderr, /names .*acme-2[\\/]intent\.md, not this file/);
 });
