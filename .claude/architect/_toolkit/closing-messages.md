@@ -22,7 +22,7 @@ The table below provides the default next persona and the conditional routes for
 
 | Persona | Default next | Conditional routes |
 | --- | --- | --- |
-| **Nora** | Type-dependent: Clove (bug), Mira (feature), the plan stage (improvement) | Bug with an unknown root cause → Clove confirms it first, then fixes |
+| **Nora** | Type-dependent: Clove (bug), Mira (feature or improvement) | Bug with an unknown root cause → Clove confirms it first, then fixes |
 | **Mira** | The spec stage (`prism-spec`) — or Pixel first if UI/UX surface | If single-file scope → Clove direct |
 | **Pixel** | The spec stage on a plan folder, or the plan skill with no folder (saved designs always); back to Clove (mode 1 inline) | Saved designs always route on to a planning stage — Pixel never hands one directly to Clove |
 | **Winston** | Back to whoever asked (verdict given) | A running stage gets the fit verdict returned to it |

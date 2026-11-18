@@ -21,8 +21,8 @@ A new capability that doesn't exist yet.
 - **Label:** `feature`
 - **Required fields:** objective, scope, user-facing behavior description
 - **Description structure:** objective paragraph, scope bullets, link to plan if available
-- **Typical workflow:** Nora → Mira (intent) → the plan stage → Clove (implement) → Briar (self-review)
-- **Intent:** Mira writes it, with its acceptance criteria, before the plan stage
+- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review)
+- **Intent:** Mira writes it, with its acceptance criteria, before the spec stage
 
 ## Improvement
 
@@ -31,7 +31,7 @@ An enhancement to existing functionality — it works, but could work better.
 - **Label:** `improvement`
 - **Required fields:** current behavior, proposed change, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z."
-- **Typical workflow:** Nora → the plan stage, or Mira (intent) first → Clove (implement) → Briar (self-review)
+- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review)
 - **Intent:** optional — depends on scope
 
 ## DX (Developer Experience)

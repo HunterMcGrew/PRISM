@@ -60,13 +60,15 @@ Nora (verify + scaffold + AC) → Clove (confirm root cause, then fix) → Briar
 ### Improvement
 
 ```
-Nora → the plan stage (or Mira first) → Clove → Briar → [Eric]
+Nora → Mira → the spec stage → the plan stage → Clove → Briar → [Eric]
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement
-2. **The plan stage** plans the work (or **Mira** writes the intent first if scope is unclear)
-3. **Clove** implements
-4. **Briar** self-reviews
+2. **Mira** writes the intent, with its acceptance criteria
+3. **The spec stage** (`prism-spec`) writes the spec from the approved intent
+4. **The plan stage** plans the work
+5. **Clove** implements
+6. **Briar** self-reviews
 
 ### Shortcut — small fix, known scope
 
@@ -99,10 +101,10 @@ Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes.
 **UX Concern from Review** — Briar or Eric surfaces a UX problem, not just a code problem:
 
 ```
-Briar/Eric → Pixel → the plan stage → Clove → Briar → Eric
+Briar/Eric → Pixel → the spec stage → the plan stage → Clove → Briar → Eric
 ```
 
-Pixel specs the fix (mode 2). The plan stage plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without the plan stage.
+Pixel specs the fix (mode 2). The spec stage reads the design, and the plan stage plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without the plan stage.
 
 **UI/UX Quick Question** — dev needs a quick answer without full design work:
 

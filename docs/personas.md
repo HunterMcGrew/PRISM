@@ -73,7 +73,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **When to call:** "Nora, start PRISM-1234." or "Pick up this ticket."
 
-**Hands off to:** Mira for the intent on a feature, the plan stage for an improvement, or Clove for a bug.
+**Hands off to:** Mira for the intent on a feature or an improvement, or Clove for a bug.
 
 **Skill:** [`.ai-skills/skills/prism-start-ticket/`](../.ai-skills/skills/prism-start-ticket/)
 

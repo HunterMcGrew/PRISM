@@ -81,7 +81,7 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 
 | From        | Recommends                                                                                               | When                                                                                                                      |
 | ----------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Nora**    | Clove (bugs), the plan stage (improvements), Mira (features — her Design line decides whether Pixel runs) | After ticket setup |
+| **Nora**    | Clove (bugs), Mira (features and improvements — her Design line decides whether Pixel runs) | After ticket setup |
 | **Mira**    | The spec stage, through the resume table | After the intent is approved |
 | **Winston** | Back to whoever asked | After an approach question or a fit verdict |
 | **The plan stage** | Clove | After the plan is approved |
