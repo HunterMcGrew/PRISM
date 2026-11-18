@@ -847,6 +847,19 @@ Tests:
   - **Alternatives considered.** Recording the window as an accepted Decision and leaving the clause in. Rejected, because the other reason (a Cursor user runs the scripts from a terminal) holds now and carries the sentence alone, so dropping the clause costs nothing.
   - **Chosen approach.** Drop it from the `hook-runtime.md` Delivery path, its curated twin, `docs/ai-skills/compatibility.md`, the `hosts` row of `docs/parameterization.md`, and the `refreshHookRuntime` comment in `scripts/ai-skills/update.ts`.
   - **Implementation guidance.** T12 re-adds it in those places, in the commit where the first skill names the scripts. The T12 task carries the list.
+- **Three references lost their only citations when T11, T14, and T19 removed the files that cited them, and are cited again from `branch-plan.md` and `skills-ecosystem.md`.**
+  - **Root cause:** on `main`, `plan-lookup.md` and `structural-remedies.md` were cited from the old `prism-plan` and `prism-user-stories` bodies, and `triple-gated-adr-criterion.md` from `plan-mode.md`. After those removals nothing on the ship surface linked them, so `ship-closure` reported them as seeded files nothing reaches. `skills-ecosystem.md` named `structural-remedies.md` only as a bare filename, which does not resolve as a link.
+  - **Alternatives considered:** excluding the three from the seed, rejected because the architect and the plan close still use them. Citing `structural-remedies.md` from `prism-architect`, rejected because T11 kept it uncited to protect the 120-line cap, and the citation took the skill from 93 to 116 loaded lines.
+  - **Chosen approach:** `branch-plan.md` and its curated twin cite `plan-lookup.md` beside the folder-resolution sentence, and `triple-gated-adr-criterion.md` in the promotion step. `skills-ecosystem.md` and its curated twin cite `structural-remedies.md` by its full path in the architect's roster row. Rules and routed architect docs are closure roots and cost no skill lines.
+  - **Implementation guidance:** a removal that deletes a file's last citer also has to re-home the citation, or `ship-closure` fails. Check with `pnpm exec tsx scripts/ai-skills/ship-closure.ts`.
+- **Edits outside a task's own file list were absorbed into this PR, each because the task's change made the old text false or a gate failed without it.**
+  - T11 changed `claude-agent-def.test.ts`, a T9 file. The test pinned the opus default on `prism-plan`, which T11 moves to `prism-architect`, and T11's proof runs it.
+  - T12 updated the header comment of `agents-md-budget.test.ts`, a T10 file, to name the workflow rule as the first lead section, which T10 made true.
+  - T20 changed the PR row of `workflow.md`, its seed twin, and `AGENTS.md`, all T10 files, to the full `.prism/references/shipping-flow.md` path T10 asked for. `crossref-lint` rejects that path until T20 creates the file.
+  - T22 changed `context-reuse.md` and its twin, both T19 files, so `prism-plan` no longer carries "(Winston)", since it has no persona after T11.
+  - T23 added ADR-0082 to the `excluded` list in `seed-curation.json`, because numbered ADRs never ship to consumers and the build otherwise mirrors it into the seed.
+  - T23 amended ADR-0003 with a `> Amended by` note under its frontmatter instead of its `Status:` line. Twelve ADRs already use the note, none amend the status line, and the ADR guide's statuses are `accepted` and `superseded`.
+  - T24 also rewrote Nora's, Parker's, and Pixel's hand-off lines and Pixel's mode 2 wording. They named Winston for planning, Mira for user stories, or only the mock-spec path, all false after T11, T18, and T19.
 
 ## History
 
@@ -880,9 +893,10 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T19: removed `prism-user-stories`, its two references, their twins and generated outputs, and swept the `prism-prd`, `prism-start-ticket`, `context-reuse`, routing, ecosystem, `bootstrap-from-claude.ts`, and allowlist mentions. Two `prism-user-stories` mentions remain outside T19's list, in `templates/install/AGENTS.md.tmpl` (T22's) and `docs/personas.md` (T24's). The lead sections now end at byte 31,600.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T20: `.prism/references/shipping-flow.md` holds the PR stage flow, and `prism-self-review` records a folder plan's result under `## Review` and commits it as `plan: review` (63 loaded lines). The PR row in `workflow.md` and its mirrors now cite the full path `.prism/references/shipping-flow.md`, which T10 left as a bare filename until this file existed.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T21: `git-conventions.md` gained a "Folder-plan branches" subsection and the per-bundle commit granularity, `branch-plan.md` gained the folder form of the plan-only commit and the folder-plan template sentence, and `closing-messages.md` scopes "no persona auto-invokes another" to outside a plan folder. The curated `branch-plan.md` twin carries only the template sentence, because it has no "Landing a plan-only commit" section to extend.
-- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T22: the planner role moved off Winston's name across SPEC, the rules, templates, references, the ecosystem, workflow, closing-message and plan-authoring docs, `AGENTS.md.tmpl`, and the onboarding suggestion, with Mira's rows pointing at `prism-intent`. Left for child 9: `onboarding.md`, `business-layer.md`, `code-standards.md`, `verification-commands.md`, `qa-test-planning.md`, `prism-handoff`'s `/prism-plan` example, the Pixel, Atlas, and Parker examples in `closing-messages.md`, the ADR mentions, and the dated records. Root files and `docs/` were not touched, and `structural-remedies.md`, `triple-gated-adr-criterion.md`, and `plan-lookup.md`, which T11, T14, and T19 left with no citation and so failed `ship-closure`, are cited again from `prism-architect` and `branch-plan.md`.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T22: the planner role moved off Winston's name across SPEC, the rules, templates, references, the ecosystem, workflow, closing-message and plan-authoring docs, `AGENTS.md.tmpl`, and the onboarding suggestion, with Mira's rows pointing at `prism-intent`. Left for child 9: `onboarding.md`, `business-layer.md`, `code-standards.md`, `verification-commands.md`, `qa-test-planning.md`, lines 5 and 45 of `triple-gated-adr-criterion.md` and its seed twin, `prism-handoff`'s `/prism-plan` example, the Pixel, Atlas, and Parker examples in `closing-messages.md`, the ADR mentions, and the dated records. Root files and `docs/` were not touched, and `structural-remedies.md`, `triple-gated-adr-criterion.md`, and `plan-lookup.md`, which T11, T14, and T19 left with no citation and so failed `ship-closure`, are cited again from `prism-architect` and `branch-plan.md`.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T23: ADR-0082 records that the session's PR stage pushes once on a folder-plan branch while `prism-implement` and `prism-docs` commit only, with its README row. ADR-0003 carries the amendment as a `> Amended by` note after its frontmatter, the form ADR-0014 and ADR-0043 use, not in its `Status:` line, which stays `accepted`. `seed-curation.json` also lists ADR-0082 as excluded, a file T23 does not name, because the build otherwise mirrors the ADR into the install seed.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T24: `docs/personas.md` points Mira at `prism-intent` and Winston at `prism-architect`, drops every `prism-user-stories` mention, and gains a "Chain stages (no persona)" section for `prism-spec`, `prism-plan`, and `prism-challenge`. Nora, Parker, and Pixel's hand-off lines and Pixel's mode 2 wording changed with them, and `prism-challenge` left the utility table, since it is now a stage as well as a direct skill.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed nine of Briar's eleven PR B findings and Winston's three scope items (`efc91b48`). `structural-remedies.md` is now cited from the architect's roster row and not from the skill, and findings 5 (the epic resume row) and 6 (the two plan-record subjects) stay open for a ruling.
 
 ## Sessions
 
@@ -894,6 +908,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's findings on PR A (three Major architect-doc claims, three Minor, and the PR body). Bounds: the named files and their build mirrors, the plan, and the PR body; no resolving threads, no merge, no flipping the PR ready, no CI polling. Approach: probe the guard to confirm the token-arm claim before rewording it, fix in three commits, then the plan in its own. · close: scope held; the `refreshHookRuntime` comment in `update.ts` carried the dropped clause too and was fixed with it
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's one remaining major on PR A, the Token bullet's file-edit half. Bounds: `hook-runtime.md` and its curated twin with their mirrors, the plan's third-pass entry, one lesson, and the PR body; no other files, no merge, PR stays draft. Approach: probe the guard on both halves of the sentence before rewording, then record it in the plan after the doc commit. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: build PR B (T9-T24) of this plan, plus two stack A review fold-ins. Bounds: PR B's task files and generated copies only; no new dependency, no merge, no close of the plan, draft PR only. Approach: one commit per task in the plan's group order, porting thrive's skills at db357097 onto PRISM's registry and always-on rules. · close: drifted: a few edits fell outside a task's file list or text (`workflow.md` path in T20, the curated `branch-plan.md` twin in T21, three re-added citations and extra mentions in T22, the `seed-curation.json` entry in T23, and hand-off lines in T24), each recorded in `## History`
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: fix Briar's PR B findings and Winston's three scope items. Bounds: the files the findings and items name, with their twins and generated copies; no new dependency, no merge, draft PR only. Approach: verify each cited line against the current text before editing, rule on findings 5, 6, and 7 from the spec and ADR-0080, and commit the fixes before the plan record. · close: scope held; the same-class routes the finding 1 entry lists were left alone, and findings 5 and 6 stay open
 
 ## Verification
 
@@ -1082,7 +1097,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### Handoff tables send Mira's intent and Pixel's design to a plan stage that refuses without a spec
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: the Mira and Pixel rows of `closing-messages.md`, the Feature sequence of `ticket-workflows.md` (a spec stage step added), the Mira and Pixel rows of `AGENTS.md.tmpl`, and the stale "always routes through Winston" clause of the `skills-ecosystem.md` seed twin. Each fixed directly, and the five handoff tables were not restructured. Same-class routes left for a call: the Nora rows (improvement to the plan stage), the Improvement and UX-concern flows of `ticket-workflows.md`, `ticket-types.md` lines 24, 25, and 34, and `docs/personas.md` line 76.
 - **File:** `.prism/architect/_toolkit/closing-messages.md:26`
 - **Problem:** `closing-messages.md` lines 26-27 route Mira and Pixel to the plan stage, the Feature sequence in `ticket-workflows.md` line 36 runs Mira, Pixel, then the plan stage, the Mira row in `templates/install/AGENTS.md.tmpl` routes to `prism-plan`, and the install twin `skills-ecosystem.md` line 91 still says mode 2 "always routes through Winston". `prism-plan` refuses a folder with no `spec.md`, while `skills-ecosystem.md` and `docs/personas.md` route Mira to the spec stage, so these architect docs diverge from the skills and from each other. This is major because a reader following them stalls at a refusal.
 - **Suggested fix:** route an approved intent, and a saved design on a folder plan, to the spec stage in all four places and their generated copies.
@@ -1090,7 +1106,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### Approach and architecture calls still go to the plan skill after the planner split
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: the architecture and approach calls in `prism-design`, `prism-implement`, and `prism-prd` now name `prism-architect`, and `context-reuse.md` no longer cites the dead startup step. Three citations were not approach calls and went elsewhere. The AC-rewrite lines (`prism-implement` line 37, `prism-qa-plan` lines 36 and 37) go to the criterion's owner, `prism-intent` on a folder plan, as `.prism/references/qa-plan/verdict-contract.md` already says. `prism-docs` lines 1 and 27 stay on the plan skill, since the plan stage runs decision promotion at close per `branch-plan.md`.
 - **File:** `.ai-skills/skills/prism-design/shared.md:33`
 - **Problem:** after T22 moved approach judgment to `prism-architect`, these lines still send it to the plan skill: `prism-design/shared.md` lines 1, 33, and 36, `prism-implement/shared.md` lines 1, 24, and 37, `prism-docs/shared.md` lines 1 and 27, `prism-qa-plan/shared.md` lines 36-37, `prism-prd/shared.md` lines 55 and 59, and `.prism/rules/context-reuse.md` line 26, which cites a `prism-plan` "startup step 3" that no longer exists. `prism-plan` with no folder only writes a plan in chat and never judges an approach, so a structural design problem or a public-API stop lands on a skill that cannot rule on it. This is major because the routing contradicts the T22 split the plan records.
 - **Suggested fix:** send architecture and approach calls to `prism-architect`, keep "write the plan" calls on `prism-plan`, and reword `context-reuse.md` line 26 without the dead step reference.
@@ -1098,7 +1115,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### `shipping-flow.md` says the pause fires on every commit
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: the line now says the pause fires before each push, which on a folder plan is once at the PR stage and not once per bundle commit.
 - **File:** `.prism/references/shipping-flow.md:24`
 - **Problem:** the line reads "The pause fires on every commit, per the per-push invariant." The plan's Decision that the pause-before-commit preference fires at the PR push on a folder plan, and ADR-0082's Consequences, both say it fires once at the push. Build stages don't read this file, so the practical effect is small, but this is major because it contradicts a recorded Decision.
 - **Suggested fix:** say the pause fires before each push, which on a folder plan is once at the PR stage.
@@ -1106,7 +1124,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### Mira is still named as the writer of user stories and story maps
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: both `plan-authoring.md` rows now say no current writer, the `branch-plan.md` template line calls `## User Stories` a legacy flat-plan section, and the AC trace line in `acceptance-criteria.md` drops Mira. The two curated twins carry the same edits.
 - **File:** `.prism/architect/_toolkit/plan-authoring.md:35`
 - **Problem:** `plan-authoring.md` lines 35-36 name Mira as the writer of `## User Stories` and `### Story Map` on legacy flat plans, `.prism/rules/branch-plan.md` line 260 says to add stories "via the user stories skill (Mira)", and `.prism/rules/acceptance-criteria.md` line 43 traces AC to "a user story written by Mira". `prism-user-stories` is deleted and `prism-intent` writes no user stories, so the removal sweep missed these, along with their install twins and generated copies. This is major because a diverged architect-doc claim sends a reader to a skill that no longer exists.
 - **Suggested fix:** mark both sections as legacy with no current writer, and drop the Mira reference from the template line and the AC trace line.
@@ -1130,7 +1149,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### New skills carry a persona voice that ADR-0080 rejects
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: the Voice blocks, the greeting, and the "You are" openers are gone from `prism-intent` and `prism-architect`. No task in this plan calls for Voice, ADR-0080 is accepted and rejects it, and the epic spec puts the Voice block and its ADR in child 7.
 - **File:** `.ai-skills/skills/prism-intent/shared.md:1`
 - **Problem:** `prism-intent` and `prism-architect` add `## Voice` sections and an opening greeting, while ADR-0080, which is accepted, rejects persona voice. The epic spec schedules Voice, its ADR, and the cap allowance for child 7.
 - **Suggested fix:** strip the Voice blocks until child 7, or record a Decision that brings them forward.
@@ -1138,7 +1158,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### The spec stage checks `design.md` only when it exists
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: `prism-spec` returns `blocked` when the intent's Design line says `needed`, or `supplement` with `approval: required`, and `design.md` is missing or unapproved.
 - **File:** `.ai-skills/skills/prism-spec/shared.md:15`
 - **Problem:** the skill checks `design.md` approval "when the folder has one", but T13 says to refuse when the intent says `Design: needed` and no approved design exists. The resume order hides the gap today.
 - **Suggested fix:** refuse when the intent says `Design: needed` and `design.md` is missing or unapproved.
@@ -1146,7 +1167,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### The first push skips re-verify even after review-fix commits
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: step 1 reruns the checks on any push, the first included, when a commit since `## Verification` touches a file they cover.
 - **File:** `.prism/references/shipping-flow.md:13`
 - **Problem:** step 1 skips re-verification on the first push, even when review-fix commits landed after `## Verification`. The wording follows T20, and CI is the backstop.
 - **Suggested fix:** skip only when no commit landed after the verification record.
@@ -1154,7 +1176,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### `prism-design` still sets a status whose list was removed
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: the Copy bullet says to note the open copy in the design.
 - **File:** `.ai-skills/skills/prism-design/shared.md:35`
 - **Problem:** the Copy bullet says to set `Needs copy pass`, a Status value from a list this change removed.
 - **Suggested fix:** say to note the open copy in the design instead, or restore the status list.
@@ -1162,7 +1185,8 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 ### `tdd` assumes a story tool in a stack-neutral reference
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `efc91b48`: the story line is dropped, for the reason T17 dropped "Where tests live".
 - **File:** `.ai-skills/skills/tdd/shared.md:35`
 - **Problem:** "A new component or block gets a story plus tests" assumes a component-explorer stack. T17 dropped "Where tests live" from this reference for that same reason.
 - **Suggested fix:** drop the line, or condition it on the repo having a component explorer.
