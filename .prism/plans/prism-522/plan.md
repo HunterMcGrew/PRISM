@@ -465,7 +465,7 @@ Budget: 120 minus `architect-context.md`'s lines. `structural-remedies.md` is no
 
 ### T12: Add prism-intent
 
-- files: .ai-skills/skills/prism-intent/frontmatter.yml, .ai-skills/skills/prism-intent/shared.md, .ai-skills/skills/prism-intent/claude.md, .ai-skills/skills/prism-intent/codex.md, .ai-skills/skills/prism-intent/cursor.md, .ai-skills/definitions/roles.json, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, .claude/skills/prism-intent/SKILL.md, .claude/skills/prism-intent/.ai-skill-generated, .cursor/skills/prism-intent/SKILL.md, .cursor/skills/prism-intent/.ai-skill-generated, .claude/agents/prism-intent.md, .codex/agents/prism-intent.toml, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, AGENTS.md
+- files: .ai-skills/skills/prism-intent/frontmatter.yml, .ai-skills/skills/prism-intent/shared.md, .ai-skills/skills/prism-intent/claude.md, .ai-skills/skills/prism-intent/codex.md, .ai-skills/skills/prism-intent/cursor.md, .ai-skills/definitions/roles.json, .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, .claude/skills/prism-intent/SKILL.md, .claude/skills/prism-intent/.ai-skill-generated, .cursor/skills/prism-intent/SKILL.md, .cursor/skills/prism-intent/.ai-skill-generated, .claude/agents/prism-intent.md, .codex/agents/prism-intent.toml, .claude/rules/skill-routing.md, .codex/rules/skill-routing.md, .cursor/rules/skill-routing.mdc, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, AGENTS.md, .prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md, docs/ai-skills/compatibility.md, docs/parameterization.md, scripts/ai-skills/update.ts
 - proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/routing-coverage.test.ts scripts/ai-skills/skill-loaded-lines.test.ts
 - proof fails on main: yes
 - depends on: T11
@@ -492,6 +492,16 @@ Port thrive's `thrive-intent`, trimmed to budget: 120 minus `.prism/templates/in
 **`skill-routing.md` and its twin.** Add a Mira row for `prism-intent` with "write the intent", "define the scope", "grill me", "what are the requirements", and "Mira". Move "write user stories" and "flesh out the requirements" from the `prism-user-stories` row to this one. Leave `prism-user-stories`'s row with only its name trigger until T19.
 
 **`skills-ecosystem.md` and its twin.** Add a `prism-intent` Mira roster row.
+
+**Re-add the delivery reason PR A dropped.** This is the first task that makes a skill name the plan-chain scripts, so the reason "the skills a consumer receives name these scripts" becomes true here. Put it back beside the Cursor-terminal reason, in the same commit, in these places (see the Decision on the dropped clause):
+
+- `.prism/architect/_toolkit/hook-runtime.md`, Delivery path: "because the skills a consumer receives name these scripts and a Cursor user runs them from a terminal".
+- `templates/install/.prism/architect/_toolkit/hook-runtime.md`, Delivery path, by hand because the twin is curated: "The skills you receive name these scripts, and a Cursor user runs them from a terminal."
+- `docs/ai-skills/compatibility.md`, the runtime-delivery paragraph: "because the skills you receive name those scripts and a Cursor user runs them from a terminal".
+- `docs/parameterization.md`, the `hosts` row: "because the skills name them and a Cursor user runs them from a terminal".
+- The `refreshHookRuntime` doc comment in `scripts/ai-skills/update.ts` carries the same clause and goes back with the other four.
+
+`pnpm prism:build` rewrites the three `.claude/`, `.codex/`, and `.cursor/` copies of `hook-runtime.md`.
 
 ### T13: Add prism-spec as a dispatched agent
 
@@ -832,6 +842,11 @@ Tests:
 - **Child 5 ships as a stack of two PRs.** The change is far past ten files and five hundred lines, and the approval trio alone is about 1,800 lines of source and 2,600 of tests. PR A is T1 to T8 plus T25, the approval mechanics and the chain scripts' config check, registered and delivered but called by no skill, so it ships inert and self-consistent. PR B is T9 to T24, the skills, rules, and docs that use it. The groups under `## Tasks` build PR A first, so its commits form a prefix of the branch.
   - **Whose call.** Stacking is the orchestrator's call under Hunter's 2026-11-18 ruling, so no separate approval is asked. The split above is the one chosen.
   - **Resolves** the earlier open question on whether child 5 stacks.
+- **The delivery reason "the skills a consumer receives name these scripts" is out of PR A and comes back with PR B.**
+  - **Root cause.** T7 and T8 wrote the clause as one of two reasons the runtime files reach every install. No skill, rule, or reference names `approve.mjs`, `HOOK_RUNTIME_DIR`, or `hooks/plan/` until T12 lands in PR B, so between the two merges the architect doc and the pages that repeat it say something false. Eric's PR review graded it Major, because a diverged architect-doc claim has that floor. The self-review had deferred it as Minor.
+  - **Alternatives considered.** Recording the window as an accepted Decision and leaving the clause in. Rejected, because the other reason (a Cursor user runs the scripts from a terminal) holds now and carries the sentence alone, so dropping the clause costs nothing.
+  - **Chosen approach.** Drop it from the `hook-runtime.md` Delivery path, its curated twin, `docs/ai-skills/compatibility.md`, the `hosts` row of `docs/parameterization.md`, and the `refreshHookRuntime` comment in `scripts/ai-skills/update.ts`.
+  - **Implementation guidance.** T12 re-adds it in those places, in the commit where the first skill names the scripts. The T12 task carries the list.
 
 ## History
 
@@ -849,6 +864,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the self-review of PR A: the five Windows test failures (`a169e985`), three new guard cases and the ported shebang case (`8e45f6d4`), the stale `compatibility.md` and Codex session claims (`8951e24b`), and a generic config error (`b6d8920c`). Two new Decisions record the drive-letter spelling and the T25 message amendment, and the build wrote the three `hook-runtime.md` mirrors.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed the fixes (`c5dcdaa6..42adaf81`). All seven hold, and CI is green on both legs. Two minors are open (a missed 8.3 site in `approveCommandPath`, the stale PR body) and one is deferred to PR B, recorded in the second pass under `## Review`.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the second pass: `approveCommandPath` takes its base from the git toplevel (`11aa142d`), ADR-0081 carries a dated amendment note for the hook modules reaching every install (`7835ad89`), and the PR body was synced. Added the plan-citations lesson to `.prism/lessons.md` (`00ea6f97`).
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed Eric's PR review of PR A: the architect-doc claims (`7ac8b7f2`), two stale Cursor-only comments and the `readPlanConfig` JSDoc (`6f939bf6`), and the duplicated guard edit check (`2b971c5d`). The delivery clause dropped from PR A is a new Decision, and T12 now re-adds it in PR B.
 
 ## Sessions
 
@@ -857,6 +873,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: build PR A (T1-T8, T25) of this plan, after recording Hunter's approvals. Bounds: PR A's task files and generated copies only; no PR B tasks, no new dependency, no merge, draft PR only. Approach: approvals commit first, then one commit per task in the plan's group order, porting thrive's approval trio onto PRISM's runtime. · close: scope held; one pinned test outside T4's list (`plan-approve.test.ts`) and one stale prose home left for a call (`docs/ai-skills/compatibility.md`)
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review PR A (T1-T8, T25) against the plan, the rules, and thrive. Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts. Approach: run `prism:check`, diff the ported trio against thrive at db357097, and source-verify the edited architect docs. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review the PR A fix commits (`c5dcdaa6..42adaf81`). Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts, no merge. Approach: wait on CI for both legs, run `prism:check`, mutation-probe the new guard cases, and source-verify the edited Hosts claim and `compatibility.md`. · close: scope held; the frontmatter probe edit was reverted and the tree left clean
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's findings on PR A (three Major architect-doc claims, three Minor, and the PR body). Bounds: the named files and their build mirrors, the plan, and the PR body; no resolving threads, no merge, no flipping the PR ready, no CI polling. Approach: probe the guard to confirm the token-arm claim before rewording it, fix in three commits, then the plan in its own. · close: scope held; the `refreshHookRuntime` comment in `update.ts` carried the dropped clause too and was fixed with it
 
 ## Verification
 
@@ -943,7 +960,8 @@ Self-review of the PR A fixes, 2026-11-18 [huntermcgrew/prism-522-chain-skills],
 ### `compatibility.md` says the delivered skills name the runtime scripts, which no PR A skill does
 
 - **Severity:** `minor`
-- **Status:** `deferred`
+- **Status:** `fixed`
+- **Fixed in:** `7ac8b7f2`: the clause is dropped from both pages and every other place that carried it, and T12 re-adds it. See the Decision on the dropped clause and the third pass below.
 - **File:** `docs/ai-skills/compatibility.md:73`
 - **Problem:** "because the skills you receive name those scripts". No skill under `.ai-skills/skills/` names `approve.mjs`, `HOOK_RUNTIME_DIR`, or `hooks/plan/` until PR B lands T12 to T18. `hook-runtime.md:9` has made the same claim since T7. This is minor because the claim is false only between PR A's merge and PR B's, and the other reason it gives (a Cursor user runs them from a terminal) holds now.
 - **Suggested fix:** none while PR B ships. If PR B stalls, cut the clause from both pages.
@@ -956,6 +974,73 @@ Self-review of the PR A fixes, 2026-11-18 [huntermcgrew/prism-522-chain-skills],
 - **File:** PR #531 body, the "Not verified" and "Stale prose left in place" bullets
 - **Problem:** the body says Windows "was not run" and AC-10 is open, and it says `compatibility.md` needs a fix in part 2 or a follow-up. Both are now wrong. CI is green on both legs, and `8951e24b` fixed the page in this PR. This is minor because the PR squash-merges, so the body becomes `main`'s commit description and would carry both false claims into history.
 - **Suggested fix:** sync the body. Drop Windows and AC-10 from "Not verified", replace the stale-prose bullet with a line saying `compatibility.md` was fixed here, and mention the generic config error and the two new Decisions.
+
+### Third pass: Eric's PR review
+
+Eric's review of PR #531 at `ad4f3d68`, range `bd666c58..ad4f3d68`, 2026-11-18. 3 major, 3 minor, plus 1 PR body note. All are fixed. The guard probes behind finding 2 were rerun here: the Codex `apply_patch <<EOF` shell form and a Claude `Write` to the token file deny, and a Claude `Edit` or Codex `apply_patch` tool call adding `UserPromptSubmit` to a registration file passes.
+
+### The entry-guard section of `plan-chain-scripts.md` says four commands, and there are five
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `7ac8b7f2`: the section says every command carries the guard, and "before a bundled module imports a command module". `approve.mjs`, `auto-approve.mjs`, `bundles.mjs`, `commit.mjs`, and `tasks.mjs` each carry it.
+- **File:** `.prism/architect/_toolkit/plan-chain-scripts.md:30`
+- **Problem:** the Invocation paragraph lists five commands, and `plan/approve.mjs:423-426` has the same realpath `process.argv[1]` guard, so "the four commands" and "one of the four" were wrong.
+- **Suggested fix:** state the rule ("every command") instead of a count.
+
+### The Token bullet of `hook-runtime.md` says a file edit naming a prompt-submit event is denied
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `7ac8b7f2`: the bullet and the curated twin's "What it denies" bullet now say a shell command is denied for naming the token file or a prompt-submit event, and a file edit only when its target is the token file. The architect doc names the known miss, and says the Codex `apply_patch <<EOF` form is a shell command and is denied.
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:59`
+- **Problem:** `touchesToken` checks a file edit's target against the token file name and never checks for an event name, so a Claude `Edit` or Codex `apply_patch` call adding `UserPromptSubmit` to a registration file passes. The header of `approve-guard.mjs` lists edits to the harness settings files as a known miss.
+- **Suggested fix:** split the sentence into shell commands and file edits, and name the known miss.
+
+### The delivery clause "the skills a consumer receives name these scripts" is false in PR A
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `7ac8b7f2`: the clause is dropped from `hook-runtime.md`, its curated twin, `docs/ai-skills/compatibility.md`, the `hosts` row of `docs/parameterization.md`, and the `refreshHookRuntime` comment in `update.ts`, which carried it too. T12 re-adds it. See the Decision on the dropped clause.
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:9`
+- **Problem:** no skill, rule, or reference names the scripts until PR B, so the clause was false at this head. The second pass had graded it Minor and deferred it, but a diverged architect-doc claim is Major.
+- **Suggested fix:** drop the clause here and keep the Cursor-terminal reason. PR B re-adds it.
+
+### Two comments still call an absent `install.mjs` a Cursor-only case
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `6f939bf6`: both comments name a clone that never ran an update, which is the case that remains.
+- **File:** `scripts/ai-skills/hooks/git-hooks/install.mjs:500`
+- **Problem:** T6 delivers `install.mjs` to a Cursor-only install, and `git-hooks.md` was reworded for that, but this comment and the one at `scripts/ai-skills/git-hooks-install.test.ts:543` were missed.
+- **Suggested fix:** say a clone that never ran an update.
+
+### The approve guard's two host rows repeat one edit check
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `2b971c5d`: `editChangesApproval(harness, payload, cwd)` holds the resolve, read, and compare body, and both rows call it with their own `editTarget`. Behavior is unchanged, and `approve-guard.test.ts` and `plan-approve.test.ts` pass as they were.
+- **File:** `scripts/ai-skills/hooks/approve-guard.mjs:491`
+- **Problem:** the Codex `Edit` and `Write` branch repeated the Claude row's `deniesEdit` body at 458-465.
+- **Suggested fix:** a shared helper.
+
+### `readPlanConfig`'s JSDoc gives only the stop-path reason
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `6f939bf6`: the JSDoc adds that a dropped `importAliases` loses import edges and a dropped `defaultBranch` reads the wrong commit range, which is why `tasks.mjs` and `bundles.mjs` fail closed too.
+- **File:** `scripts/ai-skills/hooks/plan/tasks.mjs:290`
+- **Problem:** the comment explained failing closed only for `auto-approve.mjs`, though `tasks.mjs` and `bundles.mjs` read through it as well.
+- **Suggested fix:** add the reason for the other two callers.
+
+### The PR body cites an old CI run and omits two changes
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** the PR body, rewritten with `gh pr edit --body-file`. It cites the CI state of the new head, mentions the ADR-0081 amendment note and the `.prism/lessons.md` entry, and ticks "Build succeeds".
+- **File:** PR #531 body
+- **Problem:** the body cited run 44353891936 on `7345ce2b` where the head had moved, and left out the amendment and the lesson.
+- **Suggested fix:** cite the head's run, mention both, and tick the Build box.
 
 ## Acceptance Criteria
 
@@ -1010,13 +1095,13 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 
 ## PR Readiness
 
-- [x] No critical or major issues. No minors are open, and one is deferred to PR B. See the second pass under `## Review`.
+- [x] No critical or major issues. No minors are open. Eric's three majors and three minors are fixed, see the third pass under `## Review`.
 - [x] Types: `pnpm run prism:check-types` passes, as part of `prism:check`.
 - [x] No stray console.logs or debug artifacts in the diff.
 - [x] Tests written for new logic. The `approved_via`, drive-letter, and shebang cases are in. A mutation probe fails both `approved_via` cases.
 - [x] No `open` debugged issues.
-- [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 42adaf81 (2026-11-18: 2150 pass, 0 fail, 2 skipped). CI run 44351936636 on 42adaf81 is green on `ubuntu-latest` and on `windows-latest` (2138 pass, 0 fail, 14 skipped).
-- [x] PR description up to date: it reports Windows green (run 44353891936 on 7345ce2b), AC-10 met, and `compatibility.md` updated in this PR.
+- [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18, after the third pass fixes). CI run 44355266762 on ad4f3d68 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
+- [x] PR description up to date: it cites run 44355266762 on ad4f3d68 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
 
 **Last updated:** 2026-11-18
