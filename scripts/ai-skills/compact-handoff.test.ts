@@ -93,7 +93,7 @@ test("PreCompact on a branch with no ticket ID keeps every decision in the summa
 	try {
 		const output = await runPreCompactArm(JSON.stringify({ cwd: root }));
 
-		assert.ok(output?.includes("- Branch plan: no branch plan found"));
+		assert.ok(output?.includes("- Branch plan: none found by filename"));
 		assert.ok(output?.includes("Keep all of them."));
 	} finally {
 		rmSync(root, { recursive: true, force: true });
@@ -214,6 +214,34 @@ test("PreCompact outside a git checkout labels the branch and the status as unkn
 
 		assert.ok(output?.includes("- Branch: (detached HEAD or not a git checkout)"));
 		assert.ok(output?.includes("(git status unavailable"));
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("SessionStart on a filename miss sends the session to the full plan lookup", async () => {
+	const root = makeRepo("scratch");
+	try {
+		const note = await runSessionStartArm(JSON.stringify({ source: "compact", cwd: root }));
+
+		assert.ok(note?.includes("`.prism/rules/branch-plan.md` § Plan Lookup"));
+		assert.ok(note?.includes("do not create a plan to hold the summary"));
+		assert.ok(!note?.includes("Re-read .prism/plans/"), "a miss never names a plan path");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("the PostCompact arm prints nothing, leaving PreCompact stdout to one writer", () => {
+	const root = makeRepo("main");
+	try {
+		const postCompact = spawnSync("node", [HOOK_ENTRY, "--tool=claude", "--event=PostCompact"], {
+			input: JSON.stringify({ session_id: "session-1", cwd: root }),
+			encoding: "utf8",
+		});
+
+		assert.equal(postCompact.status, 0);
+		assert.equal(postCompact.stdout, "");
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}

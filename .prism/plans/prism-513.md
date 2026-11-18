@@ -41,6 +41,8 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
   - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **`npm pack --json` is parsed in both shapes, in the cold-start test and `verify-pack-parity.ts`.** npm 12 prints an object keyed by package name where npm 10 printed an array, so slicing from the first `[` broke both gates locally while CI's npm 10 stayed green. Absorbed here because the cold-start leg is AC-1's evidence and the parity gate proves the new module ships.
   - → no promotion needed (the comment at each parse site carries the constraint)
+- **A filename miss sends the session to the full Plan Lookup instead of declaring no plan.** Ported from TracTru/thrive#2935. The hook skips the `## Ticket` scan, so "no branch plan found" overclaimed on a miss; the note now names `branch-plan.md` § Plan Lookup and the state block says "none found by filename".
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 
 ---
 
@@ -56,6 +58,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Fixed self-review pass 1: plan-lookup claims now match the four paths checked, a failed `git status` no longer reads as clean, and truncation is tested.
 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Closed on the final PR branch; decisions promoted to `hook-runtime.md`.
+- 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Ported thrive#2935's plan-miss wording and recorded its observed manual-compact behavior; see Decision: A filename miss sends the session to the full Plan Lookup.
 
 ---
 
