@@ -364,6 +364,12 @@ function parseFiles(taskId, value) {
 				);
 			}
 
+			if (file.includes("\\")) {
+				throw new Error(
+					`${taskId}: files entry "${file}" uses a backslash; write the path with forward slashes`
+				);
+			}
+
 			if (file.endsWith("/")) {
 				throw new Error(
 					`${taskId}: files entry "${file}" names a directory; list the files, not the directory`

@@ -284,7 +284,8 @@ function resolveSpecifier(specifier, importer, repoRoot, owners, aliases) {
 
 		if (prefix === undefined) return null;
 
-		base = `${aliases[prefix]}${specifier.slice(prefix.length)}`;
+		// join drops a leading ./ and supplies the slash a value without a trailing one lacks.
+		base = path.posix.join(aliases[prefix], specifier.slice(prefix.length));
 	}
 
 	const candidates = [
@@ -448,15 +449,16 @@ function readAliases(repoRoot) {
 }
 
 /**
+ * Reads the manifest that `findRepoRoot` located the repo root by, so it is
+ * always on disk here.
+ *
  * @param {string} repoRoot
  * @returns {Manifest}
  */
 function readManifest(repoRoot) {
-	const manifestPath = path.join(repoRoot, MANIFEST_RELATIVE);
-
-	return existsSync(manifestPath)
-		? JSON.parse(readFileSync(manifestPath, "utf8"))
-		: {};
+	return JSON.parse(
+		readFileSync(path.join(repoRoot, MANIFEST_RELATIVE), "utf8")
+	);
 }
 
 /** @param {string[]} argv */

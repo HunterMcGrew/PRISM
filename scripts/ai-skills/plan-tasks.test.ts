@@ -166,6 +166,15 @@ describe("parseTasks", () => {
 		});
 	}
 
+	for (const entry of ["src\\contracts\\x.ts", "..\\x.ts", "src/a\\b.ts"]) {
+		test(`throws on the backslash files entry ${JSON.stringify(entry)}`, () => {
+			assert.throws(
+				() => parseTasks(`## Tasks\n\n### T1: x\n- files: ${entry}\n`),
+				/T1: files entry .* uses a backslash; write the path with forward slashes/
+			);
+		});
+	}
+
 	test("accepts a Next.js dynamic segment path with square brackets", () => {
 		const [task] = parseTasks(
 			"## Tasks\n\n### T1: x\n- files: frontend/app/[...slug]/page.tsx\n"

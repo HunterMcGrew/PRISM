@@ -58,6 +58,8 @@ function runBundles({
 	frontmatter = "",
 	passBase = true,
 	config = null,
+	json = true,
+	manifest = true,
 }: {
 	tasks: string;
 	files?: Record<string, string>;
@@ -65,11 +67,15 @@ function runBundles({
 	frontmatter?: string;
 	passBase?: boolean;
 	config?: object | null;
+	json?: boolean;
+	manifest?: boolean;
 }) {
 	const repo = mkdtempSync(path.join(os.tmpdir(), "plan-bundles-"));
 	tempDirs.push(repo);
 	const contents = {
-		".prism/architect/manifest.json": JSON.stringify(MANIFEST),
+		...(manifest
+			? { ".prism/architect/manifest.json": JSON.stringify(MANIFEST) }
+			: {}),
 		"plan.md": `${frontmatter}## Tasks\n\n${tasks}\n## History\n`,
 		...(config ? { ".ai-skills/config.json": JSON.stringify(config) } : {}),
 		...files,
@@ -98,18 +104,82 @@ function runBundles({
 	const baseArgs = passBase ? ["--base", base] : [];
 	const result = spawnSync(
 		process.execPath,
-		[BUNDLES_CLI, path.join(repo, "plan.md"), ...baseArgs, "--json"],
+		[
+			BUNDLES_CLI,
+			path.join(repo, "plan.md"),
+			...baseArgs,
+			...(json ? ["--json"] : []),
+		],
 		{ env: GIT_ENV, encoding: "utf8" }
 	);
 
 	return {
 		status: result.status,
+		stdout: result.stdout,
 		stderr: result.stderr,
-		report: result.status === 0 ? (JSON.parse(result.stdout) as Report) : null,
+		report:
+			result.status === 0 && json
+				? (JSON.parse(result.stdout) as Report)
+				: null,
 	};
 }
 
+function task(id: string, files: string[], dependsOn: string[] = []) {
+	return {
+		id,
+		summary: id,
+		files,
+		proof: null,
+		proofFailsOnMain: false,
+		dependsOn,
+		behaviorChange: null,
+		amended: [],
+		newDependency: null,
+	};
+}
+
+describe("analyzeBundles duplicates", () => {
+	test("returns each duplicate claim as a file with the two task IDs", () => {
+		const result = analyzeBundles({
+			tasks: [task("T1", ["src/a.ts"]), task("T2", ["src/a.ts"])],
+			done: new Set(),
+			repoRoot: os.tmpdir(),
+			manifest: {},
+		});
+
+		assert.deepEqual(result.duplicates, [{ file: "src/a.ts", ids: ["T1", "T2"] }]);
+		assert.deepEqual(result.groups, []);
+	});
+});
+
 describe("analyzeBundles aliases", () => {
+	for (const [spelling, target] of [
+		["with a trailing slash", "src/"],
+		["with a leading ./ and trailing slash", "./src/"],
+		["with no trailing slash", "src"],
+		["with a leading ./ and no trailing slash", "./src"],
+	]) {
+		test(`reads an alias value ${spelling}`, () => {
+			const repo = mkdtempSync(path.join(os.tmpdir(), "plan-bundles-spelling-"));
+			tempDirs.push(repo);
+			mkdirSync(path.join(repo, "src"), { recursive: true });
+			writeFileSync(path.join(repo, "a.ts"), 'import "@/util";\n');
+			writeFileSync(path.join(repo, "src", "util.ts"), "");
+
+			const result = analyzeBundles({
+				tasks: [task("T1", ["a.ts"]), task("T2", ["src/util.ts"])],
+				done: new Set(),
+				repoRoot: repo,
+				manifest: {},
+				aliases: { "@/": target! },
+			});
+
+			assert.deepEqual(result.edges, [
+				{ from: "T1", to: "T2", file: "a.ts", imports: "src/util.ts" },
+			]);
+		});
+	}
+
 	test("swaps the longest matching alias key", () => {
 		const repo = mkdtempSync(path.join(os.tmpdir(), "plan-bundles-alias-"));
 		tempDirs.push(repo);
@@ -117,17 +187,6 @@ describe("analyzeBundles aliases", () => {
 		writeFileSync(path.join(repo, "a.ts"), 'import "@/deep/x";\n');
 		writeFileSync(path.join(repo, "short", "deep", "x.ts"), "");
 
-		const task = (id: string, files: string[]) => ({
-			id,
-			summary: id,
-			files,
-			proof: null,
-			proofFailsOnMain: false,
-			dependsOn: [],
-			behaviorChange: null,
-			amended: [],
-			newDependency: null,
-		});
 		const result = analyzeBundles({
 			tasks: [task("T1", ["a.ts"]), task("T2", ["short/deep/x.ts"])],
 			done: new Set(),
@@ -321,6 +380,29 @@ describe("bundles.mjs", () => {
 
 		assert.equal(result.status, 0, result.stderr);
 		assert.deepEqual(result.report!.groups, [{ docs: [], tasks: ["T1"] }]);
+	});
+
+	test("the text report prints docs: none for a group no route covers", () => {
+		const result = runBundles({
+			tasks: "### T1: a\n- files: other/a.txt\n",
+			json: false,
+		});
+
+		assert.equal(result.status, 0, result.stderr);
+		assert.match(result.stdout, /^Groups:\n {2}1\. T1\n {5}docs: none\n$/m);
+	});
+
+	test("exits 1 naming the manifest when none sits above the plan", () => {
+		const result = runBundles({
+			tasks: "### T1: a\n- files: other/a.txt\n",
+			manifest: false,
+		});
+
+		assert.equal(result.status, 1);
+		assert.match(
+			result.stderr,
+			/bundles\.mjs: no \.prism\/architect\/manifest\.json above the plan/
+		);
 	});
 
 	test("the umbrellas key is never treated as a route", () => {
