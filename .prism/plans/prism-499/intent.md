@@ -154,7 +154,7 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 
 - Codex reads at most 32 KiB of `AGENTS.md` by default and drops the rest without a warning. PRISM's file is about four times that.
 - PRISM does not cap `AGENTS.md` at 32 KiB. Claude Code is the primary host, and the always-on rules are a cost already accepted.
-- The generator puts the workflow block, the resume table, routing, and safety rules first, so a Codex session that reads only the start still gets the part that drives the run.
+- The generator puts the workflow block, the resume table, routing, and the behavioral norms first, so a Codex session that reads only the start still gets the part that drives the run.
 - When `codex` is among the hosts, onboarding writes a raised `project_doc_max_bytes` to the repo's `.codex/config.toml`.
 - `prism doctor` warns when `AGENTS.md` is over the limit Codex will read.
 
