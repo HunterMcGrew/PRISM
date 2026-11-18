@@ -27,6 +27,7 @@ import {
 	saveRouteState,
 } from "./hooks/architect-route.mjs";
 import {
+	DENY_CREDIT_NOTE,
 	GIT_INSPECTION_SUBCOMMANDS,
 	GIT_TREE_SAFE_SUBCOMMANDS,
 	parseShellReadTargets,
@@ -1458,7 +1459,8 @@ test("runPreToolUseArm: every write tool on a routed path with unread docs is de
 		assert.equal(
 			reason,
 			"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
-				`cat .prism/architect/${GATE_DOC}`,
+				`cat .prism/architect/${GATE_DOC}` +
+				`\n${DENY_CREDIT_NOTE}`,
 			`${toolName} is a write in the harness table, so it earns the same deny`
 		);
 	});
@@ -1585,7 +1587,7 @@ test("runPreToolUseArm: a two-doc deny is cleared by its own remedy pasted as on
 		);
 		assert.ok(reason, "the two-doc write is denied before the remedy");
 
-		const remedyLines = reason.split("\n").slice(1);
+		const remedyLines = reason.split("\n").slice(1, -1);
 		assert.deepEqual(
 			remedyLines,
 			[`cat .prism/architect/${GATE_DOC}`, `cat .prism/architect/${secondDoc}`],
@@ -1667,7 +1669,8 @@ test("the spawned entry point denies a Codex apply_patch on an unread routed pat
 				permissionDecision: "deny",
 				permissionDecisionReason:
 					"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
-					`cat .prism/architect/${GATE_DOC}`,
+					`cat .prism/architect/${GATE_DOC}` +
+					`\n${DENY_CREDIT_NOTE}`,
 			},
 		});
 	});
@@ -2871,7 +2874,8 @@ test("runPreToolUseArm: a shell command that names a routed path it cannot prove
 					)
 				),
 				"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
-					`cat .prism/architect/${GATE_DOC}`,
+					`cat .prism/architect/${GATE_DOC}` +
+					`\n${DENY_CREDIT_NOTE}`,
 				`${JSON.stringify(command)} names a routed path it cannot prove it reads`
 			);
 		}
@@ -3167,7 +3171,8 @@ test("runPreToolUseArm: a backslash-spelled shell write on a routed path is deni
 				)
 			),
 			"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
-				`cat .prism/architect/${GATE_DOC}`
+				`cat .prism/architect/${GATE_DOC}` +
+				`\n${DENY_CREDIT_NOTE}`
 		);
 	});
 });

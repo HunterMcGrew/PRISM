@@ -15,6 +15,8 @@ export const GIT_INSPECTION_SUBCOMMANDS: Set<string>;
 
 export const GIT_TREE_SAFE_SUBCOMMANDS: Set<string>;
 
+export const DENY_CREDIT_NOTE: string;
+
 export function parseUnprovenShellPaths(command: string | undefined): string[];
 
 export function resolveTargets(

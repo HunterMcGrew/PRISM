@@ -54,6 +54,12 @@ export function saveRouteState(
 	state: ArchitectRouteState
 ): Promise<void>;
 
+export function withRouteStateLock<T>(
+	repoRoot: string,
+	scopeId: string,
+	update: () => Promise<T>
+): Promise<T>;
+
 export function pruneStaleRouteState(
 	repoRoot: string,
 	filePrefix?: string

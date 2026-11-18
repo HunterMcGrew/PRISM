@@ -95,9 +95,93 @@ import { splitShellSegments, unquote } from "./lib/shell.mjs";
  * the same transcript. A multi-line remedy is several commands, not one
  * unparseable one.
  *
+ * `&&` is admitted outside this class, by the two checks below, because
+ * `cd <dir> && cat <doc>` is how an agent in another directory reads a doc. A
+ * lone `&` stays out, because it backgrounds a command whose output may never
+ * reach the transcript.
+ *
  * @type {RegExp}
  */
 const SHELL_READ_SAFE_CHARACTERS = /^[\w./@+=,:~"' \t;\r\n-]*$/;
+
+/**
+ * True when a command may earn read credit: inside the read-safe class, with
+ * each `&&` directly after a `cd`.
+ *
+ * Only a `cd` may sit on the left of `&&`. `cat a.md && cat b.md` never runs
+ * the second `cat` when the first fails, so crediting it would credit a doc
+ * nobody saw. A `cd` that fails leaves the shell where it was, while the read
+ * arm resolves the next operand inside the directory that was not entered, so
+ * the credit lands on a path that is not the doc and the miss is an
+ * under-credit.
+ *
+ * @param {string} command
+ * @returns {boolean}
+ */
+function checkShellReadSafe(command) {
+	const clauses = command.split("&&");
+	for (const clause of clauses.slice(0, -1)) {
+		const lastCommand = clause.split(/[;\r\n]/).pop() ?? "";
+		if (lastCommand.trim().split(/[ \t]+/)[0] !== "cd") {
+			return false;
+		}
+	}
+
+	return SHELL_READ_SAFE_CHARACTERS.test(clauses.join(";"));
+}
+
+/**
+ * True when a command is inside the read-safe class once each `&&` is read as
+ * a separator. The proof asks only whether any segment could write, never
+ * whether a segment ran, so `&&` needs no further condition here.
+ *
+ * @param {string} command
+ * @returns {boolean}
+ */
+function checkShellProofSafe(command) {
+	return SHELL_READ_SAFE_CHARACTERS.test(command.replace(/&&/g, ";"));
+}
+
+/** Flags `cd` accepts that change how it resolves a symlink, never where it goes. @type {Set<string>} */
+const CD_INERT_FLAGS = new Set(["-L", "-P"]);
+
+/**
+ * The directory a `cd` segment moves to, `null` when the segment is not a
+ * `cd`, or `undefined` when it is one whose target the hook cannot know: a
+ * bare `cd`, `cd -`, a `~` path, a flag outside `-L`/`-P`, or more than one
+ * operand.
+ *
+ * @param {string[]} tokens
+ * @returns {string | null | undefined}
+ */
+function resolveCdTarget(tokens) {
+	const [name, ...args] = tokens;
+	if (name !== "cd") {
+		return null;
+	}
+
+	const operands = args.filter((arg) => !CD_INERT_FLAGS.has(arg));
+	if (operands.length !== 1 || operands[0].startsWith("-")) {
+		return undefined;
+	}
+
+	const target = unquote(operands[0]);
+	return target.startsWith("~") || target.includes("$") || target.includes("`")
+		? undefined
+		: target;
+}
+
+/**
+ * Joins a `cd` target onto the directory before it, both spelled with `/`.
+ * An absolute target, POSIX or drive-lettered, replaces the base.
+ *
+ * @param {string} base
+ * @param {string} target
+ * @returns {string}
+ */
+function joinShellPath(base, target) {
+	return /^([A-Za-z]:)?\//.test(target) ? target : `${base}/${target}`;
+}
 
 /** Shell commands whose bare form reads a file. `cat` is the only one that reads the whole of it.
  * @type {Set<string>}
@@ -187,13 +271,37 @@ export function parseShellReadTargets(command) {
 	}
 
 	const normalized = normalizeShellSeparators(command);
-	if (!SHELL_READ_SAFE_CHARACTERS.test(normalized)) {
+	if (!checkShellReadSafe(normalized)) {
 		return [];
 	}
 
+	// A `cd` moves every later operand. A target the hook cannot know ends
+	// crediting for the rest of the command, because a path resolved against
+	// the wrong directory is a doc credited that the shell never opened.
+	/** @type {string | undefined} */
+	let directory = ".";
 	const targets = [];
 	for (const tokens of splitShellSegments(normalized)) {
-		targets.push(...parseSegmentReadTargets(tokens));
+		const cdTarget = resolveCdTarget(tokens);
+		if (cdTarget !== null) {
+			directory =
+				cdTarget === undefined || directory === undefined
+					? undefined
+					: joinShellPath(directory, cdTarget);
+			continue;
+		}
+
+		if (directory === undefined) {
+			break;
+		}
+
+		const base = directory;
+		targets.push(
+			...parseSegmentReadTargets(tokens).map((target) => ({
+				...target,
+				filePath: base === "." ? target.filePath : joinShellPath(base, target.filePath),
+			}))
+		);
 	}
 
 	const rewritten = normalized !== command;
@@ -479,6 +587,20 @@ const GIT_TREE_SAFE_FLAGS = new Set(
 const PATH_SHAPED_RUN = /[\w./@~+:-]+/g;
 
 /**
+ * Commands that treat a heredoc on their stdin as data: they send it, print
+ * it, or write it to a file named on their own command line. None of them
+ * runs it.
+ *
+ * Absent on purpose: every shell and interpreter (`bash`, `sh`, `python`,
+ * `node`), `git apply`, and `patch`, because each writes the paths its stdin
+ * names. A reader missing from this list keeps its body in the scan, which
+ * costs a doc read. A reader wrongly on it lets a write through unseen.
+ *
+ * @type {Set<string>}
+ */
+const DATA_STDIN_READERS = new Set(["gh", "cat", "tee", "jq"]);
+
+/**
  * Every path-shaped token a command names, anywhere in its text, with quote
  * and backslash characters removed first.
  *
@@ -549,6 +671,104 @@ function scanPathShapedTokens(command) {
 }
 
 /**
+ * The command with every heredoc body cut out whose text only a data reader
+ * sees, so the words in a PR comment or a JSON payload are not read as paths.
+ *
+ * A body stays when any of these holds, because each one lets the text reach
+ * something that acts on it:
+ *
+ * - Its reader is not on `DATA_STDIN_READERS`, or the introducer opened the
+ *   segment so there is no reader to name.
+ * - Its reader pipes onward. `cat <<'EOF' | sh` has a data reader and still
+ *   runs the body.
+ * - It carries `$(` or a backtick. An unquoted heredoc runs those while the
+ *   shell expands the body, before the reader ever sees it.
+ *
+ * Paths on the command line itself are never cut, so `tee <path> <<'EOF'` and
+ * `cat > <path> <<'EOF'` still gate on `<path>`. A body written to a script
+ * and run later in the same command is not followed. That is the same gap as
+ * any script file, whose contents the gate never reads.
+ *
+ * @param {string} command
+ * @returns {string}
+ */
+function removeDataHeredocBodies(command) {
+	/** @type {import("./lib/shell.mjs").HeredocBody[]} */
+	const heredocs = [];
+	splitShellSegments(command, heredocs);
+
+	let kept = "";
+	let cursor = 0;
+	for (const { start, end, readers } of heredocs) {
+		const body = command.slice(start, end);
+		const inert =
+			!/\$\(|`/.test(body) &&
+			readers.every(
+				(reader) =>
+					reader.head !== undefined &&
+					DATA_STDIN_READERS.has(unquote(reader.head)) &&
+					!reader.piped
+			);
+		if (!inert) {
+			continue;
+		}
+
+		kept += `${command.slice(cursor, start)}\n`;
+		cursor = end;
+	}
+
+	return kept + command.slice(cursor);
+}
+
+/**
+ * The arguments of every segment after a literal `cd`, resolved against the
+ * directory that `cd` moved to. This is the gate's second reading of a
+ * command, beside the whole-command scan resolved against `cwd`.
+ *
+ * Only arguments, and only past the first `cd`. A command word is never the
+ * file a segment writes, and resolved inside a routed directory every bare
+ * word would match the route and fill the deny with paths like `src/tee`. A
+ * flag contributes only the value after its `=`. A `cd` the hook cannot
+ * resolve (`resolveCdTarget`) leaves the last known directory in place, which
+ * keeps this reading over-wide rather than empty.
+ *
+ * This reading leans on `splitShellSegments` to place each argument, which the
+ * whole-command scan does not. A mis-split moves an argument to the wrong
+ * directory here, and the `cwd` reading still has it.
+ *
+ * @param {string} command
+ * @param {string} cwd
+ * @returns {string[]}
+ */
+function resolveArgumentsAfterCd(command, cwd) {
+	const resolved = [];
+	/** @type {string | null} */
+	let current = null;
+	for (const tokens of splitShellSegments(command)) {
+		const target = resolveCdTarget(tokens);
+		if (target !== null) {
+			if (target !== undefined) {
+				current = path.resolve(current ?? cwd, target);
+			}
+			continue;
+		}
+
+		if (current === null) {
+			continue;
+		}
+
+		for (const arg of tokens.slice(1)) {
+			const value = arg.startsWith("-") ? arg.split("=").slice(1).join("=") : arg;
+			for (const run of scanPathShapedTokens(value)) {
+				resolved.push(path.resolve(current, run));
+			}
+		}
+	}
+
+	return resolved;
+}
+
+/**
  * True when a segment names a command that cannot write a working-tree file,
  * carrying only flags that command cannot write or execute through.
  *
@@ -569,6 +789,12 @@ function scanPathShapedTokens(command) {
  */
 function checkSegmentWritesNoFile(tokens) {
 	const [name, ...args] = tokens;
+
+	// A `cd` writes nothing, and the gate resolves later operands against its
+	// target (`resolveArgumentsAfterCd`), so its own operand is safe to drop.
+	if (name === "cd") {
+		return resolveCdTarget(tokens) !== undefined;
+	}
 
 	if (name === "git") {
 		const subcommand = args.find((arg) => !arg.startsWith("-"));
@@ -647,11 +873,11 @@ function checkFlagsAreInert(args, inertFlags) {
  * to compute.
  *
  * Two steps. First, every path-shaped token in the raw command is a
- * candidate, whatever position it sits in. Second, a candidate is dropped
- * only when the command is *provably* a set of segments that write no
- * working-tree file, and the candidate is one of their operands. Anything the
- * proof does not cover stays, and the caller gates it if a manifest route
- * matches.
+ * candidate, whatever position it sits in, except the text of a heredoc only
+ * a data reader sees (`removeDataHeredocBodies`). Second, when the command is
+ * *provably* a set of segments that write no working-tree file, every
+ * candidate is dropped. Otherwise all of them stay, and the caller gates any a
+ * manifest route matches.
  *
  * The proof reuses the read arm's own `SHELL_READ_SAFE_CHARACTERS` class and
  * `splitShellSegments`, and it is all-or-nothing over the whole command: one
@@ -663,8 +889,8 @@ function checkFlagsAreInert(args, inertFlags) {
  * test, so none of them can produce a proof.
  *
  * Two gaps survive. A write whose target path never appears in the command
- * text — assembled from a variable, or reached through a `cd` — is invisible
- * to any scan over the command, and no parser short of a shell closes it. The
+ * text — assembled from a variable, or reached through a `cd` whose target is
+ * not literal — is invisible to any scan over the command, and no parser short of a shell closes it. The
  * second is narrower than it used to be: a *command* wrongly admitted to a
  * read-only list is caught by the executable probe in `hook-gate.test.ts`,
  * which runs each listed command and looks at the disk, but a *flag* wrongly
@@ -679,64 +905,40 @@ export function parseUnprovenShellPaths(command) {
 		return [];
 	}
 
-	// Both halves read the same normalized text, so a proven-safe operand
-	// still matches the candidate the scan recovered from it.
 	const normalized = normalizeShellSeparators(command);
 
-	const candidates = scanPathShapedTokens(normalized);
+	const candidates = scanPathShapedTokens(removeDataHeredocBodies(normalized));
 	if (candidates.length === 0) {
 		return [];
 	}
 
-	const provenSafe = resolveProvenSafePaths(normalized);
-	return candidates.filter((candidate) => !provenSafe.has(candidate));
+	// A proven command writes nothing, so none of its tokens is a target. Its
+	// command words and flag letters are not operands either, and resolved
+	// inside a routed directory a bare `cat` matches the route like any path.
+	return checkCommandWritesNoFile(normalized) ? [] : candidates;
 }
 
 /**
- * The operands of a command proven to consist only of segments that write no
- * working-tree file, or an empty set when no such proof holds.
+ * True when a command is proven to consist only of segments that write no
+ * working-tree file, each carrying only flags its command cannot write or
+ * execute through.
  *
  * Distinct from `parseShellReadTargets`, which answers a different question
  * for the announce arm — which paths were read, and whether the read
  * delivered the whole file. This one asks only whether a mention is safe to
- * ignore, so it takes every operand of a safe segment and grades none of
- * them. That is why a `git commit` message body clears here and earns no read
- * credit anywhere: safe to ignore is not the same claim as read.
+ * ignore, and grades no operand. That is why a `git commit` message body
+ * clears here and earns no read credit anywhere: safe to ignore is not the
+ * same claim as read.
  *
- * @param {string | undefined} command
- * @returns {Set<string>}
+ * @param {string} command
+ * @returns {boolean}
  */
-function resolveProvenSafePaths(command) {
-	if (typeof command !== "string" || !SHELL_READ_SAFE_CHARACTERS.test(command)) {
-		return new Set();
+function checkCommandWritesNoFile(command) {
+	if (!checkShellProofSafe(command)) {
+		return false;
 	}
 
-	const operands = new Set();
-	for (const tokens of splitShellSegments(command)) {
-		if (!checkSegmentWritesNoFile(tokens)) {
-			return new Set();
-		}
-
-		for (const token of tokens.slice(1)) {
-			// Safe to skip only because `checkSegmentWritesNoFile` has already
-			// confirmed every flag in this segment is on its command's inert
-			// list, so no flag reaching here names an output file.
-			if (token.startsWith("-") && token !== "-") {
-				continue;
-			}
-
-			// Both the whole operand and its path-shaped runs, so an operand
-			// carrying a space still matches the runs `scanPathShapedTokens`
-			// recovered from the same text.
-			const operand = unquote(token);
-			operands.add(operand);
-			for (const run of scanPathShapedTokens(operand)) {
-				operands.add(run);
-			}
-		}
-	}
-
-	return operands;
+	return splitShellSegments(command).every(checkSegmentWritesNoFile);
 }
 
 /**
@@ -914,6 +1116,10 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 	}
 }
 
+/** @type {string} */
+export const DENY_CREDIT_NOTE =
+	"Only a whole-file read counts: each `cat` above as its own command (a `cd <dir> &&` before it is fine), or the Read tool with no offset or limit. A redirected or piped `cat`, a flag, `head`, or a ranged Read counts as nothing.";
+
 /**
  * Builds the deny message for a routed path whose docs this scope has not
  * read. Both arms render it, so the opening clause names no verb — the call
@@ -933,6 +1139,11 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
  * prescribing a tool, and a gate that prescribed one would loop against a
  * host reminder prescribing the other.
  *
+ * The closing line names what counts, because the near misses look like
+ * reads to the model. A redirected or piped `cat` delivers nothing to the
+ * transcript, and agents reached for `cat <doc> > /dev/null` to clear the gate
+ * when no message said it would not.
+ *
  * @param {string} relativePath
  * @param {string[]} unreadDocs
  * @returns {string}
@@ -941,7 +1152,7 @@ export function formatDenyMessage(relativePath, unreadDocs) {
 	const remedies = unreadDocs
 		.map((doc) => `cat ${ARCHITECT_DIR_PREFIX}${doc}`)
 		.join("\n");
-	return `You're working on \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}`;
+	return `You're working on \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}\n${DENY_CREDIT_NOTE}`;
 }
 
 /**
@@ -1080,7 +1291,10 @@ async function resolveDenyReason(repoRoot, scopeId, filePaths) {
  * A shell command's candidate paths: every path-shaped token it names that a
  * proof of read-only-ness does not clear, narrowed to the ones a manifest
  * route matches. Tokens resolve against the command's own working directory,
- * the same way `resolveTargets` resolves a shell read.
+ * the same way `resolveTargets` resolves a shell read. Arguments after a
+ * literal `cd` also resolve against the directory it moved to
+ * (`resolveArgumentsAfterCd`). Without that, `cd scripts && tee hooks/x.mjs`
+ * resolves its target to `hooks/x.mjs`, which no route matches.
  *
  * `filterRoutedPaths` runs before `resolveDenyReason` rather than being left
  * to it, because a command names many tokens and the batched form costs one
@@ -1092,11 +1306,17 @@ async function resolveDenyReason(repoRoot, scopeId, filePaths) {
  * @returns {Promise<string[]>}
  */
 async function resolveShellCandidatePaths(repoRoot, cwd, payload) {
-	const unproven = parseUnprovenShellPaths(payload.tool_input?.command);
-	return filterRoutedPaths(
-		repoRoot,
-		unproven.map((target) => path.resolve(cwd, target))
-	);
+	const command = payload.tool_input?.command;
+	const unproven = parseUnprovenShellPaths(command);
+	if (unproven.length === 0) {
+		return [];
+	}
+
+	const candidates = new Set([
+		...unproven.map((target) => path.resolve(cwd, target)),
+		...resolveArgumentsAfterCd(normalizeShellSeparators(command ?? ""), cwd),
+	]);
+	return filterRoutedPaths(repoRoot, [...candidates]);
 }
 
 /**
