@@ -6,6 +6,12 @@ Populated during onboarding from the team's actual product domain.
 
 ## Startup
 
+- **On a plan folder** (`.prism/plans/<ticket>/plan.md`), you build one dispatched bundle and commit it. The Record and Ship steps below are for a flat plan and don't apply.
+  - Refuse unless `plan.md`'s frontmatter `status` is `approved`, and return `blocked` naming the missing approval.
+  - Build only the tasks in the dispatched bundle, test-first per `tdd`.
+  - After the cleanup pass, commit with `node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "<T-subject>" <paths>`. The subject is a task form from the workflow rule. Name only the paths the bundle changed, because `commit.mjs` refuses a path with no change. Any other non-zero exit returns `blocked` with its stderr.
+  - Never edit `plan.md` and never push. Return the build report from the workflow rule, whose `history:` line the session appends.
+  - A file outside the tasks' lists, or an acceptance criterion the tasks cannot meet, returns `needs-replan`.
 - **Resolve the plan** per `.prism/rules/branch-plan.md` § Plan Lookup, and create it when missing, since this skill writes into it. No implementation starts without one. Present every `open` entry in `## Debugged Issues` and `## Review Issues` before starting, and re-read the plan when the user says it changed, because a stale plan builds the wrong thing.
 - **Read `## Decisions`** (each entry is a do-not-undo, and a Zoe verdict sub-bullet on it, live / archive-candidate / overdue-archive / open-stale, governs how far it still binds) and `## Acceptance Criteria`. Flag any AC edited after the last `synced` row of the AC Sync Log, so it gets synced after the build.
 - **Load the architect docs** that `.prism/architect/manifest.json` routes for the paths in the plan's tasks. A partial load builds against the wrong constraints.
@@ -20,7 +26,7 @@ Populated during onboarding from the team's actual product domain.
 
 ## Record in the plan
 
-After the code is done, update the plan in one pass:
+On a flat plan, after the code is done, update the plan in one pass:
 
 - Mark addressed issues `fixed` with a `Fixed in:` note, or `deferred` with a reason. Record each non-trivial PR-review finding under `## Review Issues` as `fixed`, because PR threads do not survive as plan evidence.
 - Append one `## History` line, `YYYY-MM-DD [<branch>]: <what and why>`, of three sentences at most.
@@ -31,9 +37,9 @@ After the code is done, update the plan in one pass:
 - **Pre-flight the AC** against the diff, following each criterion's Evidence sub-bullet. This is not the graded verdict. When `prism-qa-plan` runs AC verification, it renders MET or UNMET, and this skill never claims "AC-3 is MET". If an UNMET misreads the criterion, hand both readings to the plan skill, the criterion's owner. Never change code to satisfy a verdict the requirement does not back.
 - **Run fresh** the type check, lint, and tests from `.prism/rules/verification-commands.md`. Run the formatter in check mode first and write only when its changes fall on lines you touched, since pre-existing drift swept into the commit is a formatting-only change.
 - **Before every commit,** run the cleanup pass in `.prism/references/cleanup-pass.md`. Commit per `.prism/rules/git-conventions.md`: one commit per plan task on a multi-task plan, and review fixes as separate commits.
-- **Ship without asking** (authors ship). First read `git config --global --get ${PROJECT_LOWERCASE}.pauseBeforeCommit`. `true` means state the commit subject and wait for "ship it". Unset means ask once and save the answer with `git config --global`. Then push, and open a draft PR with `gh pr create --draft`. If `gh pr list --head <branch>` already finds one, the push updates it and no new PR is created.
+- **On a flat plan, ship without asking** (authors ship). First read `git config --global --get ${PROJECT_LOWERCASE}.pauseBeforeCommit`. `true` means state the commit subject and wait for "ship it". Unset means ask once and save the answer with `git config --global`. Then push, and open a draft PR with `gh pr create --draft`. If `gh pr list --head <branch>` already finds one, the push updates it and no new PR is created.
 - **PR title and body.** The title is `${TICKET_PREFIX}-NNNN: <description>`, or `${TICKET_PREFIX}-NNNN followup: <description>` once the main PR has merged. The body uses `.github/pull_request_template.md` as its scaffold and adds Summary, What did you do?, Why did you do it?, How did you achieve it?, Screenshots (UI only), Notes, and Ticket ahead of its Type of Change and checklist. Check only the checklist items you can confirm, and leave UI items unchecked when nothing in the UI changed. The body carries reasoning the diff cannot show, so it never lists files or copies the AC. On every push that adds scope past the body, rewrite only the templated sections (Summary, What did you do?, Why did you do it?, How did you achieve it?, Ticket, Type of Change, and the checklist) and keep every other section verbatim, Screenshots and Notes included. Skip the sync when the user said not to touch the body this session. Write it with `gh pr edit --body-file`, since `--body` hits a GraphQL deprecation error. Escape a bare `#N` in backticks, because GitHub autolinks it.
 - **Offer e2e tests** when the plan has behavioral AC: Given/When/Then maps 1:1 to a test case. Only offer, never generate them unasked.
-- **Close** with the outcome and the PR number, then propose `prism-self-review` in this session, or `review pr #<n>` in a fresh chat. Propose the handoff and never invoke it.
+- **Close a flat plan** with the outcome and the PR number, then propose `prism-self-review` in this session, or `review pr #<n>` in a fresh chat. Propose the handoff and never invoke it.
 
 Before closing the session, append to `.prism/lessons.md` when you were corrected, found a codebase constraint no architect doc states, or an assumption proved wrong.

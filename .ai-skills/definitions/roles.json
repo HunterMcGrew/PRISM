@@ -33,7 +33,8 @@
 		{
 			"id": "prism-implement",
 			"persona": "Clove",
-			"routing": "auto"
+			"routing": "auto",
+			"preloads": ["tdd"]
 		},
 		{
 			"id": "prism-pr-review",
