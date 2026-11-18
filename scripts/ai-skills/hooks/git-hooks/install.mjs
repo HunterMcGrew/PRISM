@@ -8,16 +8,17 @@
  *
  * One module serves every caller — `prism hooks install`, `prism update`, the
  * agent session-start hook, `prism doctor`, the push gate, and a consumer's
- * own setup script (`node .claude/hooks/git-hooks/install.mjs`) — so "is this
- * hooks path ours?" has exactly one definition.
+ * own setup script (the guarded `runInstallCli` import) — so "is this hooks
+ * path ours?" has exactly one definition.
  *
  * Git reads one hooks directory. A `core.hooksPath` at any scope that is not
- * PRISM's own (husky's `.husky`, another repo's `.githooks`) means PRISM's
- * hooks cannot also be active, so the installer reports it and changes
- * nothing. The value it writes is the relative `.githooks`: local config is
- * shared by every worktree of a clone, and git resolves a relative hooks path
- * per worktree, so each branch runs its own hooks. An absolute path into one
- * checkout would make every worktree run that checkout's hooks.
+ * PRISM's own (husky's `.husky`, another repo's `.githooks`), or hooks already
+ * in `.git/hooks` (`describeForeignHooks`), mean PRISM's hooks cannot also be
+ * active, so the installer reports it and changes nothing. The value it
+ * writes is the relative `.githooks`: local config is shared by every worktree
+ * of a clone, and git resolves a relative hooks path per worktree, so each
+ * branch runs its own hooks. An absolute path into one checkout would make
+ * every worktree run that checkout's hooks.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
@@ -109,12 +110,17 @@ export function classifyHooksPath(value, repoRoot) {
 }
 
 /**
+ * Reads one scope's `core.hooksPath`, following `include.path` and
+ * `includeIf`. A scoped read leaves includes off unless asked, so without
+ * `--includes` a hooks path that a global config pulls in from a team file
+ * would read as unset here while `effective` still sees it.
+ *
  * @param {string} repoRoot
  * @param {string} scope
  * @returns {string | null}
  */
 function readScope(repoRoot, scope) {
-	return git(["config", `--${scope}`, "--get", "core.hooksPath"], repoRoot);
+	return git(["config", `--${scope}`, "--includes", "--get", "core.hooksPath"], repoRoot);
 }
 
 /**

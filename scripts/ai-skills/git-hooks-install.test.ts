@@ -153,6 +153,20 @@ test("a foreign global value is left alone and no local value is written", () =>
 	});
 });
 
+test("a foreign hooks path pulled in through the global config's include.path is left alone", () => {
+	withFixture({}, ({ root, git, globalConfig }) => {
+		const teamConfig = path.join(path.dirname(globalConfig), "team.gitconfig");
+		fs.writeFileSync(teamConfig, "[core]\n\thooksPath = /team/hooks\n");
+		fs.writeFileSync(globalConfig, `[include]\n\tpath = ${teamConfig.replaceAll("\\", "/")}\n`);
+
+		const result = installGitHooks(root);
+
+		assert.equal(result.action, "left-alone");
+		assert.match(result.message, /^prism hooks: the global core\.hooksPath is '\/team\/hooks'/);
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+	});
+});
+
 test("a .githooks directory in a different repo is foreign", () => {
 	withFixture({}, ({ root, git }) => {
 		const otherRepo = path.join(path.dirname(root), "other");
