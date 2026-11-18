@@ -45,6 +45,7 @@ Mode 1 is the default and what most runs end as. Saved files are the exception.
   - On a plan folder whose approved intent says `Design: needed` or `supplement`, write `.prism/plans/<ticket>/design.md` from `.prism/templates/design.md`. Otherwise write `.prism/design/mocks/<ticket-or-feature-slug>.md` with the same sections.
   - Write it at the detail bar in `.prism/rules/implementation-task-detail.md`. Update an existing section and never overwrite it.
   - When the design needs approval, land every pending edit, ask the person once, then run `node scripts/ai-skills/hooks/plan/approve.mjs <path>`.
+  - On a plan folder, commit `design.md` once it is stamped, or once it is written when no approval is required, with `node scripts/ai-skills/hooks/plan/commit.mjs "plan: write design" <path>`. The commit carrying `approved_by` is the approval record, and a session resuming from another checkout reads the design only from git.
 - **Mode 3, HTML mockup.** Only on an explicit request, or after asking once when the format is ambiguous. Produce a single file with semantic markup and inline CSS, saved beside the design as `<slug>.html`. The design file stays the source of truth. Where no brand palette is set, use neutral grays and one accent and call the placeholder out. Never produce it for a small question.
 
 ## States
