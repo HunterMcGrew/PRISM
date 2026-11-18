@@ -612,6 +612,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Recorded the phase-1 result against the baseline (29 skills, 1,870 body lines, 2,518 loaded, 3 over the cap) and ticked AC-2 to AC-7. AC-1 stays unticked because 7 dated QA and research records still name Sol, Sasha, or the retired skill IDs.
 - 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Widened AC-1's grep exclusions to the QA and research records and the generated ADR copies, accepted by Hunter, and ticked AC-1 on a 0-file result. Fixed four self-review Minors in § Phase 1 result and the cap Decision.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Amended the intent to thrive's Kitchen Line stack at its 2026-11-17 branch tips and added `spec.md`, which cuts the remaining work into nine children. The amended intent is a draft until Hunter approves it.
+- 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter approved the amended intent in chat. The stamp was written by hand because the approval script arrives with the chain-scripts child.
 
 ---
 

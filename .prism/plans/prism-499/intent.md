@@ -1,7 +1,10 @@
 ---
 title: AI-native SDLC for PRISM — thin skills, artifact chains, and enforced gates
 author: Hunter McGrew
-status: draft
+status: approved
+approved_by: Hunter McGrew
+approved_at: 2026-11-17
+approved_via: chat
 previously_approved: 2026-10-17 by Hunter McGrew (the version phase 1 was built from)
 amended: 2026-11-17
 ticket: https://github.com/HunterMcGrew/PRISM/issues/499
