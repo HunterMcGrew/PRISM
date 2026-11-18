@@ -626,7 +626,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **`commit.mjs` returns git's stdout on failure, reports a failed `git status`, and honors a delay of `0`.** A failed status used to read as an unchanged path, and a hook or git message on stdout used to vanish.
   - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Commit script
 - **The seed copy of `branch-plan.md` now mentions the plan-folder citation lint.** T16 says to apply both edits to the twin. That lint exists only in PRISM's own tree, so a consumer reads a sentence about a check it does not have. Child 5 or a later pass can soften it.
-  - → no promotion needed (a one-sentence wording fix in a seed this PR already edits; reported for a fold-in before merge, and child 5 (#522), which rewrites `branch-plan.md` for folder plans, is its home if it ships as is)
+  - → no promotion needed (a one-sentence wording fix in a seed this PR already edits; fixed in this PR in e603b45e, which drops the lint from the seed sentence and keeps the reason, so it is no longer a child 5 (#522) home)
 
 ## History
 
@@ -639,6 +639,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed both PR-review Majors and both Minors in e8547f90, afde75fd, and 518a5eae, with a CLI test that fails on the old head for the config one; the Decision on the install seed's routing stub records the route change. CI on e9ad165b is green on both legs, and the new commits have not run there yet.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: A `stopPaths.dependency` or `stopPaths.contract` value that is set but is not an array is now a config error and `auto-approve.mjs` exits 2, instead of falling back to the default; see the Decision on `resolveStopPaths`. A CLI test and a unit test fail on the old head, and the docs, schema description, and mirrors say the same.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Closed the plan: a verdict on all 28 Decisions, 14 of them already promoted to `plan-chain-scripts.md` or `hook-runtime.md`, the ticket-grain retro run inline, and AC-1 to AC-9 ticked on CI run 44293874595. Filed #529 for the validator gap and pointed the stop-path Decision at it in place of #526, which covers `gitHooks` only. Refreshed Verification, which still said a string stop-path list approves.
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed the seed's `branch-plan.md` sentence that named the citation lint, and made `listMarkdownFiles` skip a directory named like a markdown file, with a test that fails on the old head with EISDIR, in e603b45e. The PR body now carries the green run on 364262f7, the config-error behaviors, and the Readiness boxes the evidence supports.
 
 ## Sessions
 
