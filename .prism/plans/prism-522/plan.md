@@ -869,6 +869,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Folded in two stack A review items: two token-arm guard cases (a Codex `apply_patch` naming the token file in another file's hunk denies, and a Claude `Edit` naming it only in `new_string` passes), and the `## PR Readiness` Build line, which cited `2b971c5d` as after the fourth pass fix when that SHA is older than `fbfd5092`.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T9: the `agent` role type and `preloads`, validated in `buildRoleMap` with no `build.ts` change. Persona-less roles skip the persona line, so the Codex builder needed no edit.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T10: `workflow.md` is 8,354 bytes, over its 7,000 target, and `skill-routing.md` went from 14,676 to 6,850 bytes (its seed twin is 6,476). The last lead section ends at byte 31,123, under the 31,744 line. The PR row names `shipping-flow.md` by filename because crossref-lint rejects the path until T20 creates the file, and T20 puts the path back.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T11: `prism-architect` (93 loaded lines) and `prism-plan` as a persona-less utility, with the build deleting `prism-plan`'s two agent files. `claude-agent-def.test.ts` moved its opus-tier cases to `prism-architect`, a file T9 listed but T11 did not, and `prism-plan`'s trigger words dropped the architecture phrases along with "Winston" and "evaluate the approach".
 
 ## Sessions
 

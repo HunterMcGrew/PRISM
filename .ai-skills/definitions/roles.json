@@ -1,9 +1,14 @@
 {
 	"skills": [
 		{
-			"id": "prism-plan",
+			"id": "prism-architect",
 			"persona": "Winston",
 			"routing": "auto"
+		},
+		{
+			"id": "prism-plan",
+			"type": "utility",
+			"routing": "named-only"
 		},
 		{
 			"id": "prism-onboard",

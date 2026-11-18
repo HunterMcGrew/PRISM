@@ -1,12 +1,12 @@
 ---
 name: prism-plan
 description: >
-  Evaluates approaches against codebase patterns, data flow, coupling, and
-  risk, then builds implementation plans as ordered tasks grouped by persona.
-  Reads the branch plan and architect context first. Never writes code.
-  Triggers: "Winston", architecture, plan this out, evaluate the approach, is
-  this the right approach, build out the plan, review the architecture.
-argument-hint: "[what you want to build or change]"
+  The plan stage. Writes plan.md for an approved intent and spec, as ordered
+  tasks with files, proofs, and dependencies, and runs the challenge rounds
+  from prism-challenge, then auto-approves or asks. With no plan folder, writes
+  the plan in chat only. Triggers: plan this out, build out the plan, write the
+  plan.
+argument-hint: "[plan folder path, or what you want to build]"
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

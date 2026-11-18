@@ -15,7 +15,7 @@ A persona's own name always routes to it.
 | Persona | Skill | Signal phrases |
 | --- | --- | --- |
 | **Clove** | `prism-implement` | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", starts editing files or writing code directly |
-| **Winston** | `prism-plan` | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
+| **Winston** | `prism-architect` | "Winston", "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
 | **Eric** | `prism-pr-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
 | **Nora** | `prism-start-ticket` | "start ${TICKET_PREFIX}-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID |
 | **Mira** | `prism-user-stories` | "write user stories", "what are the requirements", "define the scope" |
@@ -54,6 +54,7 @@ Utility skills have no persona and run in the invoking voice.
 - `prism-handoff` compacts the session into a handoff document for a fresh agent. Invoked on "hand off", "continue in a new chat", or "fresh session". Personas may suggest it at session close and never invoke it.
 - `prism-review-loop` runs the self-review and PR-review gauntlet on a PR until a subject-clean pass, and the PR stays draft. Invoked on "review loop" or "gauntlet".
 - `prism-forge-skill` scaffolds a skill or migrates a generated one back to source. Invoked on "create skill", "scaffold skill", "migrate skill", "decompose skill".
+- `prism-plan` writes the plan for an approved intent. Invoked on "write the plan" or "plan this out". In a plan folder it runs as the plan stage, and with none it writes the plan in chat.
 - `tdd` is a reference, read for its content and never run as a session. Invoked on "tdd", "test-first", "red-green", "test anti-patterns".
 - `prism-challenge` red-teams a finished artifact through four passes and a typed verdict, and never edits it. Invoked on "devil's advocate", "poke holes in this", "stress test this", "red team this".
 
