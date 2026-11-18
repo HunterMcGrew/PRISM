@@ -47,7 +47,7 @@ history: <one `## History` line>
 | Folder state | Next stage |
 | --- | --- |
 | intent draft | grill or approve |
-| design needed, `design.md` missing or draft with approval required | design |
+| Design line `needed` or `supplement`, and `design.md` missing or draft with approval required | design |
 | no `spec.md` | spec |
 | standard, no `plan.md` | plan |
 | standard, `## Challenge` missing round 1 or 2 | plan (finish the challenge rounds) |
