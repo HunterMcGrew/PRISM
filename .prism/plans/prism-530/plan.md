@@ -1052,6 +1052,8 @@ round 5: carried 1
   The cut follows child 5's, and it lets PR A be reviewed as code with tests and PR B as prose against a rulebook already on `main`. The 2026-11-18 refresh added no task and moved no task across the cut, so the split stands. The stack call is the orchestrator's.
 - **Scope changes since the intent, listed at each stop and in the PR body so Hunter can veto any of them.** The workflow rule asks for this list. The plan kept none until challenge round 4, and these are the entries that did not come from Hunter's own rulings:
   - **AC-2 measures the final PR-review verdict.** A folder plan fails the retro-line check only once its last PR-review line is `clean` or the confirm line, not on a non-clean round. `prism-architect` accepted it at challenge round 4 as not intent-level. It changes an acceptance criterion, so Hunter keeps the veto.
+  - **The review falls back to `plan.md`'s `## Acceptance Criteria` when a folder has no `intent.md`.** Epic child folders keep their criteria there, so without it they would be graded only by the retro. Decided by the architect at challenge round 2, and ruled not intent-level by the session on 2026-11-18. The Decision "The review reads the criteria from `intent.md` when the folder has one, and from `plan.md`'s `## Acceptance Criteria` otherwise" records it.
+  - **The retro-line check stays in PRISM's own tree, so consumer folder plans get no mechanical retro check from this child.** The spec's sentence names no scope, and a consumer check would need a delivered surface the spec does not name. Decided by Winston at challenge round 1. The Decision "The retro-line check stays PRISM's own lint, and consumer folder plans get no mechanical check from this child" records it.
 
 ## History
 
@@ -1064,6 +1066,7 @@ round 5: carried 1
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Applied the session's rulings: the criteria fallback stays and is recorded as not intent-level, and T21's Close exemption now keys on the files a commit touches, so a retro carrying promotion edits gets a PR review.
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Acted on challenge round 3: T7 makes the crossref lint treat the misses log and `.prism/review/stack/` as created on first write, with a failing-first test. T22's curated twin drops the retro-line clause, T21 commits post-retro miss rows as a log-only `retro:` commit, and T8 defines `clean` as the exit rule holding. The approval Decision now lists T25's three intent lines for the ask.
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Applied `prism-architect`'s round-4 verdict: AC-2 takes the final-verdict wording, its adjustment is accepted, and it heads a new scope-change list for the PR body. The approval ask now covers the plan and T25's three intent lines only, and three stale Decisions were brought current, including the resolved challenge-rounds question.
+- 2026-11-18 [huntermcgrew/prism-530-review-verify]: Fixed round 5's carried finding: the scope-change list now also names the `plan.md` criteria fallback (round 2) and the retro-line check's PRISM-only scope (round 1), each citing its Decision. The AC Sync Log records the main session's AC-2 sync to issue #530.
 
 ## Sessions
 
@@ -1148,7 +1151,8 @@ The issue's proof ("both reviews print one coverage line per pass; a plan with a
 | 2026-11-18 | Winston | Adjusted AC-10 and AC-11 and added AC-15 for the soft cap, as adjustments Hunter's chat ruling approved | written | not synced |
 | 2026-11-18 | main session | Synced the 15 AC, AC-1 to AC-15, to issue #530 | written | synced |
 | 2026-11-18 | Winston | Proposed the AC-2 adjustment for the final PR-review verdict; not synced until Hunter accepts it | proposed | not synced |
-| 2026-11-18 | Winston | Applied the AC-2 adjustment, accepted by prism-architect at challenge round 4 as not intent-level; issue #530 sync pending, main session | written | not synced |
+| 2026-11-18 | Winston | Applied the AC-2 adjustment, accepted by prism-architect at challenge round 4 as not intent-level; the issue #530 sync was left to the main session, which made it in the next row | written | not synced |
+| 2026-11-18 | main session | Synced the accepted AC-2 wording to issue #530's body, the tracker-facing sentence only, without the ID or Evidence line | written | synced |
 
 ## PR Readiness
 
