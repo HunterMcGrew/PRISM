@@ -248,12 +248,14 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — plan child 3 (Codex AGENTS.md budget) from the epic spec; Bounds — this plan folder only, commit and push, no PR, no code; Approach — measure the real byte layout, order inside `renderTier1Block`, one line-based TOML writer shared by build and update, one doctor check · close: scope held
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — build tasks 1–7 of this plan; Bounds — the plan's files only, no dependency, task 8 (live Codex run) skipped because Codex is not installed here; Approach — one commit per task, generated outputs rebuilt in tasks 3 and 7 · close: scope held
 
 ---
 
 ## History
 
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Plan created from the epic spec at `origin/huntermcgrew/prism-499-approve-once`. It has eight tasks, all Clove's, and one carried OPEN; the AC was not synced to #519 in this run.
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Built tasks 1–7: lead-first block order, the `.codex/config.toml` limit sync in build and `prism update`, the budget test, the doctor check, and the docs. Task 8 was not run, so the OPEN Decision stays on its default path; the lead sections end at byte 30,549 of 32,768 on this branch.
 
 ---
 
