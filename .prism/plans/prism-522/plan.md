@@ -847,6 +847,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: `docs/ai-skills/compatibility.md` still says the runtime is copied only when `hosts` includes `claude` or `codex` and that a Cursor-only repo gets no `.claude/hooks/`. It is outside PR A's task lists, so it was left for a follow-up call.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed PR A: 1 major (five Windows-only test failures from 8.3 temp paths and a slash regex) and 6 minor, recorded under `## Review`. The thrive port of the approval trio diffed clean apart from the listed swaps.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the self-review of PR A: the five Windows test failures (`a169e985`), three new guard cases and the ported shebang case (`8e45f6d4`), the stale `compatibility.md` and Codex session claims (`8951e24b`), and a generic config error (`b6d8920c`). Two new Decisions record the drive-letter spelling and the T25 message amendment, and the build wrote the three `hook-runtime.md` mirrors.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed the fixes (`c5dcdaa6..42adaf81`). All seven hold, and CI is green on both legs. Two minors are open (a missed 8.3 site in `approveCommandPath`, the stale PR body) and one is deferred to PR B, under `## Review` § Second pass.
 
 ## Sessions
 
@@ -854,6 +855,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: refresh this plan against what child 4 merged (#528, bd666c58). Bounds: plan file only, no code; keep the two-PR stack unless the refresh changes what ships together; leave Hunter's four pending calls as they are. Approach: merge main, diff every task's named module, export, flag, exit code, and config key against child 4's source, decide child 4's two hand-offs as Decisions, and recheck the groups with `analyzeBundles`. · close: scope held; PR A gains T25, and T6 narrowed to keep child 2's git hook gating
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: build PR A (T1-T8, T25) of this plan, after recording Hunter's approvals. Bounds: PR A's task files and generated copies only; no PR B tasks, no new dependency, no merge, draft PR only. Approach: approvals commit first, then one commit per task in the plan's group order, porting thrive's approval trio onto PRISM's runtime. · close: scope held; one pinned test outside T4's list (`plan-approve.test.ts`) and one stale prose home left for a call (`docs/ai-skills/compatibility.md`)
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review PR A (T1-T8, T25) against the plan, the rules, and thrive. Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts. Approach: run `prism:check`, diff the ported trio against thrive at db357097, and source-verify the edited architect docs. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review the PR A fix commits (`c5dcdaa6..42adaf81`). Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts, no merge. Approach: wait on CI for both legs, run `prism:check`, mutation-probe the new guard cases, and source-verify the edited Hosts claim and `compatibility.md`. · close: scope held; the frontmatter probe edit was reverted and the tree left clean
 
 ## Verification
 
@@ -924,6 +926,34 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 - **Problem:** the message ends "so its stop paths cannot be applied", which misleads a `tasks.mjs` or `bundles.mjs` user, whose run has no stop paths. T25 asked for the message unchanged, so the code follows the plan.
 - **Suggested fix:** end the message at "is not a readable JSON object" and amend T25's wording to match.
 
+### Second pass: the fixes
+
+Self-review of the PR A fixes, 2026-11-18 [huntermcgrew/prism-522-chain-skills], range `c5dcdaa6..42adaf81`. 0 major, 2 minor open, 1 minor deferred. All seven first-pass fixes hold. `prism:check` passes locally, and CI run 44351936636 is green on `ubuntu-latest` and `windows-latest`. The Windows leg ran the drive-letter allow case (it did not skip) and passed the four 8.3 sites and the regex case. A mutation probe that adds `approved_via` to `APPROVAL_KEYS` and the approval-line pattern fails both new `approved_via` cases, and they pass again after the revert. The `hook-runtime.md` Hosts claim matches `approve.mjs:448-451` and the guard's `token?.session === session` at `approve-guard.mjs:688`. No cleanup items.
+
+### The guard test's `approveCommandPath` still builds the expected path with plain `realpathSync`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/approve-guard.test.ts:175`
+- **Problem:** this is the same 8.3 class the first-pass major fixed, at a site that fix missed. For a git fixture (`makeGitRepo`), the guard bases its `<rel>` on `git rev-parse --show-toplevel`, which gives the long name (`approve-guard.mjs:323`). The test bases it on `realpathSync(cwd)`, which keeps `RUNNER~1`. The two only differ when the checkout shares the short-named profile directory with the temp dir, so CI's `D:` checkout can't hit it. This is minor because it fails only on a local Windows checkout under a long-named user profile, and I reasoned it out rather than ran it.
+- **Suggested fix:** derive the base the way the guard does, which is `git rev-parse --show-toplevel` and then plain `realpathSync` on failure. A blanket switch to `resolveFixtureRoot` would break the non-git `makeRepo` cases, where the guard falls back to plain `realpathSync` (`approve-guard.mjs:330`).
+
+### `compatibility.md` says the delivered skills name the runtime scripts, which no PR A skill does
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `docs/ai-skills/compatibility.md:73`
+- **Problem:** "because the skills you receive name those scripts". No skill under `.ai-skills/skills/` names `approve.mjs`, `HOOK_RUNTIME_DIR`, or `hooks/plan/` until PR B lands T12 to T18. `hook-runtime.md:9` has made the same claim since T7. This is minor because the claim is false only between PR A's merge and PR B's, and the other reason it gives (a Cursor user runs them from a terminal) holds now.
+- **Suggested fix:** none while PR B ships. If PR B stalls, cut the clause from both pages.
+
+### The PR body still reports the Windows leg unrun and `compatibility.md` stale
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** PR #531 body, the "Not verified" and "Stale prose left in place" bullets
+- **Problem:** the body says Windows "was not run" and AC-10 is open, and it says `compatibility.md` needs a fix in part 2 or a follow-up. Both are now wrong. CI is green on both legs, and `8951e24b` fixed the page in this PR. This is minor because the PR squash-merges, so the body becomes `main`'s commit description and would carry both false claims into history.
+- **Suggested fix:** sync the body. Drop Windows and AC-10 from "Not verified", replace the stale-prose bullet with a line saying `compatibility.md` was fixed here, and mention the generic config error and the two new Decisions.
+
 ## Acceptance Criteria
 
 The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
@@ -977,14 +1007,14 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 
 ## PR Readiness
 
-- [ ] No critical or major issues: one major open, the Windows test failures. See `## Review`.
-- [x] Types: `pnpm run prism:check-types` passes.
+- [x] No critical or major issues. Two minors are open: the `approveCommandPath` 8.3 site and the stale PR body. See `## Review` § Second pass.
+- [x] Types: `pnpm run prism:check-types` passes, as part of `prism:check`.
 - [x] No stray console.logs or debug artifacts in the diff.
-- [x] Tests written for new logic. Gaps: `approved_via` only, the drive-letter allow, and the dropped shebang case.
+- [x] Tests written for new logic. The `approved_via`, drive-letter, and shebang cases are in. A mutation probe fails both `approved_via` cases.
 - [x] No `open` debugged issues.
-- [ ] Build passes: the full `pnpm run prism:check` passes locally on Linux (2026-11-18, 2146 pass, 0 fail, 1 skipped). CI on d8f2ad70 is green on `ubuntu-latest` and red on `windows-latest`, with 5 failures.
-- [ ] PR description up to date: it doesn't yet mention the Windows failures.
-- [ ] AC for PR A: AC-2, AC-3, AC-7, and AC-11 are met by passing tests. AC-10 is unmet (Windows red). AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
+- [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 42adaf81 (2026-11-18: 2150 pass, 0 fail, 2 skipped). CI run 44351936636 on 42adaf81 is green on `ubuntu-latest` and on `windows-latest` (2138 pass, 0 fail, 14 skipped).
+- [ ] PR description up to date: it still says Windows was not run, AC-10 is open, and `compatibility.md` is stale.
+- [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
 
 **Last updated:** 2026-11-18
 
