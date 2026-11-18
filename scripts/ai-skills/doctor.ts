@@ -25,6 +25,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { COPIED_CONTENT_AREAS } from "./build";
+import {
+	CODEX_CONFIG_RELATIVE_PATH,
+	CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES,
+	computeProjectDocMaxBytes,
+	readProjectDocMaxBytes,
+} from "./codex-project-doc";
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { resolveHosts, type HostName } from "./lib/hosts";
@@ -71,7 +77,8 @@ export interface DoctorFinding {
 		| "rule-load"
 		| "architect-route"
 		| "hook-registration"
-		| "host-output";
+		| "host-output"
+		| "codex-doc-limit";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -1024,6 +1031,79 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 }
 
 /**
+ * Warns when Codex would read only part of the repo's `AGENTS.md`.
+ *
+ * Codex reads the first 32 KiB by default, so a larger file needs
+ * `project_doc_max_bytes` raised in the repo's `.codex/config.toml`. Every
+ * message names the per-developer `~/.codex/config.toml` setting as a fallback,
+ * because Codex skips a project config it does not trust.
+ *
+ * `warning`, not `error` — a short read limit degrades Codex sessions without
+ * breaking the install, and `healthy` keys on `error` alone. A limit that
+ * already covers the file reports `info`, so the fallback stays visible.
+ */
+async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFinding[]> {
+	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
+	if (!hosts.includes("codex")) {
+		return [];
+	}
+
+	const agentsMd = await readFileIfExists(path.join(consumerRepoRoot, "AGENTS.md"));
+	if (agentsMd === null) {
+		return [];
+	}
+
+	const size = Buffer.byteLength(agentsMd, "utf8");
+	if (size <= CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES) {
+		return [];
+	}
+
+	const computed = computeProjectDocMaxBytes(size);
+	const setting = readProjectDocMaxBytes(
+		await readFileIfExists(path.join(consumerRepoRoot, CODEX_CONFIG_RELATIVE_PATH))
+	);
+	const fallback = `If your Codex does not apply the repo's ${CODEX_CONFIG_RELATIVE_PATH}, set project_doc_max_bytes = ${computed} at the top level of ~/.codex/config.toml.`;
+
+	if (setting.kind === "absent") {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `AGENTS.md is ${size} bytes, but Codex reads only the first ${CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES} by default and ${CODEX_CONFIG_RELATIVE_PATH} sets no project_doc_max_bytes, so Codex sessions miss the rest. Run npx @huntermcgrew/prism update to set it to ${computed}. ${fallback}`,
+			},
+		];
+	}
+
+	if (setting.kind === "unparseable") {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes to ${setting.raw}, which PRISM cannot read. Set it to ${computed} or more. ${fallback}`,
+			},
+		];
+	}
+
+	if (setting.value < size) {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `AGENTS.md is ${size} bytes, but ${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes = ${setting.value}, so Codex sessions miss the rest. Run npx @huntermcgrew/prism update to raise it to ${computed}. ${fallback}`,
+			},
+		];
+	}
+
+	return [
+		{
+			check: "codex-doc-limit",
+			severity: "info",
+			message: `${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes = ${setting.value}, enough for AGENTS.md (${size} bytes). ${fallback}`,
+		},
+	];
+}
+
+/**
  * Reports a dropped host whose marker-bearing output is still on disk — the
  * mirror image of `checkHookRegistration`'s stale-delivery branch, generalized
  * past the hook. `refreshPlatformSkills` and `refreshPlatformDirs` in
@@ -1321,6 +1401,7 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
 	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
+	findings.push(...(await checkCodexDocLimit(consumerRepoRoot)));
 
 	try {
 		const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);

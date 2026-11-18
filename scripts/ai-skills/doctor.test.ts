@@ -2074,6 +2074,119 @@ test("runDoctor reports no host-output finding when the config declares no hosts
 	});
 });
 
+// --- codex-doc-limit check (PRISM-519) ---
+
+/** Runs doctor against a repo whose `AGENTS.md` is `agentsMdBytes` bytes, returning the report and its `codex-doc-limit` findings. */
+async function runCodexDocLimitDoctor(
+	roots: { prismSourceRoot: string; consumerRepoRoot: string },
+	agentsMdBytes: number,
+	codexConfigToml: string | null
+) {
+	await writeFile(roots.consumerRepoRoot, "AGENTS.md", "a".repeat(agentsMdBytes));
+	if (codexConfigToml !== null) {
+		await writeFile(roots.consumerRepoRoot, ".codex/config.toml", codexConfigToml);
+	}
+
+	const report = await runDoctor({
+		consumerRepoRoot: roots.consumerRepoRoot,
+		prismSourceRoot: roots.prismSourceRoot,
+		npmVersionFetcher: NEVER_FETCH,
+	});
+
+	return {
+		report,
+		findings: report.findings.filter((f) => f.check === "codex-doc-limit"),
+	};
+}
+
+test("runDoctor warns when AGENTS.md is over 32 KiB and the Codex config sets no read limit", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /AGENTS\.md is 40000 bytes/);
+		assert.match(findings[0].message, /sets no project_doc_max_bytes/);
+		assert.match(findings[0].message, /set it to 131072/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns when the Codex config's read limit is below the AGENTS.md size", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 32768\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /sets project_doc_max_bytes = 32768/);
+		assert.match(findings[0].message, /raise it to 131072/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns when the Codex config's read limit cannot be read", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 0x100000\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /0x100000, which PRISM cannot read/);
+		assert.match(findings[0].message, /Set it to 131072 or more/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports an info line, not a warning, when the Codex config's read limit covers AGENTS.md", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 131072\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "info");
+		assert.match(findings[0].message, /enough for AGENTS\.md \(40000 bytes\)/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when Codex is not among the hosts", async () => {
+	await withTempRoots(async (roots) => {
+		await writeFile(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null);
+
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when AGENTS.md fits Codex's default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 30_000, null);
+
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
+	});
+});
+
 // --- report formatting ---
 
 test("formatDoctorReport renders findings and a trailing health line", async () => {
