@@ -473,7 +473,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
   - → no promotion needed (scope record for this branch)
 - **`installGitHooks` with `dryRun` prefixes its message with `would`.** `prism update --dry-run` prints what it would do and writes nothing.
   - → no promotion needed (message wording, visible in `install.mjs` and pinned by its tests)
-- **The close markers are the `>` lines under the opening paragraph, and frontmatter `status: closed` stays as a placeholder.** `branch-plan.md` § Before Closing step 2 and Zoe's plan-archive lane read `> Closed:` and `> Retro:`, not frontmatter, so those two lines are what make this plan closed today. The frontmatter `status: closed` stays because the epic spec defines no closed value; child 4 or child 6 defines folder-plan close and settles it.
+- **The close markers are the `>` lines under the opening paragraph, and frontmatter `status: closed` stays as a placeholder.** `branch-plan.md` § Before Closing step 2 defines both lines, and Zoe's plan-archive lane (`audit-workflow.md` § Plan-archive lane) keys on `> Closed:` alone, not frontmatter, so those two lines are what make this plan closed today. The frontmatter `status: closed` stays because the epic spec defines no closed value; child 4 or child 6 defines folder-plan close and settles it.
   - **Alternatives considered:** dropping the frontmatter `status`. Rejected, because the folder-plan close that child 4 or 6 defines may read it, and removing it now would be an edit they reverse. The trailing `Retro:` line stays for the same reason.
   - → no promotion needed (bridge until the folder-plan close lands)
 
@@ -487,6 +487,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed Eric's Major on PR #523 in 07f234b5: `otherWorktreeHasShim` takes the current worktree from `git rev-parse --show-toplevel`, since Windows spells Node's and git's paths differently and CI went red on 874d5d99. The same commit corrects the dry-run wording and the partial-chmod message. The new test failed on the previous head, and Windows was not run locally.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Closed the plan: a verdict on all 26 Decisions, 11 of them already promoted to `git-hooks.md`, the ticket-grain retro run inline, and AC-1 to AC-6 ticked on CI run 44275791883. AC-7's macOS check stays open for a person.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed the plan-close findings: added the `> Closed:` and `> Retro:` markers under the opening paragraph, and filed #525, #526, and #527 for the three follow-ups whose verdicts had no home. Each verdict now cites its issue.
+- 2026-11-18 [huntermcgrew/prism-519-followup-close]: Reworded the close-markers Decision, which said Zoe's plan-archive lane reads `> Retro:`; it keys on `> Closed:` alone, and `branch-plan.md` defines both lines. Folded in from PRISM-519's followup PR.
 
 ## Sessions
 
