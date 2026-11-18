@@ -19,6 +19,10 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 
 In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Only `tasks`, `bundles`, `auto-approve`, and `commit` are commands. The rest are imported. A command exits 0 on success, 2 on a usage error, and 1 when one of its own conditions fails. `commit.mjs` passes any other git failure through with git's code.
 
+## Templates
+
+`.prism/templates/intent.md`, `.prism/templates/design.md`, `.prism/templates/spec.md`, and `.prism/templates/plan.md` are the starting copy of each chain file. The scripts read their frontmatter keys and `##` headings by name: `## Tasks` and `## Challenge` in the plan, `## Affected systems` in the spec, and the approval lines in every file's frontmatter. A plan keeps the headings its template gives, and the example task and empty glob block in the templates sit inside comments or an empty fence so they parse as nothing until a person fills them.
+
 ## Entry guards
 
 The four commands end with a guard that compares the realpath of `process.argv[1]` to the module's own path, so a symlinked invocation still counts as direct. That guard is only right while nothing in the `dist/cli.js` bundle imports these modules. The esbuild bundle collapses every module's `import.meta.url` to one file, so a bundled guard would fire on every invocation. The runtime can't use `isDirectCliEntry` instead, because it ships no TypeScript. Before a bundled module imports one of the four, split the CLI from the logic.
