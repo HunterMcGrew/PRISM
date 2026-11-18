@@ -848,6 +848,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed PR A: 1 major (five Windows-only test failures from 8.3 temp paths and a slash regex) and 6 minor, recorded under `## Review`. The thrive port of the approval trio diffed clean apart from the listed swaps.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the self-review of PR A: the five Windows test failures (`a169e985`), three new guard cases and the ported shebang case (`8e45f6d4`), the stale `compatibility.md` and Codex session claims (`8951e24b`), and a generic config error (`b6d8920c`). Two new Decisions record the drive-letter spelling and the T25 message amendment, and the build wrote the three `hook-runtime.md` mirrors.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed the fixes (`c5dcdaa6..42adaf81`). All seven hold, and CI is green on both legs. Two minors are open (a missed 8.3 site in `approveCommandPath`, the stale PR body) and one is deferred to PR B, recorded in the second pass under `## Review`.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the second pass: `approveCommandPath` takes its base from the git toplevel (`11aa142d`), ADR-0081 carries a dated amendment note for the hook modules reaching every install (`7835ad89`), and the PR body was synced. Added the plan-citations lesson to `.prism/lessons.md` (`00ea6f97`).
 
 ## Sessions
 
@@ -933,7 +934,8 @@ Self-review of the PR A fixes, 2026-11-18 [huntermcgrew/prism-522-chain-skills],
 ### The guard test's `approveCommandPath` still builds the expected path with plain `realpathSync`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `11aa142d`: `approveCommandPath` takes its base from `git rev-parse --show-toplevel` and falls back to `realpathSync(cwd)` when git fails, the order the guard uses. It does not use `resolveFixtureRoot`, so the non-git `makeRepo` cases still resolve.
 - **File:** `scripts/ai-skills/approve-guard.test.ts:175`
 - **Problem:** this is the same 8.3 class the first-pass major fixed, at a site that fix missed. For a git fixture (`makeGitRepo`), the guard bases its `<rel>` on `git rev-parse --show-toplevel`, which gives the long name (`approve-guard.mjs:323`). The test bases it on `realpathSync(cwd)`, which keeps `RUNNER~1`. The two only differ when the checkout shares the short-named profile directory with the temp dir, so CI's `D:` checkout can't hit it. This is minor because it fails only on a local Windows checkout under a long-named user profile, and I reasoned it out rather than ran it.
 - **Suggested fix:** derive the base the way the guard does, which is `git rev-parse --show-toplevel` and then plain `realpathSync` on failure. A blanket switch to `resolveFixtureRoot` would break the non-git `makeRepo` cases, where the guard falls back to plain `realpathSync` (`approve-guard.mjs:330`).
@@ -949,7 +951,8 @@ Self-review of the PR A fixes, 2026-11-18 [huntermcgrew/prism-522-chain-skills],
 ### The PR body still reports the Windows leg unrun and `compatibility.md` stale
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** the PR body, rewritten with `gh pr edit --body-file`. "Not verified" drops Windows and AC-10, a "Verified on CI" bullet cites run 44353891936 on 7345ce2b, and the stale-prose bullet now says `compatibility.md` was updated here and that its "skills name those scripts" clause becomes true when PR B merges. The config bullet mentions the generic error.
 - **File:** PR #531 body, the "Not verified" and "Stale prose left in place" bullets
 - **Problem:** the body says Windows "was not run" and AC-10 is open, and it says `compatibility.md` needs a fix in part 2 or a follow-up. Both are now wrong. CI is green on both legs, and `8951e24b` fixed the page in this PR. This is minor because the PR squash-merges, so the body becomes `main`'s commit description and would carry both false claims into history.
 - **Suggested fix:** sync the body. Drop Windows and AC-10 from "Not verified", replace the stale-prose bullet with a line saying `compatibility.md` was fixed here, and mention the generic config error and the two new Decisions.
@@ -1007,13 +1010,13 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 
 ## PR Readiness
 
-- [x] No critical or major issues. Two minors are open: the `approveCommandPath` 8.3 site and the stale PR body. See the second pass under `## Review`.
+- [x] No critical or major issues. No minors are open, and one is deferred to PR B. See the second pass under `## Review`.
 - [x] Types: `pnpm run prism:check-types` passes, as part of `prism:check`.
 - [x] No stray console.logs or debug artifacts in the diff.
 - [x] Tests written for new logic. The `approved_via`, drive-letter, and shebang cases are in. A mutation probe fails both `approved_via` cases.
 - [x] No `open` debugged issues.
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 42adaf81 (2026-11-18: 2150 pass, 0 fail, 2 skipped). CI run 44351936636 on 42adaf81 is green on `ubuntu-latest` and on `windows-latest` (2138 pass, 0 fail, 14 skipped).
-- [ ] PR description up to date: it still says Windows was not run, AC-10 is open, and `compatibility.md` is stale.
+- [x] PR description up to date: it reports Windows green (run 44353891936 on 7345ce2b), AC-10 met, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
 
 **Last updated:** 2026-11-18
