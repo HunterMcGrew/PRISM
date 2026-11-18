@@ -574,8 +574,11 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **The issue's acceptance criteria are synced.** Issue #520 carries all nine criteria under its Acceptance Criteria heading, worded as the plan's criteria without the ID prefix and Evidence lines, so nothing needed writing to the tracker.
 - **Child 4 ships as one PR.** The shell parser (T1, T2) could have been stacked under the chain scripts, but the epic is already cut at child grain and each part is inert alone. Hunter ruled on 2026-11-18 that standard PRs have no size limit, and whether to stack is the orchestrator's call, which chose one PR.
   - → no promotion needed (a ticket-specific shipping call)
-- **The install seed's routing stub gets a route for `plan-chain-scripts.md`.** `templates/install/.prism/architect/manifest.stub.json` carries `".claude/hooks/plan/**": "_toolkit/plan-chain-scripts.md"`, because `verify-manifest` rejects a shipped doc that no stub route names, and the `.githooks/**` route set the precedent for a consumer-path route to a toolkit doc. The orchestrator approved the edit after T17, since no task listed the stub.
-  - → no promotion needed (`install-layout.md` covers stub routes)
+- **The install seed's routing stub reaches `plan-chain-scripts.md` through the plan and spec templates, not through `.claude/hooks/plan/**`.** `templates/install/.prism/architect/manifest.stub.json` routes `.prism/templates/plan.md` and `.prism/templates/spec.md` to `_toolkit/plan-chain-scripts.md`, the way the base manifest does, because `verify-manifest` rejects a shipped doc that no stub route names and `hook-runtime.md` says the consumer's `.claude/hooks/` files stay unrouted. The orchestrator approved a stub edit after T17, since no task listed the stub.
+  - **Root cause.** The first build routed `.claude/hooks/plan/**` and cited `.githooks/**` as precedent. `.githooks/` is not on `hook-runtime.md`'s unrouted list and `.claude/hooks/` is, so the precedent did not cover it. PR review probed the shipped stub as a consumer manifest: a Bash call to `node .claude/hooks/plan/tasks.mjs` or `commit.mjs` was denied until `plan-chain-scripts.md` was read.
+  - **Alternatives considered.** Keep the hooks route and amend `hook-runtime.md` to say the plan directory is routed. Rejected: those files belong to the consumer, and the route would deny every chain-script call once per session in every new install. The templates are PRISM-owned paths, and an agent that edits a chain file is the reader the doc is for.
+  - **Implementation guidance.** A Bash call to the delivered scripts is not denied under the new stub, which the gate probe confirms. Do not route `.claude/hooks/**` from the stub.
+  - → no promotion needed (`hook-runtime.md` § Write gate already states that `.claude/hooks/` stays unrouted, and the stub now mirrors the base manifest's template routes)
 - **`prism-516/plan.md` and `prism-519/plan.md` citations were reworded in T14.** The new lint reported 18 section-sign citations in the merged `prism-516/plan.md` and two in `prism-519/plan.md`, where T14 named only the second file. T14 says to fix every violation the script reports by spelling it as words, so the build reworded each as `<file>, under <heading>`, and the meaning is unchanged. The alternative, allowlisting `prism-516/plan.md`, was rejected because the allowlist is meant to hold the phase-1 plan alone.
 - **`plan-chain-scripts.md` cites the four chain templates by path.** `pnpm prism:ship-closure` fails when a shipped template is reachable from nothing, and no skill cites them until child 5. The architect doc is routed from the base manifest, and it genuinely depends on the templates' headings, so it names them in a short Templates paragraph.
 - **The `plan.md` template's Retro comment allows "declined".** Thrive's comment said the retro always runs, which contradicts the plan rule's declinable retro line. The comment now reads "the retro report's path, or `declined — <reason>`". The `Retro:` line and every heading stay as thrive has them.
@@ -588,7 +591,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **Stop-path globs are fixed in `stop-paths.mjs` only, and the shared `compileMatcher` is untouched.** Architect routing depends on that matcher, and changing a shared utility needs its own approval.
   - **Chosen approach.** `expandMiddleGlobstars` tries every combination of crossing or skipping each mid-path `**/`, and a pattern holding `{` is a config error, because the matcher reads braces literally and a brace pattern would never match. A leading `**/` is unchanged, so root files are still listed on their own.
   - **Implementation guidance.** The schema description, `plan-chain-scripts.md`, and `docs/parameterization.md` state both rules. The affected-systems globs in `spec.md` still go through the unexpanded matcher, so a mid-path `**/` there needs a directory, which fails closed to a person.
-- **`resolveStopPaths` rejects an unknown `stopPaths` key and a non-string entry, and `auto-approve.mjs` exits 2 with the message.** The config validator does not enforce `additionalProperties`, so a misspelled `contracts` key turned contract protection off with no output. The shared validator is left alone, and issue #526 tracks it. A list that is set but is not an array still falls back to its default, as the existing test pins.
+- **`resolveStopPaths` rejects an unknown `stopPaths` key and a non-string entry, and `auto-approve.mjs` exits 2 with the message.** The config validator does not enforce `additionalProperties`, so a misspelled `contracts` key turned contract protection off with no output. The shared validator is left alone, and issue #526 tracks it. A list that is set but is not an array still falls back to its default, as the existing test pins. A config file that exists but does not parse also exits 2, through `readStopPathConfig` in `auto-approve.mjs`, because the shared `readRepoConfig` returns null for an absent file and for an unreadable one and stays unchanged for the git hooks.
 - **`parseFiles` rejects a backslash.** This closes the stop-path and outside-the-repo bypass at the parse, in one place, instead of normalizing in each check.
 - **The alias swap joins the value with `path.posix.join` instead of stripping `./` and a trailing slash at read time.** It accepts the same spellings the orchestrator named (`./src/`, `src`) and a few more, and it needs no second copy of the normalization.
 - **The bundle check's `{}` manifest fallback is removed, not made reachable.** `findRepoRoot` finds the root by the manifest, so a repo with none could never reach the fallback. Making it reachable would need a second root finder keyed on `.git`, for a state no install is in, because every install ships the stub manifest. A plan with no manifest above it exits 1 naming the path, and a test pins that.
@@ -604,6 +607,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed all thirteen self-review findings and the cleanup items in seven commits, each behavior fix with a test that fails on the old head; see the Decisions on container paths, stop-path globs, and the removed manifest fallback. `prism:check` passes on Linux, and the Windows leg has not run on the fix yet.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed the second-pass Major and both Minors in 5f506cb0, with a test that fails on the old source for the first two. CI on e9705bfc is green on both legs, and the new commits have not run there yet.
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed both PR-review Majors and both Minors in e8547f90, afde75fd, and 518a5eae, with a CLI test that fails on the old head for the config one; see Decision: the install seed's routing stub. CI on e9ad165b is green on both legs, and the new commits have not run there yet.
 
 ## Sessions
 
@@ -614,14 +618,16 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix every open self-review finding on PR #528 under the orchestrator's decisions. Bounds: the findings and cleanup items only, no change to `lib/match.mjs` or the config validator, no merge, no ready flip. Approach: one fix commit per concern, each test shown red on the old head, then `prism:check`. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: self-review the review-fix commits 2c4f7de6..e9705bfc on PR #528. Bounds: plan Review and PR Readiness only, no source fix, no GitHub post, no merge. Approach: run `prism:check`, read both CI legs on the head, check each fix against its finding, and verify the changed architect-doc claims against source. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix the three open second-pass findings on PR #528. Bounds: those findings, the plan's Verification and Review records, and the PR body's Windows line; no merge, no ready flip. Approach: one fix commit with tests shown red on the old source, a separate plan commit, then `prism:check`. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix the four PR-review findings on PR #528, then the PR body and a lesson. Bounds: those findings and the plan's Decision, Review, History, and Verification records; no change to `lib/command.mjs` exports or `lib/match.mjs`, no thread resolution, no merge, no ready flip. Approach: a CLI test shown red on the old head, one fix commit per concern, a separate lessons commit and plan commit, then `prism:check`. · close: scope held
 
 ## Verification
 
 - `pnpm exec tsc --noEmit` passes for both `scripts/ai-skills/tsconfig.json` and `tsconfig.hooks.json`.
-- `pnpm run prism:test` reports 1504 passing, 0 failing, and 1 skipped, after the second-pass fixes. The skip is the existing `.agents` round-trip case, which waits on `prism:build`. Each behavior fix has a test that fails on the head before it.
+- `pnpm run prism:test` reports 1505 passing, 0 failing, and 1 skipped, after the PR-review fixes. The skip is the existing `.agents` round-trip case, which waits on `prism:build`. Each behavior fix has a test that fails on the head before it.
 - `prism:crossref-lint`, `prism:plan-citations`, `prism:spec-scope-lint`, `prism:ship-closure`, `prism:verify-manifest`, and `prism:verify-pack` pass, and `pnpm prism:check` run as one command with `GITHUB_HEAD_REF=huntermcgrew/prism-520-chain-scripts` exits 0.
-- CI run 44289419823 on e9705bfc is green on `ubuntu-latest` and `windows-latest`. The leg that had failed 7 tests passes with the container-path and test-literal fixes.
-- Not verified: the second-pass fix commit on the Windows leg, and the delivered scripts under a real Claude Code session.
+- CI run 44290931324 on e9ad165b is green on `ubuntu-latest` and `windows-latest`, so the second-pass fixes have run on the Windows leg. The leg that had failed 7 tests passes with the container-path and test-literal fixes.
+- The consumer gate probe denies a Bash call to `node .claude/hooks/plan/tasks.mjs` or `commit.mjs` with the old stub as the manifest and allows both with the new stub. The auto-approve probe exits 2 on a trailing-comma config, 1 on the same config without the comma, and 0 on a config that sets a string where a list belongs, which the stop-path Decision keeps.
+- Not verified: the PR-review fix commits on CI, and the delivered scripts under a real Claude Code session.
 
 ## Review
 
@@ -793,7 +799,8 @@ Eric PR review, 2026-11-18, of 35f6ca7a..e9ad165b. Two Major findings and two Mi
 #### An unparseable config lets auto-approval run with no contract stop paths
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** e8547f90: `readStopPathConfig` throws when the config file exists and `readRepoConfig` returns null, so the CLI exits 2 with a message, and the new CLI test fails on the old head. An absent file keeps the defaults.
 - **File:** `scripts/ai-skills/hooks/plan/auto-approve.mjs:389`
 - **Problem:** `readRepoConfig` returns null when `.ai-skills/config.json` does not parse, so `resolveStopPaths(null)` returns the defaults with an empty contract list and the plan approves. Probed: the `contract-path` fixture with `{ "stopPaths": { "contract": ["src/contracts/**"] }, }` (a trailing comma) passes `--check` with exit 0, and the same config without the comma exits 1 on the stop path. `plan-chain-scripts.md:81` and the comment at `auto-approve.mjs:391` both say a config it can't read exits 2 without approving.
 - **Suggested fix:** leave the shared `readRepoConfig` alone. In `runCli`, when `<repoRoot>/.ai-skills/config.json` exists and `readRepoConfig` returns null, print that the config can't be parsed and exit 2. An absent file keeps the defaults. Add a CLI test with a trailing-comma config.
@@ -801,7 +808,8 @@ Eric PR review, 2026-11-18, of 35f6ca7a..e9ad165b. Two Major findings and two Mi
 #### The install stub routes `.claude/hooks/plan/**`, which the hook runtime doc says stays unrouted
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** afde75fd: the stub drops the `.claude/hooks/plan/**` route and routes `.prism/templates/plan.md` and `.prism/templates/spec.md` to the doc. `prism:verify-manifest` passes, and the gate probe allows both calls. See the Decision on the install seed's routing stub.
 - **File:** `templates/install/.prism/architect/manifest.stub.json:28`
 - **Problem:** `hook-runtime.md:31` says the consumer-side files under `.claude/hooks/` are deliberately unrouted, because in a consumer repo they belong to the consumer. The new route puts them under the write gate. Probed: in a consumer fixture with the shipped stub as its manifest, a `PreToolUse` Bash call running `node .claude/hooks/plan/tasks.mjs …` or `node .claude/hooks/plan/commit.mjs …` is denied until `plan-chain-scripts.md` is read. The Decision on the stub route cites `.githooks/**` as precedent, but `.githooks/` is not on the doc's unrouted list and `.claude/hooks/` is.
 - **Suggested fix:** route the doc in the stub the way the base manifest does, with `.prism/templates/plan.md` and `.prism/templates/spec.md` pointing at `_toolkit/plan-chain-scripts.md`, drop the `.claude/hooks/plan/**` route, and rerun `prism:verify-manifest`. If the `.claude/hooks/` route is wanted, amend the sentence in `hook-runtime.md` and record why in Decisions.
@@ -809,7 +817,8 @@ Eric PR review, 2026-11-18, of 35f6ca7a..e9ad165b. Two Major findings and two Mi
 #### The copied extractImportSpecifiers JSDoc cites a missing module and reads as a changelog
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 518a5eae: the comparison and the history are cut, and the three invariants stay.
 - **File:** `scripts/ai-skills/hooks/plan/bundles.mjs:188`
 - **Problem:** the JSDoc came over verbatim. It compares the function to a "shell-token extractor" that does not exist in PRISM, and its closing sentences narrate history ("silently dropped that fourth one", "a specifier that matches today"), which `code-comments.md` lists under Not Allowed.
 - **Suggested fix:** keep the invariants (the four import forms, that a specifier in a comment can add an edge but never drop one, and why the two `from` patterns are bounded differently) and drop the comparison and the history.
@@ -817,7 +826,8 @@ Eric PR review, 2026-11-18, of 35f6ca7a..e9ad165b. Two Major findings and two Mi
 #### The resolver test header lists the tiers from before the lookup moved
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 518a5eae: the header lists the plan folder (`<id>/` and `epic-<id>/`), the flat files, the ticket-field scan for folders and flat plans, and the slug tier.
 - **File:** `scripts/ai-skills/lib/resolve-live-plan.test.ts:4`
 - **Problem:** the header says the suite exercises "every fallback tier" and lists a plan folder's `<id>/plan.md`, `<id>.md`, and `epic-<id>.md`. This PR added the intent-only folder, the epic folder, and the folder ticket-field cases, so the list is now incomplete.
 - **Suggested fix:** name the order in `lookup.mjs`, or drop the list and point at `lookup.mjs`.
@@ -864,13 +874,13 @@ The issue's one-line proof ("every suite passes, and a plan with two tasks on on
 
 ## PR Readiness
 
-- [ ] No critical or major issues — both self-review passes' findings are fixed. PR review left two Majors open: auto-approval runs on default stop paths when the config does not parse, and the install stub routes `.claude/hooks/plan/**` against `hook-runtime.md`
+- [x] No critical or major issues — both self-review passes' and the PR review's findings are fixed; the PR review's re-review has not run
 - [x] Types correct — `pnpm prism:check-types` passes for both tsconfigs, and the modules use JSDoc types with no `any`
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — no test covers auto-approval on a config that does not parse
+- [x] Tests written for new logic and edge cases — a CLI test pins exit 2 on a config that does not parse
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run 2026-11-18 on e9ad165b: `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally, and CI run 44290931324 is green on `ubuntu-latest` and `windows-latest`
-- [ ] PR description up to date — its Not-verified line still lists the commits after e9705bfc on CI, which run 44290931324 has now run green
+- [x] Build passes — last run 2026-11-18: `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally on the PR-review fix commits (1505 pass, 1 skipped). CI on those commits has not run; run 44290931324 on e9ad165b is green on `ubuntu-latest` and `windows-latest`
+- [x] PR description up to date — its Not-verified line names the PR-review fix commits, and Notes name the `prism-519/plan.md` rewordings
 - [ ] Lasting decisions promoted to architect context (if applicable) — close-time work, not yet done
 
 **Last updated:** 2026-11-18
