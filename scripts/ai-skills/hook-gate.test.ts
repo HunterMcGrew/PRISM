@@ -550,8 +550,8 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 	assert.ok(settings.hooks.PreCompact, "PreCompact registration delivered");
 	assert.equal(
 		settings.hooks.SessionStart?.[0]?.matcher,
-		"compact",
-		"SessionStart registration delivered, scoped to post-compact starts"
+		"startup|resume|compact",
+		"SessionStart registration delivered, scoped to the starts the compaction note and the git hooks install arm each filter on"
 	);
 	await fs.access(path.join(consumerRoot, ".claude", "hooks", "compact-handoff.mjs"));
 
