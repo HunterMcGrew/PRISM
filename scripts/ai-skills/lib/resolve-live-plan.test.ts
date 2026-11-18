@@ -1,11 +1,12 @@
 /**
  * Regression suite for the shared live-plan resolver.
  *
- * Exercises every fallback tier — a plan folder's `<id>/plan.md`, direct
- * `<id>.md`, `epic-<id>.md`, the
- * `## Ticket` field scan, and the unfiled-plan-by-slug tier for branches with
- * no ticket-id-shaped token — plus `extractTicketId`'s branch-name parsing,
- * against temp trees built per test, following the
+ * Exercises every fallback tier — a plan folder (`<id>/` or `epic-<id>/`,
+ * resolving to its latest-stage chain file), the direct `<id>.md`,
+ * `epic-<id>.md`, the ticket-field scan (a folder's `ticket:` line or a flat
+ * plan's `## Ticket` field), and the unfiled-plan-by-slug tier for branches
+ * with no ticket-id-shaped token — plus `extractTicketId`'s branch-name
+ * parsing, against temp trees built per test, following the
  * `spec-scope-lint.test.ts` pattern of testing exported pure functions
  * against a controlled filesystem.
  */

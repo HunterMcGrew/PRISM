@@ -184,22 +184,20 @@ export function analyzeBundles({
 /**
  * Extracts module specifiers from file text, bounded to the four import
  * forms rather than a scan of the raw text: `import ... from "X"`,
- * `import "X"`, `require("X")`, and dynamic `import("X")`. Bounded like the
- * shell-token extractor — a specifier inside a comment can slip through, which
- * adds a dependency edge at worst and never drops a real one.
+ * `import "X"`, `require("X")`, and dynamic `import("X")`. A specifier inside
+ * a comment can slip through, which adds a dependency edge at worst and never
+ * drops a real one.
  *
  * Each `from` form gets its own bound, because the two wrap differently. A
  * single-line declaration is bounded by end-of-line; a wrapped one is bounded by
- * the closing brace of its binding list. Widening the first to cross newlines
- * instead of adding the second would regress the working case: the scan is lazy,
- * so an unterminated declaration would run on to a *later* statement's `from`
- * and carry `lastIndex` past the real import in between, dropping a specifier
- * that matches today. A brace-bounded pattern can't leave its own declaration.
+ * the closing brace of its binding list. A single pattern that crossed newlines
+ * would be lazy, so an unterminated declaration would run on to a later
+ * statement's `from` and carry `lastIndex` past the real import in between,
+ * dropping its specifier. A brace-bounded pattern can't leave its own
+ * declaration.
  *
  * The wrapped pattern admits an optional default binding before the brace, so
- * `import React, {\n...\n} from "react"` matches. Anchoring it on the brace
- * alone covered the three shapes it was written against and silently dropped
- * that fourth one.
+ * `import React, {\n...\n} from "react"` matches.
  *
  * @param {string} text
  * @returns {string[]}
