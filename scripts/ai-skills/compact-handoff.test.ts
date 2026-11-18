@@ -124,6 +124,43 @@ test("findPlanForBranch follows plan-lookup order and matches only the configure
 	}
 });
 
+test("findPlanForBranch resolves a plan folder to its latest-stage file", () => {
+	const root = makeRepo("main");
+	try {
+		writePlan(root, ".prism/plans/acme-7/intent.md");
+		assert.equal(findPlanForBranch(root, "dev/acme-7-x"), ".prism/plans/acme-7/intent.md");
+
+		writePlan(root, ".prism/plans/acme-7/plan.md");
+		assert.equal(findPlanForBranch(root, "dev/acme-7-x"), ".prism/plans/acme-7/plan.md");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("findPlanForBranch finds a flat plan by its ## Ticket section", () => {
+	const root = makeRepo("main");
+	try {
+		mkdirSync(path.join(root, ".prism", "plans"), { recursive: true });
+		writeFileSync(path.join(root, ".prism", "plans", "notes.md"), "## Ticket\n\nACME-8\n");
+
+		assert.equal(findPlanForBranch(root, "dev/acme-8-x"), ".prism/plans/notes.md");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("findPlanForBranch prefers a live folder plan over an archived flat plan of the same id", () => {
+	const root = makeRepo("main");
+	try {
+		writePlan(root, ".prism/archived/plans/acme-7.md");
+		writePlan(root, ".prism/plans/acme-7/spec.md");
+
+		assert.equal(findPlanForBranch(root, "dev/acme-7-x"), ".prism/plans/acme-7/spec.md");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
 test("SessionStart prints the post-compact note only for source compact", async () => {
 	const root = makeRepo("dev/acme-12-thing");
 	try {

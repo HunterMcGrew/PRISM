@@ -30,22 +30,21 @@
  * and prints nothing to stdout, so this module is the runtime's only
  * `PreCompact` stdout writer.
  *
- * A plan miss here is a miss by filename only. The `## Ticket` scan is
- * skipped, so the post-compact note sends the session to the full lookup
- * rather than saying no plan exists.
+ * The plan path comes from the shared lookup in `plan/lookup.mjs`, so plan
+ * folders and the `## Ticket` scan count. A miss still sends the post-compact
+ * note to the full lookup rather than saying no plan exists.
  *
  * Both arms return `null` rather than throwing on anything unexpected. A
  * `PreCompact` exit code of 2 blocks the compaction, and a blocked compaction
  * that was recovering from a context-limit error fails the request.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { findRepoRoot } from "./architect-route.mjs";
+import { findArchivedPlan, resolvePlan } from "./plan/lookup.mjs";
 
-const PLANS_RELATIVE = ".prism/plans";
-const ARCHIVED_PLANS_RELATIVE = ".prism/archived/plans";
 const STATUS_LINE_LIMIT = 40;
 
 /**
@@ -92,10 +91,10 @@ function readTicketPrefix(repoRoot) {
 }
 
 /**
- * Finds the plan for the ticket ID in the branch name, trying `<id>.md`, then
- * `epic-<id>.md`, then the same two among archived plans. The `## Ticket`
- * scan that `branch-plan.md` § Plan Lookup falls back to is skipped, so the
- * hook checks four fixed paths instead of opening every plan.
+ * Finds the plan for the ticket ID in the branch name: a live plan first,
+ * through the shared lookup (plan folders, flat plans, and the `## Ticket`
+ * scan), then an archived one. Returns null when the lookup throws, because
+ * the compaction arms must never fail.
  *
  * The ID pattern comes from the config's `ticketPrefix` because a consumer's
  * prefix is their own. A generic `<letters>-<digits>` match would also hit
@@ -118,14 +117,16 @@ export function findPlanForBranch(repoRoot, branch) {
 	}
 
 	const id = match[1].toLowerCase();
-	const candidates = [
-		`${PLANS_RELATIVE}/${id}.md`,
-		`${PLANS_RELATIVE}/epic-${id}.md`,
-		`${ARCHIVED_PLANS_RELATIVE}/${id}.md`,
-		`${ARCHIVED_PLANS_RELATIVE}/epic-${id}.md`,
-	];
 
-	return candidates.find((relative) => existsSync(path.join(repoRoot, relative))) ?? null;
+	try {
+		return (
+			resolvePlan(repoRoot, id)?.file ??
+			findArchivedPlan(repoRoot, id)?.file ??
+			null
+		);
+	} catch {
+		return null;
+	}
 }
 
 /**
