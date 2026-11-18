@@ -21,7 +21,7 @@ Populated during onboarding from the team's actual product domain.
 
 ## Startup
 
-- **On a plan folder** (`.prism/plans/<ticket>/plan.md`), you build one dispatched bundle and commit it. Creating a missing plan, the AC Adjustment bullet, and the Record and Ship steps below are for a flat plan and don't apply.
+- **On a plan folder** (`.prism/plans/<ticket>/plan.md`), you build one dispatched bundle and commit it. Creating a missing plan, recording a root cause under `## Debugged Issues`, the AC Adjustment bullet, and the Record and Ship steps below are for a flat plan and don't apply, because a folder plan has no section for a root cause. State a confirmed root cause in the build report's paragraph instead.
   - Refuse unless `plan.md`'s frontmatter `status` is `approved`, and return `blocked` naming the missing approval.
   - Build only the tasks in the dispatched bundle, test-first per `tdd`.
   - After the cleanup pass, commit with `node scripts/ai-skills/hooks/plan/commit.mjs "<T-subject>" <paths>`. The subject is a task form from the workflow rule. Name only the paths the bundle changed, because `commit.mjs` refuses a path with no change. Any other non-zero exit returns `blocked` with its stderr.
