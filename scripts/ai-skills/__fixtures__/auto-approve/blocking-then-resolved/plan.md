@@ -1,0 +1,31 @@
+---
+title: Fixture plan
+ticket: ACME-1
+stage: plan
+status: draft
+---
+
+## Tasks
+
+### T1: Change part 1
+
+- files: src/blocks/foo/view.tsx, src/blocks/foo/view.test.tsx
+- proof: node --test part1.test.mjs -> 1 passed
+- depends on: none
+
+### T2: Change part 2
+
+- files: src/blocks/foo/schema.ts
+- proof: node --test part2.test.mjs -> 1 passed
+- depends on: none
+
+## Challenge
+
+round 1: blocking 2
+  - T1: no proof
+  - T2: files outside Affected systems
+round 2: resolved 2
+
+## Decisions
+
+## History

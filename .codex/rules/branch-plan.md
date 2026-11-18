@@ -30,12 +30,14 @@ Examples:
 When looking for an existing plan:
 
 1. Extract a ticket ID from the current context: branch name (`thr-NNNN` pattern), PR title, user input, or task description.
-2. Look for `.prism/plans/<ticket-id>.md`.
-3. If not found, look for `.prism/plans/epic-<ticket-id>.md`.
-4. If not found, scan all plan files for a matching `## Ticket` field.
+2. Look for `.prism/plans/<ticket-id>/` holding a chain file (`intent.md`, `design.md`, `spec.md`, or `plan.md`), then `.prism/plans/<ticket-id>.md`.
+3. If not found, look for `.prism/plans/epic-<ticket-id>/` the same way, then `.prism/plans/epic-<ticket-id>.md`.
+4. If not found, scan all plan files for a matching `## Ticket` field, and each plan folder's chain files for a matching `ticket:` frontmatter line.
 5. If still not found:
    - **implement / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
    - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
+
+A folder resolves to its latest-stage file (`plan.md`, else `spec.md`, `design.md`, `intent.md`), and `.prism/archived/` never resolves as a live plan.
 
 ---
 
@@ -108,7 +110,7 @@ The cap is one rule with three reasons.
 - **Edit-time echo** — agents writing the next entry re-read prior history first. A 6-sentence entry costs every future appender twice: once to read, once to draft against. Write-time savings are tiny; read-time savings compound over the plan's lifetime.
 - **Scannability** — a human or agent skimming `## History` to reconstruct what happened reads top to bottom. Each entry is one bullet, so long entries break the rhythm and the reader loses the at-a-glance timeline.
 
-**Where depth belongs:** if the change has a verified-fix or non-trivial-decision story to tell, it belongs in `## Decisions` with the sub-bullet shape from § 5 (root cause, alternatives considered, chosen approach, implementation guidance). The History entry then becomes one line: `YYYY-MM-DD [branch]: <one-sentence change>; see Decision: <title>`.
+**Where depth belongs:** if the change has a verified-fix or non-trivial-decision story to tell, it belongs in `## Decisions` with the sub-bullet shape from § 5 (root cause, alternatives considered, chosen approach, implementation guidance). The History entry then becomes one line: `YYYY-MM-DD [branch]: <one-sentence change>; see Decision: <title>`. In a plan folder, name the Decision in plain words without that form. The plan-folder citation lint rejects it, because folder files move and get renamed.
 
 ---
 

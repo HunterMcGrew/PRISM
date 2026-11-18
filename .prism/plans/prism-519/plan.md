@@ -246,7 +246,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
     - Reordering at each caller. Rejected, because PRISM's build and the consumer refresh would each need the same edit.
   - **Chosen approach:** one list in `agents-md-block.ts`, applied in `renderTier1Block`. Both callers inherit it with no call-site change.
   - **Implementation guidance:** keep `collectTier1RuleBodies` alphabetical, so the rest of the block and its existing test do not move.
-  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution (the lead-first order; the rejected second marker pair stays here)
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution (the lead-first order; the rejected second marker pair stays here)
 - **The lead list is the rule files; its order follows the intent's sentence.** The intent names "the workflow block, the resume table, routing, and the behavioral norms." Routing is `skill-routing.md`. The behavioral norms are the rules that `AGENTS.md`'s "Behavioral norms" table links, in that table's row order. The table itself already sits in the handwritten preamble inside the first 4 KiB, so listing it would prove nothing. Child 5 prepends the workflow block and resume table.
   - → no promotion needed (the list and its JSDoc in `agents-md-block.ts` are the record; child 5 extends it)
 - **The 32 KiB budget is nearly spent, and child 5 has to reclaim space.**
@@ -259,24 +259,24 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
   - The value is the size rounded up to the next 64 KiB, plus one step (spec). A larger existing value is kept, because a team may have raised it for nested `AGENTS.md` files that share Codex's budget.
   - The TOML edit is line-based, with no parser. A parser would be a new dependency, and only one top-level integer key is ever read or written.
   - The edit reads only the region before the first table header. A value it cannot read is left alone with a warning, because rewriting a value it does not understand could corrupt the file.
-  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution (the no-parser reason stays here)
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution (the no-parser reason stays here)
 - **PRISM's own build writes PRISM's `.codex/config.toml`.** Then the live run in task 8 can test this repo, and `prism:check` catches a stale value when a rule edit grows `AGENTS.md` past a 64 KiB step. Consumers get the write through `runUpdate`, which `prism adopt` delegates to. Onboarding regenerates through `prism update` in consumer context and `pnpm prism:build` in toolkit context (`prism-onboard`, its install-context table). So adopt, update, and onboarding are all covered with no skill edit.
-  - → promoted to `.prism/architect/_toolkit/install-layout.md` § Direct-write tool outputs
+  - → promoted to `.prism/architect/_toolkit/install-layout.md`, under Direct-write tool outputs
 - **Only the repo-root `AGENTS.md` is sized.** Codex's limit covers the combined files on its root-to-working-directory walk. The one 64 KiB headroom step covers small nested files, and a team with large ones raises the value by hand, which the never-lower rule then keeps.
   - → no promotion needed (the `computeProjectDocMaxBytes` JSDoc says the extra step is headroom for nested files on Codex's walk, and `consumer-sync-flow.md` says a larger value is never lowered)
 - **Dropping Codex from `hosts`, and `prism eject`, both leave the key.** The key is harmless without Codex. The file is the team's committed config, and the value may be one they raised themselves, so removing it could undo a choice PRISM did not make.
-  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **The lead rules fit the default window only while the content above the block is small.** The ordering is guaranteed, the fit is not: the lead rules run to about 27 KB, so a consumer who added the marker pair to a file with more than about 5 KB above it pushes them past 32 KiB. Only PRISM's own file is measured in CI. Doctor measures the consumer's file with `measureLeadSectionEnds` and says so when the limit in force ends before the lead rules.
   - **Alternatives considered:** a separate doctor finding for the lead rules. Rejected, because a lead rule cannot end past the end of the file, so the finding would always duplicate the existing size warning.
-  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **`prism update` writes no Codex config for an `AGENTS.md` inside the limit in force when no config exists.** Codex already reads the whole file, so the config would be a committed file with no effect. An existing config is still updated, because a team that has one may have lowered the value. The write condition is "over the limit in force, or a config already exists", and the docs say so.
   - **Alternatives considered:** also skipping an existing config that has no key when the file fits (the review's cleaner path). Rejected for now, because the stated contract updates any existing config, and a config with no key costs one harmless line.
-  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **Doctor and the sync share one "limit in force" helper, `readLimitInForce`.** It is the configured value when readable, otherwise 32,768. Doctor's early return uses `min(32768, limit in force)`, not the limit alone, because a configured limit above the default must not silence a file past 32 KiB that relies on it (AC-6's `info` row).
   - → no promotion needed (code-level; the `min` is in `scripts/ai-skills/doctor.ts:1075` and the doctor tests pin it, and the reason stays here)
 - **The merge skips with a warning when a limit line exists that the top-level reader cannot see.** The reader has no TOML parser, so a lone-value array element (`[3]`) reads as a table header and hides a real top-level key; prepending then writes a duplicate key. Alternatives considered: enumerating more array shapes in `TABLE_HEADER` (rejected, because each fix leaves a narrower shape, which is what the last two rounds found) and adding a parser (rejected, a new dependency). The cost is that a key that really sits under a table gets the warning too, instead of a prepended top-level key that would have been valid. That is a rare config and the warning names the value to set by hand.
   - **Third round:** the condition is now a fourth `ProjectDocMaxBytesSetting` kind, `unplaced`, returned by `readProjectDocMaxBytes`, so the sync and doctor branch on one value and neither rescans. Doctor warns that the limit in force is unknown and that a top-level `project_doc_max_bytes` line is needed (a key that belongs under a table like `[profiles.x]` must not be told to move), never "run `prism update`", which skips that config. Doctor's early return exempts `unplaced`, because a hidden top-level limit below 32 KiB can cut a file inside the default window. `readLimitInForce` does not accept `unplaced`, because there is no reading to return.
-  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **Doctor warns rather than errors, and always names the per-developer fallback.** A short read limit degrades Codex sessions without breaking the install, and `healthy` keys on `error` alone. The `~/.codex/config.toml` sentence carries the OPEN Decision's default path below.
   - → no promotion needed (doctor's messages and tests are the record, and the fallback sentence follows the OPEN Decision, so it changes when that resolves)
 - **The docs land in this PR, written by Clove.** The two architect docs, their curated twins, and the consumer guide describe behavior this PR adds. A separate docs PR would describe code that has not merged. This is a documented absorption of the docs lane, per `branch-plan.md` (Implementation Tasks).
@@ -287,7 +287,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
   - → no promotion needed (ticket tactic)
 - **The AC is synced to issue #519.** It was not synced when the plan was written, because editing a public issue needed Hunter's go-ahead. The issue body now carries all 10 criteria under `## Acceptance Criteria` (checked with `gh issue view 519` on 2026-11-18), so the AC Sync Log records it as synced.
   - → no promotion needed (ticket bookkeeping; the AC Sync Log is the record)
-- **The close markers are the `>` lines, and frontmatter `status: closed` stays as a placeholder.** `branch-plan.md` § Before Closing step 2 defines both lines, and Zoe's plan-archive lane (`audit-workflow.md` § Plan-archive lane) keys on `> Closed:` alone, not frontmatter, so those two lines are what make this plan closed today. The frontmatter `status: closed` stays because the epic spec defines no closed value; child 4 or child 6 defines folder-plan close and settles it.
+- **The close markers are the `>` lines, and frontmatter `status: closed` stays as a placeholder.** `branch-plan.md`, under Before Closing step 2 defines both lines, and Zoe's plan-archive lane (`audit-workflow.md`, under Plan-archive lane) keys on `> Closed:` alone, not frontmatter, so those two lines are what make this plan closed today. The frontmatter `status: closed` stays because the epic spec defines no closed value; child 4 or child 6 defines folder-plan close and settles it.
   - **Alternatives considered:** dropping the frontmatter `status`. Rejected, because the folder-plan close that child 4 or 6 defines may read it, and removing it now would be an edit they reverse. The trailing `Retro:` line stays for the same reason.
   - → no promotion needed (bridge until the folder-plan close lands)
 - **`compatibility.md` gains `config.toml` in its `.codex/` bullet, though it is outside this plan's files.** The file is the one `install-layout.md` cites for the committed-vs-ignored contract, and this change made its `.codex/` bullet false by committing `.codex/config.toml`. The edit is one sentence and shares the PR's purpose; a separate PR would leave the two files disagreeing until it merged.
@@ -346,7 +346,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **Severity:** `minor`
 - **Status:** `fixed`
 - **File:** `.ai-skills/docs/compatibility.md:42`
-- **Problem:** `install-layout.md` now lists `.codex/config.toml` as committed, and it cites compatibility.md § Per-Tool Directory Ownership as the source of that contract. That section's `.codex/` bullet does not mention the file, so the source and its summary disagree. It is Minor because only the docs disagree. Behavior is unaffected.
+- **Problem:** `install-layout.md` now lists `.codex/config.toml` as committed, and it cites compatibility.md, under Per-Tool Directory Ownership as the source of that contract. That section's `.codex/` bullet does not mention the file, so the source and its summary disagree. It is Minor because only the docs disagree. Behavior is unaffected.
 - **Suggested fix:** add `config.toml` (PRISM sets only `project_doc_max_bytes`) to the tracked list in that bullet.
 - **Fixed in:** 0b142e12 — the `.codex/` bullet in compatibility.md now lists `config.toml`.
 
@@ -454,7 +454,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **Severity:** `minor`
 - **Status:** `fixed`
 - **File:** `scripts/ai-skills/codex-project-doc.ts:104`
-- **Problem:** a regular function with a `has` prefix reads as a boolean variable (`code-standards.md` § Naming).
+- **Problem:** a regular function with a `has` prefix reads as a boolean variable (`code-standards.md`, under Naming).
 - **Suggested fix:** a verb name, or remove it with the `unplaced` kind.
 - **Fixed in:** 812f842a — the helper is removed; its any-depth scan is inline in `readProjectDocMaxBytes`.
 

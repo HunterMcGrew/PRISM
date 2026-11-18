@@ -547,3 +547,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-18 (PRISM-516) — `otherWorktreeHasShim` compared Node's `realpathSync(repoRoot)` with the paths in `git worktree list --porcelain`. Windows spells the same directory differently in Node and in git, so the current worktree counted as a sibling and `removeGitHooksPath` kept the value. Linux CI passed, and Windows CI failed on the unset test.
 
 **How to apply:** Compare paths only when both sides come from one source, both from git or both from Node, and normalize both the same way. For "is this the current worktree", take self from `git rev-parse --show-toplevel`, as the list entries are, the way `classifyHooksPath` uses `resolveCommonDir`.
+
+## A safety gate that reads config through a helper returning null on a parse failure fails open
+
+**Why:** 2026-11-18 (PRISM-520) — `auto-approve.mjs` read `.ai-skills/config.json` through `readRepoConfig`, which returns null for an absent file and for one that does not parse. A trailing comma in a config that set `stopPaths.contract` resolved to the defaults, whose contract list is empty, so the plan approved. The architect doc and a comment both said an unreadable config exits 2, and only the PR review's probe showed otherwise.
+
+**How to apply:** A gate that decides from config tells "file absent" from "file present but unreadable" itself, with an `existsSync` check beside the helper, and refuses on the second. A helper written never to throw for a git hook is the wrong default for a check that allows something.
