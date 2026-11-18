@@ -85,6 +85,8 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 - **Problem:** Nothing exercises the `STATUS_LINE_LIMIT` branch (`… N more`), the detached-HEAD label, or a git failure, so the "under 10,000 characters" claim is only checked for a one-file status.
 - **Suggested fix:** Add one test with more than 40 untracked files asserting the `… N more` line and the length cap.
 
+Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]. The three findings above are confirmed closed; the `PreCompact` stdout claim (summary instructions, 10,000-character cap per hook) was checked against Claude Code's hooks reference.
+
 ---
 
 ## Acceptance Criteria
