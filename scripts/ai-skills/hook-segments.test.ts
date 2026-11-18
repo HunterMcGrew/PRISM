@@ -6,6 +6,7 @@ import test from "node:test";
 import {
 	containsSubstitution,
 	readFedStdin,
+	resolveContainerDir,
 	resolveDir,
 	SHELL_STRING_FLAG,
 	SHELLS,
@@ -198,7 +199,10 @@ test("each o or O in a shell's option cluster takes the next word as its value",
 test("a shell string reached past argv[0] runs in an unknown directory", () => {
 	assert.equal(find(walk("sudo sh -c 'cat x'"), "cat")!.cwd, null);
 	assert.equal(find(walk("bash -c 'cat x'"), "cat")!.cwd, REPO);
-	assert.equal(find(walk("sudo sh -c 'cd /abs && cat x'"), "cat")!.cwd, "/abs");
+	assert.equal(
+		find(walk("sudo sh -c 'cd /abs && cat x'"), "cat")!.cwd,
+		path.normalize("/abs")
+	);
 });
 
 test("a heredoc feeds a shell only when the shell is the command itself", () => {
@@ -366,7 +370,10 @@ test("cd reads ~ as home and an unresolvable path as null", () => {
 	assert.equal(find(walk("cd && git a"), "git")!.cwd, os.homedir());
 	assert.equal(find(walk("cd $HOME/x && git a"), "git")!.cwd, null);
 	assert.equal(find(walk("cd - && git a"), "git")!.cwd, null);
-	assert.equal(find(walk("cd $X && cd /abs && git a"), "git")!.cwd, "/abs");
+	assert.equal(
+		find(walk("cd $X && cd /abs && git a"), "git")!.cwd,
+		path.normalize("/abs")
+	);
 });
 
 test("a cd, env -C, or -w word holding a command substitution reads as null", () => {
@@ -406,8 +413,8 @@ test("PowerShell Set-Location moves the directory", () => {
 
 test("resolveDir needs a base for a relative path", () => {
 	assert.equal(resolveDir("sub", null), null);
-	assert.equal(resolveDir("/abs/../x", null), "/x");
-	assert.equal(resolveDir("sub/..", "/a"), "/a");
+	assert.equal(resolveDir("/abs/../x", null), path.normalize("/x"));
+	assert.equal(resolveDir("sub/..", "/a"), path.normalize("/a"));
 });
 
 // --- Functions and case arms (R122) ---
@@ -548,4 +555,67 @@ test("a cd inside a -c string moves the directory of the commands after it", () 
 	const commit = find(result, "git")!;
 	assert.equal(commit.via, "shell-string");
 	assert.equal(commit.cwd, path.join(root, "sub"));
+});
+
+// --- Directory inside a container ---
+
+/** Runs `run` with `process.platform` reading as `platform`. */
+function withPlatform<T>(platform: NodeJS.Platform, run: () => T): T {
+	const original = Object.getOwnPropertyDescriptor(process, "platform")!;
+	Object.defineProperty(process, "platform", { value: platform });
+	try {
+		return run();
+	} finally {
+		Object.defineProperty(process, "platform", original);
+	}
+}
+
+test("a container's directory resolves as a POSIX path on a Windows host", () => {
+	withPlatform("win32", () => {
+		const workdir = walk("docker exec -w /w c node -e x").segments[0]!;
+		assert.equal(workdir.cwd, "/w");
+
+		const nested = find(
+			walk("docker exec c bash -lc 'cd /d/app && echo x'"),
+			"echo"
+		)!;
+		assert.equal(nested.cwd, "/d/app");
+
+		const relative = find(
+			walk("docker exec -w /app c bash -lc 'cd sub && echo x'"),
+			"echo"
+		)!;
+		assert.equal(relative.cwd, "/app/sub");
+
+		const envChdir = walk("docker exec c env -C /w node -e x").segments[0]!;
+		assert.equal(envChdir.cwd, "/w");
+	});
+});
+
+test("resolveContainerDir resolves POSIX paths and leaves the host's home out", () => {
+	assert.equal(resolveContainerDir("/w", null), "/w");
+	assert.equal(resolveContainerDir("sub/..", "/a"), "/a");
+	assert.equal(resolveContainerDir("sub", null), null);
+	assert.equal(resolveContainerDir("~/x", "/a"), null);
+	assert.equal(resolveContainerDir("$X", "/a"), null);
+});
+
+test("a bare cd inside a container leaves the directory unknown", () => {
+	const git = find(walk("docker exec c sh -c 'cd && git a'"), "git")!;
+	assert.equal(git.cwd, null);
+	assert.equal(find(walk("cd && git a"), "git")!.cwd, os.homedir());
+});
+
+// --- Command words that name Object.prototype members ---
+
+test("a command word naming an Object.prototype member is no wrapper and does not throw", () => {
+	for (const word of ["toString", "valueOf", "constructor", "hasOwnProperty"]) {
+		const segment = walk(`${word} git push`).segments[0]!;
+		assert.deepEqual(segment.argv, [word, "git", "push"], word);
+		assert.deepEqual(segment.wrappers, [], word);
+	}
+
+	const proto = walk("__proto__ x; git push");
+	assert.deepEqual(proto.segments[0]!.argv, ["__proto__", "x"]);
+	assert.deepEqual(find(proto, "git")!.argv, ["git", "push"]);
 });

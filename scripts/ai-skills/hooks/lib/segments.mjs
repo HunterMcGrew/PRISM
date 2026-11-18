@@ -225,6 +225,24 @@ export function resolveDir(dir, base) {
 }
 
 /**
+ * Resolves `dir` the way `cd` would inside a container, from `base`. A
+ * container's filesystem is POSIX whatever the host is, so this never maps a
+ * drive path or reads `os.homedir()`, and `~` reads as null because the
+ * container's home is not the host's.
+ *
+ * @param {string | null | undefined} dir
+ * @param {string | null} base
+ * @returns {string | null}
+ */
+export function resolveContainerDir(dir, base) {
+	if (!dir || dir.includes("$") || dir.startsWith("~")) return null;
+	if (path.posix.isAbsolute(dir)) return path.posix.normalize(dir);
+	if (!base) return null;
+
+	return path.posix.normalize(path.posix.join(base, dir));
+}
+
+/**
  * True when `word` holds the flattened text of one of `substitutions`, the
  * inner texts a segment carries, so its value is only known at run time.
  *
@@ -430,12 +448,20 @@ function scopeFunctionBody(items, braces, shell) {
  */
 function runSegment(items, links, shell, ctx, parsed, out) {
 	const { words, argvWords, redirects, stdinTexts } = readItems(items);
+	const readsAtRunTime = (/** @type {string | null | undefined} */ dir) =>
+		typeof dir === "string" && containsSubstitution(dir, parsed.substitutions);
 	/** @type {Resolve} */
-	const resolve = (dir, base) =>
-		typeof dir === "string" && containsSubstitution(dir, parsed.substitutions)
-			? null
-			: resolveDir(dir, base);
-	const unwrapped = unwrap(argvWords, shell.cwd, resolve);
+	const resolveOnHost = (dir, base) =>
+		readsAtRunTime(dir) ? null : resolveDir(dir, base);
+	/** @type {Resolve} */
+	const resolveInContainer = (dir, base) =>
+		readsAtRunTime(dir) ? null : resolveContainerDir(dir, base);
+	const unwrapped = unwrap(
+		argvWords,
+		shell.cwd,
+		ctx.container ? resolveInContainer : resolveOnHost,
+		resolveInContainer
+	);
 	/** @type {Segment} */
 	const segment = {
 		argv: unwrapped.argv,
@@ -460,7 +486,13 @@ function runSegment(items, links, shell, ctx, parsed, out) {
 		!PIPES.has(/** @type {string} */ (links.before)) &&
 		!PIPES.has(/** @type {string} */ (links.after)) &&
 		links.after !== "&";
-	if (ownShell) changeDir(segment.argv, shell, resolve);
+	if (ownShell)
+		changeDir(
+			segment.argv,
+			shell,
+			segment.container ? resolveInContainer : resolveOnHost,
+			segment.container !== null
+		);
 
 	return segment;
 }
@@ -599,10 +631,12 @@ function readItems(items) {
  *
  * @param {string[]} words
  * @param {string | null} shellCwd
- * @param {Resolve} resolve
+ * @param {Resolve} resolve Resolves a directory where the command starts.
+ * @param {Resolve} resolveInContainer Resolves one once a docker wrapper has
+ *   moved the command into a container.
  * @returns {Unwrapped}
  */
-function unwrap(words, shellCwd, resolve) {
+function unwrap(words, shellCwd, resolve, resolveInContainer) {
 	/** @type {Unwrapped} */
 	const result = {
 		argv: words,
@@ -635,7 +669,7 @@ function unwrap(words, shellCwd, resolve) {
 
 		const name = path.basename(head);
 		if (name === "docker") {
-			const docker = unwrapDocker(result.argv.slice(1), resolve);
+			const docker = unwrapDocker(result.argv.slice(1), resolveInContainer);
 			if (!docker) break;
 
 			result.wrappers.push(docker.form);
@@ -645,7 +679,13 @@ function unwrap(words, shellCwd, resolve) {
 			continue;
 		}
 
-		const stripped = WRAPPERS[name]?.(result.argv.slice(1), result, resolve);
+		if (!Object.hasOwn(WRAPPERS, name)) break;
+
+		const stripped = WRAPPERS[name](
+			result.argv.slice(1),
+			result,
+			result.container ? resolveInContainer : resolve
+		);
 		if (!stripped) break;
 
 		result.wrappers.push(name);
@@ -772,13 +812,15 @@ const WRAPPERS = {
 
 /**
  * Applies a `cd`-style segment to the shell's directory state, resolving its
- * target through `resolve`.
+ * target through `resolve`. A bare `cd` goes home, which is unknown inside a
+ * container.
  *
  * @param {string[]} argv
  * @param {Shell} shell
  * @param {Resolve} resolve
+ * @param {boolean} inContainer
  */
-function changeDir(argv, shell, resolve) {
+function changeDir(argv, shell, resolve, inContainer) {
 	const command = argv[0];
 	if (DIR_RESTORES.has(command)) {
 		shell.cwd =
@@ -793,7 +835,9 @@ function changeDir(argv, shell, resolve) {
 	const next =
 		target === undefined
 			? command === "cd"
-				? os.homedir()
+				? inContainer
+					? null
+					: os.homedir()
 				: shell.cwd
 			: target === "-"
 				? null

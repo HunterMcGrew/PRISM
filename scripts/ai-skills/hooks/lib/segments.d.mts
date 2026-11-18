@@ -27,6 +27,11 @@ export function resolveDir(
 	base: string | null
 ): string | null;
 
+export function resolveContainerDir(
+	dir: string | null | undefined,
+	base: string | null
+): string | null;
+
 export function containsSubstitution(word: string, substitutions: string[]): boolean;
 
 export function readFedStdin(segment: Segment): string[];
