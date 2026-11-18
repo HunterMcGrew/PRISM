@@ -172,7 +172,7 @@ A persona that writes plan content but does not own the branch's code lane, such
 
 - Stage only the plan file: `git add <plan-path>`.
 - Verify the staged set before committing: `git diff --cached --name-only` must print exactly that one path. Anything else — abort, leave the tree alone, and report the unexpected paths in chat.
-- On a plan folder, the staged set is the files under `.prism/plans/<ticket>/` only, checked with the same `git diff --cached --name-only`, and the subject is `plan: <persona> record`.
+- On a plan folder, the staged set is the files under `.prism/plans/<ticket>/` only, checked with the same `git diff --cached --name-only`, and the subject is `plan: <persona> record` in place of the `chore:` subject below.
 - Commit with `chore: <persona> plan record for <ticket-id>` per `git-conventions.md` § Commit Messages.
 - Push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — because a plain `git push origin HEAD` fails from detached HEAD.
 - The exception covers the plan file only. It never extends to source, docs, config, or lockfiles — those stay the author's lane.

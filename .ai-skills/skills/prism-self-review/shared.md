@@ -44,7 +44,7 @@ A plan observation is a finding only when the plan contradicts the diff: it clai
 
 Write the plan in one pass before the chat summary, because the plan is the durable record and the chat is a presentation of it.
 
-- **On a plan folder,** record the result under `plan.md`'s `## Review` instead of `## Review Issues`, as findings in the Review Issues entry shape or `No issues found — <YYYY-MM-DD>`. Commit it as `plan: review` in place of the `chore:` subject in the last bullet.
+- **On a plan folder,** record the result under `plan.md`'s `## Review` instead of `## Review Issues`, as findings in the Review Issues entry shape or `No issues found — <YYYY-MM-DD>`. Commit it as `plan: self-review record` in place of the `chore:` subject in the last bullet.
 - **`## Review Issues`:** one entry per finding in the format `.prism/rules/branch-plan.md` defines. A pass with no findings writes `No issues found — <YYYY-MM-DD> [<branch>]`, so a clean pass is distinguishable from a review that never ran.
 - **`## Cleanup Items` and `## PR Readiness`:** record dead code and debug artifacts, the checklist state, and the build result.
 - **`## Acceptance Criteria`:** when the plan has none, propose criteria from the diff as `proposed` entries. Otherwise confirm each criterion against the diff. Record a difference as a `proposed` entry under `### AC Adjustments` and never rewrite a criterion silently. Once an adjustment is accepted, sync the ticket's AC section and log a row in the AC Sync Log.
