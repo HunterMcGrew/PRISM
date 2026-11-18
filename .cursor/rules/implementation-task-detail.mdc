@@ -15,7 +15,7 @@ When authoring artifacts that drive implementation — the plan stage's tasks in
 Two artifact classes are in scope:
 
 - **`## Implementation Tasks` in branch plans** — written by the plan stage (`prism-plan`). Each task line is a unit of work Clove (or another implementing persona) executes against.
-- **Mode 2 saved mock specs** — written by Pixel at `.prism/design/mocks/<slug>.md`. The spec is the implementation guide for the design portion of the work; The plan stage reads it when writing tasks.
+- **Mode 2 saved mock specs** — written by Pixel at `.prism/design/mocks/<slug>.md`. The spec is the implementation guide for the design portion of the work; the plan stage reads it when writing tasks.
 
 Two artifact classes are explicitly **exempt**:
 
