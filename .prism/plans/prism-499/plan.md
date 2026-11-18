@@ -570,6 +570,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 ## Sessions
 
 - 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc] open: Intent — phase 1 of the AI-native SDLC port; Bounds — baseline, four deletions, rename and thin, umbrella speed bump, no phase-2 artifacts; Approach — stack of PRs, review loop on each, merge in order · close: scope held
+- 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent] open: Intent — re-baseline the remaining phases on thrive's refined workflow; Bounds — `intent.md`, `spec.md`, and this log only, no skill, script, or rule edits; Approach — amend the intent in place, write the spec with the child cut · close: scope held
 
 ---
 
@@ -610,6 +611,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-10-18 [huntermcgrew/prism-499-business]: Eric pass 1 fixes. Removed the closed-epic sentence from `business-layer.md` and moved the long-artifact allowance into the template convention every business skill reads; the two findings are under `## Review Issues`.
 - 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Recorded the phase-1 result against the baseline (29 skills, 1,870 body lines, 2,518 loaded, 3 over the cap) and ticked AC-2 to AC-7. AC-1 stays unticked because 7 dated QA and research records still name Sol, Sasha, or the retired skill IDs.
 - 2026-10-18 [huntermcgrew/prism-499-phase1-result]: Widened AC-1's grep exclusions to the QA and research records and the generated ADR copies, accepted by Hunter, and ticked AC-1 on a 0-file result. Fixed four self-review Minors in § Phase 1 result and the cap Decision.
+- 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Amended the intent to thrive's Kitchen Line stack at its 2026-11-17 branch tips and added `spec.md`, which cuts the remaining work into nine children. The amended intent is a draft until Hunter approves it.
 
 ---
 
@@ -1074,6 +1076,12 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - **File:** `.prism/templates/business-strategy.md:8`
 - **Problem:** the old market-research, marketing, sales, customer-success, and legal bodies let a long artifact live in its own file, but the new bodies and the template said only "write only your own section", and `prism-recruiting` alone kept the clause.
 - **Fixed in:** the "Write only your own section" convention says a long artifact may live in its own file, linked from the section, and `prism-recruiting`'s local copy is dropped.
+
+## Cleanup Items
+
+- `scripts/ai-skills/hook-gate.test.ts:670` — the cold-start test parses `npm pack --json` as an array. npm 12.2.2 returns an object keyed by package name, so the test fails locally on that npm with a JSON parse error. Seen 2026-11-17.
+
+---
 
 ## PR Readiness
 

@@ -1,134 +1,201 @@
 ---
 title: AI-native SDLC for PRISM — thin skills, artifact chains, and enforced gates
 author: Hunter McGrew
-status: approved
-approved_by: Hunter McGrew
-approved_at: 2026-10-17
+status: draft
+previously_approved: 2026-10-17 by Hunter McGrew (the version phase 1 was built from)
+amended: 2026-11-17
 ticket: https://github.com/HunterMcGrew/PRISM/issues/499
 created: 2026-10-17
-ports: thrive "AI-native SDLC" intent (approved 2026-09-10, revised 2026-10-05)
+size: epic
+ports: thrive "Kitchen Line" epic THRN-579 — TracTru/thrive #2844 (intent and spec), #2847, #2853, #2854, #2859, read at their branch tips on 2026-11-17
 ---
 
 # Intent: AI-native SDLC for PRISM
 
+This is the amended intent. The first version was approved on 2026-10-17 and phase 1 was built from it. Thrive kept refining the same workflow after that, and this amendment brings those refinements over. The section "What this amendment changes" lists every decision that moved, so a reader of the first version can see the difference in one place.
+
 ## Problem
 
-Agents build in minutes, but work still waits on people. A developer watches edits, re-reviews code, and invokes each persona by hand. PRISM ships that same shape to every team that installs it.
+Agents build in minutes, but work still waits on people. A developer watches edits, re-reviews code, and starts each skill by hand. PRISM ships that same shape to every team that installs it.
 
-The skill layer mostly repeats itself. Measured on `main` on 2026-10-17:
+Phase 1 fixed the skill layer. It took PRISM from 33 skills to 29 and from 20,189 loaded lines to 2,518. What is left is the part a developer feels:
 
-- 33 skills, 6,977 lines of skill body. 29 of them exceed 120 lines.
-- Behind those bodies: 70 reference files (50k words) and 59 step files (2.9k lines).
-- Always-on rules: 19.7k words. Architect docs: 30 files, 33k words. ADRs: 71.
+- Nothing drives a ticket from one stage to the next. A person still starts each skill.
+- Nothing checks that a person approved the scope before the build starts.
+- Review guidance is split across two skills and their references, and nothing records what a human reviewer caught that the agent missed.
+- The team's rules are prose. An agent in a long or unattended session can skip them.
 
-Thrive's audit of three of the same personas found about 50 of 1,040 lines that exist nowhere else and that a frontier model would not already know. The rest was persona voice, generic engineering method, pointers, or copies of rules and architect docs. PRISM's skills share that origin.
-
-PRISM is also the product. Whatever shape its skills take is the shape every consumer team gets.
+PRISM is also the product. Whatever shape its workflow takes is the shape every consumer team gets.
 
 ## Proposed outcome
 
-Each skill does one job, in a body short enough to follow, and the PR reaches the human already clean. The developer supervises by exception: approve the intent, read the PR. Every ticket runs through a committed artifact chain (`intent.md` → `spec.md` → `plan.md` → code), and deterministic hooks enforce the policies that must always hold. A consumer gets the same system through `prism adopt` and `prism update`.
+A developer approves a one-page intent. The session then runs every stage after it without being asked, and opens a draft PR that is already clean. The developer comes back to read the PR, flip it to ready, and merge.
+
+- Every ticket runs through a committed plan folder: `intent.md`, `design.md` when needed, `spec.md`, and `plan.md`. A fresh session reads the folder and knows which stage is next.
+- Each stage is a skill named for its job. Stages that need a cold read run as subagents.
+- Both reviews run one rulebook, `REVIEW.md`. What a human reviewer catches is logged, and a miss that keeps recurring becomes a fix to the rulebook or a hook.
+- The rules that must always hold are hooks that stop the action. This covers git hooks for everyone and agent hooks for AI sessions.
+- A consumer gets the same line through `prism adopt` and `prism update`, with their own commands and paths in place of thrive's.
 
 ## Success criteria
 
-In priority order, with a baseline captured before any change lands:
+In priority order:
 
-1. **First-pass clean PRs.** The human reviewer requires zero changes after the agent review. Preference tweaks count as clean. Domain, logic, and spec misses do not. Measured on PRISM's own PRs from GitHub.
-2. **Human touches per ticket.** Two on a routine ticket: approve the intent, read the PR. A third only when the plan goes beyond its intent.
-3. **Size.** Every skill body is 120 lines or less, counting what the skill loads. Always-on content is under 500 lines. `CLAUDE.md` and `AGENTS.md` hand-authored content is under 200 lines each.
+1. **First-pass clean PRs.** The human reviewer requires zero changes after the agent review. Preference tweaks count as clean. Domain, logic, and spec misses do not.
+2. **Human touches per ticket.** Two on a routine ticket: approve the intent, read the PR. A third only for a design that needs approval or a plan that goes beyond its intent.
+3. **Skill size.** Every skill stays at 120 loaded lines or less, enforced by the existing build check. A persona skill's `## Voice` block does not count, up to 16 lines.
 
-Cycle time is a lagging indicator, not a target. The eval harness is rebuilt separately and is not in scope.
+Always-on size is reported by the build and is no longer a target. The phase-1 baseline stands and no new baseline is run. The eval harness is not in scope.
 
 ## Affected users and systems
 
 - PRISM's maintainer, working on PRISM itself.
-- Every consumer team on Claude Code, Codex, or Cursor, through `prism adopt` and `prism update`.
-- Systems: `.ai-skills/skills/**`, `.prism/` (rules, architect docs, references, templates, plans, lessons, step files), `scripts/ai-skills/**` (build, update, doctor, hooks), `templates/install/**`, `AGENTS.md`, `CLAUDE.md`, and `docs/`.
+- Every consumer team on Claude Code or Codex, through `prism adopt` and `prism update`. Cursor gets the skills and rules but no hooks.
+- Systems: `.ai-skills/skills/**`, `.ai-skills/definitions/**`, `.prism/` (rules, architect docs, references, templates, plans, review passes, ADRs), `scripts/ai-skills/**` (build, update, doctor, onboarding, hook runtime), `templates/install/**`, `AGENTS.md`, `CLAUDE.md`, `REVIEW.md`, and `docs/`.
+
+## Regression surface
+
+- **Consumers mid-upgrade.** A `prism update` must leave a consumer's own skills, docs, plans, and existing git-hook setup alone. A consumer who already uses husky or lefthook keeps it.
+- **Legacy flat plans.** Every existing `.prism/plans/<ticket>.md` keeps resolving and keeps working. Nothing is migrated.
+- **The existing write gate.** The architect-read gate and the umbrella speed bump keep their current behavior while the shell parser under them is replaced.
+- **Phase-1 skills.** The 120-line build check keeps passing for every skill that passes today.
+- **Windows.** The hook runtime and the new scripts keep running on Windows, which rules out bash-only scripts.
+
+## Security surface
+
+- **Secrets.** Agents get a gate that denies reading `.env` files, key files, and `secrets/` directories. Before this, nothing stopped a secret from landing in a transcript.
+- **Approval.** A script and a guard hook keep approval a person's act. The guard stops accidents, not a determined agent. The real control is a person reading the commit that carries the approval.
+- **Hook bypass.** Agents can no longer commit or push with `--no-verify`. The two existing kill switches stay for a broken hook, and the approve guard and the secrets gate ignore them.
+- **Codex config.** Onboarding writes one key to the repo's `.codex/config.toml`. It writes nothing to a developer's home directory.
+
+## Design
+
+not needed — this work changes skills, scripts, hooks, and docs. It has no user interface.
+
+## Acceptance criteria
+
+none — this is an epic. Each child PR carries its own criteria in its plan, and the spec lists what each child must prove.
 
 ## Decisions reached
 
-### Order of work
+### Workflow
 
-Skill slimming and the umbrella-section speed bump land first, then the artifact chain, then review and verify, then the context-layer rewrite, then hooks, then the release. The order follows dependencies:
+- There are two sizes. **Standard** is the default and may ship as one PR or a stack. **Epic** is several stories under one tracker parent. There is no small size and no file or line threshold.
+- **Standard** runs: intent → design when needed → spec → plan → challenge twice → implement → verify → review → draft PR → PR review → retro.
+- **Epic** has a folder with `intent.md` and `spec.md` and no `plan.md`. The spec names the children and their merge order. Each child is a standard ticket.
+- No orchestrator skill drives the run. The stage order and a resume table in the always-on workflow block do. A fresh session reads the plan folder and runs the first row that matches.
+- Four stages run as fresh subagents because their value is a cold read: spec, challenge, verify, and PR review. Everything else runs in the session.
+- Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage.
 
-- A skill is deleted only once its replacement exists. Mira folds in when `intent` lands. The review loop goes when `REVIEW.md` and the review runners land.
-- Sol, Sasha, Ren, and Theo have no replacement to wait for, so they go in the first phase.
+### Where the run stops for a person
 
-### Skills
-
-- Every skill passes four tests:
-  - **Policy:** it encodes policy the model would not apply unprompted.
-  - **Trigger:** its description fires it reliably.
-  - **Length:** its body is 120 lines or less.
-  - **Enforcement:** anything that must always hold is enforced by a hook or a check, not by prose.
-- Content that fails the tests is cut, not moved. A line moved into a reference or step file still counts against the skill that loads it, because the cap measures what a run reads.
-- Skills are function-shaped, with a verb name and no personality. Persona names stay only as trigger words in the description, so "Briar" still routes to `self-review`.
-- Skill IDs keep the `prism-` prefix, so the command is `/prism-plan`, `/prism-implement`, and so on. `prism update` rewrites only `prism-*` skills, so bare verbs would collide with a consumer's own skills and with portable skills of the same name.
-- Renames happen during slimming, so each skill is touched once. `main` is heading to a breaking `1.0.0` either way.
-- Roster, by today's names:
-  - **Engineering flow:** Clove becomes `implement`. Winston becomes `plan`, which writes `plan.md`. Briar becomes `self-review`, Eric `pr-review`, Eli `docs`, Pixel `design`, Nora `start-ticket`, and Atlas `onboard`.
-  - **New:** `intent`, `spec`, and `verify`.
-  - **Renamed utilities:** `devils-advocate` becomes `challenge`, which also runs the plan-challenge rounds. `tdd` keeps its name and absorbs the planned `testing` skill. `prism-skill-forge` becomes `forge-skill`. Handoff stays `handoff`.
-  - **Cadence and release:** Iris becomes `retro`, Zoe `audit`, Sage `changelog`, Lilac `standup`, Reese `qa-plan`, and Parker `prd`.
-  - **Business personas stay, held to the same four tests:** Vera `strategy`, Kora `market-research`, Ellis `finance`, Charlie `marketing`, Quinn `sales`, Tess `metrics`, Remy `customer-success`, Penny `recruiting`, and Lex `legal`. The strategy-doc flow is unchanged.
-  - **Folded:** Mira into `intent`.
-  - **Deleted:** Sol, Sasha, Ren, Theo, and `prism-review-loop`.
-- `retro` (Iris) runs in every standard and epic flow, on the final branch before merge, so the durable record stays current without anyone asking:
-  - It gives each Decision a verdict and promotes the lasting ones into the architect doc that owns the subject, per the writing guide's placement order.
-  - It runs the lessons lifecycle: promote, expire, or merge each entry.
-  - It runs a light retro per ticket and a full one per epic.
-  - The PR is not ready until the retro has run. A missing `> Retro:` line on the plan is a check failure, not a reminder.
-- A skill must run as a subagent only when its value comes from a cold read: `spec`, `challenge`, `verify`, and `pr-review`. Everything else runs in the session by default.
+- **The intent, always.** Approving it also approves the size.
+- **The design**, when the intent says it needs approval.
+- **The plan**, only when automatic approval fails.
+- **A scope change past the approved intent.** A change to user-visible behavior, an acceptance criterion, or a new system is asked as its own question. Smaller follow-ons are recorded under Decisions and listed in the PR body.
+- **Ready and merge.** Every agent PR opens as a draft.
+- Review findings never stop the run. Anything only a person can decide lands on the draft PR.
+- The run also halts when going on cannot work: a challenge still blocking after three rounds, a blocked build, or a second re-plan on one task.
 
 ### Artifact chain
 
-- Plan folders live at `.prism/plans/<ticket>/` and hold `intent.md`, `spec.md`, and `plan.md`. Legacy flat plans stay where they are and keep working. Lookup checks the folder first, then the flat file.
-- Only the intent always needs human approval. A script records approval and needs a keypress the model cannot supply. The build gate reads it.
-- The plan auto-approves inside limits: a task cap, every file inside the spec's affected systems, and no unresolved challenge. A plan outside those limits asks.
-- There are three workflows:
-  - **Small:** intent → build.
-  - **Standard:** intent → spec → plan → build → verify → review → PR → review → reconcile → retro.
-  - **Epic:** one intent and spec that cut child tickets.
-  - A commit that outgrows the small limits is blocked until a spec and plan exist.
-- A plan task names its files, its proof, and its dependencies. Each commit names its task IDs, and a commit hook holds the staged paths to those tasks' file lists.
+- Plan folders live at `.prism/plans/<ticket>/`. Lookup checks the folder first, then the flat file.
+- **`intent.md`** requires a regression surface, a security surface, a design need (`needed`, `supplement`, or `not needed`, each with a reason), and acceptance criteria. A surface may be "none" only with a reason.
+- The intent stage is an interview: one question per message, each with a recommended answer. Facts the agent can look up are never questions.
+- **`design.md`** exists only when the intent asks for it.
+- **`spec.md`** is never approved. It holds the requirements and the affected-systems globs the plan is checked against.
+- **`plan.md`** holds tasks. Each task names its files, its proof, and what it depends on. Tasks group into bundles, and one bundle is one commit.
+- A commit subject names its tasks, such as `T3:` or `T3-T5:`. A task is done when a commit names it. Nothing edits the plan to mark a task done.
+- Approval is recorded by a script. In a terminal it needs a keypress. In chat, typing `approve` lets the agent run the script once. That approval is tied to the file's content, so a draft edited after the `approve` is not approved.
+- The plan approves automatically when it has at most 12 tasks, every file is inside the spec's affected systems, both challenge rounds are clean or resolved, and no file is on a stop path. Otherwise it asks.
+- Plan folders hold no section-sign citations, because the files move and get renamed.
+
+### Skills
+
+- Skills stay function-shaped with verb names and the `prism-` prefix, held to the four tests from phase 1.
+- **Persona voice comes back as one short block.** A persona skill carries a `## Voice` section of about a dozen lines. It holds no rules, shows in chat only, and is skipped when the skill runs as a subagent. The "how this persona thinks" sections stay gone, because those were the part that repeated rules.
+- **New stage skills:** `prism-intent`, `prism-spec`, and `prism-verify`.
+- **`prism-architect` is new and is Winston.** It answers "is this the right approach?" at any time, in chat, with no plan folder and no approval. `prism-plan` becomes a persona-less utility that writes `plan.md` and runs the challenge rounds.
+- **`prism-debug` is new and is Sasha.** It diagnoses and changes no source. Its report becomes the Problem section of an intent. This reverses the phase-1 deletion.
+- **`prism-pr-review` is Eric again**, with a chat voice that stays out of his GitHub comments.
+- `prism-challenge` runs the plan challenge rounds. `tdd` holds the test-first rules the implement stage loads.
+- **Folded:** `prism-user-stories` into `prism-intent`. No skill writes user stories.
+- **Deleted:** `prism-review-loop`, once `REVIEW.md` and the review rounds inside the stages replace it. Sol, Ren, and Theo stay deleted.
+- Acceptance-criteria grading moves out of `prism-qa-plan` and into the review's intent-conformance pass.
+- `prism-audit` learns to archive a plan folder whole.
+- The 120-line cap keeps counting everything a skill loads. Thrive reached its numbers partly by moving text into references its check does not count. PRISM does not copy that. Content that fails the tests is still cut, not moved.
 
 ### Review and verify
 
-- One `REVIEW.md` holds the review passes, severity definitions, and what to skip, with a 200-line ceiling. `self-review` and `pr-review` both read it, and the review loop collapses into that runner sequence.
-- A stop hook on the review runners reconciles the PR before they can stop. It resolves threads that were addressed, corrects labels against the verdict, and checks the PR body.
-- `verify` runs once at the end, in a fresh context, and fixes nothing.
+- One `REVIEW.md` holds severity, finding shape, the exit rule, and ten passes. Each pass runs only when its trigger fires. The passes' stack-specific checklists come from the consumer.
+- `prism-self-review` runs the passes on the branch before anything reaches GitHub, split across subagents. The session fixes what it finds, for at most three rounds.
+- `prism-pr-review` runs the same passes on the PR in a fresh context, posts inline comments and one summary, and applies the review labels. It never approves and never flips the PR to ready.
+- A reconcile script resolves addressed threads, corrects labels, and reports unanswered human comments. A stop gate sends the PR review back until it is clean, up to three times.
+- A human comment the agent missed is logged. A class of miss that reaches three gets a proposed fix, and a person approves each one.
+- `prism-verify` runs once after the build, in a fresh context, with the consumer's own commands. It fixes nothing.
+- **The retro is the fixed last stage** of every workflow and cannot be declined. It grades the work against the plan, gives every Decision a verdict, and prunes lessons.
 
 ### Hooks
 
-- Hooks constrain outcomes, never the session's tools. The new ones are the commit gate, the dispatch-brief shape gate, the stop-reconcile gate, and a secrets read gate.
-- **Umbrella-section speed bump**, ported from thrive #2728 (THRN-576). The manifest gains an `umbrellas` list of broad docs, plus the always-on rules. The write gate stops an edit that adds a new heading to one of them, and the stop names the doc's load routes and the placement-order section. It fires once per session, doc, and heading, and a retry of the same edit passes. This lands in the first phase, because it finishes the placement work #492 started and depends on nothing else.
-- Each hook is registered on Claude Code, Codex, and Cursor wherever the host exposes the event. A missing event is recorded as a host limitation instead of being papered over.
-- Commands come from the consumer's `commands.*` config, never from PRISM's own toolchain.
+- **Git hooks for everyone.** PRISM ships a pre-commit hook and a pre-push hook and installs them through `core.hooksPath`. They run commands from the consumer's config and skip with a notice when the tool is missing. The installer refuses to replace a hook path it does not recognize. This reverses the earlier decision against real git hooks.
+- **Agent hooks for AI sessions.** The new gates are the secrets gate, the dispatch-brief gate, the reconcile stop gate, the approve guard, and a wider commit gate.
+- The commit gate checks the task subject, weakened or deleted tests, bypass flags such as `--no-verify`, and stop paths. It does not check that every file belongs to the named task. Thrive removed that check, and so does this intent.
+- **Architect reads stay enforced by default.** Onboarding writes routes over the consumer's product code, so the gate covers more than PRISM's own files.
+- **Kill switches.** PRISM keeps its two existing switches, because a consumer cannot patch a broken hook the way a maintainer can. The approve guard and the secrets gate ignore them, and an agent cannot set one on its own command.
+- The gates are built on PRISM's hook runtime, with thrive's shell parser ported in.
+- Each hook is registered on Claude Code and Codex wherever the host exposes the event. A missing event is recorded as a host limitation. Cursor hook delivery is not part of this work.
+- Commands, paths, test globs, and stop paths come from the consumer's config, never from PRISM's or thrive's toolchain.
 
-### Context layer
+### AGENTS.md and the Codex limit
 
-- Rules and architect docs are rewritten from `main` under judgment-first guidance: what to do and why, with positive examples. No anti-pattern catalogs, no instructions to verify twice, nothing tuned to older models.
+- Codex reads at most 32 KiB of `AGENTS.md` by default and drops the rest without a warning. PRISM's file is about four times that.
+- PRISM does not cap `AGENTS.md` at 32 KiB. Claude Code is the primary host, and the always-on rules are a cost already accepted.
+- The generator puts the workflow block, the resume table, routing, and safety rules first, so a Codex session that reads only the start still gets the part that drives the run.
+- When `codex` is among the hosts, onboarding writes a raised `project_doc_max_bytes` to the repo's `.codex/config.toml`.
+- `prism doctor` warns when `AGENTS.md` is over the limit Codex will read.
 
 ### Merging and release
 
-- **Merge authority.** The main session squash-merges PRISM's own PRs once their review comes back clean with no `review:has-minors` label. This replaces Sol's authority and gets an ADR. Consumers keep the human merge gate.
-- **Release.** The port ships as `1.0.0`, a clean break with a migration note. `prism update` removes the deleted skills, and old persona names keep routing through the new skills' descriptions.
-- **What carries over from thrive.** Only what fits a generic toolkit. Thrive's per-worktree Docker admin, Storybook scoping, and screenshot script stay out, because they belong to thrive.
+- **Merge authority is unchanged.** Consumers keep the human merge gate. PRISM's own PRs keep the `mainSessionMayMerge` flag from phase 1.
+- **Plans are still never deleted.** Thrive now allows deleting a closed plan. PRISM keeps its rule.
+- **Release.** The port ships as `1.0.0`, a clean break with a migration note. `prism update` removes the deleted skills, and old persona names keep routing.
+- **What carries over from thrive.** Only what fits a generic toolkit. Thrive's Docker routing, Storybook and Pest steps, screenshot script, dealer vocabulary rule, tracker-specific ticket flow, and per-worktree dev port stay out.
+
+## What this amendment changes
+
+Against the version approved on 2026-10-17:
+
+- **Sizes.** Small, standard, and epic become standard and epic.
+- **Stages.** A design stage, two challenge rounds, and a fixed retro are added. The reconcile step becomes a script and a stop gate inside PR review.
+- **Intent.** It gains the required regression, security, and design fields, and holds the acceptance criteria.
+- **Personas.** "No personality" becomes a short Voice block. Sasha returns as `prism-debug`. Winston moves to a new `prism-architect`. Eric is named again.
+- **Commit gate.** It no longer holds staged paths to a task's file list.
+- **Git hooks.** They are added, reversing the earlier rejection.
+- **Size targets.** The 200-line `REVIEW.md` ceiling and the always-on, `CLAUDE.md`, and `AGENTS.md` line targets are dropped. The skill cap stays.
+- **Context layer.** The rewrite of rules and architect docs is out of scope. Only edits a child PR needs are made.
+- **Retro.** It can no longer be declined.
+- **Hooks.** The approve guard is added, and the kill-switch behavior is stated.
+- **Codex.** The `AGENTS.md` limit is handled.
 
 ## Constraints
 
 - An unfinished migration must not freeze routine work. Legacy flat plans keep working until the last one is archived.
-- A consumer's own skills, docs, and plans are never touched by the port.
+- A consumer's own skills, docs, plans, and git-hook setup are never touched by the port.
 - Every always-on rule and skill keeps working on all three hosts at every merged step.
+- A skill is deleted only once its replacement exists.
+- Design calls that do not change this intent stay with the session or `prism-architect`. Anything that would change it comes back to Hunter.
 
 ## Open questions
 
-- **First-pass clean baseline.** Set from PRISM's recent merged PRs before slimming lands.
+- **Codex project config.** The Codex docs show a repo-level `.codex/config.toml` and do not list `project_doc_max_bytes` among the keys it ignores there, but they do not say outright that it is honored. The Codex child PR proves it with a live run. If it is not honored, `prism doctor` tells each developer to set it.
+- **Approval from a terminal inside a host.** Whether a host's own shell mode counts as a terminal for the approval script is unprobed on thrive too. The chain PR checks it on Claude Code.
 
 ## Not in scope
 
-- The eval harness.
+- The eval harness, a metrics store, and a new baseline.
 - Auto-approving intents.
+- Rewriting the rules and architect docs.
+- Cursor hook delivery.
+- A generic version of thrive's domain vocabulary rule.
 - Thrive-specific infrastructure.
-- Rewriting consumers' business or user docs.
 - Changing how consumers merge.
