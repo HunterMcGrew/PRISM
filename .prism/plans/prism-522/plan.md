@@ -843,16 +843,76 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Built T6: `refreshHookRuntime` delivers every runtime file on every host, while the shims, registrations, and `.gitignore` lines still follow `hosts`. It deleted `removeDeliveredHookRuntimeFiles`, the `deliveredPaths` parameter of `pruneStaleHookRuntimeFiles`, and doctor's neither-host warning. It rewrote four `update.test.ts` cases and one `plan-runtime-delivery.test.ts` case that pinned the old removal, renamed the doctor case that only passed through the Codex inert warning, and added a Cursor-only doctor case.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Built T7 and T8: the hook-runtime, plan-chain-scripts, and git-hooks docs with their mirrors, the curated hook-runtime twin, `parameterization.md`, and `what-prism-writes.md`. The architect docs name the token as `HOOK_RUNTIME_DIR` without `${}`, because the build substitutes tokens in the platform copies. The curated twin gained its own short Approve guard subsection, since it carries no Git gates section to follow, and `parameterization.md` gained a `${HOOK_RUNTIME_DIR}` row in its token table as that page asks for a new token.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: `docs/ai-skills/compatibility.md` still says the runtime is copied only when `hosts` includes `claude` or `codex` and that a Cursor-only repo gets no `.claude/hooks/`. It is outside PR A's task lists, so it was left for a follow-up call.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed PR A: 1 major (five Windows-only test failures from 8.3 temp paths and a slash regex) and 6 minor, recorded under `## Review`. The thrive port of the approval trio diffed clean apart from the listed swaps.
 
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: plan child 5 (chain skills and approval) to the detail bar from the epic spec and thrive at db3570975. Bounds: plan file only, no code, no PR, nothing outside the spec's Affected systems, no new dependency, and flag any shared-type or public-surface change. Approach: put shared mechanics in one always-on workflow rule so stage skills fit the cap, port the approval trio onto PRISM's runtime, and order tasks so the approval mechanics form a clean first stack PR. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: refresh this plan against what child 4 merged (#528, bd666c58). Bounds: plan file only, no code; keep the two-PR stack unless the refresh changes what ships together; leave Hunter's four pending calls as they are. Approach: merge main, diff every task's named module, export, flag, exit code, and config key against child 4's source, decide child 4's two hand-offs as Decisions, and recheck the groups with `analyzeBundles`. · close: scope held; PR A gains T25, and T6 narrowed to keep child 2's git hook gating
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: build PR A (T1-T8, T25) of this plan, after recording Hunter's approvals. Bounds: PR A's task files and generated copies only; no PR B tasks, no new dependency, no merge, draft PR only. Approach: approvals commit first, then one commit per task in the plan's group order, porting thrive's approval trio onto PRISM's runtime. · close: scope held; one pinned test outside T4's list (`plan-approve.test.ts`) and one stale prose home left for a call (`docs/ai-skills/compatibility.md`)
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review PR A (T1-T8, T25) against the plan, the rules, and thrive. Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts. Approach: run `prism:check`, diff the ported trio against thrive at db357097, and source-verify the edited architect docs. · close: scope held
 
 ## Verification
 
 ## Review
+
+Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], range `bd666c58..d8f2ad70`. 1 major, 6 minor.
+
+### Five approval tests fail on Windows from 8.3 short temp paths and a forward-slash regex
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/plan-chat-approval.test.ts:159`
+- **Problem:** `prism-check (windows-latest)` fails 5 tests (run 44348696721), so AC-10 is unmet. Four tests build expected paths with `realpathSync(root)`, which on Windows keeps the `RUNNER~1` short name, while `git rev-parse` and `approve.mjs`'s `realpathSync.native` return `runneradmin`. Those are `plan-chat-approval.test.ts:159` and `:246`, plus `approve-guard.test.ts:1095`, which runs once each for claude and codex. The fifth, `plan-approve.test.ts:1089`, matches `acme-2\/intent\.md` against a message that prints `\` on Windows. The product compares through `comparablePath` and is consistent, so only the tests are wrong.
+- **Suggested fix:** use `realpathSync.native` at the three fixture-root sites, and `acme-2[\\/]intent\.md` in the regex. Then rerun the Windows leg.
+
+### The approve guard's `approved_via`-only edit has no regression test
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/approve-guard.test.ts:844`
+- **Problem:** T4 says an edit that changes only `approved_via` passes, as it does in thrive. A probe confirms it does, but no case pins it, so a change to `approvalLines` could start denying it unnoticed.
+- **Suggested fix:** add one Claude `Edit` case and one Codex `apply_patch` case that change only `approved_via` on an approved `intent.md` and assert no deny.
+
+### The drive-letter allow spelling is outside the listed swaps and untested
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/approve-guard.mjs:302`
+- **Problem:** `CHAT_APPROVE_COMMAND` and `PLAIN_WORD` accept a `(?:[A-Za-z]:)?` prefix, a new allow spelling for an approval control. It is recorded only in `## History`, not as a Decision, and no test covers the allow side. It still requires a realpath match and a same-session token, so it does not weaken the guard.
+- **Suggested fix:** add a `win32` case that allows `node C:/…/approve.mjs <path>` under a token, plus a one-line Decision.
+
+### Thrive's shebang-executable guard test was dropped without a plan line
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/approve-guard.test.ts:1`
+- **Problem:** thrive's `hook.test.mjs:1334` ("the hook runs as an executable through its shebang") has no counterpart. T4 lists only the Cursor rows as dropped, and the guard keeps its shebang line.
+- **Suggested fix:** port the case behind a `win32` skip, or record why it was dropped.
+
+### `docs/ai-skills/compatibility.md` still says a Cursor-only repo gets no `.claude/hooks/`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `docs/ai-skills/compatibility.md:81`
+- **Problem:** `:73` and `:81` say the runtime is copied only when `hosts` includes `claude` or `codex`, which T6 reversed. Doctor's not-delivered message at `scripts/ai-skills/doctor.ts:1152` links readers to this page. Already named in the PR body and `## History`.
+- **Suggested fix:** fold a two-sentence fix into PR B's docs task (`prism-docs`), so the page is corrected before both PRs reach `main`.
+
+### `hook-runtime.md` doesn't say that `approve.mjs` skips the session check with no Codex thread id
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:72`
+- **Problem:** "a mismatch fails closed, since `approve.mjs` refuses a token from another session" holds only when `CODEX_THREAD_ID` is set. A session marked only by `CODEX_CI` or `CODEX_SESSION_ID` gets a null session id, and `approve.mjs:289` then skips the check, so the guard's same-session check stands alone. The source comment at `approve.mjs:446` says this, but the doc does not.
+- **Suggested fix:** add that clause to the Hosts paragraph and its curated twin. Alternatively, refuse in `approve.mjs` when `inAgentSession` holds and no session id is available.
+
+### `readPlanConfig`'s error names stop paths when `tasks.mjs` or `bundles.mjs` throws it
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/plan/tasks.mjs:308`
+- **Problem:** the message ends "so its stop paths cannot be applied", which misleads a `tasks.mjs` or `bundles.mjs` user, whose run has no stop paths. T25 asked for the message unchanged, so the code follows the plan.
+- **Suggested fix:** end the message at "is not a readable JSON object" and amend T25's wording to match.
 
 ## Acceptance Criteria
 
@@ -907,10 +967,15 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 
 ## PR Readiness
 
-- [ ] Self-review not run on PR A
-- [x] Types: `pnpm run prism:check-types` passes
-- [x] Tests: the full suite passes
-- [x] `pnpm run prism:check` last run 2026-11-18 passes, with `spec-scope-lint` run separately under `GITHUB_HEAD_REF`
-- [ ] AC-9 (the `!` shell prefix) and the Codex payload checks are not run live
+- [ ] No critical or major issues: one major open, the Windows test failures. See `## Review`.
+- [x] Types: `pnpm run prism:check-types` passes.
+- [x] No stray console.logs or debug artifacts in the diff.
+- [x] Tests written for new logic. Gaps: `approved_via` only, the drive-letter allow, and the dropped shebang case.
+- [x] No `open` debugged issues.
+- [ ] Build passes: the full `pnpm run prism:check` passes locally on Linux (2026-11-18, 2146 pass, 0 fail, 1 skipped). CI on d8f2ad70 is green on `ubuntu-latest` and red on `windows-latest`, with 5 failures.
+- [ ] PR description up to date: it doesn't yet mention the Windows failures.
+- [ ] AC for PR A: AC-2, AC-3, AC-7, and AC-11 are met by passing tests. AC-10 is unmet (Windows red). AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
+
+**Last updated:** 2026-11-18
 
 Retro:
