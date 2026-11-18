@@ -51,7 +51,7 @@ history: <one `## History` line>
 | standard, a task with no commit naming it | implement |
 | standard, `## Verification` empty | verify: run the checks in `.prism/rules/verification-commands.md` on the head and record them under `## Verification` |
 | standard, `## Review` empty | review: run `prism-self-review` |
-| standard, no PR | PR: follow `shipping-flow.md` in the references directory |
+| standard, no PR | PR: follow `.prism/references/shipping-flow.md` |
 | standard, PR open with no PR-review verdict | PR review: dispatch `prism-pr-review` as a subagent |
 | standard, `Retro:` line empty under `## PR Readiness` | retro: run `prism-retro`, then write `Retro: <report path>` under `## PR Readiness` and commit it as `retro: <summary>`, because `prism-retro` is read-only on plans |
 | epic, a child in `## Children` not merged | the next unmerged child per `## Merge order`, in its own folder |
