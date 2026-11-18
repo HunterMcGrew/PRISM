@@ -638,8 +638,8 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 	return findings;
 }
 
-/** Matches any `hook.mjs` or `git-gates.mjs` path inside a parsed hook command string. */
-const HOOK_COMMAND_PATH_RE = /(\S*(?:hook|git-gates)\.mjs)/g;
+/** Matches any `hook.mjs`, `git-gates.mjs`, or `approve-guard.mjs` path inside a parsed hook command string. */
+const HOOK_COMMAND_PATH_RE = /(\S*(?:hook|git-gates|approve-guard)\.mjs)/g;
 
 /**
  * Resolves one hook path as written in a hook command string to an absolute
@@ -884,15 +884,21 @@ async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]>
  * as they stand.
  *
  * What is decidable is the host mix. `hosts` in the consumer's config says
- * which hosts they run, and `refreshHookRuntime` delivers the runtime when
- * either `claude` or `codex` is among them — so a consumer who runs neither
- * should have no runtime and no registration, and finding either means an
- * update has not run since they changed the key. Both directions are
- * reported: the absence is informational, the leftover is a warning.
+ * which hosts they run, and `refreshHookRuntime` registers a host's hooks only
+ * for a host that is listed — so a registration for a host the consumer no
+ * longer lists means an update has not run since they changed the key. The
+ * runtime files themselves reach every install, so their presence says nothing
+ * about `hosts`.
  */
 async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");
 	const gitGatesRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "git-gates.mjs");
+	const approveGuardRuntimePath = path.join(
+		consumerRepoRoot,
+		".claude",
+		"hooks",
+		"approve-guard.mjs"
+	);
 	const settingsPath = path.join(consumerRepoRoot, ".claude", "settings.json");
 	const codexHooksPath = path.join(consumerRepoRoot, ".codex", "hooks.json");
 	const settingsRaw = await readFileIfExists(settingsPath);
@@ -963,9 +969,6 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 
 	const config = await readConsumerConfigSafely(consumerRepoRoot);
 	const hosts = resolveHosts(config);
-	const runtimeOnDisk = await readFileIfExists(hookRuntimePath);
-	const runtimeIsPrisms =
-		runtimeOnDisk !== null && runtimeOnDisk.includes(HOOK_RUNTIME_MARKER);
 	const claudeIsRegistered =
 		settings !== null &&
 		collectHookCommands(settings).some((command) => PRISM_HOOK_COMMAND_PATTERN.test(command));
@@ -974,20 +977,6 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		collectHookCommands(codexHooks).some((command) =>
 			PRISM_CODEX_HOOK_COMMAND_PATTERN.test(command)
 		);
-
-	// Runtime delivery gates on `claude` OR `codex` — see the plan Decision
-	// "Runtime delivery gates on claude OR codex" — so the runtime itself is
-	// stale only when the consumer's hosts name neither. This push is
-	// additive, not a short-circuit — a dropped-both-hosts consumer can also
-	// carry a stale per-host registration or an unrelated dead registration,
-	// and every one of those is a separate, real finding.
-	if (!hosts.includes("claude") && !hosts.includes("codex") && runtimeIsPrisms) {
-		findings.push({
-			check: "hook-registration",
-			severity: "warning",
-			message: `hosts does not list "claude" or "codex", but PRISM's hook runtime is still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
-		});
-	}
 
 	// Each registration gates on its own host, independent of the runtime and
 	// of the other registration — dropping one host takes only that host's
@@ -1073,10 +1062,28 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 			});
 		}
 
-		// Gated on `gitGatesInert` too — the runtime being installed and
-		// registered is not a clean bill of health when the git gates half of
-		// the same delivery is inert, so the two messages never coexist.
-		if (!gitGatesInert && runtimePresent && claudeRegisteredPaths.has(hookRuntimePath)) {
+		const approveGuardInert =
+			(await pathExists(approveGuardRuntimePath)) &&
+			!claudeRegisteredPaths.has(approveGuardRuntimePath);
+		if (approveGuardInert) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message:
+					".claude/hooks/approve-guard.mjs is present but .claude/settings.json registers no hook command pointing at it — chat approval and the approval guard are inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
+			});
+		}
+
+		// Gated on `gitGatesInert` and `approveGuardInert` too — the runtime
+		// being installed and registered is not a clean bill of health when
+		// another entry point of the same delivery is inert, so the messages
+		// never coexist.
+		if (
+			!gitGatesInert &&
+			!approveGuardInert &&
+			runtimePresent &&
+			claudeRegisteredPaths.has(hookRuntimePath)
+		) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
@@ -1104,12 +1111,29 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		const codexGitGatesInert =
 			(await pathExists(gitGatesRuntimePath)) && !codexRegisteredPaths.has(gitGatesRuntimePath);
 
-		// Gated on `codexGitGatesInert` too, mirroring the Claude arm above —
-		// installed-and-registered is not a clean bill of health when
-		// Codex's git gates are inert. No Codex git-gates info/warning
-		// message exists yet (issue-488 B4), so this only withholds the
-		// false-clean claim rather than adding one.
-		if (!codexGitGatesInert && runtimePresent && codexRegisteredPaths.has(hookRuntimePath)) {
+		const codexApproveGuardInert =
+			(await pathExists(approveGuardRuntimePath)) &&
+			!codexRegisteredPaths.has(approveGuardRuntimePath);
+		if (codexApproveGuardInert) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message:
+					".claude/hooks/approve-guard.mjs is present but .codex/hooks.json registers no hook command pointing at it — chat approval and the approval guard are inert for Codex. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .codex/hooks.json.",
+			});
+		}
+
+		// Gated on `codexGitGatesInert` and `codexApproveGuardInert` too,
+		// mirroring the Claude arm above — installed-and-registered is not a
+		// clean bill of health when another Codex entry point is inert. No
+		// Codex git-gates info/warning message exists yet (issue-488 B4), so
+		// that half only withholds the false-clean claim rather than adding one.
+		if (
+			!codexGitGatesInert &&
+			!codexApproveGuardInert &&
+			runtimePresent &&
+			codexRegisteredPaths.has(hookRuntimePath)
+		) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",

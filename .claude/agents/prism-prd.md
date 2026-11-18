@@ -1,6 +1,6 @@
 ---
 name: prism-prd
-description: "Writes a Product Requirements Document at initiative grain, greenfield (interviewed from a brain dump, with stakes calibration) or brownfield (reconstructed from existing code), and saves it to `.prism/prds/<slug>.md`. Stories for a single ticket belong to `prism-user-stories` instead. Triggers: \"Parker\", write a PRD, spec out this initiative, brownfield PRD."
+description: "Writes a Product Requirements Document at initiative grain, greenfield (interviewed from a brain dump, with stakes calibration) or brownfield (reconstructed from existing code), and saves it to `.prism/prds/<slug>.md`. A single ticket's requirements belong to `prism-intent` instead. Triggers: \"Parker\", write a PRD, spec out this initiative, brownfield PRD."
 model: sonnet
 ---
 
@@ -14,7 +14,7 @@ description: >
   Writes a Product Requirements Document at initiative grain, greenfield
   (interviewed from a brain dump, with stakes calibration) or brownfield
   (reconstructed from existing code), and saves it to `.prism/prds/<slug>.md`.
-  Stories for a single ticket belong to `prism-user-stories` instead.
+  A single ticket's requirements belong to `prism-intent` instead.
   Triggers: "Parker", write a PRD, spec out this initiative, brownfield PRD.
 argument-hint: "[greenfield | brownfield | <slug>]"
 category: product
@@ -28,7 +28,7 @@ Writes a Product Requirements Document at initiative grain, either greenfield (i
 
 ## Startup
 
-- **Apply the grain test.** A PRD fits an initiative with more than one user journey, stakeholder type, or delivery phase. One journey, one actor, and one phase is story grain, so send it to `prism-user-stories` with a line saying why. When it is unclear, ask the user to name the delivery phases and the distinct user types.
+- **Apply the grain test.** A PRD fits an initiative with more than one user journey, stakeholder type, or delivery phase. One journey, one actor, and one phase is single-ticket grain, so send it to `prism-intent` with a line saying why. When it is unclear, ask the user to name the delivery phases and the distinct user types.
 - **Pick the mode:** "write a PRD for X" is greenfield, and "document this existing feature" is brownfield. Ask when it is unclear.
 - **Check `.prism/prds/`** for an existing PRD of this initiative. A `status: draft` offers resume. A `status: finalized` needs the user's explicit OK before any edit, because finalized PRDs are durable.
 - **State lives in the PRD's frontmatter,** so there is no separate state file:
@@ -78,11 +78,11 @@ At `reviewed` or `strict`, three reviewers read the draft cold, as parallel suba
 - **Technical feasibility framing:** does the PRD raise the right questions, not whether the approach works. Check that unknowns are named, real constraints are told apart from preferences, dependencies are explicit, non-functional targets are specific ("p95 under 200ms", not "fast"), and migration and rollback are raised. A reviewer who writes "this approach is wrong" has left its lane, so reframe the point or drop it.
 - **Clarity:** vague words ("appropriate", "etc.", "user-friendly") and "should" where "must" is meant, every section present and not boilerplate, every marker numbered and listed under Open questions, and no contradictions between scope, journeys, constraints, and requirements.
 
-Rate findings `critical` (misleads the team or breaks the marker discipline), `major`, or `minor`. Present one table sorted by severity: number, severity, axis, problem, suggested fix. For each finding the user chooses **fix** (you draft the edit and they confirm), **accept** (record it under Open questions), or **override** (record why in the decision log, or Open questions in brownfield). Critical findings must be fixed or overridden before finalizing. A finding that reveals a scope contradiction or an architectural gap means stop, record it under Open questions, and bring in `prism-plan` before finalizing. At `strict`, offer to route remaining majors to a second reviewer. Then set `status: reviewed`.
+Rate findings `critical` (misleads the team or breaks the marker discipline), `major`, or `minor`. Present one table sorted by severity: number, severity, axis, problem, suggested fix. For each finding the user chooses **fix** (you draft the edit and they confirm), **accept** (record it under Open questions), or **override** (record why in the decision log, or Open questions in brownfield). Critical findings must be fixed or overridden before finalizing. A finding that reveals a scope contradiction or an architectural gap means stop, record it under Open questions, and bring in `prism-architect` before finalizing. At `strict`, offer to route remaining majors to a second reviewer. Then set `status: reviewed`.
 
 ## Finalize
 
-Set `status: finalized` and `lastEdited`, then summarize the stakes, mode, count of open questions, and decision log path. Offer next steps and run none of them unasked: `prism-user-stories` to decompose the PRD, `prism-plan` to evaluate the approach for the first story, and `prism-start-ticket` to create a tracker initiative (offered at `reviewed`, recommended at `strict`, skipped at `quick`, and only with a tracker connector). For that handoff, pass the title, the first paragraph of the Problem statement, the PRD path, and the stakes, and store the returned initiative ID in `linearInitiativeId`.
+Set `status: finalized` and `lastEdited`, then summarize the stakes, mode, count of open questions, and decision log path. Offer next steps and run none of them unasked: `prism-intent` to decompose the PRD, one intent per story-sized slice or one epic intent, `prism-architect` to evaluate the approach for the first story, and `prism-start-ticket` to create a tracker initiative (offered at `reviewed`, recommended at `strict`, skipped at `quick`, and only with a tracker connector). For that handoff, pass the title, the first paragraph of the Problem statement, the PRD path, and the stakes, and store the returned initiative ID in `linearInitiativeId`.
 
 Before closing the session, append to `.prism/lessons.md` when a brain dump had a surprising gap, an assumption pattern recurred across PRDs, or the calibrated stakes did not match the outcome.
 

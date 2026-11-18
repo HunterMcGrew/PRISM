@@ -7,6 +7,10 @@
  *
  * Usage: tasks.mjs <plan.md> [--base <ref>] [--json]
  *
+ * With `--base`, the range is `<ref>..HEAD` and also follows first parents only,
+ * so refreshing a branch from its parent by merge never counts the parent's
+ * later `T<n>:` commits.
+ *
  * Without `--base`, the range starts at the commit that first added the plan
  * folder's `intent.md`, because no task can finish before its plan existed,
  * and it follows first parents only. A branch stacked on another plan's
@@ -283,6 +287,41 @@ export function parseCliArgs(argv) {
 		: null;
 }
 
+/** Raised when `.ai-skills/config.json` exists but cannot be read as a JSON object. */
+export class PlanConfigError extends Error {}
+
+/**
+ * The repo's parsed config, or null when the file is absent.
+ *
+ * `readRepoConfig` also returns null for a file it cannot parse, and a null
+ * config resolves to the default stop paths. A typo in a config that sets
+ * `stopPaths` would then approve a plan the configured paths should stop, so
+ * a file that exists but yields null throws instead.
+ *
+ * `tasks.mjs` and `bundles.mjs` read through this too, and fail closed for
+ * their own reasons. A dropped `importAliases` loses the import edges that keep
+ * two dependent tasks from running side by side, and a dropped `defaultBranch`
+ * reads the wrong commit range for a plan with no `intent.md`, which can mark a
+ * task done that isn't.
+ *
+ * @param {string} repoRoot
+ * @returns {Record<string, unknown> | null}
+ */
+export function readPlanConfig(repoRoot) {
+	const config = readRepoConfig(repoRoot);
+
+	if (
+		config === null &&
+		existsSync(path.join(repoRoot, ".ai-skills", "config.json"))
+	) {
+		throw new PlanConfigError(
+			".ai-skills/config.json exists but is not a readable JSON object."
+		);
+	}
+
+	return config;
+}
+
 /**
  * Reads the plan and the commit subjects in `<base>..HEAD`, with git run from
  * the plan's directory so the CLI works from any working directory. With no
@@ -305,7 +344,7 @@ export function loadPlanState(planPath, base) {
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 
-	const config = readRepoConfig(git(["rev-parse", "--show-toplevel"]).trim());
+	const config = readPlanConfig(git(["rev-parse", "--show-toplevel"]).trim());
 	const defaultBranch =
 		typeof config?.["defaultBranch"] === "string" && config["defaultBranch"]
 			? config["defaultBranch"]
@@ -316,7 +355,12 @@ export function loadPlanState(planPath, base) {
 	/** @type {string} */
 	let log;
 	if (base || !existsSync(path.join(dir, "intent.md"))) {
-		log = git(["log", "--format=%s", `${base ?? `origin/${defaultBranch}`}..HEAD`]);
+		log = git([
+			"log",
+			...(base ? ["--first-parent"] : []),
+			"--format=%s",
+			`${base ?? `origin/${defaultBranch}`}..HEAD`,
+		]);
 	} else {
 		const added = git([
 			"log",
@@ -441,7 +485,7 @@ function runCli(argv) {
 		process.stderr.write(
 			`tasks.mjs: ${(error instanceof Error ? error.message : String(error)).trim()}\n`
 		);
-		process.exitCode = 1;
+		process.exitCode = error instanceof PlanConfigError ? 2 : 1;
 		return;
 	}
 

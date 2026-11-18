@@ -58,12 +58,12 @@ When updating an existing PR description:
 
 The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because ${PROJECT} squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
-**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to the tracker, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
+**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — the intent stage offering the AC sync, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
 
 **Two enforcement moments:**
 
-- **Winston** — after modifying `## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria` in the plan, if an open PR exists for the current branch, rewrite the agent-owned sections of the PR body to reflect the new scope. Silent. Mentioned in the closing message (one line: "PR #N body synced to reflect plan changes").
-- **Clove** — in the shipping flow, when pushing to a branch with an existing PR and the plan's `## History` has new entries past the last PR-body write, rewrite the agent-owned sections before push. Silent. Mentioned in the two-path closing.
+- **The PR stage** — on a folder-plan branch, the sync step of `.prism/references/shipping-flow.md` rewrites the agent-owned sections before each push when the plan's `## History` has entries past the last PR-body write. Silent. Mentioned in the closing line (one line: "PR #N body synced to current scope").
+- **Clove** — on a flat-plan branch, in the shipping flow, when pushing to a branch with an existing PR and the plan's `## History` has new entries past the last PR-body write, rewrite the agent-owned sections before push. Silent. Mentioned in the two-path closing.
 
 **Section ownership:**
 

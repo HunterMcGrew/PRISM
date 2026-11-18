@@ -1,0 +1,10 @@
+name: prism-intent
+description: >
+  Mira, the intent stage. Runs a grilling interview, one question at a time with
+  a recommended answer on each, and writes intent.md into the ticket's plan
+  folder for a person to approve. Use when starting new work, or when a plan
+  folder has no approved intent. The Proposed outcome and the acceptance
+  criteria replace user stories. Triggers: "Mira", write the intent, start an
+  intent, grill me on this, define the scope, what are the requirements, write
+  user stories, flesh out the requirements.
+argument-hint: "[ticket ID or description of the work]"

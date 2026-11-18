@@ -33,3 +33,7 @@ export function loadPlanState(
 	planPath: string,
 	base: string | null
 ): { tasks: Task[]; done: Set<string> };
+
+export class PlanConfigError extends Error {}
+
+export function readPlanConfig(repoRoot: string): Record<string, unknown> | null;

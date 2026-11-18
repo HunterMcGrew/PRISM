@@ -45,10 +45,11 @@ export const AGENTS_MD_SEEDED_MARKER =
  * Rule files that render first in the generated block, in this order.
  *
  * Codex reads only the first 32 KiB of `AGENTS.md` by default, so the rules
- * that drive a run (routing, then the behavioral norms) go first and stay inside
- * that window.
+ * that drive a run (the workflow, routing, then the behavioral norms) go first
+ * and stay inside that window.
  */
 export const AGENTS_MD_LEAD_RULES: readonly string[] = [
+	"workflow.md",
 	"skill-routing.md",
 	"plan-before-building.md",
 	"subagent-strategy.md",

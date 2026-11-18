@@ -24,11 +24,6 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 const LOADED_LINE_CAP = 120;
 
 const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-plan": {
-		thinnedBy: "replaced by the phase-2 plan skill; its plan logic stays until then",
-		max: 1108,
-	},
-	"prism-user-stories": { thinnedBy: "folds into the phase-2 intent skill", max: 704 },
 	"prism-review-loop": {
 		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
 		max: 306,

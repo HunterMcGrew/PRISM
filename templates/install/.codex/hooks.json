@@ -18,6 +18,25 @@
 						"command": "node \".claude/hooks/git-gates.mjs\" --tool=codex --event=PreToolUse"
 					}
 				]
+			},
+			{
+				"matcher": "^(Bash|apply_patch|Edit|Write)$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/approve-guard.mjs\" --tool=codex --event=PreToolUse"
+					}
+				]
+			}
+		],
+		"UserPromptSubmit": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/approve-guard.mjs\" --tool=codex --event=UserPromptSubmit"
+					}
+				]
 			}
 		],
 		"PostToolUse": [

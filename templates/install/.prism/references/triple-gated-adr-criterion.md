@@ -31,13 +31,13 @@ A decision that fails the triple-gate still goes somewhere — just not into an 
 
 ## When to apply
 
-Apply the gate at decision-promotion time — typically Winston during plan close.
+Apply the gate at decision-promotion time — typically the plan stage during plan close.
 
-- **Winston** — `.prism/references/plan/plan-mode.md` § Immediate Decision Promotion cites this reference and applies the gate after each `## Decisions` entry.
+- **The plan stage** (`prism-plan`) — its decision promotion at close cites this reference and applies the gate after each `## Decisions` entry.
 
 ## Who cites this pattern
 
-- **Winston** — applies the gate at plan close for every `## Decisions` entry.
+- **The plan stage** (`prism-plan`) — applies the gate at plan close for every `## Decisions` entry.
 - **Briar** and **Eric** — apply the gate when reviewing whether a Decision in a plan should have been promoted to an ADR but wasn't (or vice versa). Flag as Minor in review when the gate is misapplied.
 
 ## Why a reference doc rather than inlining

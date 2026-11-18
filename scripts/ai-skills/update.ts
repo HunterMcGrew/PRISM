@@ -1111,6 +1111,7 @@ async function refreshPlatformDirs(
 const HOOK_RUNTIME_FILES = [
 	"hook.mjs",
 	"git-gates.mjs",
+	"approve-guard.mjs",
 	"architect-route.mjs",
 	"compact-handoff.mjs",
 	"harnesses.mjs",
@@ -1129,10 +1130,16 @@ const HOOK_RUNTIME_FILES = [
 	"plan/commit.mjs",
 	"plan/auto-approve.mjs",
 	"plan/stop-paths.mjs",
+	"plan/approve.mjs",
+	"plan/chat-approval.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */
-const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs", "git-gates.mjs"];
+const HOOK_RUNTIME_ENTRY_POINTS = [
+	"hook.mjs",
+	"git-gates.mjs",
+	"approve-guard.mjs",
+];
 
 /**
  * The line every delivered runtime file carries near its top, identifying the
@@ -1219,14 +1226,13 @@ async function deliverHookRuntimeFile(
  */
 async function pruneStaleHookRuntimeFiles(
 	targetDir: string,
-	dryRun: boolean,
-	deliveredPaths: readonly string[] = HOOK_RUNTIME_FILES
+	dryRun: boolean
 ): Promise<FileOutcome[]> {
 	if (!(await pathExists(targetDir))) {
 		return [];
 	}
 
-	const delivered = new Set(deliveredPaths);
+	const delivered = new Set(HOOK_RUNTIME_FILES);
 	const entries = await fs.readdir(targetDir, {
 		recursive: true,
 		withFileTypes: true,
@@ -1265,51 +1271,6 @@ async function pruneStaleHookRuntimeFiles(
 			relativePath: `.claude/hooks/${relative}`,
 			action: "removed-with-backup",
 			backupPath,
-		});
-	}
-
-	return outcomes;
-}
-
-/**
- * Removes the runtime files PRISM delivers at their canonical paths, for a
- * consumer who has dropped `claude` from `hosts`. Only a file carrying
- * `HOOK_RUNTIME_MARKER` is removed; an unmarked file at one of those paths
- * is the consumer's own and is left where it is.
- *
- * No backup, deliberately — the asymmetry mirrors delivery rather than
- * prune. `deliverHookRuntimeFile` replaces a marked file at a canonical
- * path without a backup because the marker plus the path together identify
- * PRISM's own content; the same pair identifies it here. `pruneStaleHookRuntimeFiles`
- * backs up first because it acts on marked files at *unrecognized* paths,
- * which are plausibly a consumer's adaptation that carried the marker
- * along — a different case with a different risk.
- */
-async function removeDeliveredHookRuntimeFiles(
-	targetDir: string,
-	dryRun: boolean
-): Promise<FileOutcome[]> {
-	const outcomes: FileOutcome[] = [];
-
-	for (const relative of HOOK_RUNTIME_FILES) {
-		const segments = relative.split("/");
-		const absolutePath = path.join(targetDir, ...segments);
-		if (!(await pathExists(absolutePath))) {
-			continue;
-		}
-
-		const contents = await readFileIfExists(absolutePath);
-		if (contents === null || !contents.includes(HOOK_RUNTIME_MARKER)) {
-			continue;
-		}
-
-		if (!dryRun) {
-			await fs.rm(absolutePath, { force: true });
-		}
-
-		outcomes.push({
-			relativePath: `.claude/hooks/${relative}`,
-			action: "removed",
 		});
 	}
 
@@ -1437,12 +1398,14 @@ const HOOK_STATE_GITIGNORE_LINES = [
 ];
 
 /**
- * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`,
- * merges its registrations into the consumer's `.claude/settings.json` and
- * `.codex/hooks.json` (never overwriting an existing registration block), and
- * appends the two hook state-file globs to the consumer's `.gitignore`.
- * Shared by `prism:adopt` and `prism:update` through this one `runUpdate`
- * seam, so both inherit the same delivery path.
+ * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`
+ * whatever `hosts` holds, because the skills a consumer receives name the
+ * plan-chain scripts and a Cursor user runs them from a terminal. Registrations,
+ * the git hook shims, and the hook state-file `.gitignore` lines follow `hosts`: each host's registration merges into
+ * `.claude/settings.json` or `.codex/hooks.json` (never overwriting an existing
+ * registration block) only for that host. Shared by `prism:adopt` and
+ * `prism:update` through this one `runUpdate` seam, so both inherit the same
+ * delivery path.
  *
  * The registrations in `templates/install/.claude/settings.json` and
  * `templates/install/.codex/hooks.json` each name a path inside the
@@ -1463,22 +1426,6 @@ export async function refreshHookRuntime(
 
 	const targetDir = path.join(consumerRepoRoot, ".claude", "hooks");
 
-	// The runtime is one file tree shared by both registrations (see the plan
-	// Decision "One runtime, two registrations"), so its own delivery gates on
-	// either host being present — only the absence of both takes the removal
-	// path. Each registration file still gates on its own host below, so a
-	// Codex-only consumer never gets a `.claude/settings.json` entry pointing
-	// at a runtime that host does not use.
-	if (!hosts.includes("claude") && !hosts.includes("codex")) {
-		const outcomes = await removeDeliveredHookRuntimeFiles(targetDir, dryRun);
-		outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun, [])));
-		outcomes.push(...(await removeDeliveredGitHookShims(consumerRepoRoot, dryRun)));
-		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
-		await mergeHookCodexRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
-
-		return outcomes;
-	}
-
 	const outcomes: FileOutcome[] = [];
 	for (const relative of HOOK_RUNTIME_FILES) {
 		const segments = relative.split("/");
@@ -1498,7 +1445,6 @@ export async function refreshHookRuntime(
 	}
 
 	outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun)));
-	outcomes.push(...(await deliverGitHookShims(prismRepoRoot, consumerRepoRoot, dryRun)));
 
 	if (!dryRun) {
 		for (const entryPoint of HOOK_RUNTIME_ENTRY_POINTS) {
@@ -1508,6 +1454,15 @@ export async function refreshHookRuntime(
 			}
 		}
 	}
+
+	// A Cursor-only install receives the runtime files above but no git hooks,
+	// per git-hooks.md, so the shims follow `hosts` where the files do not.
+	const runsAHookHost = hosts.includes("claude") || hosts.includes("codex");
+	outcomes.push(
+		...(runsAHookHost
+			? await deliverGitHookShims(prismRepoRoot, consumerRepoRoot, dryRun)
+			: await removeDeliveredGitHookShims(consumerRepoRoot, dryRun))
+	);
 
 	await mergeHookSettingsRegistration(
 		prismRepoRoot,
@@ -1521,7 +1476,11 @@ export async function refreshHookRuntime(
 		dryRun,
 		hosts.includes("codex")
 	);
-	await appendHookStateGitignoreLines(consumerRepoRoot, dryRun);
+
+	// Only a registered entry point writes a state file.
+	if (runsAHookHost) {
+		await appendHookStateGitignoreLines(consumerRepoRoot, dryRun);
+	}
 
 	return outcomes;
 }
@@ -1529,8 +1488,8 @@ export async function refreshHookRuntime(
 /**
  * Matches a command string that *is* one of PRISM's own hook invocations,
  * end to end: `node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs"` (or
- * `git-gates.mjs`, the second entry point) followed by PRISM's `--flag=value`
- * arguments and nothing else.
+ * `git-gates.mjs` or `approve-guard.mjs`, the other entry points) followed by
+ * PRISM's `--flag=value` arguments and nothing else.
  *
  * Anchored at both ends on purpose. A substring test for the entry-point path
  * also claims a command that merely mentions it — a consumer's wrapper
@@ -1544,18 +1503,18 @@ export async function refreshHookRuntime(
  * own replacement.
  */
 export const PRISM_HOOK_COMMAND_PATTERN =
-	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/(?:hook|git-gates)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/(?:hook|git-gates|approve-guard)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
 
 /**
  * Matches a command string that is one of PRISM's own Codex hook
  * invocations, end to end — `node ".claude/hooks/hook.mjs"` (or
- * `git-gates.mjs`, the second entry point) followed by PRISM's
- * `--flag=value` arguments and nothing else. Anchored at both ends for the
+ * `git-gates.mjs` or `approve-guard.mjs`, the other entry points) followed by
+ * PRISM's `--flag=value` arguments and nothing else. Anchored at both ends for the
  * same reason `PRISM_HOOK_COMMAND_PATTERN` is: a loose match would claim
  * (and later delete) a consumer's own wrapper around the entry point.
  */
 export const PRISM_CODEX_HOOK_COMMAND_PATTERN =
-	/^node "\.claude\/hooks\/(?:hook|git-gates)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+	/^node "\.claude\/hooks\/(?:hook|git-gates|approve-guard)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
 
 /**
  * Reports whether a `hooks[eventName]` array entry is one of PRISM's own

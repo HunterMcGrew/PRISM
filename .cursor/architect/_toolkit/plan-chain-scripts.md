@@ -13,11 +13,13 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 - **`plan/auto-approve.mjs`** approves a folder plan when every condition holds.
 - **`plan/stop-paths.mjs`** holds the dependency and contract path lists and the matcher for them.
 - **`plan/commit.mjs`** commits exactly the named paths.
+- **`plan/approve.mjs`** stamps a chain file's approval lines for a person, after a keypress in their terminal or, inside an agent session, on a chat approval token in place of the keypress. It stamps `intent.md`, `design.md`, and `plan.md` and never `spec.md`, and it refuses a file whose text changed after the person said `approve`.
+- **`plan/chat-approval.mjs`** holds the chat approval token's file name, the prompt parser, and the hash of every chain artifact, plus the helpers that find, read, and take the token. The approve guard writes the token and `approve.mjs` takes it ([`hook-runtime.md`](./hook-runtime.md) § Approve guard).
 - **`lib/tokenize.mjs`** and **`lib/segments.mjs`** turn a shell command into the simple commands bash would run.
 
 ## Invocation
 
-In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Only `tasks`, `bundles`, `auto-approve`, and `commit` are commands. The rest are imported. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `commit.mjs` passes any other git failure through with git's code.
+In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Skill and rule text spells that directory with the `HOOK_RUNTIME_DIR` token, which renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. It comes from `hookRuntimeDir` in `.ai-skills/config.json`, which a consumer never sets. Only `tasks`, `bundles`, `auto-approve`, `approve`, and `commit` are commands. The rest are imported. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `commit.mjs` passes any other git failure through with git's code. A `.ai-skills/config.json` that exists but does not parse is a config error, exit 2, for every command that reads it, so a typo in a config that sets `stopPaths` can't fall back to the default paths and approve a plan the configured ones would stop.
 
 ## Templates
 
@@ -25,7 +27,7 @@ In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, ru
 
 ## Entry guards
 
-The four commands end with a guard that compares the realpath of `process.argv[1]` to the module's own path, so a symlinked invocation still counts as direct. That guard is only right while nothing in the `dist/cli.js` bundle imports these modules. The esbuild bundle collapses every module's `import.meta.url` to one file, so a bundled guard would fire on every invocation. The runtime can't use `isDirectCliEntry` instead, because it ships no TypeScript. Before a bundled module imports one of the four, split the CLI from the logic.
+Every command ends with a guard that compares the realpath of `process.argv[1]` to the module's own path, so a symlinked invocation still counts as direct. That guard is only right while nothing in the `dist/cli.js` bundle imports these modules. The esbuild bundle collapses every module's `import.meta.url` to one file, so a bundled guard would fire on every invocation. The runtime can't use `isDirectCliEntry` instead, because it ships no TypeScript. Before a bundled module imports a command module, split the CLI from the logic.
 
 ## Globs
 
@@ -49,7 +51,7 @@ A commit subject finishes tasks through one of these forms:
 - `T<n> fix: ...` names a task without completing it, so a fix on a finished task can't mark an unfinished one done.
 - `plan: ...`, `retro: ...`, and `<ticketPrefix>-<digits>: ...` are recognized and complete nothing. The ticket form is built from `ticketPrefix` in `.ai-skills/config.json`, matched without regard to case. With no prefix, no subject reads as a ticket subject.
 
-Done is judged over a commit range. With `--base <ref>`, the range is `<ref>..HEAD`. Without it, the range starts at the commit that first added the plan folder's `intent.md`, follows first parents only, and includes that commit's own subject. First-parent matters on a stacked branch: a branch built on another plan's branch would otherwise count the parent's `T<n>:` commits, including ones a merge of the parent brings in. A folder whose `intent.md` isn't committed yet has no task done. A plan with no `intent.md` beside it reads `origin/<defaultBranch>..HEAD`, with `defaultBranch` from the config and `main` as the fallback.
+Done is judged over a commit range. With `--base <ref>`, the range is `<ref>..HEAD` and follows first parents only. Without it, the range starts at the commit that first added the plan folder's `intent.md`, follows first parents only, and includes that commit's own subject. First-parent matters on a stacked branch: a branch built on another plan's branch would otherwise count the parent's `T<n>:` commits, including ones a merge of the parent brings in, and every plan numbers its tasks from `T1`, so a merged parent's later `T2:` would mark this plan's open `T2` done. A folder whose `intent.md` isn't committed yet has no task done. A plan with no `intent.md` beside it reads `origin/<defaultBranch>..HEAD`, with `defaultBranch` from the config and `main` as the fallback.
 
 ## Bundle check
 
@@ -98,4 +100,4 @@ A step that fails on a held `index.lock` is retried, because a sibling's git cal
 
 ## Hosts
 
-The modules arrive with the hook runtime, which is delivered only when `hosts` includes `claude` or `codex`. A Cursor-only consumer does not receive these modules yet.
+The modules arrive with the hook runtime, which reaches every install whatever `hosts` holds, so a Cursor user can run `approve.mjs` from a terminal. Only the registrations and the git hook shims follow `hosts`.

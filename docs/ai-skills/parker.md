@@ -17,7 +17,7 @@ The output is `.prism/prds/<slug>.md` (always) plus `.prism/prds/<slug>.decision
 
 ## When to use Parker
 
-- **Before Mira.** When you're about to ask Mira to write user stories but you realize you don't have a PRD to decompose from. Parker first, Mira second.
+- **Before Mira.** When you're about to ask Mira to write the intent but you realize you don't have a PRD to decompose from. Parker first, Mira second.
 - **Before Winston.** When you're about to ask Winston to plan an initiative but the scope is fuzzy. The PRD pins the scope; Winston plans against it.
 - **Documenting an existing feature.** Brownfield mode catches the gap where features ship without a PRD and the absence makes onboarding, scope debates, and rewrites harder.
 
