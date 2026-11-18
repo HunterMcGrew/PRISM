@@ -615,6 +615,9 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter approved the amended intent in chat. The stamp was written by hand because the approval script arrives with the chain-scripts child.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Fixed the first PR review's findings. Children get their own issues and `prism-<n>/` folders, the approval script moved beside its guard in child 5, the shell parser port moved to child 4, and child 3 tests only the sections that exist when it lands. The spec now records the ADRs the amendment reverses in part and which child writes each successor.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter re-approved the intent in chat at `7c37fe08`, after the review fixes edited it. The edits were a `stage` field, the Eric wording, four restated bullets under what the amendment changes, a Cursor sentence, and one heading name.
+- 2026-11-18 [huntermcgrew/prism-499-approve-once]: Second intent amendment: once the intent is approved, only a question that changes the intent reaches Hunter, per his chat rulings that day. The spec now ports thrive's approve-once change and the gaps a coverage pass found at the 2026-11-18 tips of #2844 and #2859.
+- 2026-11-18 [huntermcgrew/prism-499-approve-once]: Review fixes changed the intent after its 2026-11-18 stamp, aligning the confirm round and the architect routing with thrive's db3570975 tip. Hunter's re-approval in chat is pending.
+- 2026-11-18 [huntermcgrew/prism-499-approve-once]: Hunter re-approved the intent in chat at `4a597785`, covering the review fixes made after its stamp.
 
 ---
 
@@ -1080,6 +1083,43 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - **Problem:** the old market-research, marketing, sales, customer-success, and legal bodies let a long artifact live in its own file, but the new bodies and the template said only "write only your own section", and `prism-recruiting` alone kept the clause.
 - **Fixed in:** the "Write only your own section" convention says a long artifact may live in its own file, linked from the section, and `prism-recruiting`'s local copy is dropped.
 
+### PR 518: intent, spec, and the ported tip route findings to the architect differently
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/spec.md:324`, `.prism/plans/prism-499/intent.md:63`
+- **Problem:** the intent sends every finding of a still-blocking confirm round to `prism-architect`, while the spec's "Architect before person" bullet and thrive's tip at db3570975 send only a major finding there and record the rest as `OPEN` Decisions directly. The tip's Scope changes paragraph also asks the person directly about an acceptance-criterion change or a contradicted ruling, while the intent lets only `prism-architect` send a question to the person. The Decision says PRISM "ports the tip as written", so child 5 could copy wording that contradicts the approved intent. Minor because both routes end the same way: an AC change is intent-level, so the architect would send it to the person anyway.
+- **Suggested fix:** pick one routing. Either reword the intent's challenge bullet to "a major finding goes to `prism-architect`" and its stop bullet to allow an AC change straight to the person, or change the Decision to "ports the tip, with every person-question going through `prism-architect`".
+
+### PR 518: "Child 1 is this PR" has no referent once merged
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/spec.md:278`
+- **Problem:** the line this PR edits still says "Child 1 is this PR". On `main` "this PR" names nothing, and child 1 now spans #512 and #518. This is the session-context leakage `writing-voice.md` warns about.
+- **Suggested fix:** "Child 1 is the epic folder's own PRs (#512, #518). It has no folder of its own."
+
+### PR 518: `.gitattributes` missing from Affected systems
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/spec.md:236`
+- **Problem:** the carried-in list tells child 6 to add `merge=union` for `review-misses.jsonl` in PRISM's `.gitattributes`, but the Affected systems block has no glob covering the root `.gitattributes`. Auto-approval checks every planned file against Affected systems, so a child plan scoped from this list fails that check on the file.
+- **Suggested fix:** add `.gitattributes` to the Affected systems block.
+
+### PR 518: second `branch-plan.md` bullet names no child
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-499/spec.md:219`
+- **Problem:** "Always-on rule edits" now has two `branch-plan.md` bullets, and the new one doesn't say which child lands it. The citation lint that rejects `see Decision:` lands in child 4, and the Children table gives "the rule edits" to child 5. Between those two merges, the always-on History guidance recommends a citation the lint fails in a plan folder.
+- **Suggested fix:** merge it into the first `branch-plan.md` bullet, and land the History-guidance change in child 4 with the lint.
+
+### PR 518 self-review record
+
+- No Critical or Major findings — 2026-11-18 [huntermcgrew/prism-499-approve-once]. The four Minor findings above were fixed in `604e4f03`.
+- Checked against source: thrive #2859's workflow-block patch (424dcbda2 to db3570975), `auto-approve.mjs` and its tests at db3570975, `plan-folder-citations.ts` at db3570975, and #2937's first commit.
+
 ## Cleanup Items
 
 - `scripts/ai-skills/hook-gate.test.ts:670` — the cold-start test parses `npm pack --json` as an array. npm 12.2.2 returns an object keyed by package name, so the test fails locally on that npm with a JSON parse error. Seen 2026-11-17.
@@ -1088,4 +1128,15 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 ## PR Readiness
 
-**Last updated:** 2026-10-17
+PR #518 (intent and spec amendment, plan-folder files only):
+
+- [x] No critical or major issues (four minor, fixed in `604e4f03`)
+- [x] Types correct — n/a, no code in the diff
+- [x] No stray console.logs or debug artifacts — n/a
+- [x] Tests written for new logic — n/a, no code in the diff
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — `pnpm prism:check` passed 2026-11-18. The build itself was skipped because the diff doesn't touch generated output. No formatter is installed, so there was no format check.
+- [x] PR description up to date
+- [ ] Lasting decisions promoted to architect context — n/a until the epic closes
+
+**Last updated:** 2026-11-18

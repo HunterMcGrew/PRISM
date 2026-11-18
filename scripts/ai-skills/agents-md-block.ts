@@ -17,6 +17,9 @@
  * (`load: skill`) are excluded from this block the same way they are excluded
  * from every platform copy (`build.ts`'s platform-copy path) — they exist only
  * canonically, so no per-file exclude list is needed here.
+ *
+ * Rules named in `AGENTS_MD_LEAD_RULES` render first, in list order, then the
+ * rest alphabetically.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -37,6 +40,27 @@ export const AGENTS_MD_BLOCK_END = "<!-- END GENERATED TIER-1 RULE BODIES -->";
  */
 export const AGENTS_MD_SEEDED_MARKER =
 	"<!-- prism:seeded-agents-md — this AGENTS.md was created by `prism adopt --seed-agents-md`; prism eject will remove it. Delete this line if you want to keep the file after ejecting. -->";
+
+/**
+ * Rule files that render first in the generated block, in this order.
+ *
+ * Codex reads only the first 32 KiB of `AGENTS.md` by default, so the rules
+ * that drive a run (routing, then the behavioral norms) go first and stay inside
+ * that window.
+ */
+export const AGENTS_MD_LEAD_RULES: readonly string[] = [
+	"skill-routing.md",
+	"plan-before-building.md",
+	"subagent-strategy.md",
+	"self-improvement-loop.md",
+	"verification-before-done.md",
+	"demand-elegance.md",
+	"autonomous-bug-fixing.md",
+	"core-principles.md",
+	"bash-output-minimization.md",
+	"cross-agent-handoff-accountability.md",
+	"pre-compaction-checkpoint.md",
+];
 
 /**
  * The minimal root `AGENTS.md` body `prism adopt --seed-agents-md` writes when
@@ -133,13 +157,54 @@ export async function collectTier1RuleBodies(
  * Wraps the Tier-1 rule bodies in begin/end markers with per-rule source
  * comments so contributors know the block is build-managed and can locate each
  * rule's canonical source.
+ *
+ * Rules named in `AGENTS_MD_LEAD_RULES` render first, in list order; the rest
+ * follow in the order they arrived. A list name with no matching rule is skipped
+ * because a consumer's rules directory may lack it.
  */
 export function renderTier1Block(rules: { name: string; body: string }[]): string {
-	const rendered = rules
+	const leadRules = AGENTS_MD_LEAD_RULES.flatMap((leadName) =>
+		rules.filter((r) => r.name === leadName)
+	);
+	const otherRules = rules.filter((r) => !AGENTS_MD_LEAD_RULES.includes(r.name));
+
+	const rendered = [...leadRules, ...otherRules]
 		.map((r) => `<!-- source: .prism/rules/${r.name} -->\n\n${r.body}`)
 		.join("\n\n---\n\n");
 
 	return `${AGENTS_MD_BLOCK_BEGIN}\n\n${rendered}\n\n${AGENTS_MD_BLOCK_END}`;
+}
+
+const RULE_SOURCE_MARKER_PREFIX = "<!-- source: ";
+
+/**
+ * For each lead rule, the UTF-8 byte offset where its section ends in
+ * `agentsMd`, or `null` when its source marker is absent. Offsets are bytes
+ * because Codex's read limit counts bytes, and rule bodies carry multi-byte
+ * characters such as em dashes.
+ *
+ * A section ends where the next source marker begins, or at the block's end
+ * marker when no marker follows.
+ */
+export function measureLeadSectionEnds(
+	agentsMd: string,
+	leadRules: readonly string[] = AGENTS_MD_LEAD_RULES
+): { name: string; endByte: number | null }[] {
+	return leadRules.map((name) => {
+		const marker = `${RULE_SOURCE_MARKER_PREFIX}.prism/rules/${name} -->`;
+		const markerStart = agentsMd.indexOf(marker);
+
+		if (markerStart === -1) {
+			return { name, endByte: null };
+		}
+
+		const afterMarker = markerStart + marker.length;
+		const nextSource = agentsMd.indexOf(RULE_SOURCE_MARKER_PREFIX, afterMarker);
+		const blockEnd = agentsMd.indexOf(AGENTS_MD_BLOCK_END, afterMarker);
+		const endIndex = [nextSource, blockEnd].find((i) => i !== -1) ?? agentsMd.length;
+
+		return { name, endByte: Buffer.byteLength(agentsMd.slice(0, endIndex), "utf8") };
+	});
 }
 
 /**

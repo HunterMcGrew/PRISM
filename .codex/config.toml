@@ -1,0 +1,2 @@
+# Raises Codex's AGENTS.md read limit (32 KiB by default). prism update keeps it at or above the file's size.
+project_doc_max_bytes = 262144

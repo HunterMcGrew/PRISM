@@ -19,6 +19,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+	AGENTS_MD_LEAD_RULES,
+	measureLeadSectionEnds,
+	renderTier1Block,
+} from "./agents-md-block";
+import {
 	formatDoctorReport,
 	resolvePrismSourceOrFinding,
 	runDoctor,
@@ -2071,6 +2076,285 @@ test("runDoctor reports no host-output finding when the config declares no hosts
 			report.findings.filter((f) => f.check === "host-output"),
 			[]
 		);
+	});
+});
+
+// --- codex-doc-limit check (PRISM-519) ---
+
+/**
+ * Runs doctor against a repo whose `AGENTS.md` is `agentsMd` (a string, or
+ * that many bytes of filler), returning the report and its `codex-doc-limit` findings. The repo has a sync
+ * manifest (has adopted) unless `adopted` is false.
+ */
+async function runCodexDocLimitDoctor(
+	roots: { prismSourceRoot: string; consumerRepoRoot: string },
+	agentsMd: number | string,
+	codexConfigToml: string | null,
+	{ adopted = true }: { adopted?: boolean } = {}
+) {
+	if (adopted) {
+		await writeConsumerManifest(path.join(roots.consumerRepoRoot, ".prism"), {});
+	}
+
+	await writeFile(
+		roots.consumerRepoRoot,
+		"AGENTS.md",
+		typeof agentsMd === "string" ? agentsMd : "a".repeat(agentsMd)
+	);
+	if (codexConfigToml !== null) {
+		await writeFile(roots.consumerRepoRoot, ".codex/config.toml", codexConfigToml);
+	}
+
+	const report = await runDoctor({
+		consumerRepoRoot: roots.consumerRepoRoot,
+		prismSourceRoot: roots.prismSourceRoot,
+		npmVersionFetcher: NEVER_FETCH,
+	});
+
+	return {
+		report,
+		findings: report.findings.filter((f) => f.check === "codex-doc-limit"),
+	};
+}
+
+test("runDoctor warns when AGENTS.md is over 32 KiB and the Codex config sets no read limit", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /AGENTS\.md is 40000 bytes/);
+		assert.match(findings[0].message, /sets no project_doc_max_bytes/);
+		assert.match(findings[0].message, /set it to 131072/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns when the Codex config's read limit is below the AGENTS.md size", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 32768\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /sets project_doc_max_bytes = 32768/);
+		assert.match(findings[0].message, /raise it to 131072/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns when the Codex config's read limit cannot be read", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 0x100000\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /0x100000, which PRISM cannot read/);
+		assert.match(findings[0].message, /Set it to 131072 or more/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports an info line, not a warning, when the Codex config's read limit covers AGENTS.md", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 131072\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "info");
+		assert.match(findings[0].message, /enough for AGENTS\.md \(40000 bytes\)/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+/**
+ * An `AGENTS.md` with `preambleBytes` of consumer content above a generated
+ * block whose every lead rule body is `leadBodyBytes` long, plus the byte
+ * where the last lead rule ends.
+ */
+function agentsMdWithLeadRules(preambleBytes: number, leadBodyBytes: number) {
+	const agentsMd = `${"a".repeat(preambleBytes)}\n${renderTier1Block(
+		AGENTS_MD_LEAD_RULES.map((name) => ({ name, body: "x".repeat(leadBodyBytes) }))
+	)}\n`;
+	const leadRulesEnd = Math.max(
+		...measureLeadSectionEnds(agentsMd).map(({ endByte }) => endByte ?? 0)
+	);
+
+	return { agentsMd, leadRulesEnd };
+}
+
+test("runDoctor warns that the lead rules are cut when a large preamble pushes them past the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 1_500);
+		assert.ok(leadRulesEnd > 32_768);
+
+		const { findings } = await runCodexDocLimitDoctor(roots, agentsMd, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, new RegExp(`end at byte ${leadRulesEnd}`));
+	});
+});
+
+test("runDoctor warns that the lead rules are cut when the configured limit ends before them", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 1_500);
+
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			agentsMd,
+			"project_doc_max_bytes = 32768\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.match(findings[0].message, new RegExp(`end at byte ${leadRulesEnd}`));
+	});
+});
+
+test("runDoctor does not call the lead rules cut when they end inside the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(1_000, 1_000);
+		const padded = `${agentsMd}${"a".repeat(40_000)}`;
+		assert.ok(leadRulesEnd < 32_768);
+
+		const { findings } = await runCodexDocLimitDoctor(roots, padded, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.doesNotMatch(findings[0].message, /end at byte/);
+	});
+});
+
+test("runDoctor does not call the lead rules cut when the configured limit covers them but not the whole file", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 1_500);
+		const padded = `${agentsMd}${"a".repeat(40_000)}`;
+
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			padded,
+			`project_doc_max_bytes = ${leadRulesEnd + 1}\n`
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.doesNotMatch(findings[0].message, /end at byte/);
+	});
+});
+
+test("runDoctor warns when a configured limit below 32 KiB cuts an AGENTS.md that fits the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 500);
+		assert.ok(agentsMd.length < 32_768 && leadRulesEnd > 16_384);
+
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			agentsMd,
+			"project_doc_max_bytes = 16384\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /sets project_doc_max_bytes = 16384/);
+		assert.match(findings[0].message, new RegExp(`end at byte ${leadRulesEnd}`));
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns that the limit is unknown when the only limit line sits under a table", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			'model = "x"\n\n[profiles.x]\nproject_doc_max_bytes = 999999\n'
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /cannot place at the top level/);
+		assert.match(findings[0].message, /is unknown/);
+		assert.match(findings[0].message, /top-level project_doc_max_bytes line set to 131072 or more is needed/);
+		assert.doesNotMatch(findings[0].message, /move the line/i);
+		assert.doesNotMatch(findings[0].message, /prism update/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns for a hidden top-level limit that a lone-value array element masks, even when AGENTS.md fits the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			30_000,
+			"matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 16384\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /AGENTS\.md \(30000 bytes\)/);
+		assert.match(findings[0].message, /is unknown/);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when a configured limit below 32 KiB still covers AGENTS.md", async () => {
+	await withTempRoots(async (roots) => {
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			10_000,
+			"project_doc_max_bytes = 16384\n"
+		);
+
+		assert.deepEqual(findings, []);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when Codex is not among the hosts", async () => {
+	await withTempRoots(async (roots) => {
+		await writeFile(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null);
+
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when AGENTS.md fits Codex's default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 30_000, null);
+
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding for a never-adopted repo", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null, {
+			adopted: false,
+		});
+
+		assert.equal(report.syncState.manifest, null);
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
 	});
 });
 

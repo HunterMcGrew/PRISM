@@ -3,7 +3,7 @@ title: "Adopting PRISM into an existing repo"
 description: "How PRISM coexists with a repo that already has its own AI tooling — what adopt touches, what it skips, and how to resolve .bak files after an update."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-11-17"
+last_updated: "2026-11-18"
 ---
 
 # Adopting PRISM into an existing repo
@@ -41,6 +41,8 @@ The one thing to know going in: **if your repo already has an `AGENTS.md`, PRISM
 If you're only using Claude Code, a missing `AGENTS.md` is a minor gap — Claude reads `CLAUDE.md` and the generated `.claude/skills/` directly. Codex-based agents are different: **Codex auto-loads only `AGENTS.md`.** To make sure Codex sessions see PRISM's Tier-1 rules (the cross-cutting rules with no `paths:` scoping — the ones every session needs regardless of what it's touching), PRISM's build inlines their full bodies into a generated block inside `AGENTS.md`.
 
 That inlining step (`syncAgentsMdTier1Block` in `scripts/ai-skills/build.ts`) only ever *updates* an `AGENTS.md` that's already there — if the file is absent, the function returns immediately and creates nothing. So on a repo that had its own `AGENTS.md` before adopting PRISM, that file keeps whatever it already said, and the PRISM rules block is simply never added. Functionally, this means: **a pre-existing `AGENTS.md` means PRISM's constitution content is not seeded for Codex agents on that repo**, until you add it yourself.
+
+Codex also reads only the first 32 KiB of `AGENTS.md` unless `project_doc_max_bytes` is raised, and the generated block is far larger than that. PRISM puts routing and the behavioral-norm rules first, so they sit inside that window whenever the content above the generated block is small. A long preamble in your own `AGENTS.md` pushes them past it. When Codex is among your hosts and `AGENTS.md` is over the limit in force (32 KiB until your config sets one), or a `.codex/config.toml` already exists, `prism update` raises the limit in that file, and leaves it alone with a warning when its limit line isn't at the top level. `prism doctor` warns when `AGENTS.md` is bigger than the limit in force, and says so when the routing and norms are among what gets cut.
 
 ### When you already have an AGENTS.md
 

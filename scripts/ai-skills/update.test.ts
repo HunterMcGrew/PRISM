@@ -748,6 +748,95 @@ test("runUpdate projects the roster only to the hosts the config declares", asyn
 	);
 });
 
+// --- Codex AGENTS.md read limit (PRISM-519) ---
+
+const OVERSIZED_AGENTS_MD = "a".repeat(40_000);
+
+test("runUpdate sets Codex's AGENTS.md read limit when Codex is a host and AGENTS.md is over 32 KiB", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerRepoRoot, "AGENTS.md", OVERSIZED_AGENTS_MD);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			const config = await readFile(consumerRepoRoot, ".codex/config.toml");
+			assert.match(config, /^project_doc_max_bytes = 131072$/m);
+			assert.equal(outcomeFor(summary, ".codex/config.toml").action, "written");
+		}
+	);
+});
+
+test("runUpdate creates no Codex config for an AGENTS.md inside Codex's default window", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerRepoRoot, "AGENTS.md", "a".repeat(32_768));
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(await fileExists(consumerRepoRoot, ".codex/config.toml"), false);
+			assert.equal(
+				summary.outcomes.some((entry) => entry.relativePath === ".codex/config.toml"),
+				false
+			);
+		}
+	);
+});
+
+test("runUpdate creates no Codex config when Codex is not among the hosts", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["claude"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerRepoRoot, "AGENTS.md", OVERSIZED_AGENTS_MD);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(await fileExists(consumerRepoRoot, ".codex/config.toml"), false);
+			assert.equal(
+				summary.outcomes.some((entry) => entry.relativePath === ".codex/config.toml"),
+				false
+			);
+		}
+	);
+});
+
+test("runUpdate --dry-run reports the Codex read limit outcome and writes nothing", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerRepoRoot, "AGENTS.md", OVERSIZED_AGENTS_MD);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+				dryRun: true,
+			});
+
+			assert.equal(outcomeFor(summary, ".codex/config.toml").action, "written");
+			assert.equal(await fileExists(consumerRepoRoot, ".codex/config.toml"), false);
+		}
+	);
+});
+
 test("runUpdate writes agent definitions and the Codex config only for their own host", async () => {
 	await withTempRepoRoots(
 		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
