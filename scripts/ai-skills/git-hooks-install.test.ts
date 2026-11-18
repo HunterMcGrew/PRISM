@@ -540,8 +540,8 @@ test("runSessionStartInstall returns null for an unparseable payload", () => {
 
 /**
  * The setup-script line the docs and onboarding offer. It must exit 0 when the
- * runtime is absent, as it is in a Cursor-only consumer, because a non-zero
- * exit there fails every `pnpm install` through `prepare`.
+ * runtime is absent, as it is in a clone that never ran an update, because a
+ * non-zero exit there fails every `pnpm install` through `prepare`.
  */
 const GUARDED_SETUP_LINE = `node -e "import('./.claude/hooks/git-hooks/install.mjs').then((m) => m.runInstallCli(), () => {})"`;
 

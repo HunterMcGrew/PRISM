@@ -32,6 +32,7 @@ export interface PrismConfig {
 	prismSource?: string;
 	techStack?: string[];
 	hosts?: HostName[];
+	hookRuntimeDir?: string;
 	rules?: {
 		universal?: "all";
 		optIn?: string[];
@@ -141,6 +142,7 @@ export function deriveTokenMap(config: PrismConfig): Map<string, string> {
 	tokenMap.set("PROJECT_LOWERCASE", config.project.toLowerCase());
 	tokenMap.set("TICKET_PREFIX", config.ticketPrefix);
 	tokenMap.set("TICKET_PREFIX_LOWERCASE", config.ticketPrefix.toLowerCase());
+	tokenMap.set("HOOK_RUNTIME_DIR", config.hookRuntimeDir ?? ".claude/hooks");
 
 	if (typeof config.ticketSystem.workspace === "string") {
 		tokenMap.set("LINEAR_WORKSPACE", config.ticketSystem.workspace);

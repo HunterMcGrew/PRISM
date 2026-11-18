@@ -18,6 +18,25 @@
 						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-gates.mjs\" --tool=claude --event=PreToolUse"
 					}
 				]
+			},
+			{
+				"matcher": "Bash|PowerShell|Edit|Write|MultiEdit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/approve-guard.mjs\" --tool=claude --event=PreToolUse"
+					}
+				]
+			}
+		],
+		"UserPromptSubmit": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/approve-guard.mjs\" --tool=claude --event=UserPromptSubmit"
+					}
+				]
 			}
 		],
 		"PostToolUse": [

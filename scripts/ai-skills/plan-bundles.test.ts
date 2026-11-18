@@ -212,6 +212,32 @@ describe("analyzeBundles aliases", () => {
 });
 
 describe("bundles.mjs", () => {
+	describe("a config file that does not parse", () => {
+		const tasks = "### T1: a\n- files: scripts/a.mjs\n";
+
+		test("exits 2 naming the config file when it has a trailing comma", () => {
+			const result = runBundles({
+				tasks,
+				files: { ".ai-skills/config.json": '{"ticketPrefix": "ACME",}' },
+			});
+
+			assert.equal(result.status, 2);
+			assert.match(
+				result.stderr,
+				/^bundles\.mjs: \.ai-skills\/config\.json exists but is not a readable JSON object\.\n$/
+			);
+		});
+
+		test("exits 0 on the same config without the trailing comma", () => {
+			const result = runBundles({
+				tasks,
+				files: { ".ai-skills/config.json": '{"ticketPrefix": "ACME"}' },
+			});
+
+			assert.equal(result.status, 0, result.stderr);
+		});
+	});
+
 	test("exits 1 on a file two tasks claim, naming the file and both IDs", () => {
 		const result = runBundles({
 			tasks:

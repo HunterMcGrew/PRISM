@@ -246,6 +246,11 @@
 			"additionalProperties": { "type": "string" },
 			"examples": [{ "@/": "src/" }]
 		},
+		"hookRuntimeDir": {
+			"type": "string",
+			"description": "The repo-relative directory holding the hook runtime. Defaults to `.claude/hooks`. Set only by a repo that runs the runtime from its source tree, as PRISM does; a consumer never sets it.",
+			"examples": ["scripts/ai-skills/hooks"]
+		},
 		"gitHooks": {
 			"type": "object",
 			"description": "The commands PRISM's git hooks (.githooks/pre-commit and .githooks/pre-push) run. The hooks read this key, and onboarding proposes it from the detected stack. A hook with no `command` or no `globs` skips with a notice, so a repo that sets nothing is never blocked.",

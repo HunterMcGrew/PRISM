@@ -1,7 +1,7 @@
 ---
 title: Compatibility
 description: How PRISM's build outputs land across tool namespaces and what gets committed vs ignored.
-last_updated: "2026-10-17"
+last_updated: "2026-11-18"
 ---
 
 # Compatibility
@@ -70,7 +70,7 @@ Codex's skills root, `.agents/skills/`, resolves repo-relative — not `~/.agent
 
 PRISM ships a hook runtime that does two things: it names the architect docs that govern a file you just read, and it blocks an edit to a routed path until those docs are read.
 
-`prism adopt` and `prism update` copy the runtime into `.claude/hooks/` when `hosts` includes `claude` or `codex`. Each host gets its own registration: `.claude/settings.json` for Claude Code and `.codex/hooks.json` for Codex. On Codex the delivery is verified, but PRISM's deny response follows the format OpenAI documents for Codex hooks. That format has not yet been observed reaching the model in a live Codex session.
+`prism adopt` and `prism update` copy the runtime files into `.claude/hooks/` on every install, whatever `hosts` holds, because a Cursor user runs the plan-chain scripts from a terminal. The registrations follow `hosts`, and each host gets its own: `.claude/settings.json` for Claude Code and `.codex/hooks.json` for Codex. On Codex the delivery is verified, but PRISM's deny response follows the format OpenAI documents for Codex hooks. That format has not yet been observed reaching the model in a live Codex session.
 
 Cursor has no delivery path. The runtime can read Cursor's hook payload, but no install step writes a Cursor registration, and no Cursor deny format has been verified. Wiring it up is unshipped work, not a setting to flip.
 
@@ -78,7 +78,7 @@ What carries the guarantee on Cursor is the always-on rule in `.prism/rules/cont
 
 `prism doctor` says which case you are in. It reports per host whether the runtime is installed and registered, and on a repo whose `hosts` lists neither `claude` nor `codex` it says the gate is not delivered.
 
-PRISM installs the hook only when `hosts` includes `claude` or `codex`, or when `hosts` is absent, which means every host. A Codex-only repo gets `.claude/hooks/` and a `.codex/hooks.json` registration, with no `.claude/settings.json` entry. A Cursor-only repo gets no `.claude/hooks/`, no registration, and no `.gitignore` lines.
+PRISM registers the hook, installs the git hook shims, and adds the `.gitignore` lines only when `hosts` includes `claude` or `codex`, or when `hosts` is absent, which means every host. A Codex-only repo gets `.claude/hooks/` and a `.codex/hooks.json` registration, with no `.claude/settings.json` entry. A Cursor-only repo gets `.claude/hooks/` and nothing that runs it: no registration, no git hook shims, and no `.gitignore` lines.
 
 The write gate also carries the umbrella speed bump. When an edit adds a new heading (`##` through `######`) to a file on the `umbrellas` list in `.prism/architect/manifest.json`, the hook stops it once and shows what the section costs. Retrying the same edit passes. A new install's manifest lists `.prism/rules/*.md` and `.prism/custom/rules/*.md`. `prism update` never rewrites your manifest, so an existing install adds the `umbrellas` key by hand to get it. Cursor has no speed bump, for the same reason it has no write gate.
 

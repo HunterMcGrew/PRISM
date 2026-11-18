@@ -34,7 +34,6 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { readRepoConfig } from "../lib/command.mjs";
 import { compileMatcher } from "../lib/match.mjs";
 import {
 	approvalLines,
@@ -43,7 +42,7 @@ import {
 	stampApproval,
 } from "./frontmatter.mjs";
 import { matchStopPath, resolveStopPaths } from "./stop-paths.mjs";
-import { parseTasks } from "./tasks.mjs";
+import { parseTasks, readPlanConfig } from "./tasks.mjs";
 
 /**
  * @typedef {import("./stop-paths.mjs").StopPaths} StopPaths
@@ -369,32 +368,6 @@ function affectedSystemsGlobs(specText) {
 
 // --- CLI ---
 
-/**
- * The repo's parsed config, or null when the file is absent.
- *
- * `readRepoConfig` also returns null for a file it cannot parse, and a null
- * config resolves to the default stop paths. A typo in a config that sets
- * `stopPaths` would then approve a plan the configured paths should stop, so
- * a file that exists but yields null throws instead.
- *
- * @param {string} repoRoot
- * @returns {Record<string, unknown> | null}
- */
-function readStopPathConfig(repoRoot) {
-	const config = readRepoConfig(repoRoot);
-
-	if (
-		config === null &&
-		existsSync(path.join(repoRoot, ".ai-skills", "config.json"))
-	) {
-		throw new Error(
-			".ai-skills/config.json exists but is not a readable JSON object, so its stop paths cannot be applied."
-		);
-	}
-
-	return config;
-}
-
 /** @param {string[]} args */
 function runCli(args) {
 	const check = args.includes("--check");
@@ -412,7 +385,7 @@ function runCli(args) {
 	/** @type {StopPaths} */
 	let stopPaths;
 	try {
-		stopPaths = resolveStopPaths(repoRoot ? readStopPathConfig(repoRoot) : null);
+		stopPaths = resolveStopPaths(repoRoot ? readPlanConfig(repoRoot) : null);
 	} catch (error) {
 		// A config that cannot be read approves nothing, and is not a held condition.
 		process.stderr.write(

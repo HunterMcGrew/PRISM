@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-11-18
 ---
 
+> Amended 2026-11-18 by PRISM-522 (`.prism/plans/prism-522/plan.md`, task T6): the git hook modules now reach every install whatever `hosts` holds, so the Cursor-only consequence below is wrong about the modules. Only the shims and the registrations follow `hosts`. A Cursor-only consumer still gets no git hooks, because git runs nothing without a shim.
+
 ## Context
 
 [ADR-0076](./0076-commit-and-push-gates-are-harness-hooks.md) rejected real git hooks for four reasons. They cannot prompt the model. An agent can pass `--no-verify` and skip them. They need a per-clone `core.hooksPath` step, or a dependency such as husky. And they fire for every human on the team, not only for an agent. The agent-side gates it chose are harness hooks on the shell tool, because that is the only place a message can reach the model at diff-complete time.

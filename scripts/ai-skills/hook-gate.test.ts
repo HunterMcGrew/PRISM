@@ -587,6 +587,38 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 	assert.ok(gitGates, "git-gates PreToolUse registration delivered");
 	assert.equal(gitGates.matcher, "Bash");
 
+	// The approval guard is a third entry point: its own PreToolUse group for
+	// the shell and file-edit tools, and a UserPromptSubmit entry that records
+	// a chat approval.
+	const approveGuardPath = path.join(consumerRoot, ".claude", "hooks", "approve-guard.mjs");
+	await fs.access(approveGuardPath);
+	assert.equal(
+		(await fs.stat(approveGuardPath)).mode & 0o111,
+		0o111,
+		"the delivered approve-guard entry point is executable"
+	);
+	const approveGuard = settings.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
+		entry.hooks[0].command.includes("approve-guard.mjs")
+	);
+	assert.ok(approveGuard, "approve-guard PreToolUse registration delivered in its own group");
+	for (const toolName of ["Bash", "PowerShell", "Edit", "Write", "MultiEdit"]) {
+		assert.match(
+			toolName,
+			new RegExp(`^(?:${approveGuard.matcher})$`),
+			`the approve-guard matcher selects ${toolName}`
+		);
+	}
+	assert.ok(
+		approveGuard.hooks[0].command.includes("--event=PreToolUse"),
+		"the approve-guard registration dispatches its PreToolUse arms"
+	);
+	assert.ok(
+		settings.hooks.UserPromptSubmit?.[0]?.hooks[0].command.includes(
+			"approve-guard.mjs\" --tool=claude --event=UserPromptSubmit"
+		),
+		"the approve-guard prompt arm is registered on UserPromptSubmit"
+	);
+
 	// The adopt config carries no `hosts` key, so `resolveHosts` returns
 	// every host and `mergeHookCodexRegistration` writes this file in the
 	// same run — Codex's own registration is asserted with the same rigor
@@ -623,6 +655,24 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 		codexGitGates,
 		codexPreToolUse,
 		"the git-gates entry is a separate matcher group from the write-tool entry"
+	);
+
+	const codexApproveGuard = codexHooks.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
+		entry.hooks[0].command.includes("approve-guard.mjs")
+	);
+	assert.ok(codexApproveGuard, "Codex approve-guard PreToolUse registration delivered in its own group");
+	for (const toolName of ["Bash", "apply_patch", "Edit", "Write"]) {
+		assert.match(
+			toolName,
+			new RegExp(codexApproveGuard.matcher),
+			`the Codex approve-guard matcher selects ${toolName}`
+		);
+	}
+	assert.ok(
+		codexHooks.hooks.UserPromptSubmit?.[0]?.hooks[0].command.includes(
+			"approve-guard.mjs\" --tool=codex --event=UserPromptSubmit"
+		),
+		"the Codex approve-guard prompt arm is registered on UserPromptSubmit"
 	);
 
 	// Every glob asserted as a whole line. A `match` on a bare pattern also

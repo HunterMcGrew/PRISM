@@ -10,6 +10,7 @@
 		"repo": "PRISM"
 	},
 	"defaultBranch": "main",
+	"hookRuntimeDir": "scripts/ai-skills/hooks",
 	"features": {
 		"mainSessionMayMerge": true
 	},
