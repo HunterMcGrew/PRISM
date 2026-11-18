@@ -36,6 +36,7 @@ import {
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { resolveHosts, type HostName } from "./lib/hosts";
+import { classifyHooksPath, readGitHooksState } from "./hooks/git-hooks/install.mjs";
 import { listManifestRoutes } from "./hooks/lib/match.mjs";
 import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
@@ -696,7 +697,12 @@ function collectHookCommands(settings: Record<string, unknown>): string[] {
  */
 async function readConsumerConfigSafely(
 	consumerRepoRoot: string
-): Promise<{ hosts?: unknown; hooks?: unknown; commands?: unknown } | null> {
+): Promise<{
+	hosts?: unknown;
+	hooks?: unknown;
+	commands?: unknown;
+	gitHooks?: unknown;
+} | null> {
 	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
 	const raw = await readFileIfExists(configPath);
 	if (raw === null) {
@@ -704,7 +710,12 @@ async function readConsumerConfigSafely(
 	}
 
 	try {
-		return JSON.parse(raw) as { hosts?: unknown; hooks?: unknown; commands?: unknown };
+		return JSON.parse(raw) as {
+			hosts?: unknown;
+			hooks?: unknown;
+			commands?: unknown;
+			gitHooks?: unknown;
+		};
 	} catch {
 		return null;
 	}
@@ -765,6 +776,68 @@ function describeGitGates(
 	}
 
 	return findings;
+}
+
+/**
+ * Reports whether PRISM's git hooks are active in this clone.
+ *
+ * Silent unless the repo carries PRISM's own `.githooks/pre-commit` (marked
+ * with `HOOK_RUNTIME_MARKER`): a repo not yet adopted, a Cursor-only consumer,
+ * and a consumer whose own `.githooks` holds only their hooks have nothing of
+ * PRISM's to be installed. A foreign `core.hooksPath` is `info`, because the
+ * repo is set up correctly in its own way, and "delivered but not installed"
+ * is a `warning`, which leaves `healthy` true. Reuses the `hook-registration`
+ * check id so the exported `DoctorFinding` union does not widen.
+ */
+async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]> {
+	const shim = await readFileIfExists(path.join(consumerRepoRoot, ".githooks", "pre-commit"));
+	if (shim === null || !shim.includes(HOOK_RUNTIME_MARKER)) {
+		return [];
+	}
+
+	const config = await readConsumerConfigSafely(consumerRepoRoot);
+	const gitHooks =
+		typeof config?.gitHooks === "object" && config.gitHooks !== null
+			? (config.gitHooks as Record<string, unknown>)
+			: {};
+	const commandsUnset =
+		describeCommandSlot(gitHooks.preCommit, "command") === "unset" &&
+		describeCommandSlot(gitHooks.prePush, "command") === "unset";
+	const unsetNote = commandsUnset
+		? " gitHooks.preCommit.command and gitHooks.prePush.command are unset in .ai-skills/config.json, so the hooks skip until you set them."
+		: "";
+
+	const state = readGitHooksState(consumerRepoRoot);
+	if (state.installed) {
+		return [
+			{
+				check: "hook-registration",
+				severity: "info",
+				message: `Git hooks are installed (core.hooksPath → .githooks).${unsetNote}`,
+			},
+		];
+	}
+
+	const foreignScope = (["worktree", "local", "global", "system"] as const).find(
+		(scope) => classifyHooksPath(state.scopes[scope], consumerRepoRoot) === "foreign"
+	);
+	if (foreignScope !== undefined) {
+		return [
+			{
+				check: "hook-registration",
+				severity: "info",
+				message: `core.hooksPath is '${state.scopes[foreignScope]}' (${foreignScope}), so PRISM's git hooks are not active. Compose them with your hooks by hand.`,
+			},
+		];
+	}
+
+	return [
+		{
+			check: "hook-registration",
+			severity: "warning",
+			message: `PRISM's git hooks are delivered but not installed in this clone. Run npx @huntermcgrew/prism hooks install, or node .claude/hooks/git-hooks/install.mjs.${unsetNote}`,
+		},
+	];
 }
 
 /**
@@ -1435,6 +1508,7 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
 	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
+	findings.push(...(await checkGitHooks(consumerRepoRoot)));
 
 	// The remedy this check prescribes is `prism update`, which applies only once
 	// the repo has adopted; a never-adopted repo needs `prism adopt` instead.

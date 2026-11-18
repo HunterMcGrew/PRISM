@@ -29,6 +29,7 @@ import {
 	runDoctor,
 	type NpmVersionFetcher,
 } from "./doctor";
+import { installGitHooks } from "./hooks/git-hooks/install.mjs";
 import { hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 
@@ -1973,6 +1974,166 @@ test("runDoctor stays silent when a repo has neither a hook runtime nor a regist
 		});
 
 		assert.deepEqual(hookFindings(report.findings), []);
+	});
+});
+
+// --- git hooks install state ---
+
+const MARKED_SHIM = "#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n";
+
+/**
+ * Runs `body` with git config isolated from the developer's own — the doctor
+ * check reads `core.hooksPath` through `process.env`, so a machine-wide hooks
+ * path would otherwise leak into the finding under test.
+ */
+async function withIsolatedGitConfig(
+	consumerRepoRoot: string,
+	body: () => Promise<void>
+): Promise<void> {
+	const saved = { ...process.env };
+	try {
+		for (const key of Object.keys(process.env)) {
+			if (key.startsWith("GIT_")) {
+				delete process.env[key];
+			}
+		}
+		const emptyConfig = path.join(consumerRepoRoot, ".git", "empty-gitconfig");
+		await fs.writeFile(emptyConfig, "");
+		process.env.GIT_CONFIG_NOSYSTEM = "1";
+		process.env.GIT_CONFIG_GLOBAL = emptyConfig;
+
+		await body();
+	} finally {
+		for (const key of Object.keys(process.env)) {
+			delete process.env[key];
+		}
+		Object.assign(process.env, saved);
+	}
+}
+
+function gitHooksFindings(
+	findings: Array<{ check: string; severity: string; message: string }>
+): Array<{ severity: string; message: string }> {
+	return findings.filter(
+		(f) =>
+			f.check === "hook-registration" &&
+			/git hooks|core\.hooksPath/i.test(f.message)
+	);
+}
+
+async function doctorGitHooks(roots: { prismSourceRoot: string; consumerRepoRoot: string }) {
+	const report = await runDoctor({
+		consumerRepoRoot: roots.consumerRepoRoot,
+		prismSourceRoot: roots.prismSourceRoot,
+		npmVersionFetcher: NEVER_FETCH,
+	});
+
+	return { report, findings: gitHooksFindings(report.findings) };
+}
+
+function setHooksPath(consumerRepoRoot: string, value: string): void {
+	execFileSync("git", ["config", "--local", "core.hooksPath", value], {
+		cwd: consumerRepoRoot,
+		stdio: "ignore",
+	});
+}
+
+test("runDoctor reports no git hooks finding when PRISM's shim is not in .githooks", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			assert.deepEqual((await doctorGitHooks(roots)).findings, []);
+
+			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", "#!/bin/sh\necho mine\n");
+			assert.deepEqual(
+				(await doctorGitHooks(roots)).findings,
+				[],
+				"a consumer's own .githooks/pre-commit is not PRISM's to report on"
+			);
+		});
+	});
+});
+
+test("runDoctor reports an info when the git hooks are installed", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+			setHooksPath(roots.consumerRepoRoot, ".githooks");
+
+			const { findings } = await doctorGitHooks(roots);
+
+			assert.equal(findings.length, 1);
+			assert.equal(findings[0].severity, "info");
+			assert.match(findings[0].message, /^Git hooks are installed \(core\.hooksPath → \.githooks\)\./);
+		});
+	});
+});
+
+test("runDoctor reports an info naming the value when a foreign hooks path is in force", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+			setHooksPath(roots.consumerRepoRoot, ".husky");
+
+			const { findings } = await doctorGitHooks(roots);
+
+			assert.equal(findings.length, 1);
+			assert.equal(findings[0].severity, "info");
+			assert.match(
+				findings[0].message,
+				/^core\.hooksPath is '\.husky' \(local\), so PRISM's git hooks are not active\. Compose them with your hooks by hand\./
+			);
+		});
+	});
+});
+
+test("runDoctor warns that delivered git hooks are not installed, then stops once the installer runs", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+
+			const before = await doctorGitHooks(roots);
+
+			assert.equal(before.findings.length, 1);
+			assert.equal(before.findings[0].severity, "warning");
+			assert.match(before.findings[0].message, /not installed in this clone/);
+			assert.match(before.findings[0].message, /npx @huntermcgrew\/prism hooks install/);
+			assert.match(before.findings[0].message, /node \.claude\/hooks\/git-hooks\/install\.mjs/);
+			assert.equal(before.report.healthy, true, "a warning leaves doctor's exit code alone");
+
+			installGitHooks(roots.consumerRepoRoot);
+
+			const after = await doctorGitHooks(roots);
+			assert.equal(
+				after.findings.some((f) => f.severity === "warning"),
+				false
+			);
+			assert.match(after.findings[0].message, /^Git hooks are installed/);
+		});
+	});
+});
+
+test("runDoctor says the gitHooks commands are unset only when both are", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+
+			const bothUnset = await doctorGitHooks(roots);
+			assert.match(
+				bothUnset.findings[0].message,
+				/gitHooks\.preCommit\.command and gitHooks\.prePush\.command are unset/
+			);
+
+			await writeFile(
+				roots.consumerRepoRoot,
+				".ai-skills/config.json",
+				JSON.stringify({
+					...CONSUMER_CONFIG_JSON,
+					gitHooks: { prePush: { command: "eslint {files}", globs: ["**/*.ts"] } },
+				})
+			);
+			const oneSet = await doctorGitHooks(roots);
+			assert.doesNotMatch(oneSet.findings[0].message, /are unset/);
+		});
 	});
 });
 
