@@ -181,7 +181,7 @@ The authoring persona owns the shipping step, which is commit, push, and open th
 
 Briar and Eric review and never ship. Asked to create a PR, they route back to the author, which keeps the review's adversarial edge and avoids iteration-loop ambiguity. The decision and its tradeoffs are in the authors-ship-reviewers-review ADR under `.prism/spec/adrs/_toolkit/`.
 
-One narrow exception: a reviewer lands its own plan-only commit, with the staged set limited to the single plan file and verified mechanically, per `branch-plan.md` § Landing a plan-only commit. Everything else in a reviewer's tree stays the author's to ship.
+One narrow exception: a reviewer commits its own plan-only commit, with the staged set limited to the plan's own files and verified mechanically, per `branch-plan.md` § Landing a plan-only commit. On a flat plan it pushes that commit too. On a folder plan it commits through `commit.mjs` and the session's PR stage pushes. Everything else in a reviewer's tree stays the author's to ship.
 
 ---
 
