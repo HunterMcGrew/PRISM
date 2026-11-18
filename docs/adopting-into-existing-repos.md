@@ -91,6 +91,46 @@ If your existing setup has its own routing conventions — a different skill tha
 
 **To add your own routing entries**, extend the table in `.prism/rules/skill-routing.md` directly — it's a Tier-1 rule under `.prism/rules/`, which is PRISM-owned (see the ownership table below), so hand-edits here follow the same `.bak`-on-divergence path as any other PRISM-owned file on your next `prism update`. If you want routing entries that are guaranteed to survive updates untouched, put them in a consumer-owned location instead — `.prism/architect/<topic>.md` (flat files directly under `architect/`, not `architect/_toolkit/`) is a safe place to document your own skill's triggers, since PRISM's sync never touches that path.
 
+## Existing git hooks (husky, lefthook)
+
+Git runs hooks from one directory: the `core.hooksPath` value when one is set, and `.git/hooks` otherwise. PRISM's `pre-commit` and `pre-push` hooks live in `.githooks/`, so they run only while `core.hooksPath` points there.
+
+- **A hooks path that is not PRISM's is left alone.** If `core.hooksPath` is set at the system, global, local, or worktree scope to anything but `.githooks` (husky sets it to its own directory), `prism update` and `prism hooks install` change nothing and say so, and `prism doctor` reports it. Your hooks keep running, and PRISM's don't until you compose them below.
+- **Hooks in `.git/hooks` are left alone too.** With no `core.hooksPath` set, git runs whatever is in `.git/hooks`, and setting the value would stop it. So when `.git/hooks` holds any file that isn't a `.sample`, `prism update` and `prism hooks install` change nothing and name the files, and `prism doctor` reports it.
+- **PRISM never edits a `.githooks` file it did not write.** A `.githooks/pre-commit` or `.githooks/pre-push` without PRISM's marker line is yours, and `prism update` leaves it as it is with a warning.
+
+To run PRISM's hooks from your own, call them from the hook git runs. `pre-push` takes the remote name as its first argument and reads the pushed refs on stdin, so forward both:
+
+```sh
+node .claude/hooks/git-hooks/pre-commit.mjs || exit 1
+```
+
+```sh
+node .claude/hooks/git-hooks/pre-push.mjs "$@" || exit 1
+```
+
+Both read the `gitHooks` block in `.ai-skills/config.json` (see [Parameterization](./parameterization.md)) and skip with a notice when it is absent.
+
+A fresh clone needs the installer run once. Add this line to your repo's own setup step, such as a `prepare` script in `package.json`. It exits 0 on every outcome, including leaving another hooks setup alone and the installer file being absent (it is, if `hosts` later drops both `claude` and `codex`), so it cannot break that step:
+
+```sh
+node -e "import('./.claude/hooks/git-hooks/install.mjs').then((m) => m.runInstallCli(), () => {})"
+```
+
+In `package.json`, the inner double quotes are escaped:
+
+```json
+"prepare": "node -e \"import('./.claude/hooks/git-hooks/install.mjs').then((m) => m.runInstallCli(), () => {})\""
+```
+
+A plain `node .claude/hooks/git-hooks/install.mjs` does the same while the file is there, but exits 1 once it's gone, which would fail every install that runs `prepare`.
+
+For CI, `--all` checks every tracked file that matches `gitHooks.preCommit.globs` from disk and exits 1 if the formatter would change any of them:
+
+```sh
+node .claude/hooks/git-hooks/pre-commit.mjs --all
+```
+
 ## The `.bak` conflict-resolution workflow
 
 `.bak` files only ever appear under `.prism/`, and only for files PRISM owns (see the ownership split below). They never apply to `AGENTS.md`, `CLAUDE.md`, or anything at your repo root — those are handled by the skip-if-exists rule above, not the backup rule.
@@ -134,4 +174,5 @@ A `.bak` file means: "you customized this file, and the update just replaced it 
 - [docs/adopt-prism.md](./adopt-prism.md) — the full adopt/update/eject walkthrough, including `--dry-run`, `prism doctor`, and ejecting PRISM entirely
 - [docs/getting-started.md](./getting-started.md) — the zero-to-installed quick start for a fresh repo
 - `.prism/rules/skill-routing.md` — the always-loaded routing table this guide's routing section describes
+- `.prism/architect/_toolkit/git-hooks.md` — how the git hooks, the installer, and the push gate fit together
 - `.prism/architect/_toolkit/documentation.md` — the doc conventions this page follows

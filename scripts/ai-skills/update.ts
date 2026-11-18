@@ -42,6 +42,7 @@ import {
 	removeDeletedManagedAgentFiles,
 	type RolesDefinitions,
 } from "./generate-skills";
+import { installGitHooks, removeGitHooksPath } from "./hooks/git-hooks/install.mjs";
 import { buildContentByAnchor } from "./lib/onboarding-run";
 import {
 	assertInsideGitRepo,
@@ -558,6 +559,21 @@ export async function runUpdate(
 		dryRun,
 		hosts
 	);
+
+	if (hosts.includes("claude") || hosts.includes("codex")) {
+		const gitHooksInstall = installGitHooks(consumerRepoRoot, {
+			dryRun,
+			shimsDelivered: hookOutcomes.some(
+				(outcome) =>
+					outcome.relativePath === ".githooks/pre-commit" && outcome.action !== "removed"
+			),
+		});
+		if (gitHooksInstall.action === "left-alone") {
+			console.warn(gitHooksInstall.message);
+		} else {
+			console.log(gitHooksInstall.message);
+		}
+	}
 
 	const ruleLoadScan = await scanConsumerRuleLoad(
 		consumerContentRoot,
@@ -1100,6 +1116,10 @@ const HOOK_RUNTIME_FILES = [
 	"harnesses.mjs",
 	"lib/match.mjs",
 	"lib/shell.mjs",
+	"lib/command.mjs",
+	"git-hooks/pre-commit.mjs",
+	"git-hooks/pre-push.mjs",
+	"git-hooks/install.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */
@@ -1287,6 +1307,118 @@ async function removeDeliveredHookRuntimeFiles(
 	return outcomes;
 }
 
+/** The git hook shims PRISM delivers into a consumer's `.githooks/`, named relative to it. */
+const GIT_HOOK_SHIM_NAMES = ["pre-commit", "pre-push"];
+
+/**
+ * Delivers PRISM's git hook shims into the consumer's `.githooks/`.
+ *
+ * Unlike `deliverHookRuntimeFile`, an unmarked target is never backed up and
+ * replaced: `.githooks/` is the one directory where a consumer's own git hooks
+ * are likely to live, so a file there without `HOOK_RUNTIME_MARKER` is theirs
+ * and is left byte for byte, with a warning. Only the write, no-op, and
+ * overwrite outcomes are produced, so `FileOutcome` is unchanged.
+ *
+ * Every shim of PRISM's is chmodded on every pass, the no-op included. A
+ * byte-identical shim can still have lost its mode, from being added fresh in
+ * a `core.fileMode=false` clone or from a tool that drops modes, and git silently
+ * skips a hook that is not executable.
+ */
+async function deliverGitHookShims(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<FileOutcome[]> {
+	const outcomes: FileOutcome[] = [];
+
+	for (const name of GIT_HOOK_SHIM_NAMES) {
+		const sourcePath = path.join(prismRepoRoot, ".githooks", name);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+
+		const targetPath = path.join(consumerRepoRoot, ".githooks", name);
+		const relativePath = `.githooks/${name}`;
+		const consumerHash = await hashFileIfExists(targetPath);
+
+		if (consumerHash === (await hashFile(sourcePath))) {
+			outcomes.push({ relativePath, action: "no-op" });
+		} else {
+			const existing = consumerHash === null ? null : await readFileIfExists(targetPath);
+			if (existing !== null && !existing.includes(HOOK_RUNTIME_MARKER)) {
+				console.warn(`prism:update: ${relativePath} is not PRISM's; left it alone`);
+				continue;
+			}
+
+			await writeIncoming(sourcePath, targetPath, dryRun);
+			outcomes.push({ relativePath, action: existing === null ? "written" : "overwritten" });
+		}
+
+		if (!dryRun) {
+			await fs.chmod(targetPath, 0o755);
+		}
+	}
+
+	return outcomes;
+}
+
+/**
+ * Removes the git hook shims PRISM delivered, for a consumer with neither
+ * `claude` nor `codex` among its hosts, and `.githooks/` itself once nothing
+ * else is in it. A shim without `HOOK_RUNTIME_MARKER` is the consumer's own and
+ * stays, and so does `core.hooksPath` while anything is left in `.githooks/`.
+ * Whenever the directory is gone, whether this pass removed it or a pulled
+ * commit already had, a local `core.hooksPath` of `.githooks` is unset,
+ * because it would leave git running no hooks while still skipping
+ * `.git/hooks`. It stays set while another worktree of the clone still has a
+ * PRISM shim, since every worktree shares the value.
+ */
+async function removeDeliveredGitHookShims(
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<FileOutcome[]> {
+	const outcomes: FileOutcome[] = [];
+	const hooksDir = path.join(consumerRepoRoot, ".githooks");
+
+	for (const name of GIT_HOOK_SHIM_NAMES) {
+		const targetPath = path.join(hooksDir, name);
+		const contents = await readFileIfExists(targetPath);
+		if (contents === null || !contents.includes(HOOK_RUNTIME_MARKER)) {
+			continue;
+		}
+
+		if (!dryRun) {
+			await fs.rm(targetPath, { force: true });
+		}
+
+		outcomes.push({ relativePath: `.githooks/${name}`, action: "removed" });
+	}
+
+	let hooksDirIsGone = !(await pathExists(hooksDir));
+	if (!hooksDirIsGone) {
+		const removedNames = outcomes.map((outcome) => path.posix.basename(outcome.relativePath));
+		const remaining = (await fs.readdir(hooksDir)).filter((entry) => !removedNames.includes(entry));
+		if (remaining.length === 0) {
+			if (!dryRun) {
+				await fs.rmdir(hooksDir);
+			}
+
+			hooksDirIsGone = true;
+		}
+	}
+
+	// `core.hooksPath` is per-clone config, so a clone that pulled the commit
+	// deleting `.githooks/` still holds the value and needs it unset here.
+	if (hooksDirIsGone) {
+		const unsetMessage = removeGitHooksPath(consumerRepoRoot, { dryRun });
+		if (unsetMessage !== null) {
+			console.log(unsetMessage);
+		}
+	}
+
+	return outcomes;
+}
+
 /** Lines `refreshHookRuntime` appends to the consumer's `.gitignore` — the hook state-file globs, so adopting a consumer never has to git-ignore them by hand. */
 const HOOK_STATE_GITIGNORE_LINES = [
 	".prism/architect-route-state.*.json",
@@ -1331,6 +1463,7 @@ export async function refreshHookRuntime(
 	if (!hosts.includes("claude") && !hosts.includes("codex")) {
 		const outcomes = await removeDeliveredHookRuntimeFiles(targetDir, dryRun);
 		outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun, [])));
+		outcomes.push(...(await removeDeliveredGitHookShims(consumerRepoRoot, dryRun)));
 		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
 		await mergeHookCodexRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
 
@@ -1356,6 +1489,7 @@ export async function refreshHookRuntime(
 	}
 
 	outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun)));
+	outcomes.push(...(await deliverGitHookShims(prismRepoRoot, consumerRepoRoot, dryRun)));
 
 	if (!dryRun) {
 		for (const entryPoint of HOOK_RUNTIME_ENTRY_POINTS) {

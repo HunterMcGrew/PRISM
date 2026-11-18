@@ -3,7 +3,7 @@ title: "What PRISM writes"
 description: "The complete inventory of every path prism adopt, update, and eject can create or modify in your repo — grouped by who owns it."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-11-17"
+last_updated: "2026-11-18"
 ---
 
 # What PRISM writes
@@ -22,7 +22,7 @@ Every path PRISM manages falls into one of three buckets:
 
 ## PRISM-owned paths (synced on every update)
 
-These live under `.prism/` and are kept current by `prism update`. If you edit one directly, your edit is preserved in a `.bak` file the next time PRISM syncs — it's never silently discarded (see [Diverged files and `.bak` backups](#diverged-files-and-bak-backups) below).
+These are kept current by `prism update`. Most live under `.prism/`; the last two rows are the git hooks. If you edit one of the `.prism/` rows directly, your edit is preserved in a `.bak` file the next time PRISM syncs — it's never silently discarded (see [Diverged files and `.bak` backups](#diverged-files-and-bak-backups) below). The two hook rows follow their own rule, stated in each row: a copy that still carries PRISM's marker line is replaced in place with no backup, so an edit you make there and leave the marker on is lost on the next update.
 
 | Path | What's there |
 |---|---|
@@ -34,6 +34,10 @@ These live under `.prism/` and are kept current by `prism update`. If you edit o
 | `.prism/templates/**` | PR description, acceptance-criteria, and bug-report templates |
 | `.prism/references/**` | Operational reference docs shared across skills (startup sequences, doc-writing guides, and similar) |
 | `.prism/SPEC.md` | The top-level spec file describing how the tier system works |
+| `.claude/hooks/git-hooks/*.mjs` | The pre-commit hook, the pre-push hook, and the installer, delivered with the agent hook runtime when `hosts` includes `claude` or `codex`. A copy carrying PRISM's marker line is replaced in place with no backup; one without it is backed up to `.bak` first |
+| `.githooks/pre-commit`, `.githooks/pre-push` | The two shims git runs. A shim carrying PRISM's marker line is replaced in place with no backup, so a step of your own belongs in a hook without the marker line: a `.githooks` file without it is yours and is never touched, `.bak` included. Delivered under the same `hosts` condition as the row above |
+
+`prism adopt` and `prism update` also set `core.hooksPath` to `.githooks` in this clone's local git config, but only when it is unset or already points at a `.githooks` in this repo. A value pointing anywhere else, at any git config scope, is left alone and reported, so husky, lefthook, and a team-wide hooks path keep working. So are hooks already in `.git/hooks`, which git would stop running once the value is set. `prism hooks install` runs the same step by hand, and it also gives a PRISM shim the executable bit when a checkout lost it, because git skips a hook without it. If you later drop both `claude` and `codex` from `hosts`, `prism update` removes the shims and, once `.githooks/` is gone, unsets a `core.hooksPath` of `.githooks`. That setting is per clone, so a teammate who pulled the deletion gets it unset on their own next `prism update`. It is also shared by every worktree of the clone, so `prism update` leaves it set while another worktree still has PRISM's shims in its `.githooks/`. The hooks run the formatter and linter you name under `gitHooks` in `.ai-skills/config.json` and skip when that block is absent. See [Parameterization](./parameterization.md).
 
 ## PRISM-owned platform mirrors (synced on every update)
 
@@ -78,15 +82,17 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 
 ## What `prism doctor` does — nothing gets written
 
-`prism doctor` is read-only. It validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports drift between your sync manifest and what's actually on disk (including pairing diverged files with any `.bak` siblings already sitting there from a prior update), confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` were actually delivered under those names rather than left as their seed names, and checks your installed version against the latest on npm. It never writes a file — running `prism doctor` as often as you like is always safe.
+`prism doctor` is read-only. It validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports drift between your sync manifest and what's actually on disk (including pairing diverged files with any `.bak` siblings already sitting there from a prior update), confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` were actually delivered under those names rather than left as their seed names, checks your installed version against the latest on npm, and reports whether PRISM's git hooks are installed in this clone, left alone because another hooks path is in force, or delivered but not yet installed. It never writes a file — running `prism doctor` as often as you like is always safe.
 
 ## What `prism eject` removes
 
 `prism eject` is the inverse of `adopt` — it removes PRISM-owned `.prism/` content, the `prism-*` skill and agent directories it generated, and the sync manifest itself. It never touches consumer-owned content: `plans/`, `lessons.md`, `custom/`, your flat architect docs, and your flat ADRs are explicitly preserved. If a PRISM-owned file has diverged (you edited it) at the moment you eject, that edit is backed up to `.bak` before removal, the same protection `update` gives you. A root `AGENTS.md` is only removed if it carries the `--seed-agents-md` provenance marker; otherwise it's left alone with a note that you can review it yourself. `CLAUDE.md` is never removed automatically. `eject` requires `--yes` and defaults to a dry run otherwise — see [docs/adopt-prism.md](./adopt-prism.md) for the full command reference.
 
+`eject` does not yet remove the hook runtime under `.claude/hooks/`, the `.githooks/pre-commit` and `.githooks/pre-push` shims, or the `core.hooksPath` setting, so the git hooks keep running after an eject until you delete the two shims and unset `core.hooksPath`.
+
 ## Diverged files and `.bak` backups
 
-Every write to a PRISM-owned path goes through the same divergence check, whether it happens during `update` or during the sync pass inside `adopt`: PRISM compares the incoming content, what's currently in your repo, and the hash it recorded the last time it wrote that file. If your copy still matches what PRISM last wrote, it's overwritten cleanly. If your copy has changed — meaning you or someone on your team edited a PRISM-owned file directly — the original is preserved as `<file>.bak` (or `.bak.1`, `.bak.2`, and so on, if earlier backups are already sitting there) before the new version replaces it. Nothing is ever silently discarded.
+Every write to a PRISM-owned path goes through the same divergence check, whether it happens during `update` or during the sync pass inside `adopt`: PRISM compares the incoming content, what's currently in your repo, and the hash it recorded the last time it wrote that file. If your copy still matches what PRISM last wrote, it's overwritten cleanly. If your copy has changed — meaning you or someone on your team edited a PRISM-owned file directly — the original is preserved as `<file>.bak` (or `.bak.1`, `.bak.2`, and so on, if earlier backups are already sitting there) before the new version replaces it. Nothing is ever silently discarded, with one exception: the two git hook rows under [PRISM-owned paths](#prism-owned-paths-synced-on-every-update) replace a copy that still carries PRISM's marker line without a backup.
 
 For the full conflict-resolution walkthrough — what to do with a `.bak` once it appears, and how to move a repeat customization into a consumer-owned path so it stops getting backed up on every sync — see [docs/adopting-into-existing-repos.md](./adopting-into-existing-repos.md).
 

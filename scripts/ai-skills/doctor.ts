@@ -36,6 +36,12 @@ import {
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { resolveHosts, type HostName } from "./lib/hosts";
+import {
+	classifyHooksPath,
+	describeForeignHooks,
+	isRunnableShim,
+	readGitHooksState,
+} from "./hooks/git-hooks/install.mjs";
 import { listManifestRoutes } from "./hooks/lib/match.mjs";
 import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
@@ -696,7 +702,12 @@ function collectHookCommands(settings: Record<string, unknown>): string[] {
  */
 async function readConsumerConfigSafely(
 	consumerRepoRoot: string
-): Promise<{ hosts?: unknown; hooks?: unknown; commands?: unknown } | null> {
+): Promise<{
+	hosts?: unknown;
+	hooks?: unknown;
+	commands?: unknown;
+	gitHooks?: unknown;
+} | null> {
 	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
 	const raw = await readFileIfExists(configPath);
 	if (raw === null) {
@@ -704,7 +715,12 @@ async function readConsumerConfigSafely(
 	}
 
 	try {
-		return JSON.parse(raw) as { hosts?: unknown; hooks?: unknown; commands?: unknown };
+		return JSON.parse(raw) as {
+			hosts?: unknown;
+			hooks?: unknown;
+			commands?: unknown;
+			gitHooks?: unknown;
+		};
 	} catch {
 		return null;
 	}
@@ -765,6 +781,89 @@ function describeGitGates(
 	}
 
 	return findings;
+}
+
+/**
+ * Reports whether PRISM's git hooks are active in this clone.
+ *
+ * Silent unless the repo carries PRISM's own `.githooks/pre-commit` (marked
+ * with `HOOK_RUNTIME_MARKER`): a repo not yet adopted, a Cursor-only consumer,
+ * and a consumer whose own `.githooks` holds only their hooks have nothing of
+ * PRISM's to be installed. Another hooks setup the installer would leave alone
+ * (`describeForeignHooks`, the same search the installer runs) is `info`,
+ * because the repo is set up correctly in its own way. "Delivered but not
+ * installed" and a marked shim without its executable bit are `warning`s,
+ * which leave `healthy` true. Reuses the `hook-registration` check id so the
+ * exported `DoctorFinding` union does not widen.
+ */
+async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]> {
+	const shim = await readFileIfExists(path.join(consumerRepoRoot, ".githooks", "pre-commit"));
+	if (shim === null || !shim.includes(HOOK_RUNTIME_MARKER)) {
+		return [];
+	}
+
+	const config = await readConsumerConfigSafely(consumerRepoRoot);
+	const gitHooks =
+		typeof config?.gitHooks === "object" && config.gitHooks !== null
+			? (config.gitHooks as Record<string, unknown>)
+			: {};
+	const commandsUnset =
+		describeCommandSlot(gitHooks.preCommit, "command") === "unset" &&
+		describeCommandSlot(gitHooks.prePush, "command") === "unset";
+	const unsetNote = commandsUnset
+		? " gitHooks.preCommit.command and gitHooks.prePush.command are unset in .ai-skills/config.json, so the hooks skip until you set them."
+		: "";
+
+	const state = readGitHooksState(consumerRepoRoot);
+	if (classifyHooksPath(state.effective, consumerRepoRoot) !== "ours") {
+		const foreignHooks = describeForeignHooks(consumerRepoRoot, state.scopes);
+		if (foreignHooks !== null) {
+			return [
+				{
+					check: "hook-registration",
+					severity: "info",
+					message: `PRISM's git hooks are not active: ${foreignHooks}. Compose them with your hooks by hand.`,
+				},
+			];
+		}
+
+		return [
+			{
+				check: "hook-registration",
+				severity: "warning",
+				message: `PRISM's git hooks are delivered but not installed in this clone. Run npx @huntermcgrew/prism hooks install, or node .claude/hooks/git-hooks/install.mjs.${unsetNote}`,
+			},
+		];
+	}
+
+	const notExecutable: string[] = [];
+	for (const name of ["pre-commit", "pre-push"]) {
+		const shimPath = path.join(consumerRepoRoot, ".githooks", name);
+		const contents = await readFileIfExists(shimPath);
+		if (contents !== null && contents.includes(HOOK_RUNTIME_MARKER) && !isRunnableShim(shimPath)) {
+			notExecutable.push(`.githooks/${name}`);
+		}
+	}
+
+	if (notExecutable.length > 0) {
+		const files = notExecutable.join(" ");
+
+		return [
+			{
+				check: "hook-registration",
+				severity: "warning",
+				message: `Git hooks are installed, but git skips a hook file without the executable bit: ${files}. Run npx @huntermcgrew/prism update to restore it, or chmod +x ${files}.`,
+			},
+		];
+	}
+
+	return [
+		{
+			check: "hook-registration",
+			severity: "info",
+			message: `Git hooks are installed (core.hooksPath → .githooks).${unsetNote}`,
+		},
+	];
 }
 
 /**
@@ -1435,6 +1534,7 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
 	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
+	findings.push(...(await checkGitHooks(consumerRepoRoot)));
 
 	// The remedy this check prescribes is `prism update`, which applies only once
 	// the repo has adopted; a never-adopted repo needs `prism adopt` instead.

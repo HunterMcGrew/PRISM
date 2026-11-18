@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-09-07
 ---
 
+> Partly superseded by [ADR-0081](./0081-git-hooks-ship-beside-the-agent-gates.md): its rejection of real git hooks no longer holds; its agent-side gates stand.
+
 ## Context
 
 Two asks arrived together (issue #488): an author persona should re-read its
