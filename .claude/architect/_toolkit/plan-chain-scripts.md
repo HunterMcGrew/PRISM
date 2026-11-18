@@ -17,7 +17,7 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 
 ## Invocation
 
-In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Only `tasks`, `bundles`, `auto-approve`, and `commit` are commands. The rest are imported. A command exits 0 on success, 2 on a usage error, and 1 when one of its own conditions fails. `commit.mjs` passes any other git failure through with git's code.
+In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Only `tasks`, `bundles`, `auto-approve`, and `commit` are commands. The rest are imported. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `commit.mjs` passes any other git failure through with git's code.
 
 ## Templates
 
@@ -29,7 +29,7 @@ The four commands end with a guard that compares the realpath of `process.argv[1
 
 ## Globs
 
-Every glob in these modules goes through `compileMatcher` in `lib/match.mjs`, the one dialect the architect routes use. `**` crosses directories, `*` stays inside one segment, and every other character is literal, `[` included, so a glob naming a `[...slug]` route matches it. A `**/` prefix does not match a file at the repo root, so a pattern that should cover both is written twice. `path.matchesGlob` is not used, because the package's engines floor predates it.
+Every glob in these modules goes through `compileMatcher` in `lib/match.mjs`, the one dialect the architect routes use. `**` crosses directories, `*` stays inside one segment, and every other character is literal, `[` included, so a glob naming a `[...slug]` route matches it. A `**/` prefix does not match a file at the repo root, so a pattern that should cover both is written twice. The same holds in the middle of a pattern: `a/**/b` needs at least one directory between `a` and `b`, and braces never expand, so `{ts,tsx}` is not an alternation. Stop paths are the one place that works around both (§ Stop paths). `path.matchesGlob` is not used, because the package's engines floor predates it.
 
 ## Lookup
 
@@ -41,7 +41,7 @@ Every glob in these modules goes through `compileMatcher` in `lib/match.mjs`, th
 
 A task is a `### T<n>: <summary>` heading under `## Tasks`, followed by a field list: `files`, `proof`, `proof fails on main`, `depends on`, `behavior change`, `amended` (repeatable), and `new dependency`. HTML comments are stripped first, so the template's example task parses as nothing. The parser throws on a malformed heading, a duplicate ID, a malformed `files`, `depends on`, or `amended` value, a `depends on` ID that names no task, a repeated field, and a miscased or unknown key in the opening field list.
 
-`files` is a comma-separated list of single paths. Backticks, quotes, and a leading `./` are stripped. A glob character, a space, a trailing slash, and `.` are errors, so every file claim is a real path the other checks can test.
+`files` is a comma-separated list of single paths. Backticks, quotes, and a leading `./` are stripped. A glob character, a space, a backslash, a trailing slash, and `.` are errors, so every file claim is a real path the other checks can test. A backslash is rejected because the stop-path and outside-the-repo checks read forward slashes, so a `src\contracts\x.ts` claim would slip past both.
 
 A commit subject finishes tasks through one of these forms:
 
@@ -53,10 +53,10 @@ Done is judged over a commit range. With `--base <ref>`, the range is `<ref>..HE
 
 ## Bundle check
 
-`bundles.mjs` takes the open tasks and groups the unblocked ones by the set of architect docs the manifest routes their files to, so one agent can load that set once. A done task claims nothing, which lets an amended plan add tasks over files an earlier task already shipped.
+`bundles.mjs` takes the open tasks and groups the unblocked ones by the set of architect docs the manifest routes their files to, so one agent can load that set once. A done task claims nothing, which lets an amended plan add tasks over files an earlier task already shipped. It finds the repo root by walking up to `.prism/architect/manifest.json`, so a plan with no manifest above it exits 1 naming that path. Every install ships the stub manifest, so a repo that has none was never installed.
 
 - **Duplicate claim.** Two open tasks listing one file with no dependency between them, direct or through other open tasks, exit 1, because they would edit one file in parallel. Declaring `depends on` on the later task clears it. A chain that passes through a done task doesn't count, since the done task no longer holds the later one back.
-- **Import edges.** For each file a task lists that exists on disk, the check reads its import specifiers (`import ... from`, `import "x"`, `require("x")`, and dynamic `import("x")`). A specifier that resolves to a file another open task owns adds a dependency on that task, so a task never runs beside the task that owns a file it imports. Resolution tries the path as written, then with `.ts`, `.tsx`, `.mjs`, or `.js`, then as a folder with an `index` file, and a file another task claims counts even if it isn't written yet. A relative specifier is an edge candidate. So is one that starts with a key of `importAliases` in `.ai-skills/config.json`, where the longest matching key is swapped for its value. Any other specifier is a package and adds nothing. A listed file not yet on disk is reported as not scanned.
+- **Import edges.** For each file a task lists that exists on disk, the check reads its import specifiers (`import ... from`, `import "x"`, `require("x")`, and dynamic `import("x")`). A specifier that resolves to a file another open task owns adds a dependency on that task, so a task never runs beside the task that owns a file it imports. Resolution tries the path as written, then with `.ts`, `.tsx`, `.mjs`, or `.js`, then as a folder with an `index` file, and a file another task claims counts even if it isn't written yet. A relative specifier is an edge candidate. So is one that starts with a key of `importAliases` in `.ai-skills/config.json`, where the longest matching key is swapped for its value. The value may be spelled `src/`, `src`, or `./src/`, because the swap joins it to the rest of the specifier as a path. Any other specifier is a package and adds nothing. A listed file not yet on disk is reported as not scanned.
 - **Cycle.** Dependencies that form a cycle exit 1 and name it.
 - **Approval.** With `--base`, which only the build passes, a plan whose frontmatter carries a `status` other than `approved` exits 1, so no wave after the first starts from an unapproved plan. Without `--base` a draft is accepted, and a flat plan with no status line is unaffected.
 
@@ -78,6 +78,8 @@ When every condition holds, the script rewrites the `status: draft` line to `sta
 
 Two kinds stop auto-approval. `dependency` paths are manifests and lockfiles. `contract` paths are the shared trees other systems read. They come from `stopPaths.dependency` and `stopPaths.contract` in `.ai-skills/config.json`, and a list that is set replaces its default. The default dependency list covers common manifests and lockfiles at the repo root and at any depth: `package.json`, the npm, pnpm, yarn, and bun lockfiles, `composer.json` and its lockfile, `pyproject.toml`, `poetry.lock`, `uv.lock`, `requirements.txt`, `go.mod`, `go.sum`, `Cargo.toml` and its lockfile, and `Gemfile` and its lockfile. Each is listed twice, bare and with a `**/` prefix, because of the root caveat under Globs. The default contract list is empty, so a repo that wants one names it.
 
+`stop-paths.mjs` expands each pattern so a `**/` in the middle also matches zero directories: `api/**/schema.graphql` covers `api/schema.graphql`. The expansion lives there and not in `compileMatcher`, because the architect routes share that function and changing it would change what every route matches. A `**/` prefix still needs the root file listed on its own. Braces are rejected: a pattern holding `{` is a config error, because `compileMatcher` reads them literally and the pattern would never match. An unknown key under `stopPaths` and a non-string entry are config errors as well. A stop path that silently matches nothing lets a plan past the tree it was meant to protect, so these fail loudly. `auto-approve.mjs` prints the message and exits 2 without approving, since a config it can't read is not a held condition. `config-schema-validate.ts` does not enforce `additionalProperties`, so `resolveStopPaths` is the only place these are caught.
+
 Matching ignores case, because macOS paths do. A directory also matches when it is, or sits above, the literal part of a glob before its first wildcard segment: `src/contracts` hits `src/contracts/**`. That is why a bare directory in `files` can't hide a stop path under it.
 
 ## Commit script
@@ -88,7 +90,7 @@ Matching ignores case, because macOS paths do. A directory also matches when it 
 - **No unchanged path.** A named path that exists and has no change against HEAD exits 1 before anything is staged, because git would commit the other paths and the subject would describe a change the commit doesn't carry. A deleted path is a change.
 - **Literal pathspecs.** Every call passes `--literal-pathspecs`, so `:/` or a glob in a path can't widen the commit. Every git call is an argv array with no shell, so quoting is the same on every platform.
 
-A step that fails on a held `index.lock` is retried, because a sibling's git call holding the lock is the normal case. `PRISM_PLAN_COMMIT_RETRIES` is the total number of attempts (default 20) and `PRISM_PLAN_COMMIT_RETRY_DELAY_MS` is the wait between them (default 500). After the last attempt it exits 1 naming the lock path. Any other git failure exits with git's own code and stderr.
+A step that fails on a held `index.lock` is retried, because a sibling's git call holding the lock is the normal case. `PRISM_PLAN_COMMIT_RETRIES` is the total number of attempts (default 20) and `PRISM_PLAN_COMMIT_RETRY_DELAY_MS` is the wait between them (default 500). After the last attempt it exits 1 naming the lock path. Any other git failure, including a failed `git status` during the unchanged-path check, exits with git's own code, stdout, and stderr. A delay of `0` is honored, and a retry count below 1 falls back to the default.
 
 ## Shell parser
 
