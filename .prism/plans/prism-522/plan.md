@@ -1226,6 +1226,26 @@ Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-pa
 - **Problem:** the skill sends a saved design with no plan folder to `prism-architect`, then the plan skill, because the design needs an architecture review. `closing-messages.md` line 27, `AGENTS.md.tmpl` line 144, and the `skills-ecosystem.md` Pixel row (line 93, and line 91 of its install twin) send it straight to the plan skill. This is minor because a reader following the tables reaches a plan, but skips the architecture review the skill says the design needs.
 - **Suggested fix:** add the `prism-architect` step to the three tables, or drop it from the skill.
 
+### PR B, third pass: Briar's re-review
+
+Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2], range `a3b66f46..099ff81e`. Both second-pass findings are closed in the files they name. `approve.mjs` line 361 refuses a non-epic intent only when its criteria open with "none", so a DX intent with machine-checked criteria clears it, and all four route tables now name `prism-architect` before the plan skill. The DX wording matches across `ticket-types.md`, `prism-start-ticket`, their install twins, and the generated copies. The new changes add 2 minor, both open. `pnpm run prism:check` passes locally at `099ff81e` (2163 pass, 0 fail, 2 skipped), `ship-closure` holds at 267 files, `spec-scope-lint` passes with the branch name set, and CI run 44375602291 on `099ff81e` is green on `ubuntu-latest` and `windows-latest`.
+
+### `prism-intent` offers to sync a DX intent's criteria to the tracker
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-intent/shared.md:41`
+- **Problem:** `d881c3bf` says at `ticket-types.md` line 48 that a DX intent's criteria are not synced to the tracker, and ADR-0009 line 16 already limits the sync to non-DX tickets. The intent skill's After approval offers the sync on every intent, with no DX exception. This is minor because the offer waits on a yes, so the cost is a person writing developer criteria into the tracker field that should say "None for this ticket.", where QA reads it.
+- **Suggested fix:** make the offer skip DX: "Offer to sync the acceptance criteria to the ticket, except on a DX ticket, whose tracker field stays None for this ticket." Rule 9 of `skills-ecosystem.md` ("every ticket must have AC in the ticket description") predates this PR and has the same gap, so it can take the same carve-out.
+
+### A saved design with no plan folder ends at a chat plan that can't be built from
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-design/shared.md:33`
+- **Problem:** the design skill sends a saved design with no folder, whatever its size, to `prism-architect` and then the plan skill, and says the implementer works from the plan's tasks. With no folder, `prism-plan/shared.md` line 5 writes a plan in chat for "a person planning something small" and says that plan can't be built from until it goes through the chain. `d881c3bf` copied the route into four tables on the basis that the plan skill accepts the no-folder case, but the plan it gives back is not one the implementer may use. This is minor because the reader learns to start an intent at the plan skill's reply, one extra hop, and no code is built from the wrong plan.
+- **Suggested fix:** send a saved design with no folder to `prism-intent`, which starts the folder the spec stage reads the design from, in the skill and the four tables. `skills-ecosystem.md` already says anything that grows into planned work starts an intent. This changes a route the orchestrator ruled on, so it needs a ruling.
+
 ## Acceptance Criteria
 
 The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
@@ -1287,8 +1307,8 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
-- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed.
-- [x] PR B build passes: `pnpm run prism:check` and `ship-closure` pass locally on Linux at `d881c3bf` (2026-11-18). CI run 44373296490 on `5a4069ff` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
+- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both open.
+- [x] PR B build passes: `pnpm run prism:check` and `ship-closure` pass locally on Linux at `099ff81e` (2026-11-18). CI run 44375602291 on `099ff81e` is green on `ubuntu-latest` and `windows-latest`.
 - [x] PR B has no stray debug artifacts, and the new logic has tests: `role-preloads.test.ts`, the `agents-md-budget.test.ts` order case, and two `approve-guard.test.ts` token cases.
 - [ ] AC for PR B: AC-4, AC-5, AC-6, AC-8, and AC-10 are met, and AC-10 is met by CI run 44368244035. AC-1 and AC-9 need a live run and were not run.
 
