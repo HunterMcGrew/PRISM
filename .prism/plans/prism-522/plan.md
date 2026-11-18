@@ -837,11 +837,18 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Merged `origin/main` with child 4 (bd666c58) and reconciled every task against its source: T3, T4, T6, T7, T10, T14, and T16 changed, T25 added for the config check, and the groups were rebuilt per stack PR and checked with `analyzeBundles`. The new Decisions cover the config check, exit-code routing, shim gating, and the Templates paragraph.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Recorded Hunter's chat approval of the plan, the four calls, and the two AC adjustments; the stacking Decision is now settled as A = T1-T8 + T25, B = T9-T24; synced the 11 criteria to issue #522.
 
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Built T1, T2, T25, and T3: the `hookRuntimeDir` key and `HOOK_RUNTIME_DIR` token, the chat approval module, `readPlanConfig` with exit 2 on an unreadable config, and `approve.mjs` with every host's agent markers. T25 replaced the one existing test that pinned lenient reading of a broken config with exit-2 pairs.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Built T4 and T5: `approve-guard.mjs` as its own entry point, then its registration on both hosts, its delivery, and doctor coverage. The guard walks shell through its own segment walk over `tokenize.mjs` and not `segments.mjs`, so the walker still has no caller. It keeps a shebang line before the marker like `hook.mjs`, accepts a drive letter in the approve command, and assumes Codex's `Edit` and `Write` carry `file_path`, which is unverified.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: T4 appended the hook-driven block of `plan-approve.test.ts`, held back from T3, which is a pinned test outside T4's file list. `approve-guard.d.mts` is `export {};` because the module is an entry point with no importers. T5's doctor warns about an unregistered guard on Codex as well as on Claude Code.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Built T6: `refreshHookRuntime` delivers every runtime file on every host, while the shims, registrations, and `.gitignore` lines still follow `hosts`. It deleted `removeDeliveredHookRuntimeFiles`, the `deliveredPaths` parameter of `pruneStaleHookRuntimeFiles`, and doctor's neither-host warning. It rewrote four `update.test.ts` cases and one `plan-runtime-delivery.test.ts` case that pinned the old removal, renamed the doctor case that only passed through the Codex inert warning, and added a Cursor-only doctor case.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Built T7 and T8: the hook-runtime, plan-chain-scripts, and git-hooks docs with their mirrors, the curated hook-runtime twin, `parameterization.md`, and `what-prism-writes.md`. The architect docs name the token as `HOOK_RUNTIME_DIR` without `${}`, because the build substitutes tokens in the platform copies. The curated twin gained its own short Approve guard subsection, since it carries no Git gates section to follow, and `parameterization.md` gained a `${HOOK_RUNTIME_DIR}` row in its token table as that page asks for a new token.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: `docs/ai-skills/compatibility.md` still says the runtime is copied only when `hosts` includes `claude` or `codex` and that a Cursor-only repo gets no `.claude/hooks/`. It is outside PR A's task lists, so it was left for a follow-up call.
+
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: plan child 5 (chain skills and approval) to the detail bar from the epic spec and thrive at db3570975. Bounds: plan file only, no code, no PR, nothing outside the spec's Affected systems, no new dependency, and flag any shared-type or public-surface change. Approach: put shared mechanics in one always-on workflow rule so stage skills fit the cap, port the approval trio onto PRISM's runtime, and order tasks so the approval mechanics form a clean first stack PR. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: refresh this plan against what child 4 merged (#528, bd666c58). Bounds: plan file only, no code; keep the two-PR stack unless the refresh changes what ships together; leave Hunter's four pending calls as they are. Approach: merge main, diff every task's named module, export, flag, exit code, and config key against child 4's source, decide child 4's two hand-offs as Decisions, and recheck the groups with `analyzeBundles`. · close: scope held; PR A gains T25, and T6 narrowed to keep child 2's git hook gating
-- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: build PR A (T1-T8, T25) of this plan, after recording Hunter's approvals. Bounds: PR A's task files and generated copies only; no PR B tasks, no new dependency, no merge, draft PR only. Approach: approvals commit first, then one commit per task in the plan's group order, porting thrive's approval trio onto PRISM's runtime.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: build PR A (T1-T8, T25) of this plan, after recording Hunter's approvals. Bounds: PR A's task files and generated copies only; no PR B tasks, no new dependency, no merge, draft PR only. Approach: approvals commit first, then one commit per task in the plan's group order, porting thrive's approval trio onto PRISM's runtime. · close: scope held; one pinned test outside T4's list (`plan-approve.test.ts`) and one stale prose home left for a call (`docs/ai-skills/compatibility.md`)
 
 ## Verification
 
@@ -899,5 +906,11 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 | 2026-11-18 | Clove | Accepted both AC adjustments on Hunter's approval, then synced all 11 criteria to issue #522 with IDs and Evidence stripped | synced | synced |
 
 ## PR Readiness
+
+- [ ] Self-review not run on PR A
+- [x] Types: `pnpm run prism:check-types` passes
+- [x] Tests: the full suite passes
+- [x] `pnpm run prism:check` last run 2026-11-18 passes, with `spec-scope-lint` run separately under `GITHUB_HEAD_REF`
+- [ ] AC-9 (the `!` shell prefix) and the Codex payload checks are not run live
 
 Retro:
