@@ -615,6 +615,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter approved the amended intent in chat. The stamp was written by hand because the approval script arrives with the chain-scripts child.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Fixed the first PR review's findings. Children get their own issues and `prism-<n>/` folders, the approval script moved beside its guard in child 5, the shell parser port moved to child 4, and child 3 tests only the sections that exist when it lands. The spec now records the ADRs the amendment reverses in part and which child writes each successor.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter re-approved the intent in chat at `7c37fe08`, after the review fixes edited it. The edits were a `stage` field, the Eric wording, four restated bullets under what the amendment changes, a Cursor sentence, and one heading name.
+- 2026-11-18 [huntermcgrew/prism-499-approve-once]: Second intent amendment: once the intent is approved, only a question that changes the intent reaches Hunter, per his chat rulings that day. The spec now ports thrive's approve-once change and the gaps a coverage pass found at the 2026-11-18 tips of #2844 and #2859.
 
 ---
 
