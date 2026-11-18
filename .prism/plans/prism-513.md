@@ -60,6 +60,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Closed on the final PR branch; decisions promoted to `hook-runtime.md`.
 - 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Ported thrive#2935's plan-miss wording and recorded its observed manual-compact behavior; see Decision: A filename miss sends the session to the full Plan Lookup.
 - 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Fixed self-review pass 1: the twin labels the manual-compact behavior as observed, and the multi-hook and stdout claims are scoped to what was verified.
+- 2026-11-18 [huntermcgrew/prism-513-followup-precompact-cap]: Recorded from the hooks reference, read verbatim, that PreCompact stdout over 10,000 characters is cut with a marker rather than saved to a file, and that typed `/compact` text reaches the hook as `custom_instructions`.
 
 ---
 
@@ -118,6 +119,8 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 Follow-up pass 2 (2026-11-17): both pass-1 findings confirmed closed in the canonical doc, its three mirrors, the twin, and the `compact-handoff.mjs` header; `pnpm prism:check` passed at HEAD and `compact-handoff.test.ts` passes all 12 tests.
 
 Follow-up pass 3 (2026-11-17): No issues found [huntermcgrew/prism-513-followup-plan-miss-lookup]. The `PostCompact` test rename closes the pass-2 Minor: the test asserts exit 0 and empty stdout, which its title now says. `pnpm run prism:test` (all pass), `prism:check-types`, and `prism:crossref-lint` pass at HEAD, and the canonical doc matches its three mirrors.
+
+Follow-up pass 4 (2026-11-18): No issues found [huntermcgrew/prism-513-followup-precompact-cap]. The per-hook 10,000-character cut-with-marker claim and the `custom_instructions` claim match the hooks reference (§ Output limits, § PreCompact input and output). The canonical doc and its three mirrors are byte-identical, and the twin passes the curated-twin tests.
 
 ---
 

@@ -7,9 +7,10 @@
  *
  * - `PreCompact`: returns a summary template. Claude Code uses a `PreCompact`
  *   hook's stdout as the instructions for the compaction summary, capped at
- *   10,000 characters, so the template is the whole of stdout. It carries the
- *   branch, the plan path, and `git status -s` read from disk, so the summary
- *   copies those facts instead of recalling them.
+ *   10,000 characters per hook and cut with a marker past that, not saved to
+ *   a file the way other hook output is. The template is the whole of
+ *   stdout. It carries the branch, the plan path, and `git status -s` read
+ *   from disk, so the summary copies those facts instead of recalling them.
  * - `SessionStart` with source `compact`: returns a note that lands in the
  *   compacted context, telling the session to re-read the branch plan and
  *   write unrecorded decisions into it. A compact does not re-run a skill's
@@ -22,7 +23,8 @@
  *
  * Text the user types after `/compact` reaches the summarizer alongside this
  * template, so the template does not repeat it. That was observed in one live
- * manual compact, not stated by the Claude Code docs. The docs describe each
+ * manual compact. The docs say only that the hook receives the typed text as
+ * `custom_instructions` (null on an automatic compact). The docs describe each
  * `PreCompact` hook's stdout as summary instructions; how several hooks'
  * output combines is unverified. PRISM's state reset runs on `PostCompact`
  * and prints nothing to stdout, so this module is the runtime's only
