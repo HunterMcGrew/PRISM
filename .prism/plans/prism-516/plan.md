@@ -424,18 +424,36 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - **`prism eject` does not remove the shims or unset `core.hooksPath`.** Eject today leaves the whole hook runtime in place, so this matches it. A left shim skips with a notice once its runtime is gone. Removing hook delivery on eject is a follow-up PR off `main` per `followup-scope.md`, covering the runtime and the shims together.
 - **This child ships as one PR, not a stack.** It touches more than ten files, but the modules have no value until the installer and delivery reach a repo, and the epic is already split at child grain.
 - **OPEN — TBD, needs a live Codex run (Hunter).** Whether Codex fires `SessionStart` with `source: "startup"` for the install arm. The event and its `source` values come from a summarized read of the Codex hooks page on 2026-11-18, not verbatim text. **Default path (used until resolved):** register it on Codex as T9 says, record it as documentation-summarized in `git-hooks.md`, and rely on adopt and update, the setup-script line, and doctor to cover Codex clones meanwhile. Child 8's per-host registration test is the natural place to confirm it.
+- **The config validator is not tightened for `gitHooks`.** `validateOnDiskConfig` does not enforce `additionalProperties: false` or `minItems`, so a typo under `gitHooks` passes validation and the hook skips with its notice. `git-hooks-config.test.ts` pins the schema keywords instead. Changing the validator would change a shared function, which is outside this child's limits. Follow-up: make the validator enforce those two keywords.
+- **The pre-push hook pipes the lint command's stderr instead of inheriting it.** `isCommandNotFound` has to read `cmd.exe`'s "is not recognized" text, which exists only on stderr. The hook re-emits what it read, so the user still sees it.
+- **`hook-gate.test.ts` was edited though the plan does not list it.** It pinned the Claude `SessionStart` matcher at `compact`, and T9 changed that to `startup|resume|compact`. The commit body for T9 says so.
+- **ADR-0081 is classified `excluded` in `seed-curation.json`, and the consumer stub manifest routes `.githooks/**` to `git-hooks.md`.** Neither file is in T14's list. The build would otherwise ship the ADR to consumers, and `verify-manifest-coverage` rejects a shipped doc that no stub route names. The route is `.githooks/**` only: `.claude/hooks/` stays unrouted in a consumer, because those files are the consumer's own territory per `hook-runtime.md`.
+- **`git-hooks.md` carries no numbered ADR links and no maintainer-only commands.** It ships to consumers verbatim as a non-curated mirror, and the install ADR gate rejects an ADR citation there.
+- **The installer does not detect hooks already in `.git/hooks`.** With `core.hooksPath` unset at every scope it sets the value, and git then stops reading `.git/hooks`. A hook manager that installs there is silently bypassed. The docs state the behavior. Follow-up: have the installer treat a non-sample file in `.git/hooks` as foreign and leave alone.
+- **`installGitHooks` with `dryRun` prefixes its message with `would`.** `prism update --dry-run` prints what it would do and writes nothing.
 
 ## History
 
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Plan created: git hooks, installer, delivery, session-start install, doctor check, push-gate dedupe, ADR, and docs, as 15 tasks.
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks-impl]: Implemented T1 to T15: hook modules, shims, installer, delivery, `prism hooks install`, session-start arm, push-gate dedupe, doctor check, onboarding step, ADR-0081, architect docs, and consumer docs; `pnpm prism:check` passes. Deviations are recorded under Decisions.
 
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: plan child 2 (git hooks) to the detail bar from the epic spec and thrive #2847. Bounds: plan file only, no code, no PR, and nothing outside the spec's Affected systems. Approach: port thrive's behavior, generalize its hard-coded tools into the gitHooks config, and reuse the hook runtime's delivery. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks-impl] open: Intent: implement T1 to T15 and open a draft PR. Bounds: only the plan's files, no new dependency, no shared type or public API change. Approach: one commit per task, tests first for each module, then docs. · close: drifted — touched `hook-gate.test.ts`, `seed-curation.json`, and the consumer stub manifest, each recorded under Decisions
 
 ## Verification
 
+Pre-flight against the diff, not the graded verdict. `pnpm prism:check` passes on the final tree, and the suite includes the tests each criterion's Evidence names.
+
+- AC-1 to AC-6: the named tests exist and pass, and each carries the positive control its Evidence asks for.
+- AC-7: the Linux run is local. The Windows CI leg and the macOS human check are pending the PR's CI.
+
 ## Review
+
+## Cleanup Items
+
+- `scripts/ai-skills/git-hooks-pre-commit.test.ts`, `git-hooks-pre-push.test.ts`, `git-hooks-install.test.ts`, `git-hooks-shim.test.ts`, `git-hooks-delivery.test.ts`, `hooks-cli.test.ts`, and `session-start-install.test.ts` — each builds its own git fixture with the same isolation env (`GIT_CONFIG_NOSYSTEM`, an empty global config, stripped `GIT_*`). A shared helper would remove the copies, but it spans seven new files and the existing `git-gates.test.ts` and `doctor.test.ts`, which carry the same env, so it is out of this child's frame.
 
 ## Acceptance Criteria
 
