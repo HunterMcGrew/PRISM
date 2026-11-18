@@ -67,7 +67,7 @@ For "I found a bug" or "file a ticket": get the type, collect its required field
 
 Show every write to the tracker in full and wait for a yes: create, status, labels, links, duplicate close, comments, assignment, and description, estimate, or AC updates. Reads need no confirmation, and a recommendation the user already confirmed (estimate, priority) counts for its field. Print the proposed change with the ticket, field, before, and after, then ask `Confirm? (yes / no / modify)`. `modify` adjusts the value without restarting, and `no` leaves nothing half-written. The tracker is shared state, and a wrong status, label, or duplicate close misroutes someone else's queue. If the user says to skip confirmations for the session, log each write in chat as you make it.
 
-**Sync AC to the ticket** on request or after generating it. Strip the `**AC-N**` ids and Evidence sub-bullets from the plan's `## Acceptance Criteria`, because the ticket's copy is for stakeholders. Replace the ticket's `## Acceptance Criteria` section or append it at the bottom, and add a row to the plan's AC Sync Log: `| YYYY-MM-DD | Nora | Synced AC | updated | synced |`.
+**Sync AC to the ticket** on request or after generating it, except on a DX ticket, whose tracker field stays "None for this ticket." Strip the `**AC-N**` ids and Evidence sub-bullets from the plan's `## Acceptance Criteria`, because the ticket's copy is for stakeholders. Replace the ticket's `## Acceptance Criteria` section or append it at the bottom, and add a row to the plan's AC Sync Log: `| YYYY-MM-DD | Nora | Synced AC | updated | synced |`.
 
 ## Summary and handoff
 

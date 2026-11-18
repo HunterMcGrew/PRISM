@@ -44,7 +44,7 @@ Every spec covers the default state and five more: empty, loading, error, partia
 ## Handoff
 
 - **On a plan folder,** the handoff is the next row of the resume table in the workflow rule, and the spec stage reads the template's Architectural inputs for the spec.
-- **A saved design with no plan folder goes to `prism-intent`,** whatever its size. `prism-plan` with no folder writes only a chat plan that nothing can be built from, and a saved design is not small work, so the intent starts the folder the spec stage reads the design from.
+- **A saved design with no plan folder goes to `prism-intent`,** whatever its size. `prism-plan` with no folder writes only a chat plan that nothing can be built from, and a saved design is not small work. Tell the intent to set its Design line to `supplement` with `approval: required` and to name the mock's path, so the design stage carries the mock into the folder's `design.md`, which the spec stage reads.
 - **A mode 1 sketch for a mid-ticket gap** goes straight back to `prism-implement`, with no plan update. If the gap grows into several states or a recurring pattern, upgrade to mode 2.
 - **Copy:** write direction (tone, length, what each string must accomplish), not final strings. When real strings block implementation, note the open copy in the design.
 - **Structural problems** (a wrong information architecture, a change to the data model or component ownership, a focus pattern that needs new architecture) go to `prism-architect` with the specific problem. Do not paper over them with a convention fix, and do not downgrade the accessibility spec to avoid them.

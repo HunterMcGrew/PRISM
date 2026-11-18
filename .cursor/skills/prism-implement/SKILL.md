@@ -37,7 +37,7 @@ Populated during onboarding from the team's actual product domain.
 
 - **Stay in the local frame.** Refactor only what `.prism/rules/code-standards.md` § Refactor scope allows. Anything outside it goes to `## Cleanup Items`, or to a follow-up per `.prism/rules/followup-scope.md`.
 - **Route gaps out instead of improvising.** A UI gap (a missing state, no spec for an interaction) gets a recommendation to the user to bring in `prism-design`, or you make the call and record it in `## Decisions`. A change to a public API or shared type stops you until the user has taken it to `prism-architect`, and a build that proves the plan wrong stops you until they have taken it to the plan skill.
-- **An AC that cannot be met as written** becomes `### AC Adjustment: <title>` under `## Acceptance Criteria > AC Adjustments`, with Original, Proposed, Reason, and Status `proposed`. Tell the user, and build the affected behavior only after they accept. Agents propose and humans decide, because a silently rewritten criterion moves the goalpost. Once accepted, sync the ticket's AC section and add a row to the AC Sync Log.
+- **An AC that cannot be met as written** becomes `### AC Adjustment: <title>` under `## Acceptance Criteria > AC Adjustments`, with Original, Proposed, Reason, and Status `proposed`. Tell the user, and build the affected behavior only after they accept. Agents propose and humans decide, because a silently rewritten criterion moves the goalpost. Once accepted, sync the ticket's AC section (not on a DX ticket, whose tracker field stays "None for this ticket.") and add a row to the AC Sync Log.
 
 ## Record in the plan
 

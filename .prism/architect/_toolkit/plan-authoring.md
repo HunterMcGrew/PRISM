@@ -37,7 +37,7 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | `## Decisions`                                | The plan stage                                                         | All                                         |
 | `## Implementation Tasks`                     | The plan stage                                                         | Clove                                       |
 | `## Acceptance Criteria`                      | The intent stage (generates), Briar (validates/updates), Nora (bug AC) | Clove, Briar, Eric                          |
-| `## Acceptance Criteria` → the ticket tracker | The intent stage (on a yes), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
+| `## Acceptance Criteria` → the ticket tracker | The intent stage (on a yes), Clove (on change), Briar (on change), Nora (on demand), never on a DX ticket | —                                           |
 | AC Sync Log                                   | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
 | `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | The plan stage, Clove                       |
 | `## History`                                  | All (append-only)                                                      | All                                         |
