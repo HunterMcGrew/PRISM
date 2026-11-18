@@ -46,7 +46,7 @@ const STATUS_LINE_LIMIT = 40;
  * @param {string[]} args
  * @returns {string | null} Trimmed stdout, or null when git fails or times out.
  */
-function git(cwd, args) {
+function runGit(cwd, args) {
 	try {
 		return execFileSync("git", ["-C", cwd, ...args], {
 			encoding: "utf8",
@@ -143,12 +143,12 @@ export function formatStatus(status) {
  * @returns {LiveState}
  */
 function readLiveState(cwd, repoRoot) {
-	const branch = git(cwd, ["branch", "--show-current"]) ?? "";
+	const branch = runGit(cwd, ["branch", "--show-current"]) ?? "";
 
 	return {
 		branch: branch || "(detached HEAD or not a git checkout)",
 		plan: findPlanForBranch(repoRoot, branch),
-		status: formatStatus(git(cwd, ["status", "-s"])),
+		status: formatStatus(runGit(cwd, ["status", "-s"])),
 	};
 }
 

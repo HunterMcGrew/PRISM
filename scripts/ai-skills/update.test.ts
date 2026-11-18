@@ -2222,6 +2222,7 @@ const HOOK_RUNTIME_RELATIVE_PATHS = [
 	"hook.mjs",
 	"git-gates.mjs",
 	"architect-route.mjs",
+	"compact-handoff.mjs",
 	"harnesses.mjs",
 	"lib/match.mjs",
 	"lib/shell.mjs",
