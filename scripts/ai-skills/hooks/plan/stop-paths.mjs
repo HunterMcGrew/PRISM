@@ -64,8 +64,10 @@ const KINDS = ["dependency", "contract"];
  *
  * Throws when the config misspells a key, sets a list to something other than
  * an array, lists something other than a string, or uses a `{` brace pattern,
- * because the config validator accepts all four and each would otherwise turn
- * a stop path off without a word.
+ * because each would otherwise turn a stop path off without a word. The config
+ * validator, which `prism adopt`, `prism update`, and `prism doctor` run,
+ * rejects only the non-array list and the non-string entry. `auto-approve.mjs`
+ * never runs it, so this function is the approval-time check for all four.
  *
  * @param {{ stopPaths?: { dependency?: unknown, contract?: unknown } } | null | undefined} config
  * @returns {StopPaths}
