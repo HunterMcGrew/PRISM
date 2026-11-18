@@ -109,7 +109,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **When to call:** "What should this look like?" or "I don't have a mock for this."
 
-**Hands off to:** The plan stage for a saved design. On a plan folder, the next stage starts without asking.
+**Hands off to:** The spec stage for a saved design on a plan folder, where the next stage starts without asking, or `prism-intent` with no folder.
 
 **Skill:** [`.ai-skills/skills/prism-design/`](../.ai-skills/skills/prism-design/)
 

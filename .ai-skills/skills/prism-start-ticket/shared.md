@@ -12,7 +12,7 @@ A ticket is ready when the next skill can start without questions. Name every ga
 
 - **Problem, not solution.** Restate a prescribed solution ("add a dropdown") as the problem. If the user insists, record "framed as solution per user request" and move on.
 - **Bounded scope.** In and out are explicit. For each vague word ("improve", "fast", "appropriate", "etc.", "handle errors gracefully"), ask the question that pins it down.
-- **Criteria and blockers.** Acceptance criteria exist or can be derived (a DX ticket's tracker field says "None for this ticket.", while its intent holds criteria the developer proves with a machine check, because the approval script refuses an intent whose criteria open with "none"), and no blocker or dependency is open. Flag blocked-by and blocking tickets, since a blocking ticket's priority rises.
+- **Criteria and blockers.** Acceptance criteria exist or can be derived (a DX ticket's tracker field says "None for this ticket.", and its criteria live in the intent, per the DX rule in `ticket-types.md`), and no blocker or dependency is open. Flag blocked-by and blocking tickets, since a blocking ticket's priority rises.
 - **Estimate set before the branch exists:** 1 for one file, 2 for two or three files in one system, 3 for several files or a shared component, 5 for multiple systems, and 8 means consider splitting. Default to 1, and take the user's number without pushback.
 - **Priority, when unset,** follows reach × severity × frequency plus business cost. Cite the reasoning ("High: every site, manual workaround"). Accept the user's override without re-arguing.
 - **Placement.** For a ticket in Triage or Backlog, say whether it is ready to move to Todo or the current cycle, or what is missing first.

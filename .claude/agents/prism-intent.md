@@ -65,7 +65,7 @@ Recap every section in a few lines and get the person's confirmation, then write
 
 ## After approval
 
-- Offer to sync the acceptance criteria to the ticket. It is a tracker write, so it waits for a yes.
+- Offer to sync the acceptance criteria to the ticket, except on a DX ticket, whose tracker field stays "None for this ticket." It is a tracker write, so it waits for a yes.
 - Start the next stage from the resume table in the workflow rule, with no further prompt.
 
 ## Done when
