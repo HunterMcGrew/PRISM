@@ -1,0 +1,291 @@
+/**
+ * Regression suite for the Codex `project_doc_max_bytes` sync. Pins:
+ *   - the size rule (round up to a 64 KiB multiple, plus one 64 KiB step)
+ *   - reading only the top-level key, never one inside a table, and not mistaking
+ *     an array element that starts with `[` for a table header
+ *   - an unreadable value reported as `unparseable`, not guessed at
+ *   - a limit line the top-level scan cannot place reported as `unplaced`, not `absent`
+ *   - the line-based merge: other lines untouched, trailing comments and CRLF kept
+ *   - `syncCodexProjectDocLimit`: no AGENTS.md, a fresh write, nothing written for
+ *     an AGENTS.md inside Codex's default window, a larger existing value left
+ *     alone, a limit line the top-level reader cannot see left alone with a
+ *     warning, and dry-run writing nothing
+ */
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+	CODEX_CONFIG_RELATIVE_PATH,
+	computeProjectDocMaxBytes,
+	mergeProjectDocMaxBytes,
+	readLimitInForce,
+	readProjectDocMaxBytes,
+	syncCodexProjectDocLimit,
+} from "./codex-project-doc";
+
+async function withTempRepo(run: (repoRoot: string) => Promise<void>): Promise<void> {
+	const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-codex-doc-"));
+
+	try {
+		await run(repoRoot);
+	} finally {
+		await fs.rm(repoRoot, { force: true, recursive: true });
+	}
+}
+
+async function readIfExists(filePath: string): Promise<string | null> {
+	try {
+		return await fs.readFile(filePath, "utf8");
+	} catch {
+		return null;
+	}
+}
+
+test("computeProjectDocMaxBytes rounds up to a 64 KiB multiple and adds one step", () => {
+	assert.equal(computeProjectDocMaxBytes(132_790), 262_144);
+	assert.equal(computeProjectDocMaxBytes(65_536), 131_072);
+	assert.equal(computeProjectDocMaxBytes(1), 131_072);
+});
+
+test("readProjectDocMaxBytes is absent for null input and for a file with no key", () => {
+	assert.deepEqual(readProjectDocMaxBytes(null), { kind: "absent" });
+	assert.deepEqual(readProjectDocMaxBytes('model = "x"\n'), { kind: "absent" });
+});
+
+test("readProjectDocMaxBytes reports a key that sits only under a table as unplaced", () => {
+	const toml = 'model = "x"\n\n[profiles.x]\nproject_doc_max_bytes = 999999\n';
+
+	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "unplaced" });
+});
+
+test("readProjectDocMaxBytes reports a key hidden behind a lone-value array element as unplaced", () => {
+	const toml = "matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 16384\n";
+
+	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "unplaced" });
+});
+
+test("readProjectDocMaxBytes finds the key below a multi-line array whose elements start with a bracket", () => {
+	const toml = "matrix = [\n  [1, 2],\n  [3, 4]\n]\nproject_doc_max_bytes = 65536\n";
+
+	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "set", value: 65_536 });
+});
+
+test("readProjectDocMaxBytes treats dotted, quoted, and array-of-tables headers as the end of the top level", () => {
+	for (const header of ["[a.b]", '[ "a b" . c ]', "[[servers]]", "[t]  # comment"]) {
+		const toml = `${header}\nproject_doc_max_bytes = 999999\n`;
+
+		assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "unplaced" }, header);
+	}
+});
+
+test("readProjectDocMaxBytes reads an integer with underscores and a trailing comment", () => {
+	assert.deepEqual(readProjectDocMaxBytes("project_doc_max_bytes = 1_048_576  # mine\n"), {
+		kind: "set",
+		value: 1_048_576,
+	});
+});
+
+test("readProjectDocMaxBytes reports a value it cannot read as unparseable", () => {
+	assert.deepEqual(readProjectDocMaxBytes("project_doc_max_bytes = 0x100000\n"), {
+		kind: "unparseable",
+		raw: "0x100000",
+	});
+});
+
+test("mergeProjectDocMaxBytes into null yields the comment and key with a trailing line ending", () => {
+	const merged = mergeProjectDocMaxBytes(null, { kind: "absent" }, 131_072);
+
+	assert.equal(merged.split("\n").length, 3);
+	assert.ok(merged.endsWith("project_doc_max_bytes = 131072\n"));
+	assert.match(merged, /^# Raises Codex's AGENTS\.md read limit/);
+});
+
+test("mergeProjectDocMaxBytes adds the key at the top and leaves every other line byte-identical", () => {
+	const existing = 'model = "gpt-5"\n\n[mcp_servers.x]\ncommand = "x"\n';
+
+	const merged = mergeProjectDocMaxBytes(existing, { kind: "absent" }, 262_144);
+
+	assert.ok(merged.endsWith(`\n\n${existing}`), "existing content follows unchanged");
+	assert.deepEqual(readProjectDocMaxBytes(merged), { kind: "set", value: 262_144 });
+	assert.ok(merged.indexOf("project_doc_max_bytes") < merged.indexOf("model"));
+});
+
+test("mergeProjectDocMaxBytes replaces an existing smaller value and keeps its trailing comment", () => {
+	const existing = 'model = "x"\nproject_doc_max_bytes = 65_536  # raised by hand\n[t]\nk = 1\n';
+
+	const merged = mergeProjectDocMaxBytes(existing, { kind: "set", value: 65_536 }, 262_144);
+
+	assert.equal(
+		merged,
+		'model = "x"\nproject_doc_max_bytes = 262144  # raised by hand\n[t]\nk = 1\n'
+	);
+});
+
+test("mergeProjectDocMaxBytes replaces a value that sits below a multi-line array", () => {
+	const existing = "matrix = [\n  [1, 2],\n  [3, 4]\n]\nproject_doc_max_bytes = 65536\n";
+
+	const merged = mergeProjectDocMaxBytes(existing, { kind: "set", value: 65_536 }, 131_072);
+
+	assert.equal(merged, "matrix = [\n  [1, 2],\n  [3, 4]\n]\nproject_doc_max_bytes = 131072\n");
+});
+
+test("mergeProjectDocMaxBytes preserves CRLF line endings", () => {
+	const merged = mergeProjectDocMaxBytes('model = "x"\r\n', { kind: "absent" }, 131_072);
+
+	assert.ok(!/[^\r]\n/.test(merged), "every line ending is CRLF");
+	assert.ok(merged.endsWith('model = "x"\r\n'));
+});
+
+test("syncCodexProjectDocLimit returns null when the repo has no AGENTS.md", async () => {
+	await withTempRepo(async (repoRoot) => {
+		assert.equal(await syncCodexProjectDocLimit(repoRoot, false), null);
+	});
+});
+
+test("syncCodexProjectDocLimit writes the computed value when no config exists", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.deepEqual(result?.outcome, { relativePath: CODEX_CONFIG_RELATIVE_PATH, action: "written" });
+
+		const written = await fs.readFile(path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH), "utf8");
+		assert.deepEqual(readProjectDocMaxBytes(written), { kind: "set", value: 131_072 });
+	});
+});
+
+test("syncCodexProjectDocLimit writes nothing for an AGENTS.md inside Codex's default window when no config exists", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(32_768), "utf8");
+
+		assert.equal(await syncCodexProjectDocLimit(repoRoot, false), null);
+		assert.equal(await readIfExists(path.join(repoRoot, ".codex")), null);
+	});
+});
+
+test("syncCodexProjectDocLimit still updates an existing config for an AGENTS.md inside the default window", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(30_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		await fs.writeFile(configPath, 'model = "x"\n', "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "overwritten");
+		assert.deepEqual(readProjectDocMaxBytes(await fs.readFile(configPath, "utf8")), {
+			kind: "set",
+			value: 131_072,
+		});
+	});
+});
+
+test("syncCodexProjectDocLimit writes the config for an AGENTS.md one byte past the default window", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(32_769), "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "written");
+	});
+});
+
+test("syncCodexProjectDocLimit keeps a larger existing value and leaves the file unchanged", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		const existing = "project_doc_max_bytes = 1048576\n";
+		await fs.writeFile(configPath, existing, "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "no-op");
+		assert.equal(await fs.readFile(configPath, "utf8"), existing);
+	});
+});
+
+test("syncCodexProjectDocLimit overwrites a smaller existing value", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		await fs.writeFile(configPath, "project_doc_max_bytes = 32768\n", "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "overwritten");
+		assert.equal(await fs.readFile(configPath, "utf8"), "project_doc_max_bytes = 131072\n");
+	});
+});
+
+test("syncCodexProjectDocLimit leaves an unreadable value alone and warns with the value to set", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		const existing = "project_doc_max_bytes = 0x100000\n";
+		await fs.writeFile(configPath, existing, "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "no-op");
+		assert.match(result?.warning ?? "", /0x100000.*Set it to 131072 or more/);
+		assert.equal(await fs.readFile(configPath, "utf8"), existing);
+	});
+});
+
+test("syncCodexProjectDocLimit leaves a config alone when a lone-value array element hides its key from the top-level reader", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		const existing = "matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 65536\n";
+		await fs.writeFile(configPath, existing, "utf8");
+		assert.deepEqual(readProjectDocMaxBytes(existing), { kind: "unplaced" });
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "no-op");
+		assert.match(result?.warning ?? "", /cannot place at the top level.*131072 or more/);
+		assert.equal(await fs.readFile(configPath, "utf8"), existing);
+	});
+});
+
+test("syncCodexProjectDocLimit leaves a config alone when its only limit line sits under a table", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		const existing = 'model = "x"\n\n[profiles.x]\nproject_doc_max_bytes = 999999\n';
+		await fs.writeFile(configPath, existing, "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "no-op");
+		assert.ok(result?.warning);
+		assert.equal(await fs.readFile(configPath, "utf8"), existing);
+	});
+});
+
+test("readLimitInForce is the configured integer when set and Codex's default otherwise", () => {
+	assert.equal(readLimitInForce({ kind: "set", value: 16_384 }), 16_384);
+	assert.equal(readLimitInForce({ kind: "absent" }), 32_768);
+	assert.equal(readLimitInForce({ kind: "unparseable", raw: "0x1" }), 32_768);
+});
+
+test("syncCodexProjectDocLimit with dryRun reports the outcome and writes nothing", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, true);
+
+		assert.equal(result?.outcome.action, "written");
+		assert.equal(await readIfExists(path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH)), null);
+		assert.equal(await readIfExists(path.join(repoRoot, ".codex")), null);
+	});
+});
