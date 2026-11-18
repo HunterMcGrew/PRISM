@@ -3,7 +3,7 @@ title: "Adopt PRISM into your repo"
 description: "How to adopt PRISM into a consumer repo — via npx (recommended), or via a local checkout for air-gapped environments and contributors."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-09-02"
+last_updated: "2026-11-18"
 ---
 
 # Adopt PRISM into your repo
@@ -187,6 +187,16 @@ It's read-only — it writes no file — so it's safe to run as many times as yo
 
 Atlas calls `detect` itself during onboarding to answer the same questions it would otherwise need you to answer by hand, so you'll rarely need to run this directly — it's here mainly for scripting a stack check outside of an Atlas session, or for sanity-checking what Atlas is about to see.
 
+## Install the git hooks with `prism hooks install`
+
+`adopt` and `update` point git at PRISM's `pre-commit` and `pre-push` hooks by setting `core.hooksPath` to `.githooks` in your local git config. A fresh clone of an adopted repo doesn't carry local git config, so each clone needs that step once:
+
+```bash
+npx @huntermcgrew/prism hooks install
+```
+
+It leaves another hooks setup alone and tells you so: a `core.hooksPath` at any scope that isn't PRISM's (husky, lefthook, a team-wide path), or hooks already sitting in `.git/hooks`. It exits `0` either way. `prism doctor` reports whether this clone has the hooks installed. See [Adopting PRISM into an existing repo](./adopting-into-existing-repos.md#existing-git-hooks-husky-lefthook) for composing PRISM's hooks with your own, and for a setup-script line that installs them on every clone.
+
 ## Ejecting PRISM
 
 `prism eject` removes PRISM from a repo. It exists for the case where a team evaluates PRISM and decides not to keep it — adopting shouldn't read as lock-in.
@@ -196,6 +206,8 @@ npx @huntermcgrew/prism eject --yes
 ```
 
 **What it removes:** every PRISM-owned `.prism/` file (the same `classifyPath` classification `prism update` uses), every projected `prism-*` skill and agent adapter under `.claude/`, `.codex/`, `.agents/`, and `.cursor/` — and, last, `.prism/.sync-manifest.json` itself.
+
+**What it leaves behind:** the hook runtime under `.claude/hooks/`, the git hook shims in `.githooks/`, and the `core.hooksPath` setting `adopt` wrote, so the git hooks keep running after an eject. To stop them, delete `.githooks/pre-commit` and `.githooks/pre-push` and run `git config --local --unset core.hooksPath`.
 
 **What it preserves:**
 

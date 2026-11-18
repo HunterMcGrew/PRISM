@@ -4,19 +4,19 @@ author: Hunter McGrew
 stage: intent
 status: approved
 approved_by: Hunter McGrew
-approved_at: 2026-11-17
+approved_at: 2026-11-18
 approved_via: chat
-previously_approved: 2026-10-17 by Hunter McGrew (the version phase 1 was built from)
-amended: 2026-11-17
+previously_approved: 2026-11-17 (the Kitchen Line amendment) and 2026-10-17 (the version phase 1 was built from), both by Hunter McGrew
+amended: 2026-11-18
 ticket: https://github.com/HunterMcGrew/PRISM/issues/499
 created: 2026-10-17
 size: epic
-ports: thrive "Kitchen Line" epic THRN-579 — TracTru/thrive #2844 (intent and spec), #2847, #2853, #2854, #2859, read at their branch tips on 2026-11-17
+ports: thrive "Kitchen Line" epic THRN-579 — TracTru/thrive #2844 (intent and spec), #2847, #2853, #2854, #2859, read at their branch tips on 2026-11-17, and #2844 again at 3507ce9e1 and #2859 again at db3570975 on 2026-11-18, after the approve-once change (#2937) was folded into #2859
 ---
 
 # Intent: AI-native SDLC for PRISM
 
-This is the amended intent. The first version was approved on 2026-10-17 and phase 1 was built from it. Thrive kept refining the same workflow after that, and this amendment brings those refinements over. The section "What this amendment changes" lists every decision that moved, so a reader of the first version can see the difference in one place.
+This is the amended intent. The first version was approved on 2026-10-17 and phase 1 was built from it. Thrive kept refining the same workflow after that, and this amendment brings those refinements over. The section "What this amendment changes" lists every decision that moved, so a reader of the first version can see the difference in one place. A second, smaller amendment on 2026-11-18 cuts the run's stops down to what only the person can decide, and is listed under its own heading in that section.
 
 ## Problem
 
@@ -46,7 +46,7 @@ A developer approves a one-page intent. The session then runs every stage after 
 In priority order:
 
 1. **First-pass clean PRs.** The human reviewer requires zero changes after the agent review. Preference tweaks count as clean. Domain, logic, and spec misses do not.
-2. **Human touches per ticket.** Two on a routine ticket: approve the intent, read the PR. A third only for a design that needs approval or a plan that goes beyond its intent.
+2. **Human touches per ticket.** Two on a routine ticket: approve the intent, read the PR. A third only for a design that needs approval, a plan that fails automatic approval, or a change that would alter the approved intent.
 3. **Skill size.** Every skill stays at 120 loaded lines or less, enforced by the existing build check. A persona skill's `## Voice` block does not count, up to 16 lines.
 
 Always-on size is reported by the build and is no longer a target. The phase-1 baseline stands and no new baseline is run. The eval harness is not in scope.
@@ -89,17 +89,26 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 - **Epic** has a folder with `intent.md` and `spec.md` and no `plan.md`. The spec names the children and their merge order. Each child is a standard ticket.
 - No orchestrator skill drives the run. The stage order and a resume table in the always-on workflow block do. A fresh session reads the plan folder and runs the first row that matches.
 - Four stages run as fresh subagents because their value is a cold read: spec, challenge, verify, and PR review. Everything else runs in the session.
-- Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage.
+- Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage. A plan challenge that still blocks after round 3 gets a confirm round, rerun once after an architect verdict, and neither counts against the 3.
 
 ### Where the run stops for a person
 
+Once the intent is approved, the run is meant to finish without the person. Questions go to `prism-architect` first, and anything that does not block the build waits for the end.
+
 - **The intent, always.** Approving it also approves the size.
 - **The design**, when the intent says it needs approval.
-- **The plan**, only when automatic approval fails.
-- **A scope change past the approved intent.** A change to user-visible behavior, an acceptance criterion, or a new system is asked as its own question. Smaller follow-ons are recorded under Decisions and listed in the PR body.
+- **The plan**, only when automatic approval fails. The plan stage asks once, after every pending edit has landed, because an edit made after the person's `approve` voids it.
+- **A change that would alter the approved intent or its foundation.** This includes a changed acceptance criterion and a change that contradicts one of the person's rulings. Only `prism-architect` can send one to the person, and only when the build cannot go on without the answer.
 - **Ready and merge.** Every agent PR opens as a draft.
-- Review findings never stop the run. Anything only a person can decide lands on the draft PR.
-- The run also halts when going on cannot work: a challenge still blocking after three rounds, a blocked build, or a second re-plan on one task.
+
+What does not stop the run:
+
+- **Scope ideas.** A change that follows from the approved outcome goes ahead as a Decision. Anything else a stage thinks of goes to `prism-architect` for a fit verdict, and a "proceed" goes ahead as a recorded Decision.
+- **Challenge findings.** A blocking finding is fixed. When round 3 still blocks, the plan stage fixes it and runs a confirm round, which lets the plan through unless a finding is major. Non-major findings are carried: each is fixed where it can be, or recorded as an open Decision, and the plan goes on. A major finding, one that looks like a change to the intent or its foundation, holds the plan and goes to `prism-architect`. When the architect says it is not intent-level, the stage fixes it that way or records it as an open Decision, then runs the confirm round again with the verdict. Only a finding the architect judges intent-level reaches the person.
+- **Review findings.** Anything only a person can decide lands on the draft PR.
+- **Open items.** Anything non-blocking is recorded as an open Decision and listed in the PR body and the closing summary, for the person to follow up after the run.
+
+The run halts only when going on cannot work: a blocked build, or a second re-plan on one task.
 
 ### Artifact chain
 
@@ -111,7 +120,8 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 - **`plan.md`** holds tasks. Each task names its files, its proof, and what it depends on. Tasks group into bundles, and one bundle is one commit.
 - A commit subject names its tasks, such as `T3:` or `T3-T5:`. A task is done when a commit names it. Nothing edits the plan to mark a task done.
 - Approval is recorded by a script. In a terminal it needs a keypress. In chat, typing `approve` lets the agent run the script once. That approval is tied to the file's content, so a draft edited after the `approve` is not approved.
-- The plan approves automatically when it has at most 12 tasks, every file is inside the spec's affected systems, both challenge rounds are clean or resolved, and no file is on a stop path. Otherwise it asks.
+- A person's answer in chat to a question the run asked counts as approval of the edit that records it. The agent writes the ruling into the file in the person's words, and the file stays approved. An approved `plan.md` also stays approved through an edit outside its tasks.
+- The plan approves automatically when it has at least one task, every file is inside the spec's affected systems, the last challenge round is clean, resolved, or carried, and no file is on a stop path. Otherwise it asks. There is no task limit, because a cap sends a sound plan to a person for its size alone.
 - Plan folders hold no section-sign citations, because the files move and get renamed.
 
 ### Skills
@@ -119,7 +129,7 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 - Skills stay function-shaped with verb names and the `prism-` prefix, held to the four tests from phase 1.
 - **Persona voice comes back as one short block.** A persona skill carries a `## Voice` section of about a dozen lines. It holds no rules, shows in chat only, and is skipped when the skill runs as a subagent. The "how this persona thinks" sections stay gone, because those were the part that repeated rules.
 - **New stage skills:** `prism-intent`, `prism-spec`, and `prism-verify`.
-- **`prism-architect` is new and is Winston.** It answers "is this the right approach?" at any time, in chat, with no plan folder and no approval. `prism-plan` becomes a persona-less utility that writes `plan.md` and runs the challenge rounds.
+- **`prism-architect` is new and is Winston.** It answers "is this the right approach?" at any time, in chat, with no plan folder and no approval. A running stage also sends it scope ideas and unresolved challenge findings, and it returns a verdict to that stage instead of offering a next step. `prism-plan` becomes a persona-less utility that writes `plan.md` and runs the challenge rounds.
 - **`prism-debug` is new and is Sasha.** It diagnoses and changes no source. Its report becomes the Problem section of an intent. This reverses the phase-1 deletion.
 - **`prism-pr-review` stays Eric** and gains a chat voice that stays out of his GitHub comments.
 - `prism-challenge` runs the plan challenge rounds. `tdd` holds the test-first rules the implement stage loads.
@@ -184,6 +194,16 @@ Against the version approved on 2026-10-17:
 - **Retro.** It can no longer be declined.
 - **Hooks.** The approve guard is added, and the kill-switch behavior is stated.
 - **Codex.** The `AGENTS.md` limit is handled.
+
+### Second amendment, 2026-11-18
+
+Against the version approved on 2026-11-17. Hunter's rulings in chat on 2026-11-18 approve it.
+
+- **Independence.** Once the intent is approved, the run is meant to finish without the person. `prism-architect` takes the questions a stage would have asked, and open items wait for the end.
+- **Scope changes.** A change to user-visible behavior, an acceptance criterion, or a new system was asked as its own question. It now goes to `prism-architect`, and reaches the person only when it would change the intent or its foundation.
+- **Challenge.** A challenge still blocking after three rounds halted the run. It now gets a confirm round, then `prism-architect`, and only an intent-level finding reaches the person.
+- **Approval.** A chat answer counts as approval of the edit that records it, and an approved plan survives edits outside its tasks. The plan stage asks once.
+- **Auto-approval.** The 12-task limit is gone.
 
 ## Constraints
 

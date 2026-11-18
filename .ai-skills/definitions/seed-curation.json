@@ -81,6 +81,7 @@
 		"spec/adrs/_toolkit/0078-main-session-holds-merge-authority-and-the-conductor-is-retired.md",
 		"spec/adrs/_toolkit/0079-debugger-refactor-scout-and-doc-walker-are-retired.md",
 		"spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md",
+		"spec/adrs/_toolkit/0081-git-hooks-ship-beside-the-agent-gates.md",
 		"architect/_toolkit/npm-packaging.md",
 		"architect/_toolkit/token-substitution.md"
 	],

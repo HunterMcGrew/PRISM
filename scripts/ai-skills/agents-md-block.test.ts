@@ -4,6 +4,7 @@
  *   - the build hard-fail on a missing or invalid `load:` declaration ("fail" mode)
  *   - the warn-and-include-as-always fallback for undeclared consumer rules ("warn" mode)
  *   - alphabetical ordering of the collected set
+ *   - lead rules render first, in list order
  *   - token substitution (${TICKET_PREFIX} → configured value; no literal placeholders survive)
  *   - begin/end markers and source comments in the rendered block
  *   - idempotent replace (second call produces the same output as the first)
@@ -22,6 +23,7 @@ import {
 	AGENTS_MD_SEEDED_MARKER,
 	collectTier1RuleBodies,
 	hasTier1BlockMarkers,
+	measureLeadSectionEnds,
 	renderSeededAgentsMd,
 	renderTier1Block,
 	replaceTier1Block,
@@ -233,6 +235,63 @@ test("renderSeededAgentsMd carries the provenance marker and an empty Tier-1 mar
 		seeded.includes(`${AGENTS_MD_BLOCK_BEGIN}\n\n${AGENTS_MD_BLOCK_END}`),
 		"the marker pair must be empty so replaceTier1Block's marker-match path fills it"
 	);
+});
+
+function listSourceNames(block: string): string[] {
+	return [...block.matchAll(/<!-- source: \.prism\/rules\/(\S+) -->/g)].map((m) => m[1]);
+}
+
+test("renderTier1Block renders lead rules first, in list order, then the rest in input order", () => {
+	const block = renderTier1Block([
+		{ name: "zeta.md", body: "# Zeta" },
+		{ name: "skill-routing.md", body: "# Routing" },
+		{ name: "alpha.md", body: "# Alpha" },
+		{ name: "core-principles.md", body: "# Core" },
+	]);
+
+	assert.deepEqual(listSourceNames(block), [
+		"skill-routing.md",
+		"core-principles.md",
+		"zeta.md",
+		"alpha.md",
+	]);
+});
+
+test("renderTier1Block keeps input order when no rule is a lead rule", () => {
+	const block = renderTier1Block([
+		{ name: "zeta.md", body: "# Zeta" },
+		{ name: "alpha.md", body: "# Alpha" },
+	]);
+
+	assert.deepEqual(listSourceNames(block), ["zeta.md", "alpha.md"]);
+});
+
+test("measureLeadSectionEnds returns UTF-8 byte offsets, not character offsets", () => {
+	const prefix = `${AGENTS_MD_BLOCK_BEGIN}\n\n<!-- source: .prism/rules/skill-routing.md -->\n\n# Routing — dash\n\n---\n\n`;
+	const agentsMd = `${prefix}<!-- source: .prism/rules/other.md -->\n\n# Other\n\n${AGENTS_MD_BLOCK_END}`;
+
+	const [entry] = measureLeadSectionEnds(agentsMd, ["skill-routing.md"]);
+
+	assert.equal(entry.endByte, Buffer.byteLength(prefix, "utf8"));
+	assert.notEqual(entry.endByte, prefix.length);
+});
+
+test("measureLeadSectionEnds ends the last section at the block end marker", () => {
+	const body = `${AGENTS_MD_BLOCK_BEGIN}\n\n<!-- source: .prism/rules/skill-routing.md -->\n\n# Routing\n\n`;
+	const agentsMd = `${body}${AGENTS_MD_BLOCK_END}`;
+
+	const [entry] = measureLeadSectionEnds(agentsMd, ["skill-routing.md"]);
+
+	assert.equal(entry.endByte, Buffer.byteLength(body, "utf8"));
+});
+
+test("measureLeadSectionEnds returns endByte null for a lead rule with no source marker", () => {
+	const agentsMd = renderTier1Block([{ name: "skill-routing.md", body: "# Routing" }]);
+
+	const entries = measureLeadSectionEnds(agentsMd, ["skill-routing.md", "missing.md"]);
+
+	assert.notEqual(entries[0].endByte, null);
+	assert.deepEqual(entries[1], { name: "missing.md", endByte: null });
 });
 
 test("hasTier1BlockMarkers is true only when the begin/end marker pair is present", () => {

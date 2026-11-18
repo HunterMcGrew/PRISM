@@ -36,6 +36,199 @@ The norms that govern every session live as Tier 1 rules in `.prism/rules/` — 
 
 <!-- BEGIN GENERATED TIER-1 RULE BODIES — managed by scripts/ai-skills/build.ts; do not edit -->
 
+<!-- source: .prism/rules/skill-routing.md -->
+
+---
+load: always
+---
+
+# Skill Auto-Routing
+
+## Purpose
+
+When a user works without invoking a specific skill, detect what they're doing and proactively launch the matching skill. This is the pre-persona step — no skill is active yet, and you're deciding which one to fire up based on what the user said. Signal in, persona out.
+
+**Why:** waiting for the user to say a skill name adds friction — if the intent matches, invoking immediately is the better experience. See the skill auto-routing decision in `.prism/spec/adrs/_toolkit/` for the full rationale.
+
+## Routing table
+
+| User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
+| -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
+| Architecture or design questions       | **Winston** (`prism-plan`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
+| Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
+| Starting a ticket                      | **Nora** (`prism-start-ticket`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
+| Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
+| Self-reviewing the current branch      | **Briar** (`prism-self-review`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
+| UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
+| QA test plans and bug-fix verification | **Reese** (`prism-qa-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
+| Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
+| Writing or updating documentation      | **Eli** (`prism-docs`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
+| Writing a PRD                          | **Parker** (`prism-prd`)             | "write a PRD", "spec out this initiative", "brownfield PRD", "Parker"                                                                                                                                                                                                                                            |
+| Standup summaries                      | **Lilac** (`prism-standup`)  | "standup", "daily sync", "summarize my PRs", "generate my standup", "Lilac"                                                                                                                                                                                                                                      |
+| Setting company strategy               | **Vera** (`prism-strategy`)          | "set strategy", "strategy doc", "OKRs", "mission", "cross-functional priorities", "business strategy", "Vera"                                                                                                                                                                                    |
+| Market research                        | **Kora** (`prism-market-research`)   | "market research", "competitive teardown", "TAM", "segment sizing", "ICP research", "market sizing", "Kora"                                                                                                                                                                                                              |
+| Finance and pricing                    | **Ellis** (`prism-finance`)          | "finance", "pricing", "unit economics", "runway", "budget", "pricing model", "margins", "Ellis"                                                                                                                                                                                                                 |
+| Marketing and positioning              | **Charlie** (`prism-marketing`)      | "positioning", "messaging", "SEO", "marketing strategy", "Charlie"                                                                                                                                                                                                                                               |
+| Sales — ICP, proposals, outreach       | **Quinn** (`prism-sales`)            | "ICP qualification", "proposal", "outreach", "objection handling", "sales", "Quinn"                                                                                                                                                                                                                                            |
+| Metrics and analytics                  | **Tess** (`prism-metrics`)           | "metrics", "funnel analysis", "cohort analysis", "dashboard", "KPI", "conversion", "retention", "Tess"                                                                                                                                                                                                          |
+| Customer success and support content   | **Remy** (`prism-customer-success`)  | "support playbook", "FAQ", "customer onboarding", "escalation runbook", "customer success", "Remy"                                                                                                                                                                                                              |
+| Recruiting and hiring                  | **Penny** (`prism-recruiting`)       | "job description", "JD", "interview rubric", "hiring process", "scorecard", "headcount", "recruiting", "Penny"                                                                                                                                                                                                  |
+| Legal and compliance                   | **Lex** (`prism-legal`)              | "terms of service", "ToS", "privacy policy", "contract review", "compliance", "legal", "Lex"                                                                                                                                                                                                                    |
+
+## Named-invocation personas
+
+These personas route on their name or an explicit trigger phrase only — never on bare-agent intent detection. Each is cadence-driven or ceremony-shaped (invoked at a bound event, not a conversational signal), so an ambient-intent match would misfire (e.g. "how did that go?" firing a retrospective).
+
+- **Zoe** (`prism-audit`) — audits the `.prism/` surface on cadence; explicit invocation only. Triggers: "weekly audit", "what's stale", "what can we archive".
+- **Iris** (`prism-retro`) — runs the retro charter at plan close. Triggers: "retrospective", "post-mortem", "retro this epic".
+
+## How to route
+
+- When you detect a match, say: "This looks like [skill domain] work — bringing in [Persona]." Then invoke the skill.
+- If a request falls outside the invoked skill's scope, see the cross-skill handoff language in [`.prism/architect/_toolkit/skills-ecosystem.md`](../architect/_toolkit/skills-ecosystem.md).
+- If no skill matches (general questions, git operations, simple lookups), handle it directly — not everything needs a skill.
+
+## Built-in skill overrides
+
+- When the user says "review pr", "review #<number>", "review pull request", or any PR review phrase, invoke `prism-pr-review` (Eric) — not the built-in `/review` skill. The built-in `/review` doesn't understand this project's conventions, architect context, or plan system.
+
+## Onboarding intent routing
+
+- When the user says "onboard this repo", "set up PRISM here", "configure PRISM for my team", "Atlas onboard", or any first-install / re-onboarding phrase, invoke `prism-onboard` (Atlas). Atlas detects the stack, generates per-team rules, writes `.ai-skills/config.json`, and populates stub anchors. Runs once per team install or on stack change.
+
+## Utility skills
+
+- `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
+- `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a subject-clean pass and closes with a scoreboard TLDR; the PR stays draft.
+- `prism-forge-skill` is a *utility* skill — no persona; it runs in the current voice. Invocation is user-initiated: "create skill", "scaffold skill", "new skill", "add persona", "migrate skill", "decompose skill", "import skill". Create mode scaffolds a new PRISM skill from scratch; migrate mode decomposes a generated platform skill back into canonical source.
+- `tdd` is a *utility* reference — no persona, no greeting, no batteries; it is read for its content, not invoked as a session. Invocation is user-initiated: "tdd", "test-first", "red-green", "why is this test useless", "test anti-patterns". It holds the red-green loop and its three anti-patterns (with their tells) in one place other skills can point at instead of restating them.
+- `prism-challenge` is a *utility* reference — no persona, no voice, no greeting. Invocation is user-initiated: "devil's advocate", "poke holes in this", "stress test this", "red team this", "challenge this plan". It red-teams a finished artifact through four passes and a typed verdict, and never edits the artifact it challenges.
+
+## Skip auto-routing when
+
+- Trivial tasks (single-file rename, quick git command, formatting)
+- The user explicitly says "don't use a skill" or "just do it"
+- The user is already inside a skill session (don't nest skills)
+
+## Authors ship, reviewers review
+
+Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up. See the authors-ship-reviewers-review decision in `.prism/spec/adrs/_toolkit/` for the decision and its tradeoffs; the framework behind it lives in `.prism/plans/4.7-skill-audit-strategy.md` (Round 10).
+
+One narrow exception: a reviewer lands its own plan-only commit — staged set limited to the single plan file, verified mechanically — per `branch-plan.md` § Landing a plan-only commit. Everything else in a reviewer's tree stays the author's to ship.
+
+---
+
+<!-- source: .prism/rules/plan-before-building.md -->
+
+---
+load: always
+---
+
+# Plan Before Building
+
+## Purpose
+
+For any non-trivial task — 3 or more steps, or a real architectural decision — enter plan mode first and write the spec upfront. Plan mode covers verification steps too, not just the build. If something goes sideways mid-implementation, stop and re-plan rather than pushing through a broken approach.
+
+**Why:** ambiguity at the start becomes rework at the end — the cheapest place to resolve an unclear requirement is before any code exists, and the most expensive is after the implementation has committed to the wrong shape. The plan exists to absorb course corrections cheaply: re-planning when the approach breaks costs a paragraph, while pushing through a broken approach costs the whole branch.
+
+**How to apply:**
+
+- A task is non-trivial when it spans 3 or more steps or turns on an architectural decision. When it does, plan before writing code.
+- Write the spec — file paths, exact changes, verification — before implementing. The branch plan (`.prism/rules/branch-plan.md`) is where that spec lives.
+- Plan the verification path too, not just the build. "How will I prove this works?" belongs in the plan from the start.
+- When the approach breaks mid-implementation, stop and re-plan. Don't bolt fallbacks onto a shape that's fighting you.
+
+---
+
+<!-- source: .prism/rules/subagent-strategy.md -->
+
+---
+load: always
+---
+
+# Subagent Strategy
+
+## Purpose
+
+Keep the main context window clean by offloading work that reads a lot to produce a small answer. One task per subagent keeps execution focused.
+
+**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. The criterion is shape, not size: a subagent earns its dispatch when the work is read-heavy and the answer is small.
+
+**How to apply:**
+
+- Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
+- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. A structured review dispatched over a finished draft is a different shape: several parallel axes (product-fit, feasibility, clarity) reading a stable artifact is the read-heavy analysis this rule exists to offload, not a same-pass self-check.
+- Don't dispatch for work that could have been an inline read, and when you're unsure which it is, do it yourself: an inline read that turns out to have been delegable costs one extra read, while a needless dispatch costs a round trip and a report-back that may never arrive. This doesn't cap parallel dispatch across genuinely distinct axes of one review — each axis is its own scoped task per the one-task-per-subagent bullet.
+
+---
+
+<!-- source: .prism/rules/self-improvement-loop.md -->
+
+---
+load: always
+---
+
+# Self-Improvement Loop
+
+## Purpose
+
+After a correction from the user, capture the pattern in `.prism/lessons.md`. Review lessons at session start. The goal is a mistake rate that drops over time — each lesson is a ratchet that prevents the same class of error from recurring.
+
+**Why:** a correction that isn't captured is a correction you'll earn again. Writing the pattern down once turns a repeated mistake into a one-time cost. The flip side is real too: a lessons file that's too long to scan defeats its own purpose, so brevity and de-duplication are part of the rule, not an afterthought.
+
+**How to apply:**
+
+- After a correction, write the pattern to `.prism/lessons.md`. Before adding an entry, check whether an existing one already covers it — update rather than duplicate.
+- Keep entries to one sentence where possible. The file earns its place only if it stays scannable.
+- Review lessons at session start so the ratchet actually catches before the mistake repeats.
+
+---
+
+<!-- source: .prism/rules/verification-before-done.md -->
+
+---
+load: always
+---
+
+# Verification Before Done
+
+## Purpose
+
+A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
+
+**Why:** the cost of a false "done" lands on whoever discovers it, at whatever point they discover it — almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
+
+**How to apply:**
+
+- When claiming a task is complete, name the evidence the claim rests on — a test result, a log, a behavior diff. A claim with no evidence to name isn't ready to be made.
+- When the change is behavioral, the behavior diff between `main` and the change is the proof worth citing.
+- Hold the work to the staff-engineer bar. If you're not sure it would pass review, it isn't done yet.
+
+---
+
+<!-- source: .prism/rules/demand-elegance.md -->
+
+---
+load: always
+---
+
+# Demand Elegance
+
+## Purpose
+
+When a change has a design with tradeoffs — more than one shape would work, and the shapes differ in what they cost later — stop before presenting it and ask whether a cleaner solution exists. A mechanical edit does not get this pause.
+
+**Why:** the first working version of a change with real design choices is rarely the clean one, and once it is in the tree the hacky shape becomes the pattern the next change copies. A rule phrased as a blanket license to reshape gets executed broadly rather than as the narrow judgment call it means — thrive PR #2273 measured that cost directly.
+
+**How to apply:**
+
+- When the rule fires and the fix feels hacky, step back and ask what the clean solution is knowing everything you now know. When it doesn't fire, ship the obvious version.
+
+---
+
 <!-- source: .prism/rules/autonomous-bug-fixing.md -->
 
 ---
@@ -54,6 +247,30 @@ When given a bug report, just fix it. Point at logs, errors, or failing tests �
 
 - Given logs, errors, or failing tests, diagnose and resolve them without asking the user to walk you through it.
 - One exception: if the fix touches a public API, a shared type, or a shared utility, stop and explain before proceeding. A wide blast radius deserves a heads-up — see [`.prism/rules/code-standards.md`](./code-standards.md).
+
+---
+
+<!-- source: .prism/rules/core-principles.md -->
+
+---
+load: always
+---
+
+# Core Principles
+
+## Purpose
+
+Two principles govern every change: keep it simple, and find the root cause.
+
+- **Simplicity first** — make every change as simple as possible. Touch the minimal code that solves the problem.
+- **No laziness** — find root causes. No temporary fixes. Senior-developer standards.
+
+**Why:** the two pull in tension, and naming both keeps either from winning by default. Simplicity without root-cause discipline produces a quick patch that hides the real bug; root-cause discipline without simplicity produces a sprawling rewrite where a small fix would do. Holding both is the senior-developer standard — the smallest change that actually fixes the underlying problem.
+
+**How to apply:**
+
+- Prefer the smallest change that solves the problem. A larger change carries its own review and regression cost — earn it.
+- When a fix would only mask a symptom, find the cause instead. A temporary fix is a deferred bug, not a closed one.
 
 ---
 
@@ -86,6 +303,64 @@ Keep output visible for:
 - Diffs, file searches, and test results — the output is the information.
 - Commands that fail — error output is needed for debugging.
 - Linting and formatting checks that find violations — the violations are actionable.
+
+---
+
+<!-- source: .prism/rules/cross-agent-handoff-accountability.md -->
+
+---
+load: always
+---
+
+# Cross-Agent Handoff Accountability
+
+## Purpose
+
+When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding.
+
+**Why:** a fix passed between agents carries the upstream agent's confidence but not its verification — and a confidently applied wrong fix is worse than a slower correct one, because it ships looking deliberate. Treating every handoff as trust-but-verify catches the mismatch between diagnosis and fix before it reaches the user, which is the only place it's cheap to catch.
+
+**How to apply:**
+
+- Confirm the proposed solution logically addresses the root cause, not just that it changes something.
+- If the math doesn't check out or the fix doesn't match the symptoms, flag it before applying.
+- This applies to every handoff, not just suspicious ones — trust but verify is the standard.
+
+Example: if a diagnostic agent prescribes specific pixel values for a layout fix, confirm the dimensional math produces the intended result rather than just applying the numbers.
+
+## Who runs this rule
+
+Every persona that applies a fix or acts on a diagnosis originated by another agent — the accountability transfers to whoever applies the work, regardless of who diagnosed it.
+
+---
+
+<!-- source: .prism/rules/pre-compaction-checkpoint.md -->
+
+---
+load: always
+---
+
+# Pre-Compaction Checkpoint
+
+## Purpose
+
+When context usage approaches the compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction.
+
+**Why:** auto-compaction drops context without announcing what it dropped, and the worst losses are silent — a constraint everyone still believes is in effect, a root cause that gets re-investigated because the first finding vanished. A checkpoint written before the threshold preserves the load-bearing state on purpose, so compaction reshapes the narration without losing the facts.
+
+**How to apply:**
+
+The checkpoint should include:
+
+- Active branch plan state — what we're building, what's done, what's next.
+- Architectural constraints and decisions established during this session.
+- Known failures and their root causes — things we tried that didn't work and why.
+- Cross-agent handoff state — what was diagnosed, by whom, what's pending.
+- Any user corrections or lessons captured during this session.
+
+## Who runs this rule
+
+Every persona running a session long enough to approach the compaction threshold writes the checkpoint before compaction fires.
 
 ---
 
@@ -875,78 +1150,6 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 ---
 
-<!-- source: .prism/rules/core-principles.md -->
-
----
-load: always
----
-
-# Core Principles
-
-## Purpose
-
-Two principles govern every change: keep it simple, and find the root cause.
-
-- **Simplicity first** — make every change as simple as possible. Touch the minimal code that solves the problem.
-- **No laziness** — find root causes. No temporary fixes. Senior-developer standards.
-
-**Why:** the two pull in tension, and naming both keeps either from winning by default. Simplicity without root-cause discipline produces a quick patch that hides the real bug; root-cause discipline without simplicity produces a sprawling rewrite where a small fix would do. Holding both is the senior-developer standard — the smallest change that actually fixes the underlying problem.
-
-**How to apply:**
-
-- Prefer the smallest change that solves the problem. A larger change carries its own review and regression cost — earn it.
-- When a fix would only mask a symptom, find the cause instead. A temporary fix is a deferred bug, not a closed one.
-
----
-
-<!-- source: .prism/rules/cross-agent-handoff-accountability.md -->
-
----
-load: always
----
-
-# Cross-Agent Handoff Accountability
-
-## Purpose
-
-When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding.
-
-**Why:** a fix passed between agents carries the upstream agent's confidence but not its verification — and a confidently applied wrong fix is worse than a slower correct one, because it ships looking deliberate. Treating every handoff as trust-but-verify catches the mismatch between diagnosis and fix before it reaches the user, which is the only place it's cheap to catch.
-
-**How to apply:**
-
-- Confirm the proposed solution logically addresses the root cause, not just that it changes something.
-- If the math doesn't check out or the fix doesn't match the symptoms, flag it before applying.
-- This applies to every handoff, not just suspicious ones — trust but verify is the standard.
-
-Example: if a diagnostic agent prescribes specific pixel values for a layout fix, confirm the dimensional math produces the intended result rather than just applying the numbers.
-
-## Who runs this rule
-
-Every persona that applies a fix or acts on a diagnosis originated by another agent — the accountability transfers to whoever applies the work, regardless of who diagnosed it.
-
----
-
-<!-- source: .prism/rules/demand-elegance.md -->
-
----
-load: always
----
-
-# Demand Elegance
-
-## Purpose
-
-When a change has a design with tradeoffs — more than one shape would work, and the shapes differ in what they cost later — stop before presenting it and ask whether a cleaner solution exists. A mechanical edit does not get this pause.
-
-**Why:** the first working version of a change with real design choices is rarely the clean one, and once it is in the tree the hacky shape becomes the pattern the next change copies. A rule phrased as a blanket license to reshape gets executed broadly rather than as the narrow judgment call it means — thrive PR #2273 measured that cost directly.
-
-**How to apply:**
-
-- When the rule fires and the fix feels hacky, step back and ask what the clean solution is knowing everything you now know. When it doesn't fire, ship the obvious version.
-
----
-
 <!-- source: .prism/rules/followup-scope.md -->
 
 ---
@@ -1238,59 +1441,6 @@ Briar and Eric flag any install-template addition that ships empty as Minor in r
 
 ---
 
-<!-- source: .prism/rules/plan-before-building.md -->
-
----
-load: always
----
-
-# Plan Before Building
-
-## Purpose
-
-For any non-trivial task — 3 or more steps, or a real architectural decision — enter plan mode first and write the spec upfront. Plan mode covers verification steps too, not just the build. If something goes sideways mid-implementation, stop and re-plan rather than pushing through a broken approach.
-
-**Why:** ambiguity at the start becomes rework at the end — the cheapest place to resolve an unclear requirement is before any code exists, and the most expensive is after the implementation has committed to the wrong shape. The plan exists to absorb course corrections cheaply: re-planning when the approach breaks costs a paragraph, while pushing through a broken approach costs the whole branch.
-
-**How to apply:**
-
-- A task is non-trivial when it spans 3 or more steps or turns on an architectural decision. When it does, plan before writing code.
-- Write the spec — file paths, exact changes, verification — before implementing. The branch plan (`.prism/rules/branch-plan.md`) is where that spec lives.
-- Plan the verification path too, not just the build. "How will I prove this works?" belongs in the plan from the start.
-- When the approach breaks mid-implementation, stop and re-plan. Don't bolt fallbacks onto a shape that's fighting you.
-
----
-
-<!-- source: .prism/rules/pre-compaction-checkpoint.md -->
-
----
-load: always
----
-
-# Pre-Compaction Checkpoint
-
-## Purpose
-
-When context usage approaches the compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction.
-
-**Why:** auto-compaction drops context without announcing what it dropped, and the worst losses are silent — a constraint everyone still believes is in effect, a root cause that gets re-investigated because the first finding vanished. A checkpoint written before the threshold preserves the load-bearing state on purpose, so compaction reshapes the narration without losing the facts.
-
-**How to apply:**
-
-The checkpoint should include:
-
-- Active branch plan state — what we're building, what's done, what's next.
-- Architectural constraints and decisions established during this session.
-- Known failures and their root causes — things we tried that didn't work and why.
-- Cross-agent handoff state — what was diagnosed, by whom, what's pending.
-- Any user corrections or lessons captured during this session.
-
-## Who runs this rule
-
-Every persona running a session long enough to approach the compaction threshold writes the checkpoint before compaction fires.
-
----
-
 <!-- source: .prism/rules/response-shape.md -->
 
 ---
@@ -1361,28 +1511,6 @@ The state-line clause is conditional, not universal: it fires only when the run 
 
 ---
 
-<!-- source: .prism/rules/self-improvement-loop.md -->
-
----
-load: always
----
-
-# Self-Improvement Loop
-
-## Purpose
-
-After a correction from the user, capture the pattern in `.prism/lessons.md`. Review lessons at session start. The goal is a mistake rate that drops over time — each lesson is a ratchet that prevents the same class of error from recurring.
-
-**Why:** a correction that isn't captured is a correction you'll earn again. Writing the pattern down once turns a repeated mistake into a one-time cost. The flip side is real too: a lessons file that's too long to scan defeats its own purpose, so brevity and de-duplication are part of the rule, not an afterthought.
-
-**How to apply:**
-
-- After a correction, write the pattern to `.prism/lessons.md`. Before adding an entry, check whether an existing one already covers it — update rather than duplicate.
-- Keep entries to one sentence where possible. The file earns its place only if it stays scannable.
-- Review lessons at session start so the ratchet actually catches before the mistake repeats.
-
----
-
 <!-- source: .prism/rules/session-orientation.md -->
 
 ---
@@ -1434,134 +1562,6 @@ Long sessions drift between the opening and closing batteries — a plan gets re
 ## Who runs this rule
 
 Every persona skill loads this rule and runs both batteries. Utility skills and onboarding run whichever parts fit their shape — a persona-less utility skips the persona-specific re-anchor line but still runs the batteries; each skill's own body states which parts apply.
-
----
-
-<!-- source: .prism/rules/skill-routing.md -->
-
----
-load: always
----
-
-# Skill Auto-Routing
-
-## Purpose
-
-When a user works without invoking a specific skill, detect what they're doing and proactively launch the matching skill. This is the pre-persona step — no skill is active yet, and you're deciding which one to fire up based on what the user said. Signal in, persona out.
-
-**Why:** waiting for the user to say a skill name adds friction — if the intent matches, invoking immediately is the better experience. See the skill auto-routing decision in `.prism/spec/adrs/_toolkit/` for the full rationale.
-
-## Routing table
-
-| User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
-| -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
-| Architecture or design questions       | **Winston** (`prism-plan`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
-| Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
-| Starting a ticket                      | **Nora** (`prism-start-ticket`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
-| Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
-| Self-reviewing the current branch      | **Briar** (`prism-self-review`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
-| UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
-| QA test plans and bug-fix verification | **Reese** (`prism-qa-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
-| Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
-| Writing or updating documentation      | **Eli** (`prism-docs`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
-| Writing a PRD                          | **Parker** (`prism-prd`)             | "write a PRD", "spec out this initiative", "brownfield PRD", "Parker"                                                                                                                                                                                                                                            |
-| Standup summaries                      | **Lilac** (`prism-standup`)  | "standup", "daily sync", "summarize my PRs", "generate my standup", "Lilac"                                                                                                                                                                                                                                      |
-| Setting company strategy               | **Vera** (`prism-strategy`)          | "set strategy", "strategy doc", "OKRs", "mission", "cross-functional priorities", "business strategy", "Vera"                                                                                                                                                                                    |
-| Market research                        | **Kora** (`prism-market-research`)   | "market research", "competitive teardown", "TAM", "segment sizing", "ICP research", "market sizing", "Kora"                                                                                                                                                                                                              |
-| Finance and pricing                    | **Ellis** (`prism-finance`)          | "finance", "pricing", "unit economics", "runway", "budget", "pricing model", "margins", "Ellis"                                                                                                                                                                                                                 |
-| Marketing and positioning              | **Charlie** (`prism-marketing`)      | "positioning", "messaging", "SEO", "marketing strategy", "Charlie"                                                                                                                                                                                                                                               |
-| Sales — ICP, proposals, outreach       | **Quinn** (`prism-sales`)            | "ICP qualification", "proposal", "outreach", "objection handling", "sales", "Quinn"                                                                                                                                                                                                                                            |
-| Metrics and analytics                  | **Tess** (`prism-metrics`)           | "metrics", "funnel analysis", "cohort analysis", "dashboard", "KPI", "conversion", "retention", "Tess"                                                                                                                                                                                                          |
-| Customer success and support content   | **Remy** (`prism-customer-success`)  | "support playbook", "FAQ", "customer onboarding", "escalation runbook", "customer success", "Remy"                                                                                                                                                                                                              |
-| Recruiting and hiring                  | **Penny** (`prism-recruiting`)       | "job description", "JD", "interview rubric", "hiring process", "scorecard", "headcount", "recruiting", "Penny"                                                                                                                                                                                                  |
-| Legal and compliance                   | **Lex** (`prism-legal`)              | "terms of service", "ToS", "privacy policy", "contract review", "compliance", "legal", "Lex"                                                                                                                                                                                                                    |
-
-## Named-invocation personas
-
-These personas route on their name or an explicit trigger phrase only — never on bare-agent intent detection. Each is cadence-driven or ceremony-shaped (invoked at a bound event, not a conversational signal), so an ambient-intent match would misfire (e.g. "how did that go?" firing a retrospective).
-
-- **Zoe** (`prism-audit`) — audits the `.prism/` surface on cadence; explicit invocation only. Triggers: "weekly audit", "what's stale", "what can we archive".
-- **Iris** (`prism-retro`) — runs the retro charter at plan close. Triggers: "retrospective", "post-mortem", "retro this epic".
-
-## How to route
-
-- When you detect a match, say: "This looks like [skill domain] work — bringing in [Persona]." Then invoke the skill.
-- If a request falls outside the invoked skill's scope, see the cross-skill handoff language in [`.prism/architect/_toolkit/skills-ecosystem.md`](../architect/_toolkit/skills-ecosystem.md).
-- If no skill matches (general questions, git operations, simple lookups), handle it directly — not everything needs a skill.
-
-## Built-in skill overrides
-
-- When the user says "review pr", "review #<number>", "review pull request", or any PR review phrase, invoke `prism-pr-review` (Eric) — not the built-in `/review` skill. The built-in `/review` doesn't understand this project's conventions, architect context, or plan system.
-
-## Onboarding intent routing
-
-- When the user says "onboard this repo", "set up PRISM here", "configure PRISM for my team", "Atlas onboard", or any first-install / re-onboarding phrase, invoke `prism-onboard` (Atlas). Atlas detects the stack, generates per-team rules, writes `.ai-skills/config.json`, and populates stub anchors. Runs once per team install or on stack change.
-
-## Utility skills
-
-- `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
-- `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a subject-clean pass and closes with a scoreboard TLDR; the PR stays draft.
-- `prism-forge-skill` is a *utility* skill — no persona; it runs in the current voice. Invocation is user-initiated: "create skill", "scaffold skill", "new skill", "add persona", "migrate skill", "decompose skill", "import skill". Create mode scaffolds a new PRISM skill from scratch; migrate mode decomposes a generated platform skill back into canonical source.
-- `tdd` is a *utility* reference — no persona, no greeting, no batteries; it is read for its content, not invoked as a session. Invocation is user-initiated: "tdd", "test-first", "red-green", "why is this test useless", "test anti-patterns". It holds the red-green loop and its three anti-patterns (with their tells) in one place other skills can point at instead of restating them.
-- `prism-challenge` is a *utility* reference — no persona, no voice, no greeting. Invocation is user-initiated: "devil's advocate", "poke holes in this", "stress test this", "red team this", "challenge this plan". It red-teams a finished artifact through four passes and a typed verdict, and never edits the artifact it challenges.
-
-## Skip auto-routing when
-
-- Trivial tasks (single-file rename, quick git command, formatting)
-- The user explicitly says "don't use a skill" or "just do it"
-- The user is already inside a skill session (don't nest skills)
-
-## Authors ship, reviewers review
-
-Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up. See the authors-ship-reviewers-review decision in `.prism/spec/adrs/_toolkit/` for the decision and its tradeoffs; the framework behind it lives in `.prism/plans/4.7-skill-audit-strategy.md` (Round 10).
-
-One narrow exception: a reviewer lands its own plan-only commit — staged set limited to the single plan file, verified mechanically — per `branch-plan.md` § Landing a plan-only commit. Everything else in a reviewer's tree stays the author's to ship.
-
----
-
-<!-- source: .prism/rules/subagent-strategy.md -->
-
----
-load: always
----
-
-# Subagent Strategy
-
-## Purpose
-
-Keep the main context window clean by offloading work that reads a lot to produce a small answer. One task per subagent keeps execution focused.
-
-**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. The criterion is shape, not size: a subagent earns its dispatch when the work is read-heavy and the answer is small.
-
-**How to apply:**
-
-- Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
-- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
-- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. A structured review dispatched over a finished draft is a different shape: several parallel axes (product-fit, feasibility, clarity) reading a stable artifact is the read-heavy analysis this rule exists to offload, not a same-pass self-check.
-- Don't dispatch for work that could have been an inline read, and when you're unsure which it is, do it yourself: an inline read that turns out to have been delegable costs one extra read, while a needless dispatch costs a round trip and a report-back that may never arrive. This doesn't cap parallel dispatch across genuinely distinct axes of one review — each axis is its own scoped task per the one-task-per-subagent bullet.
-
----
-
-<!-- source: .prism/rules/verification-before-done.md -->
-
----
-load: always
----
-
-# Verification Before Done
-
-## Purpose
-
-A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
-
-**Why:** the cost of a false "done" lands on whoever discovers it, at whatever point they discover it — almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
-
-**How to apply:**
-
-- When claiming a task is complete, name the evidence the claim rests on — a test result, a log, a behavior diff. A claim with no evidence to name isn't ready to be made.
-- When the change is behavioral, the behavior diff between `main` and the change is the proof worth citing.
-- Hold the work to the staff-engineer bar. If you're not sure it would pass review, it isn't done yet.
 
 ---
 

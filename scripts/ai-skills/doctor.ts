@@ -24,10 +24,24 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { measureLeadSectionEnds } from "./agents-md-block";
 import { COPIED_CONTENT_AREAS } from "./build";
+import {
+	CODEX_CONFIG_RELATIVE_PATH,
+	CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES,
+	computeProjectDocMaxBytes,
+	readLimitInForce,
+	readProjectDocMaxBytes,
+} from "./codex-project-doc";
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { resolveHosts, type HostName } from "./lib/hosts";
+import {
+	classifyHooksPath,
+	describeForeignHooks,
+	isRunnableShim,
+	readGitHooksState,
+} from "./hooks/git-hooks/install.mjs";
 import { listManifestRoutes } from "./hooks/lib/match.mjs";
 import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
@@ -71,7 +85,8 @@ export interface DoctorFinding {
 		| "rule-load"
 		| "architect-route"
 		| "hook-registration"
-		| "host-output";
+		| "host-output"
+		| "codex-doc-limit";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -687,7 +702,12 @@ function collectHookCommands(settings: Record<string, unknown>): string[] {
  */
 async function readConsumerConfigSafely(
 	consumerRepoRoot: string
-): Promise<{ hosts?: unknown; hooks?: unknown; commands?: unknown } | null> {
+): Promise<{
+	hosts?: unknown;
+	hooks?: unknown;
+	commands?: unknown;
+	gitHooks?: unknown;
+} | null> {
 	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
 	const raw = await readFileIfExists(configPath);
 	if (raw === null) {
@@ -695,7 +715,12 @@ async function readConsumerConfigSafely(
 	}
 
 	try {
-		return JSON.parse(raw) as { hosts?: unknown; hooks?: unknown; commands?: unknown };
+		return JSON.parse(raw) as {
+			hosts?: unknown;
+			hooks?: unknown;
+			commands?: unknown;
+			gitHooks?: unknown;
+		};
 	} catch {
 		return null;
 	}
@@ -756,6 +781,89 @@ function describeGitGates(
 	}
 
 	return findings;
+}
+
+/**
+ * Reports whether PRISM's git hooks are active in this clone.
+ *
+ * Silent unless the repo carries PRISM's own `.githooks/pre-commit` (marked
+ * with `HOOK_RUNTIME_MARKER`): a repo not yet adopted, a Cursor-only consumer,
+ * and a consumer whose own `.githooks` holds only their hooks have nothing of
+ * PRISM's to be installed. Another hooks setup the installer would leave alone
+ * (`describeForeignHooks`, the same search the installer runs) is `info`,
+ * because the repo is set up correctly in its own way. "Delivered but not
+ * installed" and a marked shim without its executable bit are `warning`s,
+ * which leave `healthy` true. Reuses the `hook-registration` check id so the
+ * exported `DoctorFinding` union does not widen.
+ */
+async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]> {
+	const shim = await readFileIfExists(path.join(consumerRepoRoot, ".githooks", "pre-commit"));
+	if (shim === null || !shim.includes(HOOK_RUNTIME_MARKER)) {
+		return [];
+	}
+
+	const config = await readConsumerConfigSafely(consumerRepoRoot);
+	const gitHooks =
+		typeof config?.gitHooks === "object" && config.gitHooks !== null
+			? (config.gitHooks as Record<string, unknown>)
+			: {};
+	const commandsUnset =
+		describeCommandSlot(gitHooks.preCommit, "command") === "unset" &&
+		describeCommandSlot(gitHooks.prePush, "command") === "unset";
+	const unsetNote = commandsUnset
+		? " gitHooks.preCommit.command and gitHooks.prePush.command are unset in .ai-skills/config.json, so the hooks skip until you set them."
+		: "";
+
+	const state = readGitHooksState(consumerRepoRoot);
+	if (classifyHooksPath(state.effective, consumerRepoRoot) !== "ours") {
+		const foreignHooks = describeForeignHooks(consumerRepoRoot, state.scopes);
+		if (foreignHooks !== null) {
+			return [
+				{
+					check: "hook-registration",
+					severity: "info",
+					message: `PRISM's git hooks are not active: ${foreignHooks}. Compose them with your hooks by hand.`,
+				},
+			];
+		}
+
+		return [
+			{
+				check: "hook-registration",
+				severity: "warning",
+				message: `PRISM's git hooks are delivered but not installed in this clone. Run npx @huntermcgrew/prism hooks install, or node .claude/hooks/git-hooks/install.mjs.${unsetNote}`,
+			},
+		];
+	}
+
+	const notExecutable: string[] = [];
+	for (const name of ["pre-commit", "pre-push"]) {
+		const shimPath = path.join(consumerRepoRoot, ".githooks", name);
+		const contents = await readFileIfExists(shimPath);
+		if (contents !== null && contents.includes(HOOK_RUNTIME_MARKER) && !isRunnableShim(shimPath)) {
+			notExecutable.push(`.githooks/${name}`);
+		}
+	}
+
+	if (notExecutable.length > 0) {
+		const files = notExecutable.join(" ");
+
+		return [
+			{
+				check: "hook-registration",
+				severity: "warning",
+				message: `Git hooks are installed, but git skips a hook file without the executable bit: ${files}. Run npx @huntermcgrew/prism update to restore it, or chmod +x ${files}.`,
+			},
+		];
+	}
+
+	return [
+		{
+			check: "hook-registration",
+			severity: "info",
+			message: `Git hooks are installed (core.hooksPath → .githooks).${unsetNote}`,
+		},
+	];
 }
 
 /**
@@ -1021,6 +1129,111 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	});
 
 	return findings;
+}
+
+/**
+ * Warns when Codex would read only part of the repo's `AGENTS.md`.
+ *
+ * Codex reads the first 32 KiB by default, so a larger file needs
+ * `project_doc_max_bytes` raised in the repo's `.codex/config.toml`. Every
+ * message names the per-developer `~/.codex/config.toml` setting as a fallback,
+ * because Codex skips a project config it does not trust.
+ *
+ * `warning`, not `error` — a short read limit degrades Codex sessions without
+ * breaking the install, and `healthy` keys on `error` alone. A limit that
+ * already covers the file reports `info`, so the fallback stays visible.
+ *
+ * The lead rules (routing and behavioral norms) are the part of the block a
+ * consumer cannot afford to lose, and where they end depends on how much
+ * content sits above the block in that consumer's own file. A warning says so
+ * when the limit in force ends before them.
+ */
+async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFinding[]> {
+	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
+	if (!hosts.includes("codex")) {
+		return [];
+	}
+
+	const agentsMd = await readFileIfExists(path.join(consumerRepoRoot, "AGENTS.md"));
+	if (agentsMd === null) {
+		return [];
+	}
+
+	const size = Buffer.byteLength(agentsMd, "utf8");
+	const setting = readProjectDocMaxBytes(
+		await readFileIfExists(path.join(consumerRepoRoot, CODEX_CONFIG_RELATIVE_PATH))
+	);
+	// A lead rule cannot end past the end of the file, so a file inside the
+	// default window and inside any lower configured limit has nothing to
+	// measure. A configured limit above the default does not end the check,
+	// because the file may be past the default and rely on that limit. An
+	// unplaced limit line never ends it either: a hidden top-level limit below
+	// the default may cut a file that fits the default window.
+	if (
+		setting.kind !== "unplaced" &&
+		size <= Math.min(CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES, readLimitInForce(setting))
+	) {
+		return [];
+	}
+
+	const leadRulesEnd = Math.max(
+		0,
+		...measureLeadSectionEnds(agentsMd).map(({ endByte }) => endByte ?? 0)
+	);
+	const leadRulesCutNote = (limit: number) =>
+		leadRulesEnd > limit
+			? ` The routing and behavioral-norm rules at the top of the generated block end at byte ${leadRulesEnd}, so Codex misses those too.`
+			: "";
+	const computed = computeProjectDocMaxBytes(size);
+	const fallback = `If your Codex does not apply the repo's ${CODEX_CONFIG_RELATIVE_PATH}, set project_doc_max_bytes = ${computed} at the top level of ~/.codex/config.toml.`;
+
+	if (setting.kind === "absent") {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `AGENTS.md is ${size} bytes, but Codex reads only the first ${CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES} by default and ${CODEX_CONFIG_RELATIVE_PATH} sets no project_doc_max_bytes, so Codex sessions miss the rest.${leadRulesCutNote(CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES)} Run npx @huntermcgrew/prism update to set it to ${computed}. ${fallback}`,
+			},
+		];
+	}
+
+	if (setting.kind === "unparseable") {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes to ${setting.raw}, which PRISM cannot read. Set it to ${computed} or more. ${fallback}`,
+			},
+		];
+	}
+
+	if (setting.kind === "unplaced") {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `${CODEX_CONFIG_RELATIVE_PATH} has a project_doc_max_bytes line PRISM cannot place at the top level (under a table, or after a multi-line value), so the limit Codex reads from AGENTS.md (${size} bytes) is unknown. A top-level project_doc_max_bytes line set to ${computed} or more is needed. ${fallback}`,
+			},
+		];
+	}
+
+	if (setting.value < size) {
+		return [
+			{
+				check: "codex-doc-limit",
+				severity: "warning",
+				message: `AGENTS.md is ${size} bytes, but ${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes = ${setting.value}, so Codex sessions miss the rest.${leadRulesCutNote(setting.value)} Run npx @huntermcgrew/prism update to raise it to ${computed}. ${fallback}`,
+			},
+		];
+	}
+
+	return [
+		{
+			check: "codex-doc-limit",
+			severity: "info",
+			message: `${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes = ${setting.value}, enough for AGENTS.md (${size} bytes). ${fallback}`,
+		},
+	];
 }
 
 /**
@@ -1321,6 +1534,13 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
 	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
+	findings.push(...(await checkGitHooks(consumerRepoRoot)));
+
+	// The remedy this check prescribes is `prism update`, which applies only once
+	// the repo has adopted; a never-adopted repo needs `prism adopt` instead.
+	if (syncResult.syncState.manifest !== null) {
+		findings.push(...(await checkCodexDocLimit(consumerRepoRoot)));
+	}
 
 	try {
 		const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);
