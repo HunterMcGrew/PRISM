@@ -21,12 +21,15 @@
  * every worktree run that checkout's hooks.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { chmodSync, existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 
 const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
 
 const OUR_HOOKS_DIR = ".githooks";
+
+/** The hook files PRISM ships shims for, named relative to `.githooks/`. */
+const SHIM_NAMES = ["pre-commit", "pre-push"];
 
 /**
  * Most specific first, so a report names the scope git would read first.
@@ -142,9 +145,9 @@ function isPrismShim(filePath) {
  * off Windows, the executable bit.
  *
  * Git skips a hook without the executable bit and prints only an
- * `advice.ignoredHook` hint, so a marked shim that lost its mode (a commit
- * from a `core.fileMode=false` clone, or a tool that drops modes) runs no
- * checks at all. Windows has no executable bit, and Git for Windows runs the
+ * `advice.ignoredHook` hint, so a marked shim that lost its mode (a path
+ * added fresh from a `core.fileMode=false` clone, or a tool that drops modes)
+ * runs no checks at all. Windows has no executable bit, and Git for Windows runs the
  * shim regardless.
  *
  * @param {string} filePath
@@ -161,6 +164,34 @@ export function isRunnableShim(filePath, platform = process.platform) {
 	} catch {
 		return false;
 	}
+}
+
+/**
+ * PRISM's own shims in this checkout's `.githooks/` that git would skip for
+ * lack of the executable bit. Always empty on Windows, where the bit does not
+ * exist.
+ *
+ * @param {string} repoRoot
+ * @returns {string[]} absolute shim paths
+ */
+function findNonExecutableShims(repoRoot) {
+	return SHIM_NAMES.map((name) => path.join(repoRoot, OUR_HOOKS_DIR, name)).filter(
+		(shimPath) => isPrismShim(shimPath) && !isRunnableShim(shimPath)
+	);
+}
+
+/**
+ * @param {string} shimPath
+ * @returns {boolean} whether the shim now has the executable bit
+ */
+function makeExecutable(shimPath) {
+	try {
+		chmodSync(shimPath, 0o755);
+	} catch {
+		return false;
+	}
+
+	return isRunnableShim(shimPath);
 }
 
 /**
@@ -263,6 +294,11 @@ export function describeForeignHooks(repoRoot, scopes) {
  * written, and a worktree-scope value is unset because it would shadow the
  * local one.
  *
+ * Git skips a hook without the executable bit, so a marked shim that lacks it
+ * is chmodded first, off Windows. When the bit cannot be set, nothing is
+ * written and the result is `left-alone`, because `set` and `already` both
+ * tell the caller that PRISM's hooks will run.
+ *
  * `shimsDelivered` lets `prism update --dry-run` preview the install on a
  * consumer whose shims the same dry run would have written but did not.
  *
@@ -287,10 +323,31 @@ export function installGitHooks(repoRoot, { dryRun = false, shimsDelivered = fal
 		};
 	}
 
+	const nonExecutableShims = findNonExecutableShims(repoRoot);
+	const unfixableShims = dryRun ? [] : nonExecutableShims.filter((shim) => !makeExecutable(shim));
+	if (unfixableShims.length > 0) {
+		const names = unfixableShims.map((shim) => path.basename(shim)).join(" and ");
+
+		return {
+			action: "left-alone",
+			message: `prism hooks: ${OUR_HOOKS_DIR}/${names} is not executable and could not be made so, and git skips a hook without the executable bit. Nothing was changed.`,
+		};
+	}
+
+	const executableNote =
+		nonExecutableShims.length === 0
+			? ""
+			: `made ${nonExecutableShims.map((shim) => path.basename(shim)).join(" and ")} executable`;
 	const staleWorktreeValue = scopes.worktree;
 	const localIsCurrent = scopes.local === OUR_HOOKS_DIR;
 	if (localIsCurrent && staleWorktreeValue === null) {
-		return { action: "already", message: "prism hooks: already installed" };
+		if (executableNote === "") {
+			return { action: "already", message: "prism hooks: already installed" };
+		}
+
+		const repairMessage = `prism hooks: ${executableNote}`;
+
+		return { action: "set", message: dryRun ? `would ${repairMessage}` : repairMessage };
 	}
 
 	if (!dryRun) {
@@ -305,23 +362,66 @@ export function installGitHooks(repoRoot, { dryRun = false, shimsDelivered = fal
 
 	const removedNote =
 		staleWorktreeValue === null ? "" : `, and removed this worktree's '${staleWorktreeValue}'`;
-	const message = `prism hooks: set core.hooksPath to ${OUR_HOOKS_DIR}${removedNote}`;
+	const repairedNote = executableNote === "" ? "" : `; ${executableNote}`;
+	const message = `prism hooks: set core.hooksPath to ${OUR_HOOKS_DIR}${removedNote}${repairedNote}`;
 
 	return { action: "set", message: dryRun ? `would ${message}` : message };
 }
 
 /**
+ * Whether a worktree of this clone other than `repoRoot` has a PRISM shim in
+ * its own `.githooks/`.
+ *
+ * @param {string} repoRoot
+ * @returns {boolean}
+ */
+function otherWorktreeHasShim(repoRoot) {
+	const porcelain = git(["worktree", "list", "--porcelain"], repoRoot);
+	if (porcelain === null) {
+		return false;
+	}
+
+	const resolve = (/** @type {string} */ dir) => {
+		try {
+			return realpathSync(dir);
+		} catch {
+			return path.resolve(dir);
+		}
+	};
+	const self = resolve(repoRoot);
+
+	return porcelain
+		.split("\n")
+		.filter((line) => line.startsWith("worktree "))
+		.map((line) => resolve(line.slice("worktree ".length)))
+		.some(
+			(dir) =>
+				dir !== self &&
+				SHIM_NAMES.some((name) => isPrismShim(path.join(dir, OUR_HOOKS_DIR, name)))
+		);
+}
+
+/**
  * Unsets the local `core.hooksPath` when it is exactly `.githooks`, for a
- * consumer whose shims were just removed because neither `claude` nor
- * `codex` is a host any more. Left set, it points git at an empty or missing
- * directory, so git runs no hooks and still skips `.git/hooks`.
+ * consumer with neither `claude` nor `codex` as a host and no `.githooks/` in
+ * this checkout, whether this pass removed the shims or a pulled commit
+ * already had. Left set, it points git at a missing directory, so git runs no
+ * hooks and still skips `.git/hooks`.
+ *
+ * The local value is shared by every worktree of the clone, so it stays set
+ * while any other worktree still has a PRISM shim in its `.githooks/`.
+ * Unsetting it would stop that worktree's hooks until its next session start
+ * set the value again.
  *
  * @param {string} repoRoot
  * @param {{ dryRun?: boolean }} [options]
  * @returns {string | null} the message when it unset (or would unset) the value
  */
 export function removeGitHooksPath(repoRoot, { dryRun = false } = {}) {
-	if (git(["config", "--local", "--get", "core.hooksPath"], repoRoot) !== OUR_HOOKS_DIR) {
+	if (
+		git(["config", "--local", "--get", "core.hooksPath"], repoRoot) !== OUR_HOOKS_DIR ||
+		otherWorktreeHasShim(repoRoot)
+	) {
 		return null;
 	}
 

@@ -45,7 +45,8 @@ function withFixture(body: (fixture: Fixture) => void): void {
 		fs.writeFileSync(path.join(root, ".prism", "architect", "manifest.json"), "{}");
 		fs.writeFileSync(
 			path.join(root, ".githooks", "pre-commit"),
-			"#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n"
+			"#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n",
+			{ mode: 0o755 }
 		);
 
 		body({

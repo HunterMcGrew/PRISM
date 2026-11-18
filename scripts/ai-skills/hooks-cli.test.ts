@@ -41,7 +41,8 @@ async function withFixture(body: (fixture: Fixture) => Promise<void>): Promise<v
 		execFileSync("git", ["init", "-q"], { cwd: root });
 		fs.writeFileSync(
 			path.join(root, ".githooks", "pre-commit"),
-			"#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n"
+			"#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n",
+			{ mode: 0o755 }
 		);
 
 		await body({

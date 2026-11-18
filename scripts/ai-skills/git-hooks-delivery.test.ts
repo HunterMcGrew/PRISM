@@ -355,6 +355,36 @@ test("hosts: [cursor] keeps core.hooksPath while a consumer's own file is left i
 	});
 });
 
+test("hosts: [cursor] keeps core.hooksPath while another worktree of the clone still has PRISM's shims", async () => {
+	await withRoots(async (roots) => {
+		await update(roots);
+		roots.git("add", "-A");
+		roots.git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "init");
+		const linked = path.join(path.dirname(roots.consumerRepoRoot), "linked");
+		roots.git("worktree", "add", "-q", linked, "-b", "linked");
+		assert.equal(await existsAt(linked, SHIMS[0]), true);
+		await writeAt(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["cursor"] })
+		);
+
+		await update(roots);
+
+		assert.equal(await existsAt(roots.consumerRepoRoot, ".githooks"), false);
+		assert.equal(
+			hooksPath(roots),
+			".githooks",
+			"the sibling worktree is still running on the shared value"
+		);
+
+		await fs.rm(path.join(linked, ".githooks"), { recursive: true });
+		await update(roots);
+
+		assert.equal(hooksPath(roots), "", "the value goes once no worktree has shims left");
+	});
+});
+
 test("hosts: [cursor] leaves a consumer's own .githooks file in place", async () => {
 	await withRoots(async (roots) => {
 		await writeAt(

@@ -266,6 +266,63 @@ test(
 	}
 );
 
+test(
+	"the installer makes a marked shim without the executable bit executable before it reports set",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	() => {
+		withFixture({}, ({ root, git }) => {
+			const shimPath = path.join(root, ".githooks", "pre-commit");
+			fs.chmodSync(shimPath, 0o644);
+
+			assert.deepEqual(installGitHooks(root), {
+				action: "set",
+				message: "prism hooks: set core.hooksPath to .githooks; made pre-commit executable",
+			});
+			assert.equal(git("config", "--local", "--get", "core.hooksPath"), ".githooks");
+			assert.equal(isRunnableShim(shimPath), true);
+			assert.equal(readGitHooksState(root).active["pre-commit"], true);
+		});
+	}
+);
+
+test(
+	"the installer repairs a non-executable shim when the value is already set, and then reports already",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	() => {
+		withFixture({}, ({ root, git }) => {
+			git("config", "--local", "core.hooksPath", ".githooks");
+			const shimPath = path.join(root, ".githooks", "pre-commit");
+			fs.chmodSync(shimPath, 0o644);
+
+			assert.deepEqual(installGitHooks(root), {
+				action: "set",
+				message: "prism hooks: made pre-commit executable",
+			});
+			assert.equal(isRunnableShim(shimPath), true);
+			assert.equal(installGitHooks(root).action, "already");
+		});
+	}
+);
+
+test(
+	"a dry run names the shim it would make executable and leaves its mode alone",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	() => {
+		withFixture({}, ({ root, git }) => {
+			const shimPath = path.join(root, ".githooks", "pre-commit");
+			fs.chmodSync(shimPath, 0o644);
+
+			assert.deepEqual(installGitHooks(root, { dryRun: true }), {
+				action: "set",
+				message:
+					"would prism hooks: set core.hooksPath to .githooks; made pre-commit executable",
+			});
+			assert.equal(isRunnableShim(shimPath), false);
+			assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+		});
+	}
+);
+
 test("isRunnableShim ignores the mode on Windows and still requires the marker", () => {
 	withFixture({}, ({ root }) => {
 		const shimPath = path.join(root, ".githooks", "pre-commit");
@@ -363,6 +420,36 @@ test("removeGitHooksPath unsets only a local value of exactly .githooks", () => 
 		);
 		assert.equal(git("config", "--local", "--get", "core.hooksPath"), ".githooks");
 
+		assert.equal(
+			removeGitHooksPath(root),
+			"prism hooks: unset core.hooksPath, since .githooks/ was removed"
+		);
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+	});
+});
+
+test("removeGitHooksPath keeps the value while another worktree still has a PRISM shim", () => {
+	withFixture({}, ({ root, git }) => {
+		git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "init");
+		const linked = path.join(path.dirname(root), "linked");
+		git("worktree", "add", "-q", linked, "-b", "linked");
+		const linkedShim = path.join(linked, ".githooks", "pre-commit");
+		fs.mkdirSync(path.dirname(linkedShim));
+		git("config", "--local", "core.hooksPath", ".githooks");
+		fs.rmSync(path.join(root, ".githooks"), { recursive: true });
+
+		fs.writeFileSync(linkedShim, "#!/bin/sh\necho mine\n", { mode: 0o755 });
+		assert.equal(
+			removeGitHooksPath(root, { dryRun: true }),
+			"would prism hooks: unset core.hooksPath, since .githooks/ was removed",
+			"a sibling's own unmarked hook does not count as PRISM's"
+		);
+
+		fs.writeFileSync(linkedShim, SHIM_WITH_MARKER, { mode: 0o755 });
+		assert.equal(removeGitHooksPath(root), null);
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), ".githooks");
+
+		fs.rmSync(path.join(linked, ".githooks"), { recursive: true });
 		assert.equal(
 			removeGitHooksPath(root),
 			"prism hooks: unset core.hooksPath, since .githooks/ was removed"

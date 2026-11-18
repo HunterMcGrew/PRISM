@@ -1320,8 +1320,8 @@ const GIT_HOOK_SHIM_NAMES = ["pre-commit", "pre-push"];
  * overwrite outcomes are produced, so `FileOutcome` is unchanged.
  *
  * Every shim of PRISM's is chmodded on every pass, the no-op included. A
- * byte-identical shim can still have lost its mode, from a commit made in a
- * `core.fileMode=false` clone or a tool that drops modes, and git silently
+ * byte-identical shim can still have lost its mode, from being added fresh in
+ * a `core.fileMode=false` clone or from a tool that drops modes, and git silently
  * skips a hook that is not executable.
  */
 async function deliverGitHookShims(
@@ -1370,7 +1370,8 @@ async function deliverGitHookShims(
  * Whenever the directory is gone, whether this pass removed it or a pulled
  * commit already had, a local `core.hooksPath` of `.githooks` is unset,
  * because it would leave git running no hooks while still skipping
- * `.git/hooks`.
+ * `.git/hooks`. It stays set while another worktree of the clone still has a
+ * PRISM shim, since every worktree shares the value.
  */
 async function removeDeliveredGitHookShims(
 	consumerRepoRoot: string,
