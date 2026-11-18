@@ -202,11 +202,11 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
    - **Proof fails on main:** yes. Main produces no `codex-doc-limit` finding.
    - **Behavior change:** yes. `prism doctor` prints one more line for a Codex repo whose `AGENTS.md` is over 32 KiB.
 
-7. **Document the behavior, then run the full check.** *(Amended 2026-11-18, PR #521 review, three rounds.)* After tasks 3, 5, and 6. This is the docs work absorbed into this PR (see Decisions).
+7. **Document the behavior, then run the full check.** *(Amended 2026-11-18, PR #521 review, four rounds.)* After tasks 3, 5, and 6. This is the docs work absorbed into this PR (see Decisions).
    - **`.prism/architect/_toolkit/consumer-sync-flow.md`.** In the "Steady-state persona-skill distribution" section, insert a paragraph right after the paragraph that starts `**The hook runtime rides the same update.**`. It must say:
      - when Codex is in `hosts` and `AGENTS.md` is over the limit in force (32 KiB until the config sets one), or a `.codex/config.toml` already exists, `runUpdate` sets `project_doc_max_bytes` in the repo's `.codex/config.toml` through `syncCodexProjectDocLimit` (`scripts/ai-skills/codex-project-doc.ts`), and a small `AGENTS.md` with no config gets none;
      - the value is the file size rounded up to the next 64 KiB, plus one 64 KiB step;
-     - the edit touches only that top-level key, never lowers a larger value, leaves a value it cannot parse alone with a warning, and skips with a warning a config that has a `project_doc_max_bytes` line the top-level reader cannot see, which `prism doctor` also warns about, saying the limit Codex reads is unknown until the line moves to the top level;
+     - the edit touches only that top-level key, never lowers a larger value, leaves a value it cannot parse alone with a warning, and skips with a warning a config that has a `project_doc_max_bytes` line the top-level reader cannot see, which `prism doctor` also warns about, saying the limit Codex reads is unknown and that a top-level `project_doc_max_bytes` line is needed;
      - dropping Codex from `hosts`, or ejecting, leaves the key in place;
      - Codex reads only the first 32 KiB by default, so the generated block also puts `AGENTS_MD_LEAD_RULES` (`scripts/ai-skills/agents-md-block.ts`) first.
 
@@ -215,7 +215,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
    - **`.prism/architect/_toolkit/install-layout.md`.** In "Direct-write tool outputs", add a bullet after the `.codex/codex-config.toml` bullet: `` `.codex/config.toml` is **committed** — the repo's own Codex project config. PRISM sets only `project_doc_max_bytes` in it, through `prism update` when Codex is among the hosts, and leaves every other key alone. ``
    - **`templates/install/.prism/architect/_toolkit/install-layout.md`.** Add the same bullet after its `.codex/codex-config.toml` bullet.
    - **`docs/adopting-into-existing-repos.md`.** In "Why a pre-existing AGENTS.md matters most for Codex", add a paragraph after the one that starts `That inlining step`. It says Codex reads only the first 32 KiB of `AGENTS.md` unless `project_doc_max_bytes` is raised. PRISM puts routing and the behavioral-norm rules first, so they sit inside that window whenever the content above the generated block is small. `prism update` raises the limit in `.codex/config.toml` when Codex is among your hosts and the file is over the limit in force (32 KiB until the config sets one) or a config already exists, and `prism doctor` warns when the file is bigger than the limit in force. Update the page's `last_updated` frontmatter to the commit date.
-   - **Amended:** the first-paragraph claim that the lead rules fit "even where the limit is never raised" is replaced, in the canonical architect doc, its twin, and the guide, by "whenever the content above the block's begin marker is small", plus a sentence that `prism doctor` warns when the limit in force ends before them. Second round: the write condition is stated as above in the canonical doc, its twin, and the guide. The canonical `install-layout.md` bullet also says PRISM's own build writes the key and `prism:check` fails when it is stale. Third round: the architect doc and its twin say doctor warns about the unplaced line too.
+   - **Amended:** the first-paragraph claim that the lead rules fit "even where the limit is never raised" is replaced, in the canonical architect doc, its twin, and the guide, by "whenever the content above the block's begin marker is small", plus a sentence that `prism doctor` warns when the limit in force ends before them. Second round: the write condition is stated as above in the canonical doc, its twin, and the guide. The canonical `install-layout.md` bullet also says PRISM's own build writes the key and `prism:check` fails when it is stale. Third round: the architect doc and its twin say doctor warns about the unplaced line too. Fourth round: that sentence, in the doc, its twin, and this task, says a top-level `project_doc_max_bytes` line is needed, matching doctor's message, instead of "until the line moves to the top level".
    - **Then run** `pnpm prism:build` to refresh the platform copies of the two architect docs, and commit everything.
    - **Proof:** `pnpm prism:check` passes; this covers crossref-lint, seed drift, the literal and leftover-token guards, spec-scope-lint, and the full suite. Also run `git diff origin/main --stat -- package.json pnpm-lock.yaml`, which prints nothing.
    - **Proof fails on main:** no. These are docs.
@@ -281,6 +281,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the PR #521 review findings (one Major, two Minor) and the review's extra observations; Bounds — the doc-limit code and tests, the three docs naming the fit claim, the canonical install-layout bullet, this plan; Approach — reword the claim, extend doctor, then record the plan amendments in a separate commit · close: scope held
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the three threads from the second PR #521 review and the stale PR body; Bounds — the codex-project-doc and doctor code and tests, the write-condition sentence in three docs, this plan; Approach — one limit-in-force helper for both checks, a skip-and-warn merge guard, code and docs in one commit, plan record in another · close: scope held
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the two open PR #521 threads (`unplaced` setting kind, `hasLimitLine` rename) and the constant at the small-file skip; Bounds — the doc-limit reader, sync and doctor with tests, the consumer-sync-flow paragraph and its twin, this plan; Approach — move the any-depth scan into the reader, branch both callers on the new kind, code and docs in one commit and the plan record in another · close: scope held
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the two open PR #521 threads on the "until the line moves" wording; Bounds — the architect doc and its twin with mirrors, Task 7, this plan; Approach — swap the clause for doctor's current advice, search the tree for other "move the line" wording, doc fix and plan record in separate commits · close: scope held
 
 ---
 
@@ -293,6 +294,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the second PR #521 review in 0d932c59: doctor and the sync share a limit-in-force helper, the merge skips with a warning when a limit line hides from the top-level reader, and three docs state the write condition. Amended Tasks 2, 5, 6, and 7.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two open PR #521 threads in 812f842a: `readProjectDocMaxBytes` returns a new `unplaced` kind that doctor and the sync both branch on, `hasLimitLine` is gone, and the small-file skip uses the 32,768 constant. Amended Tasks 2, 6, and 7; see Decision on the merge skip.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two accuracy nits in 3d76c875: doctor's `unplaced` warning now says a top-level `project_doc_max_bytes` line is needed instead of "move the line", and the adoption page states that `prism update` skips a limit line that is not at the top level. `readLimitInForce` now excludes `unplaced` in its type; see Decision on the merge skip.
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two open PR #521 threads in 9623504f: the architect doc, its install twin, and the platform mirrors say a top-level `project_doc_max_bytes` line is needed, matching doctor. Amended Task 7 the same way; no other doc told the user to move the line.
 
 ---
 
@@ -417,7 +419,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **File:** `scripts/ai-skills/doctor.ts:1086`
 - **Problem:** `readProjectDocMaxBytes` read a limit line under a table or behind a `[3]` array element as `absent`, so doctor prescribed `prism update`, which the merge guard turns into a no-op with a warning; a hidden top-level `16384` on a 30,000-byte file also read as the 32,768 default and stayed silent.
 - **Suggested fix:** a fourth setting kind, `unplaced`, so the sync and doctor branch on one value.
-- **Fixed in:** 812f842a — `readProjectDocMaxBytes` returns `unplaced`; doctor warns that the limit is unknown and to move the line, skips its early return for it, and the sync skips with its existing warning. Two doctor tests and two reader tests cover it.
+- **Fixed in:** 812f842a — `readProjectDocMaxBytes` returns `unplaced`; doctor warns that the limit is unknown and to move the line, skips its early return for it, and the sync skips with its existing warning. Two doctor tests and two reader tests cover it. 3d76c875 later reworded the doctor advice to ask for a top-level line.
 
 ### `hasLimitLine` breaks the function-naming rule
 
@@ -427,6 +429,24 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **Problem:** a regular function with a `has` prefix reads as a boolean variable (`code-standards.md` § Naming).
 - **Suggested fix:** a verb name, or remove it with the `unplaced` kind.
 - **Fixed in:** 812f842a — the helper is removed; its any-depth scan is inline in `readProjectDocMaxBytes`.
+
+### consumer-sync-flow.md still says the unplaced limit is unknown "until the line moves to the top level"
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/consumer-sync-flow.md:69`
+- **Problem:** the doc, and its install twin at `templates/install/.prism/architect/_toolkit/consumer-sync-flow.md:54`, described doctor advice that 3d76c875 removed; doctor now says a top-level `project_doc_max_bytes` line is needed.
+- **Suggested fix:** state the needed top-level line in both, then run `pnpm prism:build` for the mirrors.
+- **Fixed in:** 9623504f — both docs and the three platform mirrors now say a top-level line is needed. A tree-wide search found no other advice to move the line; the only other hit was the 812f842a record above, which now notes the rewording.
+
+### Task 7 still specifies the old doctor wording
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-519/plan.md:209`
+- **Problem:** the architect-doc bullet in Task 7 said doctor reports the limit as unknown "until the line moves to the top level", contradicting Task 6 and the third-round Decision.
+- **Suggested fix:** reword it to match, and mark the task amended.
+- **Fixed in:** the plan-record commit after 9623504f.
 
 ### The small-file skip reads the limit in force where the config is known to be absent
 
