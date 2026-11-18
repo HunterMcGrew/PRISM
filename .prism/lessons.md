@@ -535,3 +535,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-18 (PRISM-516) — `validateOnDiskConfig` accepts a typo under a schema block that sets `additionalProperties: false`, so `config.schema.json` alone does not reject it. A new config block's strictness has to be pinned by a test on the schema keywords.
 
 **How to apply:** When adding a config block, do not assume the schema's `additionalProperties` or `minItems` rejects bad input at write time. Pin the keywords in a test, and make the reader skip with a notice on a malformed block.
+
+## A delivery path that refreshes an executable file must restore its mode on the no-op path too
+
+**Why:** 2026-11-18 (PRISM-516) — `deliverGitHookShims` ran `chmod 0o755` only after a write, so a byte-identical shim that had lost its mode (a commit from a `core.fileMode=false` clone) was never repaired. Git skipped the hook silently while doctor and the push gate, which checked only the marker, reported it installed.
+
+**How to apply:** In any copy step that owns an executable file, set the mode on every pass, including the no-op, and make every "is it installed" check require the executable bit off Windows. The authoring-side twin is the `git add` lesson above.

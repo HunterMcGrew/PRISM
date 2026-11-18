@@ -427,21 +427,32 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - **The config validator is not tightened for `gitHooks`.** `validateOnDiskConfig` does not enforce `additionalProperties: false` or `minItems`, so a typo under `gitHooks` passes validation and the hook skips with its notice. `git-hooks-config.test.ts` pins the schema keywords instead. Changing the validator would change a shared function, which is outside this child's limits. Follow-up: make the validator enforce those two keywords.
 - **The pre-push hook pipes the lint command's stderr instead of inheriting it.** `isCommandNotFound` has to read `cmd.exe`'s "is not recognized" text, which exists only on stderr. The hook re-emits what it read, so the user still sees it.
 - **`hook-gate.test.ts` was edited though the plan does not list it.** It pinned the Claude `SessionStart` matcher at `compact`, and T9 changed that to `startup|resume|compact`. The commit body for T9 says so.
-- **ADR-0081 is classified `excluded` in `seed-curation.json`, and the consumer stub manifest routes `.githooks/**` to `git-hooks.md`.** Neither file is in T14's list. The build would otherwise ship the ADR to consumers, and `verify-manifest-coverage` rejects a shipped doc that no stub route names. The route is `.githooks/**` only: `.claude/hooks/` stays unrouted in a consumer, because those files are the consumer's own territory per `hook-runtime.md`.
+- **ADR-0081 is classified `excluded` in `seed-curation.json`, and the consumer stub manifest routes `.githooks/**` to `git-hooks.md`.** Neither file is in T14's list. The build would otherwise ship the ADR to consumers, and `verify-manifest-coverage` rejects a shipped doc that no stub route names. The route is `.githooks/**` only. `.claude/hooks/` stays unrouted in a consumer, because `hook-runtime.md` treats those files as the consumer's own territory. `.githooks/` is routed even though a consumer's own hooks can live there, because the doc it loads is what an agent editing that directory needs. It says which files `prism update` overwrites (marked ones), which it never touches (unmarked ones), and that `core.hooksPath` decides whether any of them run. The cost is one forced read of `git-hooks.md` per session that edits a consumer hook. Routing `.claude/hooks/git-hooks/**` instead was considered and rejected: it satisfies `verify-manifest-coverage` but routes a path no consumer edits, so the doc would never load where it helps.
 - **`git-hooks.md` carries no numbered ADR links and no maintainer-only commands.** It ships to consumers verbatim as a non-curated mirror, and the install ADR gate rejects an ADR citation there.
-- **The installer does not detect hooks already in `.git/hooks`.** With `core.hooksPath` unset at every scope it sets the value, and git then stops reading `.git/hooks`. A hook manager that installs there is silently bypassed. The docs state the behavior. Follow-up: have the installer treat a non-sample file in `.git/hooks` as foreign and leave alone.
+- **Hooks in `.git/hooks` are a foreign setup the installer leaves alone.** This reverses the earlier call to only document the bypass and defer detection to a follow-up.
+  - **Root cause.** With `core.hooksPath` unset at every scope, git runs `.git/hooks`. Setting the value made git stop reading that directory, so a hook manager that installs there was bypassed with no report.
+  - **Alternatives considered.** Documenting it and checking `ls .git/hooks` by hand, the earlier call. Rejected, because the bypass is silent and the doc is not read at install time. Treating only known hook names as foreign. Rejected, because git runs any file under a hook name and a name list goes stale.
+  - **Chosen approach.** While every scope is unset, any file in `git rev-parse --git-path hooks` that is not a `.sample` makes the installer `left-alone`, with the file names in its message. Once any scope holds a value of ours, git already skips that directory, so the check does not run.
+  - **Implementation guidance.** `describeForeignHooks` in `install.mjs` is the one search. The installer, doctor, and the session-start arm all go through it, so doctor no longer keeps its own copy of the scope walk.
+- **A git hook counts as active only when git will run PRISM's own shim for it.** That means the effective `core.hooksPath` is ours, and the shim at that path carries the marker and, off Windows, the executable bit. Git silently skips a hook without the bit, and judging both push-gate slots on the `pre-commit` shim let a consumer's own `pre-push` turn off the gate's lint. `readGitHooksState` reports `active` per hook, and the push gate checks the slot's own hook.
+- **Delivery sets the shims' mode on every pass, the no-op included.** A byte-identical shim can still have lost its mode through a `core.fileMode=false` commit. This matches how `HOOK_RUNTIME_ENTRY_POINTS` are chmodded on every update.
+- **Dropping both hosts unsets a local `core.hooksPath` of `.githooks` once `.githooks/` is gone.** Left set, it points git at a missing directory, so git runs no hooks and still skips `.git/hooks`. It stays set while a consumer's own file remains in `.githooks/`, because that file may rely on it.
+- **The setup-script line PRISM offers imports `install.mjs` and calls `runInstallCli`.** A plain `node .claude/hooks/git-hooks/install.mjs` exits 1 when the file is gone, which fails every `pnpm install` through `prepare` after `hosts` drops to Cursor only. Considered: `test -f ... && node ... || true`. Rejected, because `prepare` runs under `cmd.exe` on Windows, where `test` does not exist.
+- **The review's docs findings were absorbed from Eli's lane into this child.** They are short corrections to pages this PR already edits, and handing them off would cost a separate docs round for a few sentences. Two files outside T15's list were touched for them: `README.md` and `docs/adopt-prism.md`, the two command references that did not list `prism hooks install`. The curated seed `templates/install/.prism/architect/_toolkit/hook-runtime.md` was also corrected, since its "other session starts print nothing" went false once startup runs the installer.
 - **`installGitHooks` with `dryRun` prefixes its message with `would`.** `prism update --dry-run` prints what it would do and writes nothing.
 
 ## History
 
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Plan created: git hooks, installer, delivery, session-start install, doctor check, push-gate dedupe, ADR, and docs, as 15 tasks.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks-impl]: Implemented T1 to T15: hook modules, shims, installer, delivery, `prism hooks install`, session-start arm, push-gate dedupe, doctor check, onboarding step, ADR-0081, architect docs, and consumer docs; `pnpm prism:check` passes. Deviations are recorded under Decisions.
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed all 12 self-review findings and the orchestrator's `.git/hooks` bypass, in four commits (code, quoteForShell JSDoc, architect docs, consumer docs) separate from the review record; see the Decisions on `.git/hooks`, active hooks, and the guarded setup line.
 
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: plan child 2 (git hooks) to the detail bar from the epic spec and thrive #2847. Bounds: plan file only, no code, no PR, and nothing outside the spec's Affected systems. Approach: port thrive's behavior, generalize its hard-coded tools into the gitHooks config, and reuse the hook runtime's delivery. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks-impl] open: Intent: implement T1 to T15 and open a draft PR. Bounds: only the plan's files, no new dependency, no shared type or public API change. Approach: one commit per task, tests first for each module, then docs. · close: drifted — touched `hook-gate.test.ts`, `seed-curation.json`, and the consumer stub manifest, each recorded under Decisions
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: full self-review of PR #523 against the plan and the rules. Bounds: findings into the plan only, no source fixes, no GitHub posts, no merge. Approach: run `prism:check`, read every new module and doc, and source-verify the architect docs. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix the 3 Major and 9 Minor self-review findings plus the orchestrator's `.git/hooks` bypass. Bounds: this PR's files, with any file outside them recorded under Decisions; no new dependency, no merge, PR stays draft. Approach: tests first for each code finding, then the architect and consumer docs, then the plan and lesson. · close: scope held, with `README.md`, `docs/adopt-prism.md`, and the curated hook-runtime seed recorded under Decisions
 
 ## Verification
 
@@ -457,98 +468,119 @@ Self-review 2026-11-18 [huntermcgrew/prism-516-git-hooks], full range `8e1dabc7.
 ### A shim without its executable bit is never repaired, and the hooks still read as installed
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/update.ts:1334`, `scripts/ai-skills/hooks/git-hooks/install.mjs:155`
 - **Problem:** This is major because a POSIX clone whose `.githooks/*` lost mode 755 gets no checks at all, while every report says the hooks are active. That clone can come from a Windows teammate's commit, where `core.fileMode=false` adds new files as `100644`, or from any tool that drops modes. `deliverGitHookShims` calls `chmod` only on a write, so the byte-identical no-op path never restores the bit. Git then skips the hook and prints only an `advice.ignoredHook` hint (reproduced locally). `readGitHooksState().installed` checks the marker and not the mode, so doctor reports info, and the push gate skips `commands.lint` and `commands.format` because it believes the git hook runs them.
 - **Suggested fix:** On POSIX, `chmod 0o755` on the no-op path too, the way `HOOK_RUNTIME_ENTRY_POINTS` are chmodded on every update. Make `installed` require the executable bit off Windows. Add a delivery test that starts from a byte-identical `0644` shim.
+- **Fixed in:** 780fa0dd delivery chmods every PRISM shim on the no-op pass, `isRunnableShim` requires the bit off Windows, `readGitHooksState().active` uses it, and doctor warns on a non-executable shim; delivery and installer tests start from a `0644` shim. dbeae470 documents it.
 
 ### hook-runtime.md still says the SessionStart compaction arm is registered with matcher `compact`
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/_toolkit/hook-runtime.md:58` (plus the seed and `.claude/`, `.codex/`, `.cursor/` mirrors)
 - **Problem:** This is major because the claim diverges from source, the minimum severity under `architect-doc-verification.md`. Both settings files now register `startup|resume|compact`, and the bullet says `compact` and then talks about the sources "the registration also matches", which contradicts itself. Line 9 of the same doc already gives the correct matcher.
 - **Suggested fix:** Change the bullet to say the Claude `SessionStart` registration matches `startup|resume|compact`, and that this arm prints only on `compact`.
+- **Fixed in:** dbeae470 the bullet now says the Claude registration matches `startup|resume|compact` and the arm prints only on `compact`, rebuilt into every mirror; the curated seed's "other session starts print nothing" was corrected in the same commit.
 
 ### git-hooks.md says doctor always notes unset gitHooks commands
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/_toolkit/git-hooks.md:61`
 - **Problem:** This is major because it is a diverged claim, the floor `architect-doc-verification.md` sets, though the impact is small. "It also says when both `gitHooks` commands are unset" holds for the installed and not-installed findings. `checkGitHooks` leaves the note off the foreign-`core.hooksPath` finding (`doctor.ts:821-831`) and emits nothing when no shim exists.
 - **Suggested fix:** Scope the sentence to the installed and not-installed findings, or append `unsetNote` to the foreign finding too.
+- **Fixed in:** dbeae470 the sentence is scoped to the installed and not-installed findings.
 
 ### The installed predicate and the lint dedupe key off the pre-commit shim only
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/git-hooks/install.mjs:158`, `scripts/ai-skills/hooks/git-gates.mjs:478`
 - **Problem:** This is minor because it takes an uncommon layout: a consumer's own unmarked `.githooks/pre-push` beside PRISM's marked `pre-commit`. Delivery then leaves their `pre-push` in place, and `installGitHooks` sets `core.hooksPath`, which activates a hook git was not reading before. `installed` turns true, so the push gate skips `commands.lint` and announces that "the installed pre-push git hook runs it", when PRISM's lint never runs.
 - **Suggested fix:** Judge each slot on its own shim. Skip `lint` only when `.githooks/pre-push` is marked, and `format` only when `pre-commit` is.
+- **Fixed in:** 780fa0dd `readGitHooksState` reports `active` per hook, and the push gate skips `lint` only when PRISM's `pre-push` runs and `format` only when its `pre-commit` runs; `git-gates.test.ts` covers an unmarked consumer `pre-push`.
 
 ### The consumer stub routes `.githooks/**`, against the stated rationale for leaving `.claude/hooks/` unrouted
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `templates/install/.prism/architect/manifest.stub.json:27`
 - **Problem:** This is minor because the cost is one forced doc read. The plan's own Decision calls `.githooks/` "the one directory where a consumer's own git hooks are likely to live", and `hook-runtime.md` leaves `.claude/hooks/` unrouted for exactly that reason. With this route, the write gate holds an agent's edit to the consumer's own hook until it reads PRISM's `git-hooks.md`.
 - **Suggested fix:** Either record in the Decision why routing a consumer-owned directory is acceptable here, or satisfy `verify-manifest-coverage` another way (for example a route on `.claude/hooks/git-hooks/**`).
+- **Fixed in:** the plan-record commit; the ADR-0081 Decision now says why routing `.githooks/**` is worth one forced read and why a `.claude/hooks/git-hooks/**` route was rejected. The route itself is unchanged.
 
 ### The setup-script line is said to be unable to break `prepare`, but it fails when `install.mjs` is absent
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `docs/adopting-into-existing-repos.md:114`, `.ai-skills/skills/prism-onboard/shared.md:41`
 - **Problem:** This is minor because only an uncommon host change triggers it. "It exits 0 on every outcome ... so it cannot break that step" holds only while the file exists. After `hosts` drops to Cursor-only, update removes `.claude/hooks/git-hooks/install.mjs`, so `node` exits 1 and every `pnpm install` fails in `prepare`. Onboarding item 8 offers the line without checking `hosts`.
 - **Suggested fix:** Ship a guarded form (for example `test -f .claude/hooks/git-hooks/install.mjs && node .claude/hooks/git-hooks/install.mjs || true`, or a `node -e` existence check). Have onboarding offer it only when `claude` or `codex` is a host.
+- **Fixed in:** 780fa0dd exports `runInstallCli`, and two tests run the guarded line with and without the file. dcd7caf6 ships that line in the docs and onboarding, offered only when `claude` or `codex` is a host. dbeae470 documents it.
 
 ### Dropping both hosts removes the shims but leaves `core.hooksPath` at `.githooks`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/update.ts:1361`
 - **Problem:** This is minor because Cursor-only consumers are rare and the result is quiet, not broken. `removeDeliveredGitHookShims` deletes the shims and the empty `.githooks/`, but the local `core.hooksPath` still points there. Git then runs no hooks, and it keeps bypassing `.git/hooks`. Doctor stays silent because no shim remains.
 - **Suggested fix:** Unset the local value when it is exactly `.githooks` and the directory was removed, or record it beside the eject Decision as accepted.
+- **Fixed in:** 780fa0dd removal unsets a local `.githooks` value once `.githooks/` is gone, and keeps it while a consumer's own file remains; both cases are tested.
 
 ### `prism update --dry-run` on a fresh consumer reports "no PRISM shims" instead of what it would set
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/update.ts:564`
 - **Problem:** This is minor because only the preview text is wrong, not any write. On a dry run the shims are not written, so `installGitHooks(..., { dryRun })` returns `no-shims`. That contradicts the Decision that `--dry-run` "prints what it would do".
 - **Suggested fix:** On a dry run, judge shim presence against the PRISM source's `.githooks/`, or let the dry-run path assume delivered shims.
+- **Fixed in:** 780fa0dd `installGitHooks` takes `shimsDelivered`, which `runUpdate` sets from the dry run's own `.githooks/pre-commit` outcome; the delivery test asserts the `would` message.
 
 ### doctor re-implements the foreign-scope search the installer owns
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:821`
 - **Problem:** This is minor because the two copies agree today. The scope order and the foreign test are written a second time beside `install.mjs:185`, and the module's stated purpose is that the predicate exists once, so a change to one copy can silently miss the other.
 - **Suggested fix:** Export the search from `install.mjs`, or derive the finding from `installGitHooks(root, { dryRun: true }).action`.
+- **Fixed in:** 780fa0dd `describeForeignHooks` is exported from `install.mjs`, and the installer and doctor both call it.
 
 ### Docs do not cover `prism hooks install`, and the eject section omits what stays behind
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `README.md:168`, `docs/what-prism-writes.md:89`
 - **Problem:** This is minor because the docs are incomplete, not wrong. The README command table and `docs/adopt-prism.md` (the "full command reference") never list the new `hooks install` command. `what-prism-writes.md` calls itself the complete inventory, but its eject section does not say that eject leaves the shims, the `.mjs` runtime, and `core.hooksPath`, so the hooks keep firing after eject.
 - **Suggested fix:** Eli adds the command row and one sentence on what eject leaves.
+- **Fixed in:** dcd7caf6 adds the command to the README table and `docs/adopt-prism.md`, and says in both eject sections that the runtime, the shims, and `core.hooksPath` stay.
 
 ### The pre-push lint reads uncommitted edits for the HEAD ref, which the docs do not mention
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/_toolkit/git-hooks.md:41`
 - **Problem:** This is minor because it is a documentation gap in a known design. The non-HEAD skip is justified by "would judge files the push does not carry", but a dirty working tree does the same for the HEAD ref. An uncommitted lint error blocks a clean push, and an uncommitted fix passes a push that carries the error.
 - **Suggested fix:** Add one sentence naming the dirty-tree case as a known limit.
+- **Fixed in:** dbeae470 `git-hooks.md` names the dirty-tree case as a known limit.
 
 ### `quoteForShell` calls double quotes always safe under `cmd.exe`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/lib/command.mjs:26`
 - **Problem:** This is minor because it needs a Windows filename containing `%NAME%` for a variable that is set. `cmd.exe` expands `%VAR%` inside double quotes, so "always safe" overclaims.
 - **Suggested fix:** Soften the JSDoc to name the `%` exception, or reject `%` the way `"` is rejected.
+- **Fixed in:** 8665d6a2 the JSDoc names the `%NAME%` exception.
+
+### The installer silently bypasses hooks already in `.git/hooks`
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/git-hooks/install.mjs:216`
+- **Problem:** Raised by the orchestrator. With `core.hooksPath` unset at every scope, the installer set it without looking at `.git/hooks`, so git silently stopped running any hook installed there. Doctor agreed with the installer and reported nothing.
+- **Suggested fix:** Treat any non-`.sample` file in the repo's default hooks directory as foreign: leave `core.hooksPath` alone and report it, as a foreign `core.hooksPath` is reported. Doctor and the docs should match, with a test that fails on the branch before the fix.
+- **Fixed in:** 780fa0dd `describeForeignHooks` covers the default hooks directory, used by the installer, doctor, and the session-start arm; tests cover a hook in `.git/hooks`, `.sample` files only, an already-ours value, and a linked worktree. Run against the pre-fix `install.mjs`, the same scenario returned `set` and wrote `.githooks`. dbeae470 and dcd7caf6 update the architect and consumer docs.
 
 ## Cleanup Items
 
