@@ -24,6 +24,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { measureLeadSectionEnds } from "./agents-md-block";
 import { COPIED_CONTENT_AREAS } from "./build";
 import {
 	CODEX_CONFIG_RELATIVE_PATH,
@@ -1041,6 +1042,11 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
  * `warning`, not `error` — a short read limit degrades Codex sessions without
  * breaking the install, and `healthy` keys on `error` alone. A limit that
  * already covers the file reports `info`, so the fallback stays visible.
+ *
+ * The lead rules (routing and behavioral norms) are the part of the block a
+ * consumer cannot afford to lose, and where they end depends on how much
+ * content sits above the block in that consumer's own file. A warning says so
+ * when the limit in force ends before them.
  */
 async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
@@ -1054,10 +1060,20 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 	}
 
 	const size = Buffer.byteLength(agentsMd, "utf8");
+	// A lead rule cannot end past the end of the file, so a file inside the
+	// default window has nothing to measure.
 	if (size <= CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES) {
 		return [];
 	}
 
+	const leadRulesEnd = Math.max(
+		0,
+		...measureLeadSectionEnds(agentsMd).map(({ endByte }) => endByte ?? 0)
+	);
+	const leadRulesCutNote = (limit: number) =>
+		leadRulesEnd > limit
+			? ` The routing and behavioral-norm rules at the top of the generated block end at byte ${leadRulesEnd}, so Codex misses those too.`
+			: "";
 	const computed = computeProjectDocMaxBytes(size);
 	const setting = readProjectDocMaxBytes(
 		await readFileIfExists(path.join(consumerRepoRoot, CODEX_CONFIG_RELATIVE_PATH))
@@ -1069,7 +1085,7 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 			{
 				check: "codex-doc-limit",
 				severity: "warning",
-				message: `AGENTS.md is ${size} bytes, but Codex reads only the first ${CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES} by default and ${CODEX_CONFIG_RELATIVE_PATH} sets no project_doc_max_bytes, so Codex sessions miss the rest. Run npx @huntermcgrew/prism update to set it to ${computed}. ${fallback}`,
+				message: `AGENTS.md is ${size} bytes, but Codex reads only the first ${CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES} by default and ${CODEX_CONFIG_RELATIVE_PATH} sets no project_doc_max_bytes, so Codex sessions miss the rest.${leadRulesCutNote(CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES)} Run npx @huntermcgrew/prism update to set it to ${computed}. ${fallback}`,
 			},
 		];
 	}
@@ -1089,7 +1105,7 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 			{
 				check: "codex-doc-limit",
 				severity: "warning",
-				message: `AGENTS.md is ${size} bytes, but ${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes = ${setting.value}, so Codex sessions miss the rest. Run npx @huntermcgrew/prism update to raise it to ${computed}. ${fallback}`,
+				message: `AGENTS.md is ${size} bytes, but ${CODEX_CONFIG_RELATIVE_PATH} sets project_doc_max_bytes = ${setting.value}, so Codex sessions miss the rest.${leadRulesCutNote(setting.value)} Run npx @huntermcgrew/prism update to raise it to ${computed}. ${fallback}`,
 			},
 		];
 	}

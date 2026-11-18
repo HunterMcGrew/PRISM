@@ -1,11 +1,13 @@
 /**
  * Regression suite for the Codex `project_doc_max_bytes` sync. Pins:
  *   - the size rule (round up to a 64 KiB multiple, plus one 64 KiB step)
- *   - reading only the top-level key, never one inside a table
+ *   - reading only the top-level key, never one inside a table, and not mistaking
+ *     an array element that starts with `[` for a table header
  *   - an unreadable value reported as `unparseable`, not guessed at
  *   - the line-based merge: other lines untouched, trailing comments and CRLF kept
- *   - `syncCodexProjectDocLimit`: no AGENTS.md, a fresh write, a larger existing
- *     value left alone, and dry-run writing nothing
+ *   - `syncCodexProjectDocLimit`: no AGENTS.md, a fresh write, nothing written for
+ *     an AGENTS.md inside Codex's default window, a larger existing value left
+ *     alone, and dry-run writing nothing
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -56,6 +58,20 @@ test("readProjectDocMaxBytes ignores a key that sits only under a table", () => 
 	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "absent" });
 });
 
+test("readProjectDocMaxBytes finds the key below a multi-line array whose elements start with a bracket", () => {
+	const toml = "matrix = [\n  [1, 2],\n  [3, 4]\n]\nproject_doc_max_bytes = 65536\n";
+
+	assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "set", value: 65_536 });
+});
+
+test("readProjectDocMaxBytes treats dotted, quoted, and array-of-tables headers as the end of the top level", () => {
+	for (const header of ["[a.b]", '[ "a b" . c ]', "[[servers]]", "[t]  # comment"]) {
+		const toml = `${header}\nproject_doc_max_bytes = 999999\n`;
+
+		assert.deepEqual(readProjectDocMaxBytes(toml), { kind: "absent" }, header);
+	}
+});
+
 test("readProjectDocMaxBytes reads an integer with underscores and a trailing comment", () => {
 	assert.deepEqual(readProjectDocMaxBytes("project_doc_max_bytes = 1_048_576  # mine\n"), {
 		kind: "set",
@@ -99,6 +115,14 @@ test("mergeProjectDocMaxBytes replaces an existing smaller value and keeps its t
 	);
 });
 
+test("mergeProjectDocMaxBytes replaces a value that sits below a multi-line array", () => {
+	const existing = "matrix = [\n  [1, 2],\n  [3, 4]\n]\nproject_doc_max_bytes = 65536\n";
+
+	const merged = mergeProjectDocMaxBytes(existing, { kind: "set", value: 65_536 }, 131_072);
+
+	assert.equal(merged, "matrix = [\n  [1, 2],\n  [3, 4]\n]\nproject_doc_max_bytes = 131072\n");
+});
+
 test("mergeProjectDocMaxBytes preserves CRLF line endings", () => {
 	const merged = mergeProjectDocMaxBytes('model = "x"\r\n', { kind: "absent" }, 131_072);
 
@@ -122,6 +146,42 @@ test("syncCodexProjectDocLimit writes the computed value when no config exists",
 
 		const written = await fs.readFile(path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH), "utf8");
 		assert.deepEqual(readProjectDocMaxBytes(written), { kind: "set", value: 131_072 });
+	});
+});
+
+test("syncCodexProjectDocLimit writes nothing for an AGENTS.md inside Codex's default window when no config exists", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(32_768), "utf8");
+
+		assert.equal(await syncCodexProjectDocLimit(repoRoot, false), null);
+		assert.equal(await readIfExists(path.join(repoRoot, ".codex")), null);
+	});
+});
+
+test("syncCodexProjectDocLimit still updates an existing config for an AGENTS.md inside the default window", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(30_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		await fs.writeFile(configPath, 'model = "x"\n', "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "overwritten");
+		assert.deepEqual(readProjectDocMaxBytes(await fs.readFile(configPath, "utf8")), {
+			kind: "set",
+			value: 131_072,
+		});
+	});
+});
+
+test("syncCodexProjectDocLimit writes the config for an AGENTS.md one byte past the default window", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(32_769), "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "written");
 	});
 });
 

@@ -42,7 +42,7 @@ If you're only using Claude Code, a missing `AGENTS.md` is a minor gap — Claud
 
 That inlining step (`syncAgentsMdTier1Block` in `scripts/ai-skills/build.ts`) only ever *updates* an `AGENTS.md` that's already there — if the file is absent, the function returns immediately and creates nothing. So on a repo that had its own `AGENTS.md` before adopting PRISM, that file keeps whatever it already said, and the PRISM rules block is simply never added. Functionally, this means: **a pre-existing `AGENTS.md` means PRISM's constitution content is not seeded for Codex agents on that repo**, until you add it yourself.
 
-Codex also reads only the first 32 KiB of `AGENTS.md` unless `project_doc_max_bytes` is raised, and the generated block is far larger than that. PRISM puts routing and the behavioral-norm rules first, so they fit in that window. When Codex is among your hosts, `prism update` raises the limit in your repo's `.codex/config.toml`, and `prism doctor` warns when `AGENTS.md` is bigger than the limit.
+Codex also reads only the first 32 KiB of `AGENTS.md` unless `project_doc_max_bytes` is raised, and the generated block is far larger than that. PRISM puts routing and the behavioral-norm rules first, so they sit inside that window whenever the content above the generated block is small. A long preamble in your own `AGENTS.md` pushes them past it. When Codex is among your hosts, `prism update` raises the limit in your repo's `.codex/config.toml`, and `prism doctor` warns when `AGENTS.md` is bigger than the limit, and says so when the routing and norms are among what gets cut.
 
 ### When you already have an AGENTS.md
 

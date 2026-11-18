@@ -772,6 +772,28 @@ test("runUpdate sets Codex's AGENTS.md read limit when Codex is a host and AGENT
 	);
 });
 
+test("runUpdate creates no Codex config for an AGENTS.md inside Codex's default window", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerRepoRoot, "AGENTS.md", "a".repeat(32_768));
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(await fileExists(consumerRepoRoot, ".codex/config.toml"), false);
+			assert.equal(
+				summary.outcomes.some((entry) => entry.relativePath === ".codex/config.toml"),
+				false
+			);
+		}
+	);
+});
+
 test("runUpdate creates no Codex config when Codex is not among the hosts", async () => {
 	await withTempRepoRoots(
 		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {

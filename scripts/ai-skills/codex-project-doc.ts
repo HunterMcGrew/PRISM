@@ -22,7 +22,11 @@ const LIMIT_KEY = "project_doc_max_bytes";
 const LIMIT_COMMENT =
 	"# Raises Codex's AGENTS.md read limit (32 KiB by default). prism update keeps it at or above the file's size.";
 
-const TOP_LEVEL_END = /^\s*\[/;
+const KEY_SEGMENT = `(?:[A-Za-z0-9_-]+|"[^"]*"|'[^']*')`;
+const KEY_PATH = `${KEY_SEGMENT}(?:\\s*\\.\\s*${KEY_SEGMENT})*`;
+const TABLE_HEADER = new RegExp(
+	`^\\s*(?:\\[\\s*${KEY_PATH}\\s*\\]|\\[\\[\\s*${KEY_PATH}\\s*\\]\\])\\s*(?:#.*)?$`
+);
 const LIMIT_LINE = new RegExp(`^\\s*${LIMIT_KEY}\\s*=\\s*(.*?)\\s*(#.*)?$`);
 const LIMIT_VALUE_DIGITS = new RegExp(`^(\\s*${LIMIT_KEY}\\s*=\\s*)[0-9][0-9_]*`);
 
@@ -40,10 +44,17 @@ export function computeProjectDocMaxBytes(agentsMdBytes: number): number {
 	return Math.ceil(agentsMdBytes / LIMIT_STEP_BYTES) * LIMIT_STEP_BYTES + LIMIT_STEP_BYTES;
 }
 
-/** Lines before the first table header; a key inside a table is not top-level. */
+/**
+ * Lines before the first table header; a key inside a table is not top-level.
+ *
+ * A header is `[a.b]` or `[[a.b]]` and nothing else on the line, so an element
+ * of a multi-line array such as `[1, 2],` does not end the top level. A header-
+ * shaped line inside a multi-line string still does, because telling it apart
+ * would take a TOML parser.
+ */
 function topLevelLines(toml: string): string[] {
 	const lines = toml.split("\n");
-	const firstTable = lines.findIndex((line) => TOP_LEVEL_END.test(line));
+	const firstTable = lines.findIndex((line) => TABLE_HEADER.test(line.replace(/\r$/, "")));
 
 	return firstTable === -1 ? lines : lines.slice(0, firstTable);
 }
@@ -110,7 +121,8 @@ export function mergeProjectDocMaxBytes(
 
 /**
  * Brings `<repoRoot>/.codex/config.toml` up to the limit the repo's `AGENTS.md`
- * needs. Returns `null` when there is no `AGENTS.md` to size.
+ * needs. Returns `null` when there is nothing to do: no `AGENTS.md` to size, or
+ * one inside Codex's default window and no config to update.
  *
  * A larger existing value is kept, because a team may have raised it for nested
  * `AGENTS.md` files. A value this module cannot read is left unchanged with a
@@ -126,9 +138,15 @@ export async function syncCodexProjectDocLimit(
 		return null;
 	}
 
-	const computed = computeProjectDocMaxBytes(Buffer.byteLength(agentsMd, "utf8"));
+	const agentsMdBytes = Buffer.byteLength(agentsMd, "utf8");
 	const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
 	const existing = await readFileIfExists(configPath);
+
+	if (existing === null && agentsMdBytes <= CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES) {
+		return null;
+	}
+
+	const computed = computeProjectDocMaxBytes(agentsMdBytes);
 	const setting = readProjectDocMaxBytes(existing);
 
 	if (setting.kind === "unparseable") {

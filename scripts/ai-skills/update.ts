@@ -593,7 +593,7 @@ export async function runUpdate(
 	const agentsMdRefresh: AgentsMdRefreshOutcome = { refreshed };
 
 	// In dry-run the refresh above writes nothing, so the limit is sized from the
-	// pre-refresh AGENTS.md; it can differ from a real run by at most one 64 KiB step.
+	// pre-refresh AGENTS.md and the previewed action can differ from a real run's.
 	const codexDocLimit = hosts.includes("codex")
 		? await syncCodexProjectDocLimit(consumerRepoRoot, dryRun)
 		: null;
