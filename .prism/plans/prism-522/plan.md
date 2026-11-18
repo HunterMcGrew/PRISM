@@ -1254,6 +1254,26 @@ Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-pa
 - **Problem:** the design skill sends a saved design with no folder, whatever its size, to `prism-architect` and then the plan skill, and says the implementer works from the plan's tasks. With no folder, `prism-plan/shared.md` line 5 writes a plan in chat for "a person planning something small" and says that plan can't be built from until it goes through the chain. `d881c3bf` copied the route into four tables on the basis that the plan skill accepts the no-folder case, but the plan it gives back is not one the implementer may use. This is minor because the reader learns to start an intent at the plan skill's reply, one extra hop, and no code is built from the wrong plan.
 - **Suggested fix:** send a saved design with no folder to `prism-intent`, which starts the folder the spec stage reads the design from, in the skill and the four tables. `skills-ecosystem.md` already says anything that grows into planned work starts an intent. This changes a route the orchestrator ruled on, so it needs a ruling.
 
+### PR B, fourth pass: Briar's re-review
+
+Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2], range `d227658f..a0f46b12`. Both third-pass findings are closed in the files they name. A saved design with no folder goes to `prism-intent` in `prism-design`, both Pixel rows, `AGENTS.md.tmpl`, and `docs/personas.md`, and no live file still names `prism-architect` then the plan skill. The intent's sync offer skips a DX ticket, and rule 9 says so in both copies. The new changes add 2 minor, both open. `pnpm run prism:check` passes locally at `a0f46b12` (2163 pass, 0 fail, 2 skipped), `ship-closure` holds at 267 files, `spec-scope-lint` passes with the branch name set, and CI run 44377054010 on `a0f46b12` is green on `ubuntu-latest` and `windows-latest`.
+
+### The no-folder design route claims the spec stage reads a design it never reads
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-design/shared.md:33`
+- **Problem:** the new reason says the intent "starts the folder the spec stage reads the design from". With no folder, mode 2 saves the design to `.prism/design/mocks/<slug>.md` (line 21), and the spec stage reads only the folder's `design.md` (`prism-spec/shared.md` line 15). Nothing copies the mock into the folder. It gets there only when the intent's Design line says `needed` or `supplement`, so the design stage runs again. When the person calls the saved design an approved mock that covers the work, `intent.md` line 54 offers `not needed`, and the spec and plan are written without it. This is minor because the person in the intent interview just saved the design, and the `needed` and `supplement` paths do reach it.
+- **Suggested fix:** have the handoff tell the intent to set the Design line to `supplement`, naming the mock's path, so the design stage writes it into the folder's `design.md`. Otherwise cut the claim back to what holds.
+
+### The DX sync exception stops at the intent stage
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-implement/shared.md:25`
+- **Problem:** rule 9 now says none of the syncs apply to a DX ticket. `prism-implement` line 25, `prism-self-review` line 50, and `prism-start-ticket` line 43 still sync AC to the ticket after an accepted adjustment or on generation, with no DX exception. Rule 9's sentence also sits before the Clove, Briar, and Nora syncs it means to cover, so "these syncs" reads as the intent's offer alone. This is minor because it fires only on an accepted AC adjustment to a DX ticket, and the cost is developer criteria in the tracker field QA reads.
+- **Suggested fix:** add "except on a DX ticket" to those three sync lines, and move rule 9's DX sentence after the Nora sentence.
+
 ## Acceptance Criteria
 
 The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
@@ -1315,8 +1335,8 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
-- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both fixed.
-- [x] PR B build passes: `pnpm run prism:check` and `ship-closure` pass locally on Linux at `e99722fe` (2026-11-18). CI run 44375602291 on `099ff81e` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
+- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both fixed. The fourth pass found 2 minor (the no-folder design route's claim that the spec stage reads the mock, and the DX sync exception missing from the Clove, Briar, and Nora syncs), both open.
+- [x] PR B build passes: `pnpm run prism:check` and `ship-closure` pass locally on Linux at `a0f46b12` (2026-11-18). CI run 44377054010 on `a0f46b12` is green on `ubuntu-latest` and `windows-latest`.
 - [x] PR B has no stray debug artifacts, and the new logic has tests: `role-preloads.test.ts`, the `agents-md-budget.test.ts` order case, and two `approve-guard.test.ts` token cases.
 - [ ] AC for PR B: AC-4, AC-5, AC-6, AC-8, and AC-10 are met, and AC-10 is met by CI run 44368244035. AC-1 and AC-9 need a live run and were not run.
 
