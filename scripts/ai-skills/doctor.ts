@@ -30,6 +30,7 @@ import {
 	CODEX_CONFIG_RELATIVE_PATH,
 	CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES,
 	computeProjectDocMaxBytes,
+	readLimitInForce,
 	readProjectDocMaxBytes,
 } from "./codex-project-doc";
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
@@ -1060,9 +1061,14 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 	}
 
 	const size = Buffer.byteLength(agentsMd, "utf8");
+	const setting = readProjectDocMaxBytes(
+		await readFileIfExists(path.join(consumerRepoRoot, CODEX_CONFIG_RELATIVE_PATH))
+	);
 	// A lead rule cannot end past the end of the file, so a file inside the
-	// default window has nothing to measure.
-	if (size <= CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES) {
+	// default window and inside any lower configured limit has nothing to
+	// measure. A configured limit above the default does not end the check,
+	// because the file may be past the default and rely on that limit.
+	if (size <= Math.min(CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES, readLimitInForce(setting))) {
 		return [];
 	}
 
@@ -1075,9 +1081,6 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 			? ` The routing and behavioral-norm rules at the top of the generated block end at byte ${leadRulesEnd}, so Codex misses those too.`
 			: "";
 	const computed = computeProjectDocMaxBytes(size);
-	const setting = readProjectDocMaxBytes(
-		await readFileIfExists(path.join(consumerRepoRoot, CODEX_CONFIG_RELATIVE_PATH))
-	);
 	const fallback = `If your Codex does not apply the repo's ${CODEX_CONFIG_RELATIVE_PATH}, set project_doc_max_bytes = ${computed} at the top level of ~/.codex/config.toml.`;
 
 	if (setting.kind === "absent") {

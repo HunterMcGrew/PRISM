@@ -2256,6 +2256,37 @@ test("runDoctor does not call the lead rules cut when the configured limit cover
 	});
 });
 
+test("runDoctor warns when a configured limit below 32 KiB cuts an AGENTS.md that fits the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 500);
+		assert.ok(agentsMd.length < 32_768 && leadRulesEnd > 16_384);
+
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			agentsMd,
+			"project_doc_max_bytes = 16384\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /sets project_doc_max_bytes = 16384/);
+		assert.match(findings[0].message, new RegExp(`end at byte ${leadRulesEnd}`));
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when a configured limit below 32 KiB still covers AGENTS.md", async () => {
+	await withTempRoots(async (roots) => {
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			10_000,
+			"project_doc_max_bytes = 16384\n"
+		);
+
+		assert.deepEqual(findings, []);
+	});
+});
+
 test("runDoctor reports no codex-doc-limit finding when Codex is not among the hosts", async () => {
 	await withTempRoots(async (roots) => {
 		await writeFile(

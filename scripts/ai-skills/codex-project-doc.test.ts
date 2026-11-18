@@ -7,7 +7,8 @@
  *   - the line-based merge: other lines untouched, trailing comments and CRLF kept
  *   - `syncCodexProjectDocLimit`: no AGENTS.md, a fresh write, nothing written for
  *     an AGENTS.md inside Codex's default window, a larger existing value left
- *     alone, and dry-run writing nothing
+ *     alone, a limit line the top-level reader cannot see left alone with a
+ *     warning, and dry-run writing nothing
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -19,6 +20,7 @@ import {
 	CODEX_CONFIG_RELATIVE_PATH,
 	computeProjectDocMaxBytes,
 	mergeProjectDocMaxBytes,
+	readLimitInForce,
 	readProjectDocMaxBytes,
 	syncCodexProjectDocLimit,
 } from "./codex-project-doc";
@@ -228,6 +230,45 @@ test("syncCodexProjectDocLimit leaves an unreadable value alone and warns with t
 		assert.match(result?.warning ?? "", /0x100000.*Set it to 131072 or more/);
 		assert.equal(await fs.readFile(configPath, "utf8"), existing);
 	});
+});
+
+test("syncCodexProjectDocLimit leaves a config alone when a lone-value array element hides its key from the top-level reader", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		const existing = "matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 65536\n";
+		await fs.writeFile(configPath, existing, "utf8");
+		assert.deepEqual(readProjectDocMaxBytes(existing), { kind: "absent" });
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "no-op");
+		assert.match(result?.warning ?? "", /cannot place at the top level.*131072 or more/);
+		assert.equal(await fs.readFile(configPath, "utf8"), existing);
+	});
+});
+
+test("syncCodexProjectDocLimit leaves a config alone when its only limit line sits under a table", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.writeFile(path.join(repoRoot, "AGENTS.md"), "a".repeat(40_000), "utf8");
+		await fs.mkdir(path.join(repoRoot, ".codex"));
+		const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
+		const existing = 'model = "x"\n\n[profiles.x]\nproject_doc_max_bytes = 999999\n';
+		await fs.writeFile(configPath, existing, "utf8");
+
+		const result = await syncCodexProjectDocLimit(repoRoot, false);
+
+		assert.equal(result?.outcome.action, "no-op");
+		assert.ok(result?.warning);
+		assert.equal(await fs.readFile(configPath, "utf8"), existing);
+	});
+});
+
+test("readLimitInForce is the configured integer when set and Codex's default otherwise", () => {
+	assert.equal(readLimitInForce({ kind: "set", value: 16_384 }), 16_384);
+	assert.equal(readLimitInForce({ kind: "absent" }), 32_768);
+	assert.equal(readLimitInForce({ kind: "unparseable", raw: "0x1" }), 32_768);
 });
 
 test("syncCodexProjectDocLimit with dryRun reports the outcome and writes nothing", async () => {

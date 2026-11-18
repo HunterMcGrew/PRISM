@@ -45,12 +45,22 @@ export function computeProjectDocMaxBytes(agentsMdBytes: number): number {
 }
 
 /**
+ * The number of bytes Codex reads from `AGENTS.md`: the configured
+ * `project_doc_max_bytes` when `setting` is a readable integer, otherwise
+ * Codex's default.
+ */
+export function readLimitInForce(setting: ProjectDocMaxBytesSetting): number {
+	return setting.kind === "set" ? setting.value : CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES;
+}
+
+/**
  * Lines before the first table header; a key inside a table is not top-level.
  *
  * A header is `[a.b]` or `[[a.b]]` and nothing else on the line, so an element
  * of a multi-line array such as `[1, 2],` does not end the top level. A header-
- * shaped line inside a multi-line string still does, because telling it apart
- * would take a TOML parser.
+ * shaped line still does when it is a lone-value array element (`[3]`) or sits
+ * inside a multi-line string, because telling those apart would take a TOML
+ * parser. `syncCodexProjectDocLimit` guards against the resulting misread.
  */
 function topLevelLines(toml: string): string[] {
 	const lines = toml.split("\n");
@@ -84,6 +94,15 @@ export function readProjectDocMaxBytes(toml: string | null): ProjectDocMaxBytesS
 	}
 
 	return { kind: "absent" };
+}
+
+/**
+ * True when any line of `toml`, at any depth, sets `project_doc_max_bytes`.
+ * A key the top-level reader missed shows up here, so the caller can avoid
+ * adding a second one.
+ */
+function hasLimitLine(toml: string): boolean {
+	return toml.split("\n").some((line) => LIMIT_LINE.test(line.replace(/\r$/, "")));
 }
 
 /**
@@ -122,11 +141,13 @@ export function mergeProjectDocMaxBytes(
 /**
  * Brings `<repoRoot>/.codex/config.toml` up to the limit the repo's `AGENTS.md`
  * needs. Returns `null` when there is nothing to do: no `AGENTS.md` to size, or
- * one inside Codex's default window and no config to update.
+ * one inside the read limit in force and no config to update.
  *
  * A larger existing value is kept, because a team may have raised it for nested
  * `AGENTS.md` files. A value this module cannot read is left unchanged with a
- * warning. Nothing is written when `dryRun` is set.
+ * warning, and so is a config whose `project_doc_max_bytes` line the top-level
+ * reader cannot see, since adding another key would make the TOML invalid.
+ * Nothing is written when `dryRun` is set.
  */
 export async function syncCodexProjectDocLimit(
 	repoRoot: string,
@@ -141,18 +162,25 @@ export async function syncCodexProjectDocLimit(
 	const agentsMdBytes = Buffer.byteLength(agentsMd, "utf8");
 	const configPath = path.join(repoRoot, CODEX_CONFIG_RELATIVE_PATH);
 	const existing = await readFileIfExists(configPath);
+	const setting = readProjectDocMaxBytes(existing);
 
-	if (existing === null && agentsMdBytes <= CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES) {
+	if (existing === null && agentsMdBytes <= readLimitInForce(setting)) {
 		return null;
 	}
 
 	const computed = computeProjectDocMaxBytes(agentsMdBytes);
-	const setting = readProjectDocMaxBytes(existing);
 
 	if (setting.kind === "unparseable") {
 		return {
 			outcome: { relativePath: CODEX_CONFIG_RELATIVE_PATH, action: "no-op" },
 			warning: `${CODEX_CONFIG_RELATIVE_PATH} sets ${LIMIT_KEY} to ${setting.raw}, which PRISM cannot read; left unchanged. Set it to ${computed} or more.`,
+		};
+	}
+
+	if (setting.kind === "absent" && existing !== null && hasLimitLine(existing)) {
+		return {
+			outcome: { relativePath: CODEX_CONFIG_RELATIVE_PATH, action: "no-op" },
+			warning: `${CODEX_CONFIG_RELATIVE_PATH} has a ${LIMIT_KEY} line PRISM cannot place at the top level (under a table, or after a multi-line value); left unchanged. Set it to ${computed} or more at the top level.`,
 		};
 	}
 
