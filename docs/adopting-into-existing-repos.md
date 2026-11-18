@@ -96,7 +96,7 @@ If your existing setup has its own routing conventions — a different skill tha
 Git runs hooks from one directory: the `core.hooksPath` value when one is set, and `.git/hooks` otherwise. PRISM's `pre-commit` and `pre-push` hooks live in `.githooks/`, so they run only while `core.hooksPath` points there.
 
 - **A hooks path that is not PRISM's is left alone.** If `core.hooksPath` is set at the system, global, local, or worktree scope to anything but `.githooks` (husky sets it to its own directory), `prism update` and `prism hooks install` change nothing and say so, and `prism doctor` reports it. Your hooks keep running, and PRISM's don't until you compose them below.
-- **Hooks in `.git/hooks` are not detected.** With no `core.hooksPath` set, `prism update` sets it, and git then stops reading `.git/hooks`. If a hook manager installs scripts there, check `ls .git/hooks` before your first update.
+- **Hooks in `.git/hooks` are left alone too.** With no `core.hooksPath` set, git runs whatever is in `.git/hooks`, and setting the value would stop it. So when `.git/hooks` holds any file that isn't a `.sample`, `prism update` and `prism hooks install` change nothing and name the files, and `prism doctor` reports it.
 - **PRISM never edits a `.githooks` file it did not write.** A `.githooks/pre-commit` or `.githooks/pre-push` without PRISM's marker line is yours, and `prism update` leaves it as it is with a warning.
 
 To run PRISM's hooks from your own, call them from the hook git runs. `pre-push` takes the remote name as its first argument and reads the pushed refs on stdin, so forward both:
@@ -111,11 +111,19 @@ node .claude/hooks/git-hooks/pre-push.mjs "$@" || exit 1
 
 Both read the `gitHooks` block in `.ai-skills/config.json` (see [Parameterization](./parameterization.md)) and skip with a notice when it is absent.
 
-A fresh clone needs the installer run once. Add this line to your repo's own setup step, such as a `prepare` script in `package.json`. It exits 0 on every outcome, including leaving a foreign hooks path alone, so it cannot break that step:
+A fresh clone needs the installer run once. Add this line to your repo's own setup step, such as a `prepare` script in `package.json`. It exits 0 on every outcome, including leaving another hooks setup alone and the installer file being absent (it is, if `hosts` later drops both `claude` and `codex`), so it cannot break that step:
 
 ```sh
-node .claude/hooks/git-hooks/install.mjs
+node -e "import('./.claude/hooks/git-hooks/install.mjs').then((m) => m.runInstallCli(), () => {})"
 ```
+
+In `package.json`, the inner double quotes are escaped:
+
+```json
+"prepare": "node -e \"import('./.claude/hooks/git-hooks/install.mjs').then((m) => m.runInstallCli(), () => {})\""
+```
+
+A plain `node .claude/hooks/git-hooks/install.mjs` does the same while the file is there, but exits 1 once it's gone, which would fail every install that runs `prepare`.
 
 For CI, `--all` checks every tracked file that matches `gitHooks.preCommit.globs` from disk and exits 1 if the formatter would change any of them:
 

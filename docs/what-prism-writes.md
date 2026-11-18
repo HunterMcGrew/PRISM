@@ -37,7 +37,7 @@ These are kept current by `prism update`. Most live under `.prism/`; the last tw
 | `.claude/hooks/git-hooks/*.mjs` | The pre-commit hook, the pre-push hook, and the installer, delivered with the agent hook runtime when `hosts` includes `claude` or `codex`. A copy carrying PRISM's marker line is replaced in place; one without it is backed up to `.bak` first |
 | `.githooks/pre-commit`, `.githooks/pre-push` | The two shims git runs. A `.githooks` file without PRISM's marker line is yours and is never touched, `.bak` included. Delivered under the same `hosts` condition as the row above |
 
-`prism adopt` and `prism update` also set `core.hooksPath` to `.githooks` in this clone's local git config, but only when it is unset or already points at a `.githooks` in this repo. A value pointing anywhere else, at any git config scope, is left alone and reported, so husky, lefthook, and a team-wide hooks path keep working. `prism hooks install` runs the same step by hand. The hooks run the formatter and linter you name under `gitHooks` in `.ai-skills/config.json` and skip when that block is absent. See [Parameterization](./parameterization.md).
+`prism adopt` and `prism update` also set `core.hooksPath` to `.githooks` in this clone's local git config, but only when it is unset or already points at a `.githooks` in this repo. A value pointing anywhere else, at any git config scope, is left alone and reported, so husky, lefthook, and a team-wide hooks path keep working. So are hooks already in `.git/hooks`, which git would stop running once the value is set. `prism hooks install` runs the same step by hand. If you later drop both `claude` and `codex` from `hosts`, `prism update` removes the shims and, once nothing else is left in `.githooks/`, unsets a `core.hooksPath` of `.githooks`. The hooks run the formatter and linter you name under `gitHooks` in `.ai-skills/config.json` and skip when that block is absent. See [Parameterization](./parameterization.md).
 
 ## PRISM-owned platform mirrors (synced on every update)
 
@@ -87,6 +87,8 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 ## What `prism eject` removes
 
 `prism eject` is the inverse of `adopt` — it removes PRISM-owned `.prism/` content, the `prism-*` skill and agent directories it generated, and the sync manifest itself. It never touches consumer-owned content: `plans/`, `lessons.md`, `custom/`, your flat architect docs, and your flat ADRs are explicitly preserved. If a PRISM-owned file has diverged (you edited it) at the moment you eject, that edit is backed up to `.bak` before removal, the same protection `update` gives you. A root `AGENTS.md` is only removed if it carries the `--seed-agents-md` provenance marker; otherwise it's left alone with a note that you can review it yourself. `CLAUDE.md` is never removed automatically. `eject` requires `--yes` and defaults to a dry run otherwise — see [docs/adopt-prism.md](./adopt-prism.md) for the full command reference.
+
+`eject` does not yet remove the hook runtime under `.claude/hooks/`, the `.githooks/pre-commit` and `.githooks/pre-push` shims, or the `core.hooksPath` setting, so the git hooks keep running after an eject until you delete the two shims and unset `core.hooksPath`.
 
 ## Diverged files and `.bak` backups
 
