@@ -8,6 +8,8 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+	chmodSync,
+	cpSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -873,6 +875,35 @@ test("frontmatter arm passes a Codex shell apply_patch that edits only the body"
 	);
 });
 
+// `approved_via` records how an approval happened and is not an approval line,
+// so changing it alone leaves the approval itself untouched.
+const APPROVED_VIA_CHAT = APPROVED.replace(
+	"approved_at: 2026-10-01\n",
+	"approved_at: 2026-10-01\napproved_via: chat\n"
+);
+
+test("frontmatter arm passes a Claude Edit that changes only approved_via in an approved file", () => {
+	assertPasses(
+		"claude",
+		claudeEdit(
+			makeRepo(APPROVED_VIA_CHAT),
+			"approved_via: chat",
+			"approved_via: keypress"
+		)
+	);
+});
+
+test("frontmatter arm passes a Codex apply_patch that changes only approved_via in an approved file", () => {
+	const cwd = makeRepo(APPROVED_VIA_CHAT);
+	assertPasses(
+		"codex",
+		codexPatch(
+			cwd,
+			`*** Begin Patch\n*** Update File: ${INTENT}\n@@\n-approved_via: chat\n+approved_via: keypress\n*** End Patch\n`
+		)
+	);
+});
+
 test("a Codex shell apply_patch editing approve.mjs itself is not an execution", () => {
 	const patch =
 		"*** Begin Patch\n*** Update File: scripts/ai-skills/hooks/plan/approve.mjs\n@@\n-const a = 1;\n+const a = 2;\n*** End Patch";
@@ -1223,6 +1254,34 @@ test("execution arm passes the chat command on a token written an hour ago", () 
 	assertPasses("claude", sessionShell.claude(CHAT_COMMAND, root));
 });
 
+test("execution arm passes a PowerShell chat command spelled with a drive letter and backslashes", (t) => {
+	if (process.platform !== "win32") {
+		t.skip("a drive-letter path resolves only on Windows");
+
+		return;
+	}
+
+	const root = makeGitRepo();
+	placeToken(root);
+	assertPasses("claude", {
+		tool_name: "PowerShell",
+		tool_input: {
+			command: `node ${APPROVE_PATH} ${INTENT}`,
+		},
+		session_id: "s1",
+		cwd: root,
+	});
+});
+
+test("execution arm denies a drive-letter chat command that names another file, even under a fresh token", () => {
+	const root = makeGitRepo();
+	placeToken(root);
+	assertExecDenied(
+		"claude",
+		sessionShell.claude(`node C:/elsewhere/plan/approve.mjs ${INTENT}`, root)
+	);
+});
+
 test("execution arm passes a relative chat command that resolves to the real approve.mjs", (t) => {
 	const root = makeGitRepo();
 	mkdirSync(path.join(root, "scripts/ai-skills/hooks/plan"), { recursive: true });
@@ -1434,4 +1493,33 @@ test("token arm passes a file edit whose content, not target, names a prompt eve
 		},
 		cwd: root,
 	});
+});
+
+// The source tree keeps the guard non-executable, and `prism update` sets the
+// executable bit on the delivered copy, so the test runs a chmodded copy.
+test("the guard runs as an executable through its shebang", (t) => {
+	if (process.platform === "win32") {
+		t.skip("Windows has no executable bit to run through a shebang");
+
+		return;
+	}
+
+	const copy = mkdtempSync(path.join(os.tmpdir(), "approve-guard-shebang-"));
+	TEMP_ROOTS.push(copy);
+	cpSync(path.dirname(HOOK), copy, { recursive: true });
+	const executable = path.join(copy, path.basename(HOOK));
+	chmodSync(executable, 0o755);
+
+	const child = spawnSync(executable, ["--tool=claude", "--event=PreToolUse"], {
+		input: JSON.stringify(
+			shell.claude(
+				"node scripts/ai-skills/hooks/plan/approve.mjs x",
+				makeRepo()
+			)
+		),
+		env: cleanEnv(),
+		encoding: "utf8",
+	});
+	assert.equal(child.status, 0, child.stderr);
+	assert.match(denyText(child.stdout) ?? "", /Approval is a human step/);
 });
