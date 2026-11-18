@@ -860,6 +860,11 @@ Tests:
   - T23 added ADR-0082 to the `excluded` list in `seed-curation.json`, because numbered ADRs never ship to consumers and the build otherwise mirrors it into the seed.
   - T23 amended ADR-0003 with a `> Amended by` note under its frontmatter instead of its `Status:` line. Twelve ADRs already use the note, none amend the status line, and the ADR guide's statuses are `accepted` and `superseded`.
   - T24 also rewrote Nora's, Parker's, and Pixel's hand-off lines and Pixel's mode 2 wording. They named Winston for planning, Mira for user stories, or only the mock-spec path, all false after T11, T18, and T19.
+- **A DX ticket enters the chain, its intent holds machine-checked criteria, and "None for this ticket." covers only the tracker's AC field.**
+  - **Root cause:** DX tickets were routed to the intent stage, which `approve.mjs` refuses with no criteria on a non-epic intent: it refuses a criteria section that opens with "none". The DX docs said a DX ticket's criteria are always "None", so a ticket following both would stall at approval.
+  - **Alternatives considered:** letting DX skip the intent stage. Rejected, because the spec and plan stages need an approved intent and refuse a folder without one, so DX would lose the whole chain. Keeping "None" in the intent. Rejected, because the approval check refuses it.
+  - **Chosen approach:** the intent holds criteria the developer proves with a machine check, such as a passing build or test or a lint rule that fires. The tracker's AC field stays "None for this ticket.", because QA has nothing to click through, and DX criteria are never synced. ADR-0009 already limits the sync to non-DX tickets.
+  - **Implementation guidance:** `ticket-types.md`, `prism-start-ticket`, `prism-intent`, and rule 9 of `skills-ecosystem.md` carry the rule. A new DX intent writes real criteria and never opens its criteria section with "none".
 - **The epic resume row that waits on `## Retro` stays as written, and child 6 owns the fix.**
   - **Root cause:** nothing writes `## Retro` in `spec.md`, and `prism-retro` is read-only on plans, so an epic resume that waits on the section loops at retro.
   - **Alternatives considered:** a stopgap where the session appends the section. Rejected, because it would pre-empt child 6's design of who writes it.
@@ -905,6 +910,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Applied the rulings on the three open items: `prism-self-review` and `branch-plan.md` now agree on the folder-plan record subject (`9cf06720`), the Nora rows, Improvement and UX-concern flows, ticket-types lines, and personas line now route through the intent and spec stages (`d45f44d8`), and the epic resume row is deferred to child 6 with a Decision.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Finished finding 1's class (`ad481ce3`): `prism-start-ticket` and the DX workflow now send improvement and DX tickets to `prism-intent`, the Pixel decision tree goes on to the spec stage, and the two "intent is optional" lines were reworded. `## PR Readiness` now matches the findings' state.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Briar's second pass (`d881c3bf`): a DX intent holds machine-checked criteria and only the tracker field says "None", which clears the `approve.mjs` check, and the no-folder design route names `prism-architect` first in the tables. The Parker guide now says Mira writes the intent, and a lesson records the gate check.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Briar's third pass (`e99722fe`): a saved design with no folder now goes to `prism-intent` in the skill and every table, and the DX tracker-sync offer is skipped in `prism-intent` and rule 9. A new Decision records the DX criteria rule.
 
 ## Sessions
 
@@ -1228,12 +1234,13 @@ Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-pa
 
 ### PR B, third pass: Briar's re-review
 
-Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2], range `a3b66f46..099ff81e`. Both second-pass findings are closed in the files they name. `approve.mjs` line 361 refuses a non-epic intent only when its criteria open with "none", so a DX intent with machine-checked criteria clears it, and all four route tables now name `prism-architect` before the plan skill. The DX wording matches across `ticket-types.md`, `prism-start-ticket`, their install twins, and the generated copies. The new changes add 2 minor, both open. `pnpm run prism:check` passes locally at `099ff81e` (2163 pass, 0 fail, 2 skipped), `ship-closure` holds at 267 files, `spec-scope-lint` passes with the branch name set, and CI run 44375602291 on `099ff81e` is green on `ubuntu-latest` and `windows-latest`.
+Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2], range `a3b66f46..099ff81e`. Both second-pass findings are closed in the files they name. `approve.mjs` line 361 refuses a non-epic intent only when its criteria open with "none", so a DX intent with machine-checked criteria clears it, and all four route tables now name `prism-architect` before the plan skill. The DX wording matches across `ticket-types.md`, `prism-start-ticket`, their install twins, and the generated copies. The new changes add 2 minor, both fixed in `e99722fe`. `pnpm run prism:check` passes locally at `099ff81e` (2163 pass, 0 fail, 2 skipped), `ship-closure` holds at 267 files, `spec-scope-lint` passes with the branch name set, and CI run 44375602291 on `099ff81e` is green on `ubuntu-latest` and `windows-latest`.
 
 ### `prism-intent` offers to sync a DX intent's criteria to the tracker
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `e99722fe`: the intent's After approval offer skips a DX ticket, and rule 9 of `skills-ecosystem.md` and its install twin say a DX ticket's tracker field stays "None for this ticket." and none of its syncs apply. `prism-start-ticket` line 15 now points at the DX rule in `ticket-types.md` and no longer restates the approval-script reason.
 - **File:** `.ai-skills/skills/prism-intent/shared.md:41`
 - **Problem:** `d881c3bf` says at `ticket-types.md` line 48 that a DX intent's criteria are not synced to the tracker, and ADR-0009 line 16 already limits the sync to non-DX tickets. The intent skill's After approval offers the sync on every intent, with no DX exception. This is minor because the offer waits on a yes, so the cost is a person writing developer criteria into the tracker field that should say "None for this ticket.", where QA reads it.
 - **Suggested fix:** make the offer skip DX: "Offer to sync the acceptance criteria to the ticket, except on a DX ticket, whose tracker field stays None for this ticket." Rule 9 of `skills-ecosystem.md` ("every ticket must have AC in the ticket description") predates this PR and has the same gap, so it can take the same carve-out.
@@ -1241,7 +1248,8 @@ Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-pa
 ### A saved design with no plan folder ends at a chat plan that can't be built from
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `e99722fe`: a saved design with no folder goes to `prism-intent` in `prism-design`, the Pixel rows of `closing-messages.md`, `skills-ecosystem.md` and its install twin, `AGENTS.md.tmpl`, and the Hands off line of `docs/personas.md`. The skill drops the clause that the implementer works from the plan's tasks. This replaces the second pass's route through `prism-architect` and the plan skill.
 - **File:** `.ai-skills/skills/prism-design/shared.md:33`
 - **Problem:** the design skill sends a saved design with no folder, whatever its size, to `prism-architect` and then the plan skill, and says the implementer works from the plan's tasks. With no folder, `prism-plan/shared.md` line 5 writes a plan in chat for "a person planning something small" and says that plan can't be built from until it goes through the chain. `d881c3bf` copied the route into four tables on the basis that the plan skill accepts the no-folder case, but the plan it gives back is not one the implementer may use. This is minor because the reader learns to start an intent at the plan skill's reply, one extra hop, and no code is built from the wrong plan.
 - **Suggested fix:** send a saved design with no folder to `prism-intent`, which starts the folder the spec stage reads the design from, in the skill and the four tables. `skills-ecosystem.md` already says anything that grows into planned work starts an intent. This changes a route the orchestrator ruled on, so it needs a ruling.
@@ -1307,8 +1315,8 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
-- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both open.
-- [x] PR B build passes: `pnpm run prism:check` and `ship-closure` pass locally on Linux at `099ff81e` (2026-11-18). CI run 44375602291 on `099ff81e` is green on `ubuntu-latest` and `windows-latest`.
+- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both fixed.
+- [x] PR B build passes: `pnpm run prism:check` and `ship-closure` pass locally on Linux at `e99722fe` (2026-11-18). CI run 44375602291 on `099ff81e` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
 - [x] PR B has no stray debug artifacts, and the new logic has tests: `role-preloads.test.ts`, the `agents-md-budget.test.ts` order case, and two `approve-guard.test.ts` token cases.
 - [ ] AC for PR B: AC-4, AC-5, AC-6, AC-8, and AC-10 are met, and AC-10 is met by CI run 44368244035. AC-1 and AC-9 need a live run and were not run.
 
