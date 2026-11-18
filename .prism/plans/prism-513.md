@@ -59,6 +59,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Closed on the final PR branch; decisions promoted to `hook-runtime.md`.
 - 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Ported thrive#2935's plan-miss wording and recorded its observed manual-compact behavior; see Decision: A filename miss sends the session to the full Plan Lookup.
+- 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Fixed self-review pass 1: the twin labels the manual-compact behavior as observed, and the multi-hook and stdout claims are scoped to what was verified.
 
 ---
 
@@ -93,7 +94,7 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 ### Curated twin states the manual-compact behavior as established fact
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `templates/install/.prism/architect/_toolkit/hook-runtime.md:51`
 - **Problem:** The canonical doc, the module header, and the PR scope all label "text typed after a manual `/compact` reaches the summarizer" as observed once and not in the Claude Code docs. The twin drops that label and says it still reaches the summarizer, so consumers get an unverified observation as a documented contract. A diverged claim in an architect doc is Major under `architect-doc-verification.md`.
 - **Suggested fix:** Add the qualifier to the twin, e.g. "Text you type after a manual `/compact` appears to reach the summarizer alongside the template. That was observed in one live manual compact and is not stated in the Claude Code docs." It passes Test 2 and Test 3, since no unreachable reference is involved. Also give "A miss is a miss by filename only" an antecedent, since the twin never mentions the `## Ticket` scan it contrasts with.
@@ -101,7 +102,7 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 ### Unverified "any other `PreCompact` hook" claim and an overstated "prints nothing"
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/_toolkit/hook-runtime.md:64`
 - **Problem:** "Any other `PreCompact` hook that prints to stdout also becomes summary instruction" (also in the `compact-handoff.mjs` header at lines 25-26 and in the twin) is stated flat. The documented fact is per-hook stdout; combined behavior across hooks was not shown. "Prints nothing" is also loose: `runPostCompactArm` writes to stderr on a missing session id and on a failed reset (`hook.mjs:1128`, `hook.mjs:1159`). "Is the only way a second writer appears" ignores user-level and plugin `PreCompact` hooks.
 - **Suggested fix:** Say "prints nothing to stdout", mark the multi-hook claim as inferred from the per-hook behavior, and say "another `PreCompact` hook, from the consumer or a plugin" instead of "the only way".

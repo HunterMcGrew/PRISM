@@ -22,10 +22,11 @@
  *
  * Text the user types after `/compact` reaches the summarizer alongside this
  * template, so the template does not repeat it. That was observed in one live
- * manual compact, not stated by the Claude Code docs. Any other `PreCompact`
- * hook that prints to stdout also becomes summary instruction. PRISM's state
- * reset runs on `PostCompact` and prints nothing, so this module is the
- * runtime's only `PreCompact` writer.
+ * manual compact, not stated by the Claude Code docs. The docs describe each
+ * `PreCompact` hook's stdout as summary instructions; how several hooks'
+ * output combines is unverified. PRISM's state reset runs on `PostCompact`
+ * and prints nothing to stdout, so this module is the runtime's only
+ * `PreCompact` stdout writer.
  *
  * A plan miss here is a miss by filename only. The `## Ticket` scan is
  * skipped, so the post-compact note sends the session to the full lookup

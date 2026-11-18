@@ -61,7 +61,7 @@ The plan path comes from the branch's ticket ID, matched against `ticketPrefix` 
 
 A hook cannot run a model turn, so it cannot write the plan before the summary is made. That is why the summary carries unrecorded decisions in full and the note has the session write them down first. Every path prints nothing and exits 0 on failure, because a `PreCompact` exit of 2 blocks the compaction, and a blocked compaction recovering from a context-limit error fails the request.
 
-Text typed after a manual `/compact` reaches the summarizer alongside the template, so the template does not repeat it. That was observed in one live manual compact and is not stated in the Claude Code docs. Any other `PreCompact` hook that prints to stdout also becomes summary instruction. The runtime's state reset runs on `PostCompact` and prints nothing, so a consumer who adds a printing `PreCompact` hook of their own is the only way a second writer appears.
+Text typed after a manual `/compact` reaches the summarizer alongside the template, so the template does not repeat it. That was observed in one live manual compact and is not stated in the Claude Code docs. The docs describe each `PreCompact` hook's stdout as summary instructions, so another `PreCompact` hook that prints to stdout, from the consumer or a plugin, presumably adds to them. How Claude Code combines several hooks' output is unverified. The runtime's state reset runs on `PostCompact` and prints nothing to stdout, so this module is the runtime's only `PreCompact` stdout writer.
 
 Codex gets neither arm. Claude Code documents `PreCompact` stdout as summary instructions, and PRISM has not verified an equivalent in Codex, so a Codex registration would print text with no known effect.
 
