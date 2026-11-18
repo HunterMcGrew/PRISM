@@ -1981,6 +1981,12 @@ test("runDoctor stays silent when a repo has neither a hook runtime nor a regist
 
 const MARKED_SHIM = "#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n";
 
+/** Writes PRISM's marked shim with the mode git needs to run it, unless `mode` says otherwise. */
+async function writeMarkedShim(root: string, name: string, mode = 0o755): Promise<void> {
+	await writeFile(root, `.githooks/${name}`, MARKED_SHIM);
+	await fs.chmod(path.join(root, ".githooks", name), mode);
+}
+
 /**
  * Runs `body` with git config isolated from the developer's own — the doctor
  * check reads `core.hooksPath` through `process.env`, so a machine-wide hooks
@@ -2056,7 +2062,7 @@ test("runDoctor reports no git hooks finding when PRISM's shim is not in .githoo
 test("runDoctor reports an info when the git hooks are installed", async () => {
 	await withTempRoots(async (roots) => {
 		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
-			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
 			setHooksPath(roots.consumerRepoRoot, ".githooks");
 
 			const { findings } = await doctorGitHooks(roots);
@@ -2071,8 +2077,26 @@ test("runDoctor reports an info when the git hooks are installed", async () => {
 test("runDoctor reports an info naming the value when a foreign hooks path is in force", async () => {
 	await withTempRoots(async (roots) => {
 		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
-			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
 			setHooksPath(roots.consumerRepoRoot, ".husky");
+
+			const { findings } = await doctorGitHooks(roots);
+
+			assert.equal(findings.length, 1);
+			assert.equal(findings[0].severity, "info");
+			assert.equal(
+				findings[0].message,
+				"PRISM's git hooks are not active: the local core.hooksPath is '.husky'. Compose them with your hooks by hand."
+			);
+		});
+	});
+});
+
+test("runDoctor reports an info, not a warning, when hooks in .git/hooks would be displaced", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+			await writeFile(roots.consumerRepoRoot, ".git/hooks/pre-commit", "#!/bin/sh\nexit 0\n");
 
 			const { findings } = await doctorGitHooks(roots);
 
@@ -2080,16 +2104,42 @@ test("runDoctor reports an info naming the value when a foreign hooks path is in
 			assert.equal(findings[0].severity, "info");
 			assert.match(
 				findings[0].message,
-				/^core\.hooksPath is '\.husky' \(local\), so PRISM's git hooks are not active\. Compose them with your hooks by hand\./
+				/^PRISM's git hooks are not active: \.git\/hooks holds pre-commit, which git stops running once core\.hooksPath is set\./
 			);
 		});
 	});
 });
 
+test(
+	"runDoctor warns when an installed shim has lost its executable bit",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	async () => {
+		await withTempRoots(async (roots) => {
+			await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+				await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+				await writeMarkedShim(roots.consumerRepoRoot, "pre-push", 0o644);
+				setHooksPath(roots.consumerRepoRoot, ".githooks");
+
+				const { findings } = await doctorGitHooks(roots);
+
+				assert.equal(findings.length, 1);
+				assert.equal(findings[0].severity, "warning");
+				assert.match(
+					findings[0].message,
+					/git skips a hook file without the executable bit: \.githooks\/pre-push\. Run npx @huntermcgrew\/prism update/
+				);
+
+				await fs.chmod(path.join(roots.consumerRepoRoot, ".githooks", "pre-push"), 0o755);
+				assert.match((await doctorGitHooks(roots)).findings[0].message, /^Git hooks are installed/);
+			});
+		});
+	}
+);
+
 test("runDoctor warns that delivered git hooks are not installed, then stops once the installer runs", async () => {
 	await withTempRoots(async (roots) => {
 		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
-			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
 
 			const before = await doctorGitHooks(roots);
 
@@ -2115,7 +2165,7 @@ test("runDoctor warns that delivered git hooks are not installed, then stops onc
 test("runDoctor says the gitHooks commands are unset only when both are", async () => {
 	await withTempRoots(async (roots) => {
 		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
-			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", MARKED_SHIM);
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
 
 			const bothUnset = await doctorGitHooks(roots);
 			assert.match(

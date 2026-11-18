@@ -220,6 +220,28 @@ test("a second update is a no-op for every git hook file", async () => {
 	});
 });
 
+test(
+	"a byte-identical shim that lost its executable bit gets it back on the no-op pass",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	async () => {
+		await withRoots(async (roots) => {
+			await update(roots);
+			for (const shim of SHIMS) {
+				await fs.chmod(path.join(roots.consumerRepoRoot, shim), 0o644);
+			}
+
+			const summary = await update(roots);
+
+			for (const shim of SHIMS) {
+				const outcome = summary.outcomes.find((entry) => entry.relativePath === shim);
+				assert.equal(outcome?.action, "no-op", `${shim} content was already current`);
+				const { mode } = await fs.stat(path.join(roots.consumerRepoRoot, shim));
+				assert.equal(mode & 0o111, 0o111, `${shim} is executable again`);
+			}
+		});
+	}
+);
+
 test("an unmarked consumer shim survives byte for byte while the marked one beside it is refreshed", async () => {
 	await withRoots(async (roots) => {
 		const ownHook = "#!/bin/sh\necho the consumer's own pre-commit\n";
@@ -264,10 +286,11 @@ test("a consumer whose core.hooksPath is .husky keeps it and is told", async () 
 	});
 });
 
-test("hosts: [cursor] delivers no shims and removes previously delivered marked ones", async () => {
+test("hosts: [cursor] delivers no shims, removes previously delivered marked ones, and unsets core.hooksPath", async () => {
 	await withRoots(async (roots) => {
 		await update(roots);
 		assert.ok(await existsAt(roots.consumerRepoRoot, SHIMS[0]));
+		assert.equal(hooksPath(roots), ".githooks");
 
 		await writeAt(
 			roots.consumerRepoRoot,
@@ -280,6 +303,24 @@ test("hosts: [cursor] delivers no shims and removes previously delivered marked 
 			assert.equal(await existsAt(roots.consumerRepoRoot, shim), false, `${shim} removed`);
 		}
 		assert.equal(await existsAt(roots.consumerRepoRoot, ".githooks"), false);
+		assert.equal(hooksPath(roots), "", "a hooks path pointing at the removed directory is unset");
+	});
+});
+
+test("hosts: [cursor] keeps core.hooksPath while a consumer's own file is left in .githooks", async () => {
+	await withRoots(async (roots) => {
+		await update(roots);
+		await writeAt(roots.consumerRepoRoot, ".githooks/post-merge", "#!/bin/sh\necho mine\n");
+		await writeAt(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["cursor"] })
+		);
+
+		await update(roots);
+
+		assert.equal(await existsAt(roots.consumerRepoRoot, ".githooks/post-merge"), true);
+		assert.equal(hooksPath(roots), ".githooks");
 	});
 });
 
@@ -301,13 +342,22 @@ test("hosts: [cursor] leaves a consumer's own .githooks file in place", async ()
 	});
 });
 
-test("--dry-run writes nothing and leaves core.hooksPath unset", async () => {
+test("--dry-run writes nothing, leaves core.hooksPath unset, and says what it would set", async () => {
 	await withRoots(async (roots) => {
+		const logged: string[] = [];
+		console.log = (message?: unknown) => {
+			logged.push(String(message));
+		};
+
 		await update(roots, true);
 
 		for (const written of [...SHIMS, ...GIT_HOOK_RUNTIME_FILES]) {
 			assert.equal(await existsAt(roots.consumerRepoRoot, written), false, `${written} not written`);
 		}
 		assert.equal(hooksPath(roots), "");
+		assert.ok(
+			logged.includes("would prism hooks: set core.hooksPath to .githooks"),
+			`previewed the install (got ${JSON.stringify(logged.filter((line) => line.includes("prism hooks")))})`
+		);
 	});
 });

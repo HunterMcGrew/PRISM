@@ -36,7 +36,12 @@ import {
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { resolveHosts, type HostName } from "./lib/hosts";
-import { classifyHooksPath, readGitHooksState } from "./hooks/git-hooks/install.mjs";
+import {
+	classifyHooksPath,
+	describeForeignHooks,
+	isRunnableShim,
+	readGitHooksState,
+} from "./hooks/git-hooks/install.mjs";
 import { listManifestRoutes } from "./hooks/lib/match.mjs";
 import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
@@ -784,10 +789,12 @@ function describeGitGates(
  * Silent unless the repo carries PRISM's own `.githooks/pre-commit` (marked
  * with `HOOK_RUNTIME_MARKER`): a repo not yet adopted, a Cursor-only consumer,
  * and a consumer whose own `.githooks` holds only their hooks have nothing of
- * PRISM's to be installed. A foreign `core.hooksPath` is `info`, because the
- * repo is set up correctly in its own way, and "delivered but not installed"
- * is a `warning`, which leaves `healthy` true. Reuses the `hook-registration`
- * check id so the exported `DoctorFinding` union does not widen.
+ * PRISM's to be installed. Another hooks setup the installer would leave alone
+ * (`describeForeignHooks`, the same search the installer runs) is `info`,
+ * because the repo is set up correctly in its own way. "Delivered but not
+ * installed" and a marked shim without its executable bit are `warning`s,
+ * which leave `healthy` true. Reuses the `hook-registration` check id so the
+ * exported `DoctorFinding` union does not widen.
  */
 async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const shim = await readFileIfExists(path.join(consumerRepoRoot, ".githooks", "pre-commit"));
@@ -808,25 +815,44 @@ async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]>
 		: "";
 
 	const state = readGitHooksState(consumerRepoRoot);
-	if (state.installed) {
+	if (classifyHooksPath(state.effective, consumerRepoRoot) !== "ours") {
+		const foreignHooks = describeForeignHooks(consumerRepoRoot, state.scopes);
+		if (foreignHooks !== null) {
+			return [
+				{
+					check: "hook-registration",
+					severity: "info",
+					message: `PRISM's git hooks are not active: ${foreignHooks}. Compose them with your hooks by hand.`,
+				},
+			];
+		}
+
 		return [
 			{
 				check: "hook-registration",
-				severity: "info",
-				message: `Git hooks are installed (core.hooksPath → .githooks).${unsetNote}`,
+				severity: "warning",
+				message: `PRISM's git hooks are delivered but not installed in this clone. Run npx @huntermcgrew/prism hooks install, or node .claude/hooks/git-hooks/install.mjs.${unsetNote}`,
 			},
 		];
 	}
 
-	const foreignScope = (["worktree", "local", "global", "system"] as const).find(
-		(scope) => classifyHooksPath(state.scopes[scope], consumerRepoRoot) === "foreign"
-	);
-	if (foreignScope !== undefined) {
+	const notExecutable: string[] = [];
+	for (const name of ["pre-commit", "pre-push"]) {
+		const shimPath = path.join(consumerRepoRoot, ".githooks", name);
+		const contents = await readFileIfExists(shimPath);
+		if (contents !== null && contents.includes(HOOK_RUNTIME_MARKER) && !isRunnableShim(shimPath)) {
+			notExecutable.push(`.githooks/${name}`);
+		}
+	}
+
+	if (notExecutable.length > 0) {
+		const files = notExecutable.join(" ");
+
 		return [
 			{
 				check: "hook-registration",
-				severity: "info",
-				message: `core.hooksPath is '${state.scopes[foreignScope]}' (${foreignScope}), so PRISM's git hooks are not active. Compose them with your hooks by hand.`,
+				severity: "warning",
+				message: `Git hooks are installed, but git skips a hook file without the executable bit: ${files}. Run npx @huntermcgrew/prism update to restore it, or chmod +x ${files}.`,
 			},
 		];
 	}
@@ -834,8 +860,8 @@ async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]>
 	return [
 		{
 			check: "hook-registration",
-			severity: "warning",
-			message: `PRISM's git hooks are delivered but not installed in this clone. Run npx @huntermcgrew/prism hooks install, or node .claude/hooks/git-hooks/install.mjs.${unsetNote}`,
+			severity: "info",
+			message: `Git hooks are installed (core.hooksPath → .githooks).${unsetNote}`,
 		},
 	];
 }

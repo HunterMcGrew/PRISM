@@ -4,7 +4,7 @@
  * recognize, at every git config scope, and reports what it left alone.
  */
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -14,7 +14,9 @@ import { fileURLToPath } from "node:url";
 import {
 	classifyHooksPath,
 	installGitHooks,
+	isRunnableShim,
 	readGitHooksState,
+	removeGitHooksPath,
 	runSessionStartInstall,
 } from "./hooks/git-hooks/install.mjs";
 
@@ -63,9 +65,11 @@ function withFixture(
 			}
 		};
 		git("init", "-q");
+		// `git init` copies `.git/hooks` from a template dir that a machine may not have.
+		fs.mkdirSync(path.join(root, ".git", "hooks"), { recursive: true });
 		if (shim !== null) {
 			fs.mkdirSync(path.join(root, ".githooks"));
-			fs.writeFileSync(path.join(root, ".githooks", "pre-commit"), shim);
+			fs.writeFileSync(path.join(root, ".githooks", "pre-commit"), shim, { mode: 0o755 });
 		}
 
 		body({ root, globalConfig, git });
@@ -197,24 +201,159 @@ test("dryRun writes nothing and prefixes the message with 'would'", () => {
 	});
 });
 
-test("readGitHooksState reports installed only when the shim carries the marker", () => {
+test("readGitHooksState reports a hook active only when its shim carries the marker", () => {
 	withFixture({ shim: "#!/bin/sh\necho mine\n" }, ({ root, git }) => {
 		git("config", "--local", "core.hooksPath", ".githooks");
-		assert.equal(readGitHooksState(root).installed, false);
+		assert.equal(readGitHooksState(root).active["pre-commit"], false);
 
 		fs.writeFileSync(path.join(root, ".githooks", "pre-commit"), SHIM_WITH_MARKER);
 		const state = readGitHooksState(root);
-		assert.equal(state.installed, true);
+		assert.equal(state.active["pre-commit"], true);
 		assert.equal(state.effective, ".githooks");
 		assert.equal(state.scopes.local, ".githooks");
 	});
 });
 
-test("readGitHooksState reports not installed for a foreign value even with a marked shim", () => {
+test("readGitHooksState judges each hook on its own shim", () => {
+	withFixture({}, ({ root, git }) => {
+		git("config", "--local", "core.hooksPath", ".githooks");
+		fs.writeFileSync(path.join(root, ".githooks", "pre-push"), "#!/bin/sh\necho mine\n", {
+			mode: 0o755,
+		});
+
+		assert.deepEqual(readGitHooksState(root).active, { "pre-commit": true, "pre-push": false });
+	});
+});
+
+test("readGitHooksState reports no hook active for a foreign value even with a marked shim", () => {
 	withFixture({}, ({ root, git }) => {
 		git("config", "--local", "core.hooksPath", ".husky");
 
-		assert.equal(readGitHooksState(root).installed, false);
+		assert.deepEqual(readGitHooksState(root).active, { "pre-commit": false, "pre-push": false });
+	});
+});
+
+test(
+	"a marked shim without the executable bit is not runnable, and so not active",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	() => {
+		withFixture({}, ({ root, git }) => {
+			git("config", "--local", "core.hooksPath", ".githooks");
+			const shimPath = path.join(root, ".githooks", "pre-commit");
+			fs.chmodSync(shimPath, 0o644);
+
+			assert.equal(isRunnableShim(shimPath), false);
+			assert.equal(readGitHooksState(root).active["pre-commit"], false);
+
+			fs.chmodSync(shimPath, 0o755);
+			assert.equal(isRunnableShim(shimPath), true);
+			assert.equal(readGitHooksState(root).active["pre-commit"], true);
+		});
+	}
+);
+
+test("isRunnableShim ignores the mode on Windows and still requires the marker", () => {
+	withFixture({}, ({ root }) => {
+		const shimPath = path.join(root, ".githooks", "pre-commit");
+		fs.chmodSync(shimPath, 0o644);
+
+		assert.equal(isRunnableShim(shimPath, "win32"), true);
+
+		fs.writeFileSync(shimPath, "#!/bin/sh\necho mine\n");
+		assert.equal(isRunnableShim(shimPath, "win32"), false);
+	});
+});
+
+test("a hook in .git/hooks with every scope unset is left alone and named", () => {
+	withFixture({}, ({ root, git }) => {
+		fs.writeFileSync(path.join(root, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 0\n");
+
+		const result = installGitHooks(root);
+
+		assert.deepEqual(result, {
+			action: "left-alone",
+			message:
+				"prism hooks: .git/hooks holds pre-commit, which git stops running once core.hooksPath is set. Git reads one hooks directory, so PRISM's hooks are not active. Compose them with yours by hand. Nothing was changed.",
+		});
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+	});
+});
+
+test("only .sample files in .git/hooks do not block the install", () => {
+	withFixture({}, ({ root, git }) => {
+		const hooksDir = path.join(root, ".git", "hooks");
+		fs.mkdirSync(hooksDir, { recursive: true });
+		fs.writeFileSync(path.join(hooksDir, "pre-commit.sample"), "#!/bin/sh\n");
+
+		assert.equal(installGitHooks(root).action, "set");
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), ".githooks");
+	});
+});
+
+test("a hook in .git/hooks does not matter once core.hooksPath is already ours", () => {
+	withFixture({}, ({ root, git }) => {
+		git("config", "--local", "core.hooksPath", ".githooks");
+		fs.writeFileSync(path.join(root, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 0\n");
+
+		assert.equal(installGitHooks(root).action, "already");
+	});
+});
+
+test("a hook in the main checkout's .git/hooks blocks the install from a linked worktree", () => {
+	withFixture({}, ({ root, git }) => {
+		git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "init");
+		const linked = path.join(path.dirname(root), "linked");
+		git("worktree", "add", "-q", linked, "-b", "linked");
+		fs.mkdirSync(path.join(linked, ".githooks"));
+		fs.writeFileSync(path.join(linked, ".githooks", "pre-commit"), SHIM_WITH_MARKER, {
+			mode: 0o755,
+		});
+		fs.writeFileSync(path.join(root, ".git", "hooks", "post-checkout"), "#!/bin/sh\nexit 0\n");
+
+		const result = installGitHooks(linked);
+
+		assert.equal(result.action, "left-alone");
+		assert.match(result.message, /holds post-checkout, which git stops running/);
+	});
+});
+
+test("runSessionStartInstall leaves hooks in .git/hooks alone and prints nothing", () => {
+	withFixture({}, ({ root, git }) => {
+		fs.writeFileSync(path.join(root, ".git", "hooks", "pre-push"), "#!/bin/sh\nexit 0\n");
+
+		assert.equal(runSessionStartInstall(JSON.stringify({ source: "startup", cwd: root })), null);
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+	});
+});
+
+test("shimsDelivered previews the install for a dry run whose shims are not on disk yet", () => {
+	withFixture({ shim: null }, ({ root, git }) => {
+		assert.deepEqual(installGitHooks(root, { dryRun: true, shimsDelivered: true }), {
+			action: "set",
+			message: "would prism hooks: set core.hooksPath to .githooks",
+		});
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+	});
+});
+
+test("removeGitHooksPath unsets only a local value of exactly .githooks", () => {
+	withFixture({}, ({ root, git }) => {
+		git("config", "--local", "core.hooksPath", ".husky");
+		assert.equal(removeGitHooksPath(root), null);
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), ".husky");
+
+		git("config", "--local", "core.hooksPath", ".githooks");
+		assert.equal(
+			removeGitHooksPath(root, { dryRun: true }),
+			"would prism hooks: unset core.hooksPath, since .githooks/ was removed"
+		);
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), ".githooks");
+
+		assert.equal(
+			removeGitHooksPath(root),
+			"prism hooks: unset core.hooksPath, since .githooks/ was removed"
+		);
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
 	});
 });
 
@@ -269,6 +408,40 @@ test("runSessionStartInstall leaves a foreign setup alone and prints nothing", (
 
 test("runSessionStartInstall returns null for an unparseable payload", () => {
 	assert.equal(runSessionStartInstall("not json"), null);
+});
+
+/**
+ * The setup-script line the docs and onboarding offer. It must exit 0 when the
+ * runtime is absent, as it is in a Cursor-only consumer, because a non-zero
+ * exit there fails every `pnpm install` through `prepare`.
+ */
+const GUARDED_SETUP_LINE = `node -e "import('./.claude/hooks/git-hooks/install.mjs').then((m) => m.runInstallCli(), () => {})"`;
+
+test("the guarded setup-script line exits 0 and does nothing when install.mjs is absent", () => {
+	withFixture({}, ({ root, git }) => {
+		const output = execSync(GUARDED_SETUP_LINE, { cwd: root, encoding: "utf8", env: process.env });
+
+		assert.equal(output, "");
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), "");
+	});
+});
+
+test("the guarded setup-script line installs when install.mjs is present", () => {
+	withFixture({}, ({ root, git }) => {
+		const installScript = path.join(
+			path.dirname(fileURLToPath(import.meta.url)),
+			"hooks",
+			"git-hooks",
+			"install.mjs"
+		);
+		fs.mkdirSync(path.join(root, ".claude", "hooks", "git-hooks"), { recursive: true });
+		fs.copyFileSync(installScript, path.join(root, ".claude", "hooks", "git-hooks", "install.mjs"));
+
+		const output = execSync(GUARDED_SETUP_LINE, { cwd: root, encoding: "utf8", env: process.env });
+
+		assert.equal(output, "prism hooks: set core.hooksPath to .githooks\n");
+		assert.equal(git("config", "--local", "--get", "core.hooksPath"), ".githooks");
+	});
 });
 
 test("running install.mjs as a script installs and prints the message", () => {

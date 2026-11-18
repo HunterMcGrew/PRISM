@@ -15,10 +15,10 @@
  *   `commands.format` run before every `git push`, and a non-zero exit denies
  *   the push with the output tail. A command that times out or cannot start
  *   allows the push and says so — a silent allow would make a broken lint
- *   command indistinguishable from a passing one. When PRISM's git hooks are
- *   installed, `lint` is skipped if `gitHooks.prePush.command` is set and
- *   `format` is skipped if `gitHooks.preCommit.command` is set, because the
- *   git hook already ran it.
+ *   command indistinguishable from a passing one. `lint` is skipped when git
+ *   runs PRISM's own `pre-push` shim and `gitHooks.prePush.command` is set,
+ *   and `format` when git runs PRISM's `pre-commit` shim and
+ *   `gitHooks.preCommit.command` is set, because the git hook already ran it.
  *
  * The contract every path keeps: exit 0, at most one deny per invocation, and
  * nothing written when the config has no `hooks` block. A `git commit && git
@@ -475,7 +475,7 @@ function runPushGate(spec, configRoot, config, hooks) {
 		typeof config.gitHooks === "object" && config.gitHooks !== null
 			? /** @type {Record<string, any>} */ (config.gitHooks)
 			: {};
-	const gitHooksInstalled = readGitHooksState(configRoot).installed;
+	const activeGitHooks = readGitHooksState(configRoot).active;
 
 	for (const { slot, gitHook, gitHooksKey } of PUSH_VERIFICATION_SLOTS) {
 		const command = commands[slot];
@@ -485,7 +485,7 @@ function runPushGate(spec, configRoot, config, hooks) {
 
 		const gitHookCommand = gitHooks[gitHooksKey]?.command;
 		if (
-			gitHooksInstalled &&
+			activeGitHooks[gitHook] &&
 			typeof gitHookCommand === "string" &&
 			gitHookCommand.trim().length > 0
 		) {

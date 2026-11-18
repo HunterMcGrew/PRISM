@@ -409,16 +409,18 @@ test("push gate: a command that does not exist allows with an announcement rathe
 	});
 });
 
+const MARKED_GIT_HOOK_SHIM = "#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n";
+
 /** A command that appends one line to `file` each time it runs, so a test can count its runs. */
 function countingCommand(file: string): string {
 	return `node -e "require('node:fs').appendFileSync('${file}', 'x\\n')"`;
 }
 
 /**
- * A repo whose config carries `commands` and a `gitHooks` block, with PRISM's
- * marked pre-commit shim in `.githooks/`. The push gate reads git config
- * through `process.env`, so it is isolated from the developer's own for the
- * duration of `body`.
+ * A repo whose config carries `commands` and a `gitHooks` block, with both of
+ * PRISM's marked, executable shims in `.githooks/`. The push gate reads git
+ * config through `process.env`, so it is isolated from the developer's own for
+ * the duration of `body`.
  */
 async function withGitHooksRepo(
 	gitHooks: Record<string, unknown>,
@@ -436,11 +438,12 @@ async function withGitHooksRepo(
 			"utf8"
 		);
 		await fs.mkdir(path.join(root, ".githooks"));
-		await fs.writeFile(
-			path.join(root, ".githooks", "pre-commit"),
-			"#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n",
-			"utf8"
-		);
+		for (const name of ["pre-commit", "pre-push"]) {
+			await fs.writeFile(path.join(root, ".githooks", name), MARKED_GIT_HOOK_SHIM, {
+				encoding: "utf8",
+				mode: 0o755,
+			});
+		}
 
 		const saved = { ...process.env };
 		try {
@@ -526,6 +529,40 @@ test("push gate: with only prePush configured, commands.format still runs", asyn
 		}
 	);
 });
+
+test("push gate: a consumer's own unmarked pre-push beside PRISM's pre-commit does not skip lint", async () => {
+	await withGitHooksRepo(
+		{ prePush: { command: "eslint {files}", globs: ["**/*.ts"] } },
+		{ lint: countingCommand("lint-ran.txt") },
+		async (root) => {
+			await fs.writeFile(path.join(root, ".githooks", "pre-push"), "#!/bin/sh\necho mine\n", "utf8");
+			git(root, "config", "--local", "core.hooksPath", ".githooks");
+
+			await runGitGatesArm("claude", claude, shellPayload(root, "git push"), CLEAN_ENV);
+
+			assert.equal(await countLines(root, "lint-ran.txt"), 1, "PRISM's lint never ran in the git hook");
+		}
+	);
+});
+
+test(
+	"push gate: a pre-push shim without its executable bit does not skip lint",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	async () => {
+		await withGitHooksRepo(
+			{ prePush: { command: "eslint {files}", globs: ["**/*.ts"] } },
+			{ lint: countingCommand("lint-ran.txt") },
+			async (root) => {
+				await fs.chmod(path.join(root, ".githooks", "pre-push"), 0o644);
+				git(root, "config", "--local", "core.hooksPath", ".githooks");
+
+				await runGitGatesArm("claude", claude, shellPayload(root, "git push"), CLEAN_ENV);
+
+				assert.equal(await countLines(root, "lint-ran.txt"), 1, "git skips the hook, so the gate runs lint");
+			}
+		);
+	}
+);
 
 test("push gate: with preCommit configured and the git hooks installed, format is skipped", async () => {
 	await withGitHooksRepo(

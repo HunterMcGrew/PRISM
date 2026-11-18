@@ -20,7 +20,7 @@
  * checkout would make every worktree run that checkout's hooks.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 
 const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
@@ -44,7 +44,7 @@ const SCOPES_BY_SPECIFICITY = ["worktree", "local", "global", "system"];
  * @typedef {Object} GitHooksState
  * @property {{ system: string | null, global: string | null, local: string | null, worktree: string | null }} scopes
  * @property {string | null} effective
- * @property {boolean} installed
+ * @property {{ "pre-commit": boolean, "pre-push": boolean }} active whether git runs PRISM's own shim for each hook
  */
 
 /**
@@ -132,12 +132,41 @@ function isPrismShim(filePath) {
 }
 
 /**
+ * Whether git will run this file as PRISM's hook: it carries the marker and,
+ * off Windows, the executable bit.
+ *
+ * Git skips a hook without the executable bit and prints only an
+ * `advice.ignoredHook` hint, so a marked shim that lost its mode (a commit
+ * from a `core.fileMode=false` clone, or a tool that drops modes) runs no
+ * checks at all. Windows has no executable bit, and Git for Windows runs the
+ * shim regardless.
+ *
+ * @param {string} filePath
+ * @param {NodeJS.Platform} [platform]
+ * @returns {boolean}
+ */
+export function isRunnableShim(filePath, platform = process.platform) {
+	if (!isPrismShim(filePath)) {
+		return false;
+	}
+
+	try {
+		return platform === "win32" || (statSync(filePath).mode & 0o111) !== 0;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * What git is configured to do about hooks in this repo, scope by scope, and
  * whether PRISM's own hooks are the ones that will run.
  *
  * `worktree` is read only when `extensions.worktreeConfig` is on, because
  * without it git has no worktree scope and the read would fail. Every read
  * tolerates failure: an unreadable scope is an unset one.
+ *
+ * `active` is judged per hook, so a consumer's own unmarked `pre-push` beside
+ * PRISM's `pre-commit` does not count as PRISM's lint running.
  *
  * @param {string} repoRoot
  * @returns {GitHooksState}
@@ -152,29 +181,91 @@ export function readGitHooksState(repoRoot) {
 		worktree: worktreeConfigOn ? readScope(repoRoot, "worktree") : null,
 	};
 	const effective = git(["config", "--get", "core.hooksPath"], repoRoot);
-	const installed =
-		effective !== null &&
-		classifyHooksPath(effective, repoRoot) === "ours" &&
-		isPrismShim(path.join(path.resolve(repoRoot, effective), "pre-commit"));
+	const hooksDir =
+		effective !== null && classifyHooksPath(effective, repoRoot) === "ours"
+			? path.resolve(repoRoot, effective)
+			: null;
+	const isActive = (/** @type {string} */ name) =>
+		hooksDir !== null && isRunnableShim(path.join(hooksDir, name));
 
-	return { scopes, effective, installed };
+	return {
+		scopes,
+		effective,
+		active: { "pre-commit": isActive("pre-commit"), "pre-push": isActive("pre-push") },
+	};
+}
+
+/**
+ * Names the hooks setup that setting `core.hooksPath` would displace, or
+ * returns `null` when there is none.
+ *
+ * Two setups count. A foreign value at any scope is one, named by the most
+ * specific scope that holds it. The other is hooks in the default hooks
+ * directory (`.git/hooks`, or the common dir's for a linked worktree) while
+ * every scope is unset: git reads that directory only until `core.hooksPath`
+ * is set, so writing the value would silently stop those hooks. Any file
+ * there that is not a `.sample` counts, because a hook manager that installs
+ * into `.git/hooks` writes plain files under the hook names. Once any scope
+ * holds a value of ours, git already skips the default directory and setting
+ * the local value changes nothing about it.
+ *
+ * @param {string} repoRoot
+ * @param {GitHooksState["scopes"]} scopes
+ * @returns {string | null} a clause such as `the local core.hooksPath is '.husky'`
+ */
+export function describeForeignHooks(repoRoot, scopes) {
+	const foreignScope = SCOPES_BY_SPECIFICITY.find(
+		(scope) => classifyHooksPath(scopes[scope], repoRoot) === "foreign"
+	);
+	if (foreignScope !== undefined) {
+		return `the ${foreignScope} core.hooksPath is '${scopes[foreignScope]}'`;
+	}
+
+	if (
+		SCOPES_BY_SPECIFICITY.some((scope) => classifyHooksPath(scopes[scope], repoRoot) !== "unset")
+	) {
+		return null;
+	}
+
+	const defaultHooksDir = git(["rev-parse", "--git-path", "hooks"], repoRoot);
+	if (defaultHooksDir === null) {
+		return null;
+	}
+
+	let hookNames;
+	try {
+		hookNames = readdirSync(path.resolve(repoRoot, defaultHooksDir), { withFileTypes: true })
+			.filter((entry) => !entry.isDirectory() && !entry.name.endsWith(".sample"))
+			.map((entry) => entry.name)
+			.sort();
+	} catch {
+		return null;
+	}
+
+	return hookNames.length === 0
+		? null
+		: `${defaultHooksDir} holds ${hookNames.join(", ")}, which git stops running once core.hooksPath is set`;
 }
 
 /**
  * Sets `core.hooksPath` to `.githooks` when that cannot displace a hooks
  * setup PRISM does not recognize.
  *
- * Nothing is written when there are no PRISM shims to point at, or when any
- * scope holds a foreign value. A system or global value that is ours is left
- * where it is; only the local value is written, and a worktree-scope value is
- * unset because it would shadow the local one.
+ * Nothing is written when there are no PRISM shims to point at, or when it
+ * would displace another hooks setup (`describeForeignHooks`). A system or
+ * global value that is ours is left where it is; only the local value is
+ * written, and a worktree-scope value is unset because it would shadow the
+ * local one.
+ *
+ * `shimsDelivered` lets `prism update --dry-run` preview the install on a
+ * consumer whose shims the same dry run would have written but did not.
  *
  * @param {string} repoRoot
- * @param {{ dryRun?: boolean }} [options]
+ * @param {{ dryRun?: boolean, shimsDelivered?: boolean }} [options]
  * @returns {InstallResult}
  */
-export function installGitHooks(repoRoot, { dryRun = false } = {}) {
-	if (!isPrismShim(path.join(repoRoot, OUR_HOOKS_DIR, "pre-commit"))) {
+export function installGitHooks(repoRoot, { dryRun = false, shimsDelivered = false } = {}) {
+	if (!shimsDelivered && !isPrismShim(path.join(repoRoot, OUR_HOOKS_DIR, "pre-commit"))) {
 		return {
 			action: "no-shims",
 			message: `prism hooks: no PRISM shims in ${OUR_HOOKS_DIR}/, so there is nothing to point git at`,
@@ -182,13 +273,11 @@ export function installGitHooks(repoRoot, { dryRun = false } = {}) {
 	}
 
 	const { scopes } = readGitHooksState(repoRoot);
-	const foreignScope = SCOPES_BY_SPECIFICITY.find(
-		(scope) => classifyHooksPath(scopes[scope], repoRoot) === "foreign"
-	);
-	if (foreignScope !== undefined) {
+	const foreignHooks = describeForeignHooks(repoRoot, scopes);
+	if (foreignHooks !== null) {
 		return {
 			action: "left-alone",
-			message: `prism hooks: the ${foreignScope} core.hooksPath is '${scopes[foreignScope]}'. Git reads one hooks directory, so PRISM's hooks are not active. Compose them with yours by hand. Nothing was changed.`,
+			message: `prism hooks: ${foreignHooks}. Git reads one hooks directory, so PRISM's hooks are not active. Compose them with yours by hand. Nothing was changed.`,
 		};
 	}
 
@@ -213,6 +302,30 @@ export function installGitHooks(repoRoot, { dryRun = false } = {}) {
 	const message = `prism hooks: set core.hooksPath to ${OUR_HOOKS_DIR}${removedNote}`;
 
 	return { action: "set", message: dryRun ? `would ${message}` : message };
+}
+
+/**
+ * Unsets the local `core.hooksPath` when it is exactly `.githooks`, for a
+ * consumer whose shims were just removed because neither `claude` nor
+ * `codex` is a host any more. Left set, it points git at an empty or missing
+ * directory, so git runs no hooks and still skips `.git/hooks`.
+ *
+ * @param {string} repoRoot
+ * @param {{ dryRun?: boolean }} [options]
+ * @returns {string | null} the message when it unset (or would unset) the value
+ */
+export function removeGitHooksPath(repoRoot, { dryRun = false } = {}) {
+	if (git(["config", "--local", "--get", "core.hooksPath"], repoRoot) !== OUR_HOOKS_DIR) {
+		return null;
+	}
+
+	if (!dryRun) {
+		git(["config", "--local", "--unset", "core.hooksPath"], repoRoot);
+	}
+
+	const message = `prism hooks: unset core.hooksPath, since ${OUR_HOOKS_DIR}/ was removed`;
+
+	return dryRun ? `would ${message}` : message;
 }
 
 /**
@@ -257,8 +370,11 @@ export function runSessionStartInstall(rawStdin) {
  * The line a consumer puts in its own setup script. Exits 0 on every action,
  * `left-alone` included: that is a report, and a non-zero exit would break a
  * `prepare` script in a repo that is set up correctly in its own way.
+ *
+ * Exported so the guarded setup-script form can import this module and call
+ * it, which also exits 0 when the file is absent (a Cursor-only consumer).
  */
-function main() {
+export function runInstallCli() {
 	const toplevel = git(["rev-parse", "--show-toplevel"], process.cwd());
 	if (toplevel === null) {
 		return;
@@ -274,5 +390,5 @@ function main() {
  * `dist/cli.js`, never treats it as the entry.
  */
 if (path.basename(process.argv[1] ?? "") === "install.mjs") {
-	main();
+	runInstallCli();
 }

@@ -42,7 +42,7 @@ import {
 	removeDeletedManagedAgentFiles,
 	type RolesDefinitions,
 } from "./generate-skills";
-import { installGitHooks } from "./hooks/git-hooks/install.mjs";
+import { installGitHooks, removeGitHooksPath } from "./hooks/git-hooks/install.mjs";
 import { buildContentByAnchor } from "./lib/onboarding-run";
 import {
 	assertInsideGitRepo,
@@ -561,7 +561,13 @@ export async function runUpdate(
 	);
 
 	if (hosts.includes("claude") || hosts.includes("codex")) {
-		const gitHooksInstall = installGitHooks(consumerRepoRoot, { dryRun });
+		const gitHooksInstall = installGitHooks(consumerRepoRoot, {
+			dryRun,
+			shimsDelivered: hookOutcomes.some(
+				(outcome) =>
+					outcome.relativePath === ".githooks/pre-commit" && outcome.action !== "removed"
+			),
+		});
 		if (gitHooksInstall.action === "left-alone") {
 			console.warn(gitHooksInstall.message);
 		} else {
@@ -1312,6 +1318,11 @@ const GIT_HOOK_SHIM_NAMES = ["pre-commit", "pre-push"];
  * are likely to live, so a file there without `HOOK_RUNTIME_MARKER` is theirs
  * and is left byte for byte, with a warning. Only the write, no-op, and
  * overwrite outcomes are produced, so `FileOutcome` is unchanged.
+ *
+ * Every shim of PRISM's is chmodded on every pass, the no-op included. A
+ * byte-identical shim can still have lost its mode, from a commit made in a
+ * `core.fileMode=false` clone or a tool that drops modes, and git silently
+ * skips a hook that is not executable.
  */
 async function deliverGitHookShims(
 	prismRepoRoot: string,
@@ -1332,21 +1343,20 @@ async function deliverGitHookShims(
 
 		if (consumerHash === (await hashFile(sourcePath))) {
 			outcomes.push({ relativePath, action: "no-op" });
-			continue;
+		} else {
+			const existing = consumerHash === null ? null : await readFileIfExists(targetPath);
+			if (existing !== null && !existing.includes(HOOK_RUNTIME_MARKER)) {
+				console.warn(`prism:update: ${relativePath} is not PRISM's; left it alone`);
+				continue;
+			}
+
+			await writeIncoming(sourcePath, targetPath, dryRun);
+			outcomes.push({ relativePath, action: existing === null ? "written" : "overwritten" });
 		}
 
-		const existing = consumerHash === null ? null : await readFileIfExists(targetPath);
-		if (existing !== null && !existing.includes(HOOK_RUNTIME_MARKER)) {
-			console.warn(`prism:update: ${relativePath} is not PRISM's; left it alone`);
-			continue;
-		}
-
-		await writeIncoming(sourcePath, targetPath, dryRun);
 		if (!dryRun) {
 			await fs.chmod(targetPath, 0o755);
 		}
-
-		outcomes.push({ relativePath, action: existing === null ? "written" : "overwritten" });
 	}
 
 	return outcomes;
@@ -1356,7 +1366,10 @@ async function deliverGitHookShims(
  * Removes the git hook shims PRISM delivered, for a consumer with neither
  * `claude` nor `codex` among its hosts, and `.githooks/` itself once nothing
  * else is in it. A shim without `HOOK_RUNTIME_MARKER` is the consumer's own and
- * stays.
+ * stays, and so does `core.hooksPath` while anything is left in `.githooks/`.
+ * Once the directory is gone, a local `core.hooksPath` of `.githooks` is unset,
+ * because it would leave git running no hooks while still skipping
+ * `.git/hooks`.
  */
 async function removeDeliveredGitHookShims(
 	consumerRepoRoot: string,
@@ -1379,8 +1392,21 @@ async function removeDeliveredGitHookShims(
 		outcomes.push({ relativePath: `.githooks/${name}`, action: "removed" });
 	}
 
-	if (!dryRun && (await pathExists(hooksDir)) && (await fs.readdir(hooksDir)).length === 0) {
-		await fs.rmdir(hooksDir);
+	if (!(await pathExists(hooksDir))) {
+		return outcomes;
+	}
+
+	const removedNames = outcomes.map((outcome) => path.posix.basename(outcome.relativePath));
+	const remaining = (await fs.readdir(hooksDir)).filter((entry) => !removedNames.includes(entry));
+	if (remaining.length === 0) {
+		if (!dryRun) {
+			await fs.rmdir(hooksDir);
+		}
+
+		const unsetMessage = removeGitHooksPath(consumerRepoRoot, { dryRun });
+		if (unsetMessage !== null) {
+			console.log(unsetMessage);
+		}
 	}
 
 	return outcomes;
