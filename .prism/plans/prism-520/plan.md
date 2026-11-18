@@ -571,9 +571,11 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **`commit.sh` becomes `commit.mjs` with an argv array and no shell.** The runtime is tested on Windows, which rules out bash. Spawning git without a shell keeps quoting identical on every platform. The retry knobs are renamed `PRISM_PLAN_COMMIT_RETRIES` and `PRISM_PLAN_COMMIT_RETRY_DELAY_MS` (milliseconds, where thrive used seconds), per the spec's `prism` naming swap.
 - **The citation lint is its own `prism:check` step, and its allowlist can only shrink.** Thrive enforced it through a repo-wide test case. A named script gives a readable failure line in CI and runs alone. An allowlisted file that comes clean fails the run until its entry is removed, so the spec's "can only shrink" is mechanical rather than a promise. A violation in another plan folder is reworded rather than allowlisted, because the list starts with the phase-1 plan alone.
 - **The ticket subject form is built from `ticketPrefix`.** Thrive hard-coded `THR[PN]?-`. With no prefix configured, no subject reads as a ticket subject, which changes nothing, because only task subjects count toward done.
-- **The issue's acceptance criteria were not synced.** Issue #520 states its proof in one line and has no checklist. Writing the criteria below into the issue is a tracker edit, so it waits for a person's go-ahead, at the latest when the PR opens.
-- **OPEN — TBD, needs Hunter's input.** Whether child 4 ships as a stack of two PRs: the shell parser (T1, T2), then the chain scripts and everything else. It is well past ten files and five hundred lines. The two parts share no code and are reviewed differently: the parser is a dense port with no caller, and the chain is PRISM-shaped adaptation. **Default path (used until resolved):** one PR, since the epic is already cut at child grain and each part is inert alone. Whoever opens the PR asks Hunter first.
-- **OPEN — TBD, needs Hunter's input.** The install seed's routing stub, `templates/install/.prism/architect/manifest.stub.json`, has no route naming `_toolkit/plan-chain-scripts.md`, so `pnpm prism:verify-manifest` fails with "ships in the install seed but no route in the stub names it". The stub is not in any task's file list and is neither a pinned test nor a generated mirror, so the build did not edit it. A temporary edit adding `".claude/hooks/plan/**": "_toolkit/plan-chain-scripts.md"` after the `.githooks/**` route turned `verify-manifest` green, and the other `prism:check` steps passed with it. **Default path (used until resolved):** the line stays out of the branch, `prism:check` fails on that one step, and the PR is not opened until someone approves the stub edit.
+- **The issue's acceptance criteria are synced.** Issue #520 carries all nine criteria under its Acceptance Criteria heading, worded as the plan's criteria without the ID prefix and Evidence lines, so nothing needed writing to the tracker.
+- **Child 4 ships as one PR.** The shell parser (T1, T2) could have been stacked under the chain scripts, but the epic is already cut at child grain and each part is inert alone. Hunter ruled on 2026-11-18 that standard PRs have no size limit, and whether to stack is the orchestrator's call, which chose one PR.
+  - → no promotion needed (a ticket-specific shipping call)
+- **The install seed's routing stub gets a route for `plan-chain-scripts.md`.** `templates/install/.prism/architect/manifest.stub.json` carries `".claude/hooks/plan/**": "_toolkit/plan-chain-scripts.md"`, because `verify-manifest` rejects a shipped doc that no stub route names, and the `.githooks/**` route set the precedent for a consumer-path route to a toolkit doc. The orchestrator approved the edit after T17, since no task listed the stub.
+  - → no promotion needed (`install-layout.md` covers stub routes)
 - **`prism-516/plan.md` and `prism-519/plan.md` citations were reworded in T14.** The new lint reported 18 section-sign citations in the merged `prism-516/plan.md` and two in `prism-519/plan.md`, where T14 named only the second file. T14 says to fix every violation the script reports by spelling it as words, so the build reworded each as `<file>, under <heading>`, and the meaning is unchanged. The alternative, allowlisting `prism-516/plan.md`, was rejected because the allowlist is meant to hold the phase-1 plan alone.
 - **`plan-chain-scripts.md` cites the four chain templates by path.** `pnpm prism:ship-closure` fails when a shipped template is reachable from nothing, and no skill cites them until child 5. The architect doc is routed from the base manifest, and it genuinely depends on the templates' headings, so it names them in a short Templates paragraph.
 - **The `plan.md` template's Retro comment allows "declined".** Thrive's comment said the retro always runs, which contradicts the plan rule's declinable retro line. The comment now reads "the retro report's path, or `declined — <reason>`". The `Retro:` line and every heading stay as thrive has them.
@@ -584,17 +586,18 @@ Owner: Eli. Set `last_updated` to the edit date.
 
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Plan created: shell parser, frontmatter, lookup and archive search, tasks, bundles, commit, auto-approve, stop paths, citation lint, templates, rule and doc edits, as 18 tasks.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Built T1 to T18, one commit each, with 1482 tests passing. `prism:check` fails only on the stub route recorded in Decisions, so the PR is held.
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: The orchestrator approved the stub route and the one-PR call, so both Decisions are resolved. `prism:check` was then run as one command with `GITHUB_HEAD_REF` set.
 
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: plan child 4 (chain scripts) to the detail bar from the epic spec and thrive at db3570975. Bounds: plan file only, no code, no PR, nothing outside the spec's Affected systems, no new dependency or shared-type change. Approach: port thrive's modules onto PRISM's hook runtime, matcher, manifest, and config, with one lookup copy shared by the build lint and the compaction hook. · close: scope held
-- 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: build T1 to T18 and open one draft PR. Bounds: only the plan's file lists, plus pinned tests and mirrors. Approach: one commit per task, port thrive's suites case for case, then run `prism:check`. · close: drifted — reworded citations in `prism-516/plan.md` (see Decisions), and stopped before the PR on the stub route.
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: build T1 to T18 and open one draft PR. Bounds: only the plan's file lists, plus pinned tests and mirrors. Approach: one commit per task, port thrive's suites case for case, then run `prism:check`. · close: drifted — reworded citations in `prism-516/plan.md` and added a stub route, both recorded in Decisions.
 
 ## Verification
 
 - `pnpm exec tsc --noEmit` passes for both `scripts/ai-skills/tsconfig.json` and `tsconfig.hooks.json`.
 - `pnpm run prism:test` reports 1482 passing and 0 failing.
-- `prism:crossref-lint`, `prism:plan-citations`, `prism:spec-scope-lint`, `prism:ship-closure`, and `prism:verify-pack` pass. `prism:verify-manifest` fails on the stub route until the open Decision is resolved. With the route added temporarily it passed.
+- `prism:crossref-lint`, `prism:plan-citations`, `prism:spec-scope-lint`, `prism:ship-closure`, `prism:verify-manifest`, and `prism:verify-pack` pass, and `pnpm prism:check` run as one command with `GITHUB_HEAD_REF=huntermcgrew/prism-520-chain-scripts` exits 0.
 - Not verified: the Windows CI leg, and the delivered scripts under a real Claude Code session.
 
 ## Review
@@ -637,6 +640,7 @@ The issue's one-line proof ("every suite passes, and a plan with two tasks on on
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC from the issue's proof line | written | not synced (awaiting go-ahead) |
+| 2026-11-18 | Clove | Checked issue #520's Acceptance Criteria against the plan's nine criteria | none needed | synced |
 
 ## PR Readiness
 
