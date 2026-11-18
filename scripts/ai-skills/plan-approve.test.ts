@@ -992,3 +992,99 @@ test("the CLI prefers the Claude session id over the Codex thread id", () => {
 
 	assert.equal(child.status, 0, child.stderr);
 });
+
+// --- Chat approval through the prompt hook ---
+
+const PROMPT_HOOK = fileURLToPath(
+	new URL("./hooks/approve-guard.mjs", import.meta.url)
+);
+
+function submitPrompt(root: string, prompt: string, session = SESSION): void {
+	const child = spawnSync(
+		process.execPath,
+		[PROMPT_HOOK, "--tool=claude", "--event=UserPromptSubmit"],
+		{
+			input: JSON.stringify({
+				hook_event_name: "UserPromptSubmit",
+				prompt,
+				session_id: session,
+				cwd: root,
+			}),
+			env: cleanEnv(),
+			encoding: "utf8",
+		}
+	);
+	assert.equal(child.status, 0, child.stderr);
+}
+
+function runClaudeCli(root: string, target: string, session = SESSION) {
+	return runCli(root, target, {
+		CLAUDECODE: "1",
+		CLAUDE_CODE_SESSION_ID: session,
+	});
+}
+
+test("the CLI approves once on a token the prompt hook wrote", () => {
+	const root = makeGitRepo();
+	const target = ".prism/plans/acme-1/intent.md";
+	placeFile(root, target, buildIntent());
+	placeFile(root, ".prism/plans/acme-2/intent.md", buildIntent());
+	submitPrompt(root, "approve");
+
+	const first = runClaudeCli(root, target);
+	assert.equal(first.status, 0, first.stderr);
+	assert.match(
+		readFileSync(path.join(root, target), "utf8"),
+		/approved_via: chat/
+	);
+
+	const second = runClaudeCli(root, ".prism/plans/acme-2/intent.md");
+	assert.equal(second.status, 1);
+	assert.match(second.stderr, /without a chat approval/);
+});
+
+test("the CLI refuses a token the prompt hook wrote for another session", () => {
+	const root = makeGitRepo();
+	const target = ".prism/plans/acme-1/intent.md";
+	placeFile(root, target, buildIntent());
+	submitPrompt(root, "approve", "session-2");
+
+	const child = runClaudeCli(root, target);
+	assert.equal(child.status, 1);
+	assert.match(child.stderr, /another session/);
+});
+
+test("the CLI refuses after a prompt that isn't an approval", () => {
+	const root = makeGitRepo();
+	const target = ".prism/plans/acme-1/intent.md";
+	placeFile(root, target, buildIntent());
+	submitPrompt(root, "looks good, keep going");
+
+	const child = runClaudeCli(root, target);
+	assert.equal(child.status, 1);
+	assert.match(child.stderr, /without a chat approval/);
+});
+
+test("the CLI refuses a draft written after the prompt hook ran", () => {
+	const root = makeGitRepo();
+	const target = ".prism/plans/acme-1/intent.md";
+	submitPrompt(root, "approve");
+	placeFile(root, target, buildIntent());
+	const before = readFileSync(path.join(root, target), "utf8");
+
+	const child = runClaudeCli(root, target);
+	assert.equal(child.status, 1);
+	assert.match(child.stderr, /changed after the approve message/);
+	assert.equal(readFileSync(path.join(root, target), "utf8"), before);
+});
+
+test("the CLI refuses a token that names a different draft", () => {
+	const root = makeGitRepo();
+	placeFile(root, ".prism/plans/acme-1/intent.md", buildIntent());
+	placeFile(root, ".prism/plans/acme-2/intent.md", buildIntent());
+	submitPrompt(root, "approve .prism/plans/acme-2/intent.md");
+
+	const child = runClaudeCli(root, ".prism/plans/acme-1/intent.md");
+	assert.equal(child.status, 1);
+	assert.match(child.stderr, /names .*acme-2\/intent\.md, not this file/);
+});
