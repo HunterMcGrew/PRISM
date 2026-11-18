@@ -69,19 +69,19 @@ A plan observation is a finding only when the plan contradicts the diff: it clai
 
 Write the plan in one pass before the chat summary, because the plan is the durable record and the chat is a presentation of it.
 
-- **On a plan folder,** record the result under `plan.md`'s `## Review` instead of `## Review Issues`, as findings in the Review Issues entry shape or `No issues found — <YYYY-MM-DD>`. Commit it as `plan: self-review record` in place of the `chore:` subject in the last bullet.
+- **On a plan folder,** record the result under `plan.md`'s `## Review` instead of `## Review Issues`, as findings in the Review Issues entry shape or `No issues found — <YYYY-MM-DD>`. Commit it with `node scripts/ai-skills/hooks/plan/commit.mjs "plan: self-review record" <plan.md>` and do not push. The PR stage's push carries the record, because the session pushes once, after it re-verifies and reads the pause preference. The last bullet is for a flat plan.
 - **`## Review Issues`:** one entry per finding in the format `.prism/rules/branch-plan.md` defines. A pass with no findings writes `No issues found — <YYYY-MM-DD> [<branch>]`, so a clean pass is distinguishable from a review that never ran.
 - **`## Cleanup Items` and `## PR Readiness`:** record dead code and debug artifacts, the checklist state, and the build result.
 - **`## Acceptance Criteria`:** when the plan has none, propose criteria from the diff as `proposed` entries. Otherwise confirm each criterion against the diff. Record a difference as a `proposed` entry under `### AC Adjustments` and never rewrite a criterion silently. Once an adjustment is accepted, sync the ticket's AC section (not on a DX ticket, whose tracker field stays "None for this ticket.") and log a row in the AC Sync Log.
-- **Land the plan commit.** Stage the plan file alone and run `git diff --cached --name-only`. It must print exactly that one path, and any other path means abort and report it. Commit as `chore: self-review plan record for <ticket-id>`, then push. From a worktree use `git push origin HEAD:refs/heads/<branch>`, since a detached HEAD cannot push as `HEAD`. A review record that is not pushed dies with the worktree.
+- **On a flat plan, land the plan commit.** Stage the plan file alone and run `git diff --cached --name-only`. It must print exactly that one path, and any other path means abort and report it. Commit as `chore: self-review plan record for <ticket-id>`, then push. From a worktree use `git push origin HEAD:refs/heads/<branch>`, since a detached HEAD cannot push as `HEAD`. A review record that is not pushed dies with the worktree.
 
 The chat reply opens with the verdict, either `Ready for PR` or `N Major, M Minor to fix`. A review that did not cover the whole diff, or skipped a check it could not run, names what is unreviewed in the verdict and never reports an unqualified ready. Then list issues by severity as `<file>:<line> — description`, followed by one line each for Accessibility, Tests, Docs, Cleanup, and Cleaner paths. Do not repeat plan content in chat.
 
 ## Boundaries and handoff
 
 - **Issues found:** route to the implementing skill (`prism-implement`), or to the docs skill (`prism-docs`) when the diff is docs only. Route a UX-level problem to `prism-design` before anyone changes code. Hold the PR-review recommendation until the issues are fixed.
-- **Clean, PR exists:** recommend `review pr #<n>` in a fresh chat, because the PR reviewer should read the code without this session's reasoning.
-- **Clean, no PR yet:** hand back to the author skill to commit, push, and open it (`prism-docs` when every changed path is under `docs/` or `.claude/`, otherwise `prism-implement`). Authors ship and reviewers review.
+- **Clean, PR exists:** recommend `review pr #<n>` in a fresh chat, because the PR reviewer should read the code without this session's reasoning. On a plan folder the record is a local commit, so the session's PR stage pushes it first.
+- **Clean, no PR yet:** on a plan folder, the next stage is the resume table's PR row. On a flat plan, hand back to the author skill to commit, push, and open it (`prism-docs` when every changed path is under `docs/` or `.claude/`, otherwise `prism-implement`). Authors ship and reviewers review.
 - Propose these handoffs and never invoke them.
 
 Before closing the session, append to `.prism/lessons.md` when a documented lesson should have prevented an issue you found, or when an assumption you made proved wrong.
