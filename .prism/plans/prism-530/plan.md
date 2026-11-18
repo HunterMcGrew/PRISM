@@ -121,7 +121,7 @@ Every task is Clove's except T24, which is Eli's. These conventions hold for eve
 **Skill line budgets.** Every skill this child writes stays at or under the 120-line cap that `scripts/ai-skills/skill-loaded-lines.test.ts` enforces.
 
 - A skill's body budget is 120 minus the lines of every file it cites that `measureSkillLoad` charges. Today that is a file under `.prism/references/`, `.prism/templates/`, or `.prism/architect/`, a skill source, or a `load: skill` rule.
-- Root `REVIEW.md` and `.prism/review/*.md` are not charged under today's rules. The OPEN Decision on the cap records that question for Hunter.
+- Root `REVIEW.md` and `.prism/review/*.md` are not charged under today's rules. The Decision on the cap records Hunter's ruling that they stay uncounted.
 - Cut content that fails the four skill tests. Never move it into an uncited file to dodge the count.
 - Measure with `measureSkillLoad` from `scripts/ai-skills/lib/skill-loaded-lines.ts`, and record each rewritten skill's total in `## History`.
 
@@ -148,7 +148,7 @@ Every task is Clove's except T24, which is Eli's. These conventions hold for eve
 - proof fails on main: yes
 - depends on: none
 
-Owner: Clove. This adds one key to the consumer-facing config schema. The Decisions list it as flagged.
+Owner: Clove. This adds one key to the consumer-facing config schema. The Decisions list it as flagged, and Hunter approved it on 2026-11-18.
 
 - **Schema.** Add a top-level optional `ci` object with `additionalProperties: false` and one property, `requiredCheck`, a non-empty string.
   - Its description: "The name of the CI check the PR stage waits for, as `gh pr checks` prints it. When absent, the watcher waits until every check on the head has settled."
@@ -904,12 +904,18 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **OPEN — TBD, needs Hunter's input.** How this plan gets approved for its own build. C5-T16's `prism-implement` refuses a folder plan whose `status` is not `approved`. Auto-approval cannot pass here, because `auto-approve.mjs` checks files against the folder's own `spec.md`, and a child folder has none. Its spec is the epic's. **Default path (used until resolved):** after child 5 merges, the orchestrator asks Hunter once for a chat `approve` on this `plan.md`. That is the stop the intent allows when auto-approval fails. Alternatives considered:
   - copying the epic spec's Affected systems into a child `spec.md`, rejected because it duplicates the epic spec and drifts
   - building child 6 the way children 4 and 5 were, outside the chain, rejected because child 5's implement stage would refuse it
-- **OPEN — TBD, needs Hunter's input.** Whether root `REVIEW.md` and `.prism/review/*.md` count toward the review skills' 120-line cap. The intent says the cap "keeps counting everything a skill loads" and that PRISM does not move text into files its check ignores. The spec says nothing about the count changes except the Voice allowance, and `measureSkillLoad` charges neither path today. Counting them puts both review skills far over the cap, since thrive's `REVIEW.md` alone is 179 lines. **Default path (used until resolved):** follow the spec. The rulebook is a shared artifact the intent itself names, read by subagents per pass, not skill text moved out to dodge the count. The skills cite it uncounted, and nothing is added to `OVER_CAP_ALLOWLIST`. If Hunter rules it counts, the review skills join the allowlist and the intent's cap sentence needs his amendment, which is intent-level.
+- **Root `REVIEW.md` and `.prism/review/*.md` do not count toward the review skills' 120-line cap.** Hunter ruled on 2026-11-18, in chat: "Yes to both", on the question of whether they count.
+  - **Root cause.** The intent says the cap "keeps counting everything a skill loads" and that PRISM does not move text into files its check ignores. The spec says nothing about the count changes except the Voice allowance, and `measureSkillLoad` charges neither path today. Counting them would put both review skills far over the cap, since thrive's `REVIEW.md` alone is 179 lines.
+  - **Alternatives considered.** Counting both paths and adding the review skills to `OVER_CAP_ALLOWLIST`, rejected by Hunter's ruling.
+  - **Chosen approach.** Hunter's ruling: the rulebook is a shared artifact the intent itself names, read by subagents per pass, not skill text moved out to dodge the count. The skills cite it uncounted, and nothing is added to `OVER_CAP_ALLOWLIST`. The intent's cap sentence stays as written.
+  - **Implementation guidance.** Cut skill text that fails the four skill tests. Never move it into an uncited file to dodge the count. Only the rulebook paths named here are exempt.
 - **The rulebook lives in root `REVIEW.md` and a new delivered `.prism/review/` area. Stack checks live in a consumer-owned `.prism/review/stack/`.**
   - **Root cause.** The spec puts pass files in `.prism/review/`, ships both to consumers, and has onboarding add stack checks. No delivered area covered `.prism/review/`, no path delivered a root file, and a refreshed pass file would overwrite a team's stack checks.
   - **Alternatives considered.** Pass files under `.prism/references/review/`, rejected because it contradicts the spec's path and the cap would charge them. Stack checks inside the pass files behind Atlas anchors, rejected because `prism update` rewrites PRISM-owned files.
   - **Chosen approach.** `review` joins the copied areas (T7). `review/stack/**` is consumer-owned and seed-excluded. `REVIEW.md` is marker-owned like the hook runtime (T10).
   - **Implementation guidance.** A consumer's own `REVIEW.md` without the marker is never touched. Some other tools may read a root `REVIEW.md`. That is unverified, and it is why an unmarked file is left alone rather than backed up and replaced.
+  - **Approved by Hunter, 2026-11-18, in chat ("Yes to both"): `review` as a delivered content area.** That covers `COPIED_CONTENT_AREAS`, the path guard, the crossref-lint areas, the ownership globs with the consumer owning `review/stack/`, the seed-curation exclude, and package `files` (T7).
+  - **Approved by Hunter, 2026-11-18, in chat ("Yes to both"): the new consumer root `REVIEW.md`.** It is written only when it is absent or carries PRISM's marker (T10).
 - **Onboarding's stack checks point the passes at the per-team rules it already generates.** Writing new per-stack review content would duplicate those rules and drift from them. Thrive's stack checks were thrive's stack, which the intent leaves out.
 - **Pass 10, Performance, gets its own file.** Thrive keeps it inline in `REVIEW.md`, and the spec says one file per pass.
 - **Not ported:**
@@ -922,6 +928,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **`check-report.mjs` is adapted, not ported verbatim.** Thrive's version checks a section against planted failures. The spec drops the planted fixture and the workspace mapping, so the package column goes and the expected list becomes optional, which leaves a shape check the verify stage can run on itself.
 - **Verify's checks are the non-empty `commands.*` keys, and extra keys are consumer checks.** The schema already describes `commands` as the team's verification commands, open to extra keys. A separate list key was considered and rejected as a second place to name the same commands.
 - **The CI watcher reads a new optional `ci.requiredCheck` key and waits for every check when it is unset.** The spec says the name comes from config, and no key held it. This is a consumer-facing schema addition, so it is flagged. `retroEvidence.ci` was considered and rejected, because it describes evidence for the retro, not what the PR stage waits on.
+  - **Approved by Hunter, 2026-11-18, in chat ("Yes to both").** The new optional `ci.requiredCheck` config key is approved (T1).
 - **`prism-retro` writes to folder plans, reversing "read-only on plans" there, and child 5's resume row where the session wrote `Retro:`.** The intent has the retro give every Decision a verdict and prune lessons, which is a write. Child 5 had the session write the line only because `prism-retro` was read-only until this child. Flat plans keep read-only. ADR-0083 records it.
 - **Expired lessons move to the audit's archive file rather than being deleted.** Thrive deletes them. PRISM's audit already archives stale lessons to `.prism/archived/lessons-archive.md`, and an unattended stage deleting shared notes outright would be harder to undo than a move a reviewer sees in the diff.
 - **`verdict-contract.md` folds into the intent-scope pass and is deleted.** Its 16 lines are the grading semantics, and grading moves to that pass. A reference under `qa-plan/` would name the wrong owner.
@@ -933,6 +940,10 @@ Owner: Eli. Set `last_updated` to the edit date.
   - `.claude/review/**`, `.codex/review/**`, and `.cursor/review/**` are inside the host globs.
 
   Every file this plan names is covered, so nothing is flagged as outside.
+- **The consumer `.gitattributes` gets a `merge=union` line for the review-misses log.** The log is append-only, so union merge keeps both sides' rows (T6).
+  - **Approved by Hunter, 2026-11-18, in chat ("Yes to both").**
+- **`prism-verify` joins `roles.json` as `{ "id": "prism-verify", "type": "agent", "routing": "named-only" }`.** It is a dispatched stage with no persona and is never routed off a phrase (T13).
+  - **Approved by Hunter, 2026-11-18, in chat ("Yes to both").**
 - **Stack: two PRs, cut after T12.**
   - **PR A, T1 to T12.** The config key, the three scripts, the retro-line check, the delivery of scripts, `REVIEW.md`, and pass files, the onboarding generator, and their architect doc. It ships inert and self-consistent: no skill reads the rulebook yet, every script has its suite, and the check passes on today's plans.
   - **PR B, T13 to T24.** The skills, rules, ADR, and docs that use them.
@@ -942,6 +953,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 ## History
 
 - 2026-11-18 [huntermcgrew/prism-530-review-verify]: Plan created for child 6 as 24 tasks: the CI watcher, reconcile, the report check, the retro-line check, `REVIEW.md` and ten pass files with their delivery, onboarding stack checks, `prism-verify`, the self-review, PR-review, retro, audit, and QA rewrites, the review-loop removal, rule and ADR edits, and docs.
+- 2026-11-18 [huntermcgrew/prism-530-review-verify]: Recorded Hunter's chat rulings: the 120-line cap does not count `REVIEW.md` or `.prism/review/*.md`, and five items are approved. The plan approval stays OPEN and `status` stays `draft`.
 
 ## Sessions
 
