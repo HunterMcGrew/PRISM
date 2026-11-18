@@ -81,10 +81,13 @@ export function readProjectDocMaxBytes(toml: string | null): ProjectDocMaxBytesS
  * An existing integer value has only its digits replaced, so a trailing comment
  * survives. An absent key is prepended with a comment before any existing
  * content, which keeps it ahead of every table header. The file's line ending is
- * preserved. Call it only when the key is `absent` or `set`; an `unparseable`
- * line would gain a duplicate key.
+ * preserved. `setting` is what `readProjectDocMaxBytes` returned for `toml`.
  */
-export function mergeProjectDocMaxBytes(toml: string | null, value: number): string {
+export function mergeProjectDocMaxBytes(
+	toml: string | null,
+	setting: Exclude<ProjectDocMaxBytesSetting, { kind: "unparseable" }>,
+	value: number
+): string {
 	const eol = toml !== null && toml.includes("\r\n") ? "\r\n" : "\n";
 	const addedLines = `${LIMIT_COMMENT}${eol}${LIMIT_KEY} = ${value}${eol}`;
 
@@ -92,7 +95,7 @@ export function mergeProjectDocMaxBytes(toml: string | null, value: number): str
 		return addedLines;
 	}
 
-	if (readProjectDocMaxBytes(toml).kind !== "set") {
+	if (setting.kind !== "set") {
 		return `${addedLines}${eol}${toml}`;
 	}
 
@@ -141,7 +144,7 @@ export async function syncCodexProjectDocLimit(
 
 	if (!dryRun) {
 		await fs.mkdir(path.dirname(configPath), { recursive: true });
-		await fs.writeFile(configPath, mergeProjectDocMaxBytes(existing, computed), "utf8");
+		await fs.writeFile(configPath, mergeProjectDocMaxBytes(existing, setting, computed), "utf8");
 	}
 
 	return {

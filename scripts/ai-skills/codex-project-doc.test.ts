@@ -71,7 +71,7 @@ test("readProjectDocMaxBytes reports a value it cannot read as unparseable", () 
 });
 
 test("mergeProjectDocMaxBytes into null yields the comment and key with a trailing line ending", () => {
-	const merged = mergeProjectDocMaxBytes(null, 131_072);
+	const merged = mergeProjectDocMaxBytes(null, { kind: "absent" }, 131_072);
 
 	assert.equal(merged.split("\n").length, 3);
 	assert.ok(merged.endsWith("project_doc_max_bytes = 131072\n"));
@@ -81,7 +81,7 @@ test("mergeProjectDocMaxBytes into null yields the comment and key with a traili
 test("mergeProjectDocMaxBytes adds the key at the top and leaves every other line byte-identical", () => {
 	const existing = 'model = "gpt-5"\n\n[mcp_servers.x]\ncommand = "x"\n';
 
-	const merged = mergeProjectDocMaxBytes(existing, 262_144);
+	const merged = mergeProjectDocMaxBytes(existing, { kind: "absent" }, 262_144);
 
 	assert.ok(merged.endsWith(`\n\n${existing}`), "existing content follows unchanged");
 	assert.deepEqual(readProjectDocMaxBytes(merged), { kind: "set", value: 262_144 });
@@ -91,7 +91,7 @@ test("mergeProjectDocMaxBytes adds the key at the top and leaves every other lin
 test("mergeProjectDocMaxBytes replaces an existing smaller value and keeps its trailing comment", () => {
 	const existing = 'model = "x"\nproject_doc_max_bytes = 65_536  # raised by hand\n[t]\nk = 1\n';
 
-	const merged = mergeProjectDocMaxBytes(existing, 262_144);
+	const merged = mergeProjectDocMaxBytes(existing, { kind: "set", value: 65_536 }, 262_144);
 
 	assert.equal(
 		merged,
@@ -100,7 +100,7 @@ test("mergeProjectDocMaxBytes replaces an existing smaller value and keeps its t
 });
 
 test("mergeProjectDocMaxBytes preserves CRLF line endings", () => {
-	const merged = mergeProjectDocMaxBytes('model = "x"\r\n', 131_072);
+	const merged = mergeProjectDocMaxBytes('model = "x"\r\n', { kind: "absent" }, 131_072);
 
 	assert.ok(!/[^\r]\n/.test(merged), "every line ending is CRLF");
 	assert.ok(merged.endsWith('model = "x"\r\n'));

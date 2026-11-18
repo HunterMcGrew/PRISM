@@ -1401,7 +1401,12 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
 	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
-	findings.push(...(await checkCodexDocLimit(consumerRepoRoot)));
+
+	// The remedy this check prescribes is `prism update`, which applies only once
+	// the repo has adopted; a never-adopted repo needs `prism adopt` instead.
+	if (syncResult.syncState.manifest !== null) {
+		findings.push(...(await checkCodexDocLimit(consumerRepoRoot)));
+	}
 
 	try {
 		const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);

@@ -4,8 +4,7 @@
  * Every rule in `AGENTS_MD_LEAD_RULES` must end inside that window, so a default
  * Codex session still sees routing and the behavioral norms. A lead set that
  * overflows fails here rather than silently dropping rules from Codex sessions.
- * The workflow block added to the same list must fit too, so growing the list
- * means shortening a lead rule or moving one out.
+ * Growing the list means shortening a lead rule or moving one out.
  */
 import fs from "node:fs";
 import path from "node:path";

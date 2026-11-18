@@ -2076,12 +2076,21 @@ test("runDoctor reports no host-output finding when the config declares no hosts
 
 // --- codex-doc-limit check (PRISM-519) ---
 
-/** Runs doctor against a repo whose `AGENTS.md` is `agentsMdBytes` bytes, returning the report and its `codex-doc-limit` findings. */
+/**
+ * Runs doctor against a repo whose `AGENTS.md` is `agentsMdBytes` bytes,
+ * returning the report and its `codex-doc-limit` findings. The repo has a sync
+ * manifest (has adopted) unless `adopted` is false.
+ */
 async function runCodexDocLimitDoctor(
 	roots: { prismSourceRoot: string; consumerRepoRoot: string },
 	agentsMdBytes: number,
-	codexConfigToml: string | null
+	codexConfigToml: string | null,
+	{ adopted = true }: { adopted?: boolean } = {}
 ) {
+	if (adopted) {
+		await writeConsumerManifest(path.join(roots.consumerRepoRoot, ".prism"), {});
+	}
+
 	await writeFile(roots.consumerRepoRoot, "AGENTS.md", "a".repeat(agentsMdBytes));
 	if (codexConfigToml !== null) {
 		await writeFile(roots.consumerRepoRoot, ".codex/config.toml", codexConfigToml);
@@ -2182,6 +2191,18 @@ test("runDoctor reports no codex-doc-limit finding when AGENTS.md fits Codex's d
 	await withTempRoots(async (roots) => {
 		const { report, findings } = await runCodexDocLimitDoctor(roots, 30_000, null);
 
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding for a never-adopted repo", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null, {
+			adopted: false,
+		});
+
+		assert.equal(report.syncState.manifest, null);
 		assert.deepEqual(findings, []);
 		assert.equal(report.healthy, true);
 	});
