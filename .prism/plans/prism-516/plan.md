@@ -441,6 +441,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: plan child 2 (git hooks) to the detail bar from the epic spec and thrive #2847. Bounds: plan file only, no code, no PR, and nothing outside the spec's Affected systems. Approach: port thrive's behavior, generalize its hard-coded tools into the gitHooks config, and reuse the hook runtime's delivery. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks-impl] open: Intent: implement T1 to T15 and open a draft PR. Bounds: only the plan's files, no new dependency, no shared type or public API change. Approach: one commit per task, tests first for each module, then docs. · close: drifted — touched `hook-gate.test.ts`, `seed-curation.json`, and the consumer stub manifest, each recorded under Decisions
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: full self-review of PR #523 against the plan and the rules. Bounds: findings into the plan only, no source fixes, no GitHub posts, no merge. Approach: run `prism:check`, read every new module and doc, and source-verify the architect docs. · close: scope held
 
 ## Verification
 
@@ -450,6 +451,104 @@ Pre-flight against the diff, not the graded verdict. `pnpm prism:check` passes o
 - AC-7: the Linux run is local. The Windows CI leg and the macOS human check are pending the PR's CI.
 
 ## Review
+
+Self-review 2026-11-18 [huntermcgrew/prism-516-git-hooks], full range `8e1dabc7..ce7ef2bb`. `pnpm prism:check` passes locally (1111 tests), and both `prism-check` CI legs are green.
+
+### A shim without its executable bit is never repaired, and the hooks still read as installed
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/update.ts:1334`, `scripts/ai-skills/hooks/git-hooks/install.mjs:155`
+- **Problem:** This is major because a POSIX clone whose `.githooks/*` lost mode 755 gets no checks at all, while every report says the hooks are active. That clone can come from a Windows teammate's commit, where `core.fileMode=false` adds new files as `100644`, or from any tool that drops modes. `deliverGitHookShims` calls `chmod` only on a write, so the byte-identical no-op path never restores the bit. Git then skips the hook and prints only an `advice.ignoredHook` hint (reproduced locally). `readGitHooksState().installed` checks the marker and not the mode, so doctor reports info, and the push gate skips `commands.lint` and `commands.format` because it believes the git hook runs them.
+- **Suggested fix:** On POSIX, `chmod 0o755` on the no-op path too, the way `HOOK_RUNTIME_ENTRY_POINTS` are chmodded on every update. Make `installed` require the executable bit off Windows. Add a delivery test that starts from a byte-identical `0644` shim.
+
+### hook-runtime.md still says the SessionStart compaction arm is registered with matcher `compact`
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:58` (plus the seed and `.claude/`, `.codex/`, `.cursor/` mirrors)
+- **Problem:** This is major because the claim diverges from source, the minimum severity under `architect-doc-verification.md`. Both settings files now register `startup|resume|compact`, and the bullet says `compact` and then talks about the sources "the registration also matches", which contradicts itself. Line 9 of the same doc already gives the correct matcher.
+- **Suggested fix:** Change the bullet to say the Claude `SessionStart` registration matches `startup|resume|compact`, and that this arm prints only on `compact`.
+
+### git-hooks.md says doctor always notes unset gitHooks commands
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/git-hooks.md:61`
+- **Problem:** This is major because it is a diverged claim, the floor `architect-doc-verification.md` sets, though the impact is small. "It also says when both `gitHooks` commands are unset" holds for the installed and not-installed findings. `checkGitHooks` leaves the note off the foreign-`core.hooksPath` finding (`doctor.ts:821-831`) and emits nothing when no shim exists.
+- **Suggested fix:** Scope the sentence to the installed and not-installed findings, or append `unsetNote` to the foreign finding too.
+
+### The installed predicate and the lint dedupe key off the pre-commit shim only
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/git-hooks/install.mjs:158`, `scripts/ai-skills/hooks/git-gates.mjs:478`
+- **Problem:** This is minor because it takes an uncommon layout: a consumer's own unmarked `.githooks/pre-push` beside PRISM's marked `pre-commit`. Delivery then leaves their `pre-push` in place, and `installGitHooks` sets `core.hooksPath`, which activates a hook git was not reading before. `installed` turns true, so the push gate skips `commands.lint` and announces that "the installed pre-push git hook runs it", when PRISM's lint never runs.
+- **Suggested fix:** Judge each slot on its own shim. Skip `lint` only when `.githooks/pre-push` is marked, and `format` only when `pre-commit` is.
+
+### The consumer stub routes `.githooks/**`, against the stated rationale for leaving `.claude/hooks/` unrouted
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/manifest.stub.json:27`
+- **Problem:** This is minor because the cost is one forced doc read. The plan's own Decision calls `.githooks/` "the one directory where a consumer's own git hooks are likely to live", and `hook-runtime.md` leaves `.claude/hooks/` unrouted for exactly that reason. With this route, the write gate holds an agent's edit to the consumer's own hook until it reads PRISM's `git-hooks.md`.
+- **Suggested fix:** Either record in the Decision why routing a consumer-owned directory is acceptable here, or satisfy `verify-manifest-coverage` another way (for example a route on `.claude/hooks/git-hooks/**`).
+
+### The setup-script line is said to be unable to break `prepare`, but it fails when `install.mjs` is absent
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `docs/adopting-into-existing-repos.md:114`, `.ai-skills/skills/prism-onboard/shared.md:41`
+- **Problem:** This is minor because only an uncommon host change triggers it. "It exits 0 on every outcome ... so it cannot break that step" holds only while the file exists. After `hosts` drops to Cursor-only, update removes `.claude/hooks/git-hooks/install.mjs`, so `node` exits 1 and every `pnpm install` fails in `prepare`. Onboarding item 8 offers the line without checking `hosts`.
+- **Suggested fix:** Ship a guarded form (for example `test -f .claude/hooks/git-hooks/install.mjs && node .claude/hooks/git-hooks/install.mjs || true`, or a `node -e` existence check). Have onboarding offer it only when `claude` or `codex` is a host.
+
+### Dropping both hosts removes the shims but leaves `core.hooksPath` at `.githooks`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/update.ts:1361`
+- **Problem:** This is minor because Cursor-only consumers are rare and the result is quiet, not broken. `removeDeliveredGitHookShims` deletes the shims and the empty `.githooks/`, but the local `core.hooksPath` still points there. Git then runs no hooks, and it keeps bypassing `.git/hooks`. Doctor stays silent because no shim remains.
+- **Suggested fix:** Unset the local value when it is exactly `.githooks` and the directory was removed, or record it beside the eject Decision as accepted.
+
+### `prism update --dry-run` on a fresh consumer reports "no PRISM shims" instead of what it would set
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/update.ts:564`
+- **Problem:** This is minor because only the preview text is wrong, not any write. On a dry run the shims are not written, so `installGitHooks(..., { dryRun })` returns `no-shims`. That contradicts the Decision that `--dry-run` "prints what it would do".
+- **Suggested fix:** On a dry run, judge shim presence against the PRISM source's `.githooks/`, or let the dry-run path assume delivered shims.
+
+### doctor re-implements the foreign-scope search the installer owns
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/doctor.ts:821`
+- **Problem:** This is minor because the two copies agree today. The scope order and the foreign test are written a second time beside `install.mjs:185`, and the module's stated purpose is that the predicate exists once, so a change to one copy can silently miss the other.
+- **Suggested fix:** Export the search from `install.mjs`, or derive the finding from `installGitHooks(root, { dryRun: true }).action`.
+
+### Docs do not cover `prism hooks install`, and the eject section omits what stays behind
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `README.md:168`, `docs/what-prism-writes.md:89`
+- **Problem:** This is minor because the docs are incomplete, not wrong. The README command table and `docs/adopt-prism.md` (the "full command reference") never list the new `hooks install` command. `what-prism-writes.md` calls itself the complete inventory, but its eject section does not say that eject leaves the shims, the `.mjs` runtime, and `core.hooksPath`, so the hooks keep firing after eject.
+- **Suggested fix:** Eli adds the command row and one sentence on what eject leaves.
+
+### The pre-push lint reads uncommitted edits for the HEAD ref, which the docs do not mention
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/git-hooks.md:41`
+- **Problem:** This is minor because it is a documentation gap in a known design. The non-HEAD skip is justified by "would judge files the push does not carry", but a dirty working tree does the same for the HEAD ref. An uncommitted lint error blocks a clean push, and an uncommitted fix passes a push that carries the error.
+- **Suggested fix:** Add one sentence naming the dirty-tree case as a known limit.
+
+### `quoteForShell` calls double quotes always safe under `cmd.exe`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/lib/command.mjs:26`
+- **Problem:** This is minor because it needs a Windows filename containing `%NAME%` for a variable that is set. `cmd.exe` expands `%VAR%` inside double quotes, so "always safe" overclaims.
+- **Suggested fix:** Soften the JSDoc to name the `%` exception, or reject `%` the way `"` is rejected.
 
 ## Cleanup Items
 
@@ -482,5 +581,16 @@ The issue's checklist, with IDs and evidence added. The criterion text matches t
 | 2026-11-18 | Winston | Generated AC from the issue checklist | written | already matches; no write |
 
 ## PR Readiness
+
+- [ ] No critical or major issues: 3 major open (shim executable bit; two architect-doc claims)
+- [x] Types correct: `prism:check-types` passes on both tsconfigs
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases: the gap is the no-op `0644` shim case in the first major
+- [x] All debugged issues resolved (none recorded)
+- [x] Build passes: last run 2026-11-18, `pnpm prism:check` green (build check, 1111 tests, verify-manifest, crossref, spec-scope, ship-closure, verify-pack), and CI green on ubuntu-latest and windows-latest
+- [ ] PR description up to date: not checked in this pass
+- [ ] Lasting decisions promoted to architect context: at close
+
+**Last updated:** 2026-11-18
 
 Retro:
