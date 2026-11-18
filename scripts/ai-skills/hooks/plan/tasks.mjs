@@ -305,7 +305,7 @@ export function readPlanConfig(repoRoot) {
 		existsSync(path.join(repoRoot, ".ai-skills", "config.json"))
 	) {
 		throw new PlanConfigError(
-			".ai-skills/config.json exists but is not a readable JSON object, so its stop paths cannot be applied."
+			".ai-skills/config.json exists but is not a readable JSON object."
 		);
 	}
 

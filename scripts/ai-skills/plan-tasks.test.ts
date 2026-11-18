@@ -494,7 +494,10 @@ describe("tasks.mjs CLI", () => {
 			const result = runWithConfig('{"ticketPrefix": "ACME",}');
 
 			assert.equal(result.status, 2);
-			assert.match(result.stderr, /\.ai-skills\/config\.json/);
+			assert.match(
+				result.stderr,
+				/^tasks\.mjs: \.ai-skills\/config\.json exists but is not a readable JSON object\.\n$/
+			);
 		});
 
 		test("exits 0 on the same config without the trailing comma", () => {

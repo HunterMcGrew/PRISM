@@ -341,7 +341,7 @@ describe("failing conditions print one line, exit 1, and write nothing", () => {
 		assert.equal(child.status, 2);
 		assert.match(
 			child.stderr,
-			/^auto-approve: \.ai-skills\/config\.json exists but is not a readable JSON object/
+			/^auto-approve: \.ai-skills\/config\.json exists but is not a readable JSON object\.\n$/
 		);
 		assert.equal(readPlan(folder), before);
 	});
