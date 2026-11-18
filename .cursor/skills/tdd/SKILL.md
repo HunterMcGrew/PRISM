@@ -44,7 +44,7 @@ phase inside this one.
 
 ## Test-first rules
 
-Test-first is the default, and every task lands with a proof that fails without it.
+Test-first is the default, and every task that changes behavior lands with a proof that fails without it. A docs or config task may have a proof that passes both before and after, and the plan marks `proof fails on main: yes` only on a task whose proof is a test that fails first.
 
 - A new file gets tests.
 - Untested code that a task changes gets characterization tests first.
