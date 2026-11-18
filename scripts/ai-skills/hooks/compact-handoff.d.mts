@@ -4,6 +4,8 @@ export interface LiveState {
 	status: string;
 }
 
+export function formatStatus(status: string | null): string;
+
 export function findPlanForBranch(repoRoot: string, branch: string): string | null;
 
 export function buildSummaryTemplate(repoRoot: string, state: LiveState): string;

@@ -44,7 +44,7 @@ const STATUS_LINE_LIMIT = 40;
 /**
  * @param {string} cwd
  * @param {string[]} args
- * @returns {string}
+ * @returns {string | null} Trimmed stdout, or null when git fails or times out.
  */
 function git(cwd, args) {
 	try {
@@ -54,7 +54,7 @@ function git(cwd, args) {
 			timeout: 5000,
 		}).trimEnd();
 	} catch {
-		return "";
+		return null;
 	}
 }
 
@@ -78,9 +78,10 @@ function readTicketPrefix(repoRoot) {
 }
 
 /**
- * Finds the plan for the ticket ID in the branch name, following the lookup
- * order in `branch-plan.md` § Plan Lookup: `<id>.md`, then `epic-<id>.md`,
- * then the same two among archived plans.
+ * Finds the plan for the ticket ID in the branch name, trying `<id>.md`, then
+ * `epic-<id>.md`, then the same two among archived plans. The `## Ticket`
+ * scan that `branch-plan.md` § Plan Lookup falls back to is skipped, so the
+ * hook checks four fixed paths instead of opening every plan.
  *
  * The ID pattern comes from the config's `ticketPrefix` because a consumer's
  * prefix is their own. A generic `<letters>-<digits>` match would also hit
@@ -114,23 +115,40 @@ export function findPlanForBranch(repoRoot, branch) {
 }
 
 /**
+ * Renders `git status -s` output for the state block. A failed or timed-out
+ * call says so rather than reading as a clean tree, because the summary
+ * copies this line as fact.
+ *
+ * @param {string | null} status
+ * @returns {string}
+ */
+export function formatStatus(status) {
+	if (status === null) {
+		return "(git status unavailable — do not assume the tree is clean)";
+	}
+
+	const lines = status.split("\n").filter(Boolean);
+	const shown = lines.slice(0, STATUS_LINE_LIMIT);
+
+	if (lines.length > shown.length) {
+		shown.push(`… ${lines.length - shown.length} more`);
+	}
+
+	return shown.length ? shown.join("\n") : "(clean)";
+}
+
+/**
  * @param {string} cwd
  * @param {string} repoRoot
  * @returns {LiveState}
  */
 function readLiveState(cwd, repoRoot) {
-	const branch = git(cwd, ["branch", "--show-current"]);
-	const statusLines = git(cwd, ["status", "-s"]).split("\n").filter(Boolean);
-	const shown = statusLines.slice(0, STATUS_LINE_LIMIT);
-
-	if (statusLines.length > shown.length) {
-		shown.push(`… ${statusLines.length - shown.length} more`);
-	}
+	const branch = git(cwd, ["branch", "--show-current"]) ?? "";
 
 	return {
 		branch: branch || "(detached HEAD or not a git checkout)",
 		plan: findPlanForBranch(repoRoot, branch),
-		status: shown.length ? shown.join("\n") : "(clean)",
+		status: formatStatus(git(cwd, ["status", "-s"])),
 	};
 }
 

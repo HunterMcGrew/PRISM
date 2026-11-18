@@ -33,7 +33,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
   - **Alternatives considered:** a `compact-handoff.mjs` entry point, which would need `PRISM_HOOK_COMMAND_PATTERN`, `PRISM_CODEX_HOOK_COMMAND_PATTERN`, `HOOK_RUNTIME_ENTRY_POINTS`, and doctor's dead-registration check all widened.
   - **Chosen approach:** a library module behind `hook.mjs --event=…`. The existing command pattern, doctor checks, kill switch, and merge ownership cover it with no changes.
   - → promoted to .prism/architect/_toolkit/hook-runtime.md
-- **The ticket ID is matched against the config's `ticketPrefix`.** A generic `<letters>-<digits>` match hits slug fragments like `pr-896` in unrelated branch names. Lookup order follows `branch-plan.md` § Plan Lookup, with `.prism/archived/plans/` standing in for the brief's `archive/`.
+- **The ticket ID is matched against the config's `ticketPrefix`.** A generic `<letters>-<digits>` match hits slug fragments like `pr-896` in unrelated branch names. Lookup tries `<id>.md`, `epic-<id>.md`, then both under `.prism/archived/plans/`; the `## Ticket` scan from `branch-plan.md` § Plan Lookup is skipped so the hook checks four fixed paths instead of opening every plan on each compaction.
   - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **The install marker is `.prism/architect/manifest.json` via `findRepoRoot`, not the plans directory.** Plans are created lazily, so a fresh install has no `.prism/plans/` and a plans-dir marker would leave the hook silent there.
   - → no promotion needed (reuses the runtime's existing repo-root lookup)
@@ -53,6 +53,8 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 ## History
 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Added the PreCompact and SessionStart compaction arms to the hook runtime and its Claude registrations; see Decision: The arms dispatch through `hook.mjs`.
+- 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Fixed self-review pass 1: plan-lookup claims now match the four paths checked, a failed `git status` no longer reads as clean, and truncation is tested.
+
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Closed on the final PR branch; decisions promoted to `hook-runtime.md`.
 
 ---
@@ -62,7 +64,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 ### Architect doc claims the hook follows Plan Lookup, but it skips the `## Ticket` scan
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/_toolkit/hook-runtime.md:60`
 - **Problem:** The doc (and its curated twin) says the plan is "looked up in the order `branch-plan.md` § Plan Lookup gives, archived plans included", but `findPlanForBranch` stops after ticket and epic names in `plans/` then `archived/plans/`. It never runs Plan Lookup step 4 (scan plans for a matching `## Ticket` field), and § Plan Lookup itself has no archive step. A diverged architect-doc claim is Major under `architect-doc-verification.md`.
 - **Suggested fix:** Reword in the doc, the twin (`templates/install/.prism/architect/_toolkit/hook-runtime.md`), and the `findPlanForBranch` JSDoc to say what runs: `<id>.md`, then `epic-<id>.md`, then the same two under `.prism/archived/plans/`, with no `## Ticket` field scan. Rebuild the mirrors.
@@ -70,7 +72,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 ### A failed or timed-out `git status` renders as "(clean)"
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/compact-handoff.mjs:123`
 - **Problem:** `git()` returns `""` on any failure or the 5 s timeout, so `readLiveState` reports `(clean)`, and the template tells the summarizer to copy these facts as written. A slow `git status` in a large repo would put a false clean-tree claim into the summary.
 - **Suggested fix:** Return `null` from `git()` on failure and render the status as `(git status unavailable)` in that case.
@@ -78,7 +80,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 ### Status truncation and failure paths have no test
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/compact-handoff.test.ts:50`
 - **Problem:** Nothing exercises the `STATUS_LINE_LIMIT` branch (`… N more`), the detached-HEAD label, or a git failure, so the "under 10,000 characters" claim is only checked for a one-file status.
 - **Suggested fix:** Add one test with more than 40 untracked files asserting the `… N more` line and the length cap.

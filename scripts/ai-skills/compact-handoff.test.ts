@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 
 import {
 	findPlanForBranch,
+	formatStatus,
 	runPreCompactArm,
 	runSessionStartArm,
 } from "./hooks/compact-handoff.mjs";
@@ -175,6 +176,44 @@ test("hook.mjs dispatches --event=PreCompact and --event=SessionStart and exits 
 		const malformed = run("PreCompact", "not json");
 		assert.equal(malformed.status, 0, "a malformed payload never blocks the compaction");
 		assert.equal(malformed.stdout, "");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("formatStatus caps the listing at 40 lines and never reports a failed git call as clean", () => {
+	const fiftyFiles = Array.from({ length: 50 }, (_, index) => `?? file-${index}.txt`).join("\n");
+	const shown = formatStatus(fiftyFiles).split("\n");
+
+	assert.equal(shown.length, 41);
+	assert.equal(shown[40], "… 10 more");
+	assert.equal(formatStatus(""), "(clean)");
+	assert.ok(formatStatus(null).startsWith("(git status unavailable"));
+});
+
+test("PreCompact stays under the 10,000-character cap with a status past the line limit", async () => {
+	const root = makeRepo("dev/acme-12-a-branch-name-long-enough-to-matter");
+	try {
+		for (let index = 0; index < 200; index += 1) {
+			writeFileSync(path.join(root, `untracked-file-with-a-long-name-${index}.txt`), "x");
+		}
+		const output = await runPreCompactArm(JSON.stringify({ cwd: root }));
+
+		assert.match(output ?? "", /^… 16\d more$/m, "the listing past 40 lines collapses to a count");
+		assert.ok(output !== null && output.length < 10_000);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("PreCompact outside a git checkout labels the branch and the status as unknown", async () => {
+	const root = makeRepo("main");
+	try {
+		rmSync(path.join(root, ".git"), { recursive: true, force: true });
+		const output = await runPreCompactArm(JSON.stringify({ cwd: root }));
+
+		assert.ok(output?.includes("- Branch: (detached HEAD or not a git checkout)"));
+		assert.ok(output?.includes("(git status unavailable"));
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
