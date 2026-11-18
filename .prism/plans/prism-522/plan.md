@@ -18,26 +18,35 @@ The thrive reference is TracTru/thrive at `db3570975431fa1d6114cc5f4170c126f6be7
 
 ## Tasks
 
-Parallel groups, worked out by hand. Each group's tasks touch disjoint files. Tasks that edit `roles.json`, `skill-routing.md`, `skills-ecosystem.md`, or `AGENTS.md` are chained by `depends on`, because those files are shared.
+Parallel groups, listed per stack PR so PR A's commits form a prefix of the branch. Each group's tasks touch disjoint files, and no task runs beside one that edits a file its own files import. Tasks that edit `roles.json`, `skill-routing.md`, `skills-ecosystem.md`, or `AGENTS.md` are chained by `depends on`, because those files are shared. The groups were checked with child 4's `analyzeBundles` on 2026-11-18, one stack PR at a time. This plan is not driven by `bundles.mjs` itself, for the reason in the first Decision.
 
-- Group 1: T1, T2, T9, T17
-- Group 2: T3, T10, T18
-- Group 3: T4, T11
-- Group 4: T5, T12
-- Group 5: T6, T13
-- Group 6: T7, T14
-- Group 7: T8, T15
-- Group 8: T16
-- Group 9: T19, T20
-- Group 10: T21, T23
-- Group 11: T22
-- Group 12: T24
+PR A, the approval mechanics (T1 to T8, and T25):
 
-T1 to T8 are the approval mechanics, and T9 to T24 are the skills, rules, and docs. That boundary is the proposed stack cut (see the stack Decision).
+- Group 1: T1, T2, T25
+- Group 2: T3
+- Group 3: T4
+- Group 4: T5
+- Group 5: T6
+- Group 6: T7, T8
+
+PR B, the skills, rules, and docs (T9 to T24), built after every PR A task is committed:
+
+- Group 7: T9, T10, T17, T18
+- Group 8: T11, T20
+- Group 9: T12, T23
+- Group 10: T13
+- Group 11: T14
+- Group 12: T15
+- Group 13: T16
+- Group 14: T19
+- Group 15: T21, T24
+- Group 16: T22
+
+The bundle check adds import edges from T5 and T6 to T9 and T10, because `update.ts` imports `generate-skills.ts` and `agents-md-block.ts`. Those edges only keep two tasks from running side by side, and the stack order already does that, since every PR A task is committed before any PR B task starts.
 
 Every task is Clove's except T8 and T24, which are Eli's. These conventions hold for every task:
 
-- **Precondition.** Children 2 (#516), 3 (#519), and 4 (#520) are merged to `main`. Start the build with `git merge origin/main`. Stop and report the build as blocked if any of these is missing on `main`:
+- **Precondition.** Children 2 (#516), 3 (#519), and 4 (#520) are merged to `main`, as 7ded6ecb, 8e1dabc7, and bd666c58. Start the build with `git merge origin/main`. Stop and report the build as blocked if any of these is missing on `main`:
   - `readRepoConfig` in `scripts/ai-skills/hooks/lib/command.mjs`
   - `AGENTS_MD_LEAD_RULES` in `scripts/ai-skills/agents-md-block.ts`
   - `scripts/ai-skills/hooks/plan/frontmatter.mjs`
@@ -64,6 +73,7 @@ Every task is Clove's except T8 and T24, which are Eli's. These conventions hold
   - Measure with `measureSkillLoad` from `scripts/ai-skills/lib/skill-loaded-lines.ts`.
 - **Shared mechanics live in the workflow rule.** Stage order, stops, approval, caps, the build report, and the resume table live in `.prism/rules/workflow.md` (T10). That rule is `load: always`, so citing it costs a skill nothing. A skill points at the workflow rule rather than restating any of these.
 - **Script paths in skill and rule text** are spelled `${HOOK_RUNTIME_DIR}/plan/<name>.mjs` (T1). That renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer.
+- **Chain-script exit codes** follow the Invocation section of `plan-chain-scripts.md`: 0 on success, 1 when one of the script's own conditions fails, and 2 on a usage or config error. `commit.mjs` also passes any other git failure through with git's code. Skill and rule text routes them apart. Exit 1 is a condition the stage handles, such as asking the person when `auto-approve.mjs` fails. Exit 2, or a git failure from `commit.mjs`, is an environment problem: the stage reports the message and stops, and a build stage returns `blocked`.
 - **Generated output.** Every task that edits a skill, rule, reference, template, architect doc, ADR, or `roles.json` runs `pnpm prism:build` and commits what the build writes from its sources. The files list names the expected copies. Add any other copy the build writes from these sources to the same commit and name it in `## History`.
   - A skill's copies are `.claude/skills/<id>/SKILL.md`, `.claude/skills/<id>/.ai-skill-generated`, `.cursor/skills/<id>/SKILL.md`, and `.cursor/skills/<id>/.ai-skill-generated`. A non-utility role adds `.claude/agents/<id>.md` and `.codex/agents/<id>.toml`.
   - A rule's copies are `.claude/rules/<name>.md`, `.codex/rules/<name>.md`, `.cursor/rules/<name>.mdc`, and `AGENTS.md`.
@@ -132,7 +142,8 @@ The swaps:
 - **Session id.** `process.env.CLAUDE_CODE_SESSION_ID || process.env.CODEX_THREAD_ID || null`.
 - **Path comparison.** `comparablePath` uses `realpathSync.native`, so a Windows 8.3 short name compares equal to its long form.
 - **Error text.** The not-a-chain-file message names `.prism/plans/<folder>/{intent,design,plan}.md`.
-- **Usage.** `Usage: approve.mjs <path>`, with no directory.
+- **Usage.** `Usage: approve.mjs <path>`, with no directory. A missing argument exits 2, where thrive exits 1, because every chain command exits 2 on a usage error. Every refusal stays exit 1.
+- **Imports.** It takes `approvalLines`, `CHAIN_FILE`, `formatLocalDate`, `readFrontmatter`, `replaceFrontmatterLine`, `sectionBody`, and `stampApproval` from child 4's `./frontmatter.mjs`, which exports all seven under thrive's names. `stampApproval`'s fourth argument writes the `approved_via:` line.
 
 Port `scripts/plan/approve.test.mjs` case for case, with the path and id swaps. Then adapt it for Windows:
 
@@ -144,6 +155,7 @@ Add these cases:
 
 - With `CODEX_THREAD_ID` set, a TTY, and no token, the script refuses.
 - A token whose `sessionId` equals `CODEX_THREAD_ID` is accepted when `CLAUDE_CODE_SESSION_ID` is unset.
+- Run with no argument, the script prints the usage line and exits 2.
 
 ### T4: Port the approve guard as its own entry point
 
@@ -156,14 +168,14 @@ Owner: Clove. Port thrive's `scripts/hooks/approve-guard/hook.mjs`. Keep every a
 
 - the token arm, which runs first
 - the execution arm, which allows exactly one bare `node <approve script> <artifact>` per unused same-session token and fails closed on shell it cannot read
-- the frontmatter arm, which denies an edit that changes the `status`, `approved_by`, `approved_at`, or `approved_via` lines
+- the frontmatter arm, which denies an edit that changes the `status`, `approved_by`, or `approved_at` lines, read through child 4's `matchApprovalLine` and `approvalLines`. `approved_via` is not an approval line, as `frontmatter.mjs` documents, so an edit to it alone passes, the same as in thrive
 - the prompt arm, which records a chat approval on the prompt-submit event and adds the context line
 
 Keep the known-misses header, the read-only command set, the brace-expansion budget, and every deny text except the swaps below.
 
 The swaps:
 
-- **Imports.** `./plan/chat-approval.mjs`, `./plan/frontmatter.mjs`, and `./lib/tokenize.mjs`. Do not import `./lib/segments.mjs`, because thrive's guard has its own segment reader. Child 4 named this guard as the walker's first caller, and that turns out not to hold, so record it in `## History`.
+- **Imports.** `./plan/chat-approval.mjs`, `./plan/frontmatter.mjs` (`approvalLines`, `CHAIN_FILE`, `matchApprovalLine`), and `./lib/tokenize.mjs` (`PIPES`, `REDIRECTS`, `tokenize`). Child 4 exports each of these under thrive's names. Do not import `./lib/segments.mjs`, because thrive's guard has its own segment reader. Child 4 named this guard as the walker's first caller, and that turns out not to hold, so record it in `## History`.
 - **Script location.** `APPROVE_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "plan/approve.mjs")`.
   - Every deny and context text names the command as `node <rel> <artifact>`. `<rel>` is `path.relative(<git toplevel>, APPROVE_SCRIPT)` with `\` turned into `/`, computed at run time.
   - `CHAT_APPROVE_COMMAND` matches that relative spelling and the absolute one.
@@ -229,40 +241,43 @@ Tests:
 ### T6: Deliver the hook runtime files on every host
 
 - files: scripts/ai-skills/update.ts, scripts/ai-skills/doctor.ts, scripts/ai-skills/update.test.ts, scripts/ai-skills/doctor.test.ts, scripts/ai-skills/plan-runtime-delivery.test.ts
-- proof: pnpm exec tsx --test scripts/ai-skills/update.test.ts scripts/ai-skills/doctor.test.ts scripts/ai-skills/plan-runtime-delivery.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/update.test.ts scripts/ai-skills/doctor.test.ts scripts/ai-skills/plan-runtime-delivery.test.ts scripts/ai-skills/git-hooks-delivery.test.ts
 - proof fails on main: yes
 - depends on: T5
-- behavior change: a Cursor-only install (`hosts: ["cursor"]`) now receives the runtime files under `.claude/hooks/` with no registration, where before it received nothing. The intent requires that a Cursor user approve from a terminal, and the skills it receives name these scripts.
+- behavior change: a Cursor-only install (`hosts: ["cursor"]`) now receives the runtime files under `.claude/hooks/` with no registration, no git hook shims, and no `.gitignore` lines, where before it received nothing. The intent requires that a Cursor user approve from a terminal, and the skills it receives name these scripts.
 
-Owner: Clove. In `update.ts`, `refreshHookRuntime` delivers `HOOK_RUNTIME_FILES` and appends the state-file `.gitignore` lines whatever `hosts` holds. Two things stay host-gated:
+Owner: Clove. In `update.ts`, `refreshHookRuntime` delivers every `HOOK_RUNTIME_FILES` entry, runs `pruneStaleHookRuntimeFiles`, and sets the entry points' executable bit whatever `hosts` holds. The neither-host branch no longer calls `removeDeliveredHookRuntimeFiles`. Delete that function if nothing else calls it.
 
-- merging each host's registration
-- removing a dropped host's registration
+These stay gated on `claude` or `codex`, as child 2 and child 4 left them:
 
-The branch that removes the runtime files when both `claude` and `codex` have left `hosts` is deleted. The runtime files now stay for Cursor, and `pruneStaleHookRuntimeFiles` still prunes marked files at unrecognized paths.
+- **Git hook shims.** With neither host, `removeDeliveredGitHookShims` still runs and `deliverGitHookShims` does not. `git-hooks.md` gives a Cursor-only consumer no git hooks, and that is child 2's call, not this child's.
+- **Registrations.** Each host's registration merges only for that host, and a dropped host's registration is still removed.
+- **`.gitignore` lines.** `appendHookStateGitignoreLines` runs only when a host is registered, because only the registered entry points write state files.
 
-In `doctor.ts`, delete the warning that the runtime remains after both `claude` and `codex` left `hosts`. Keep the per-host installed and registered report.
+In `doctor.ts`, delete the warning whose message starts `hosts does not list "claude" or "codex", but PRISM's hook runtime is still present`, and the branch that raises it. Keep the per-host installed and registered report. Check that no other hook finding fires on a Cursor-only install that holds the runtime.
 
 Tests:
 
-- **`update.test.ts`.** Flip the cases that assert no delivery or removal on a Cursor-only host to assert delivery with no `.claude/settings.json` or `.codex/hooks.json` written.
-- **`doctor.test.ts`.** Delete the matching warning case. Add one: a Cursor-only install with the runtime reports no warning.
-- **`plan-runtime-delivery.test.ts`.** Flip child 4's "Cursor only delivers none" case to "Cursor only delivers every file and writes no registration". `node .claude/hooks/plan/tasks.mjs <fixture>/plan.md --base HEAD` exits 0 there too.
+- **`update.test.ts`.** "refreshHookRuntime: a repo that runs neither Claude Code nor Codex receives no runtime, no registration, and no gitignore lines" becomes a case where that repo receives every runtime file, and still gets no `.claude/settings.json`, no `.codex/hooks.json`, no `.githooks/`, and no `.gitignore`.
+- **`doctor.test.ts`.** Delete the case that pins the removed warning. Add one: a Cursor-only install with the runtime on disk reports no hook warning.
+- **`plan-runtime-delivery.test.ts`.** "hosts: [cursor] delivers none of the plan-chain modules" becomes "hosts: [cursor] delivers every plan-chain module and writes no registration". `node .claude/hooks/plan/tasks.mjs <fixture>/plan.md --base HEAD` exits 0 there too.
+- **`git-hooks-delivery.test.ts`** is unchanged. Its `hosts: [cursor]` cases (no shims, marked shims removed, `core.hooksPath` unset) are the proof that the shim gating held, so the proof runs it.
 
 ### T7: Document approval in the hook-runtime and chain-scripts docs
 
-- files: .prism/architect/_toolkit/hook-runtime.md, .prism/architect/_toolkit/plan-chain-scripts.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/plan-chain-scripts.md, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md, .claude/architect/_toolkit/plan-chain-scripts.md, .codex/architect/_toolkit/plan-chain-scripts.md, .cursor/architect/_toolkit/plan-chain-scripts.md
+- files: .prism/architect/_toolkit/hook-runtime.md, .prism/architect/_toolkit/plan-chain-scripts.md, .prism/architect/_toolkit/git-hooks.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/plan-chain-scripts.md, templates/install/.prism/architect/_toolkit/git-hooks.md, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md, .claude/architect/_toolkit/plan-chain-scripts.md, .codex/architect/_toolkit/plan-chain-scripts.md, .cursor/architect/_toolkit/plan-chain-scripts.md, .claude/architect/_toolkit/git-hooks.md, .codex/architect/_toolkit/git-hooks.md, .cursor/architect/_toolkit/git-hooks.md
 - proof: pnpm run prism:build && pnpm run prism:crossref-lint
-- depends on: T1, T5, T6
+- depends on: T1, T5, T6, T25
 
-Owner: Clove. Write every claim against T1 to T6's merged source. Edit existing paragraphs, except the one new `###` named below, because `hook-runtime.md` is a topic doc rather than an umbrella. Make the same edits by hand in the curated `hook-runtime.md` twin wherever it carries the paragraph.
+Owner: Clove. Write every claim against T1 to T6 and T25's merged source. Edit existing paragraphs, except the one new `###` named below, because `hook-runtime.md` is a topic doc rather than an umbrella. Make the same edits by hand in the curated `hook-runtime.md` twin wherever it carries the paragraph. The `plan-chain-scripts.md` and `git-hooks.md` twins are not curated, so the build writes them.
 
 **`hook-runtime.md`:**
 
 - **Delivery path.**
-  - The runtime files reach every install whatever `hosts` holds. Registrations stay per host.
+  - The runtime files reach every install whatever `hosts` holds. Registrations, the git hook shims, and the `.gitignore` lines stay per host.
   - The three entry points are `hook.mjs`, `git-gates.mjs`, and `approve-guard.mjs`.
   - Delete the sentences saying the runtime files are removed when both hosts are gone.
+- **The gate is friction, not a wall.** Its last sentence says doctor warns when the runtime remains after both `claude` and `codex` left `hosts`. T6 deletes that warning, so drop that clause and keep the dropped-host registration warning.
 - **Switches.** Add that the approve guard ignores both kill switches, with the reason: an approval path an agent can turn off is not a control.
 - **New `### Approve guard` subsection,** after Git gates:
   - its four arms and what each denies
@@ -277,8 +292,15 @@ Owner: Clove. Write every claim against T1 to T6's merged source. Edit existing 
 **`plan-chain-scripts.md`:**
 
 - Add one Contracts line each for `approve.mjs` and `chat-approval.mjs`.
-- Replace the paragraph saying a Cursor-only consumer does not receive these modules with one saying every install receives them.
+- **Invocation.** `approve` joins `tasks`, `bundles`, `auto-approve`, and `commit` as a command. Add that a `.ai-skills/config.json` that exists but does not parse is a config error, exit 2, for every command that reads it (T25).
+- **Hosts.** Replace the paragraph saying a Cursor-only consumer does not receive these modules with one saying every install receives them, and only the registrations and git hook shims follow `hosts`.
 - Name `${HOOK_RUNTIME_DIR}` as how skill and rule text spells the path.
+- **Templates.** Leave the paragraph as it is. It cites the four templates by path, and once T12, T13, T14, and T18 cite them from skills it no longer carries `ship-closure`, but what it says about the headings the scripts read stays true.
+
+**`git-hooks.md`:**
+
+- **Delivery paragraph.** Add that a Cursor-only consumer receives the git hook modules with the rest of the runtime but no shims, so git runs nothing.
+- **The setup-script line.** It says the import form exits 0 "when `install.mjs` is absent, as it is after `hosts` drops to Cursor only". After T6 the module is present on a Cursor-only install, where it finds no shims, says so, and exits 0. Reword the clause to say that, and keep the absent case for a clone that never ran an update.
 
 ### T8: Document the config key and the delivered approval files for consumers
 
@@ -291,7 +313,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **`parameterization.md`.** Add a field-reference row for `hookRuntimeDir`, using T1's schema description. Say a consumer never sets it.
 - **`what-prism-writes.md`.**
   - Add rows for `.claude/hooks/approve-guard.mjs`, `.claude/hooks/plan/approve.mjs`, and `.claude/hooks/plan/chat-approval.mjs`.
-  - Change the hook-runtime rows to say the files reach every install and registrations follow `hosts`.
+  - Change the hook-runtime rows to say the files reach every install, while registrations and the `.githooks/` shims follow `hosts`.
   - Add one line saying the chat approval token lives inside the repo's git directory and never appears in the working tree.
 
 ### T9: Add the agent role type and preloads to the registry
@@ -345,6 +367,7 @@ Owner: Clove. These are the spec's workflow block and resume table, delivered as
   - The command is `node ${HOOK_RUNTIME_DIR}/plan/approve.mjs <artifact>`.
   - "Refuses inside Claude Code" becomes "refuses inside an agent session".
   - Add: "A Cursor user runs the command in their own terminal."
+  - "`plan.md` needs it when `auto-approve.mjs` fails" means exit 1. Add one sentence: a chain script that exits 2 has a usage or config error, so the stage reports its message and stops, and never turns it into an approval ask. A person approving over an unreadable config would approve a plan whose stop paths were never checked.
 - **Advancing.**
   - Drop every `watch-ci.mjs` and `REVIEW.md` sentence. Child 6 brings those.
   - Keep the run goal, the resume rule, the stops, and the four review-pause triggers, worded without the `REVIEW.md` citation.
@@ -363,12 +386,13 @@ Owner: Clove. These are the spec's workflow block and resume table, delivered as
 
   Then the routing:
   - `done`: rerun `bundles.mjs <plan.md> --base <base>`, dispatch the next bundles, and after each wave append the reports' History lines to `plan.md` and commit `plan: <summary>`.
-  - `blocked`: fix the environment and re-dispatch, at most 2 times.
+  - `blocked`: fix the environment and re-dispatch, at most 2 times. A chain script's exit 2, or a `commit.mjs` failure other than an unchanged path, is `blocked`.
   - `needs-replan`: the plan stage's re-plan, where a second one on the same task asks the person.
   - An unlisted file, or an acceptance criterion the tasks cannot meet, is `needs-replan`.
   - The session checks that a report arrived before routing it.
 - **Resume table.** Thrive's fourteen rows, with these changes:
   - "devil's advocate" becomes "challenge".
+  - The plan-approval row reads `auto-approve.mjs`, then the person on exit 1, or a stop on exit 2.
   - The `verify` row runs the `.prism/rules/verification-commands.md` checks on the head and records them under `## Verification`.
   - The `review` row runs `prism-self-review`.
   - The `PR` row follows `.prism/references/shipping-flow.md` (T20).
@@ -496,12 +520,12 @@ Owner: Clove. Port thrive's `thrive-plan`, trimmed to budget: 120 minus `.prism/
 
 - **Precondition.** Approved `intent.md`, `spec.md` present, and an approved `design.md` when one is required.
 - **Writing `plan.md`** from the template, with tasks at the detail bar in `.prism/rules/implementation-task-detail.md`, test-first per `tdd`, and a bug's failing test as its own earlier task.
-- **Grouping.** Run `node ${HOOK_RUNTIME_DIR}/plan/bundles.mjs <plan.md>` and record the groups it prints. A duplicate claim or a cycle is fixed before going on.
+- **Grouping.** Run `node ${HOOK_RUNTIME_DIR}/plan/bundles.mjs <plan.md>` and record the groups it prints. A duplicate claim, a cycle, or a task the parser rejects is fixed before going on. Each `files` entry is one repo path with forward slashes, because the parser rejects a backslash, a glob character, a space, and a trailing slash.
 - **Challenge rounds.**
   - Dispatch `prism-challenge` with the folder and the round number. Rounds 1 and 2 always run, then up to round 3, then the confirm round, per the workflow rule.
   - Fix each blocking finding before the next round, and commit `plan: challenge round <n>`.
   - A major finding goes to `prism-architect` as a subagent with the folder and the finding.
-- **Approval.** Run `node ${HOOK_RUNTIME_DIR}/plan/auto-approve.mjs <folder>`. When it fails, land every pending edit and ask the person once.
+- **Approval.** Run `node ${HOOK_RUNTIME_DIR}/plan/auto-approve.mjs <folder>`. When it exits 1, land every pending edit and ask the person once, naming the conditions it printed. When it exits 2, report the config error and stop, per the workflow rule.
 - **Re-plan on `needs-replan`.**
   - Append tasks, never renumbering, and mark changed ones `amended:`.
   - Rerun `bundles.mjs`, then one challenge round and its confirm round, then `auto-approve.mjs --check`.
@@ -555,7 +579,7 @@ Owner: Clove. `roles.json`: `prism-implement` gains `"preloads": ["tdd"]`.
 
 - On a plan folder, refuse unless `plan.md`'s frontmatter `status` is `approved`, and return `blocked` naming the missing approval.
 - Build only the tasks in the dispatched bundle, test-first per `tdd`.
-- Commit each bundle with `node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "<T-subject>" <paths>`, after the cleanup pass. The subject is a task form from the workflow rule.
+- Commit each bundle with `node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "<T-subject>" <paths>`, after the cleanup pass. The subject is a task form from the workflow rule. Name only the paths the bundle changed, because `commit.mjs` refuses a path with no change. Any other non-zero exit returns `blocked` with its stderr.
 - Never edit `plan.md` and never push. Return the build report from the workflow rule, whose `history:` line the session appends.
 - A file outside the tasks' lists, or an acceptance criterion the tasks cannot meet, returns `needs-replan`.
 
@@ -724,11 +748,36 @@ Owner: Eli. Set `last_updated`.
 
 `docs/workflow.md` is child 9's and stays as it is.
 
+### T25: Make tasks and bundles fail closed on an unreadable config
+
+- files: scripts/ai-skills/hooks/plan/tasks.mjs, scripts/ai-skills/hooks/plan/tasks.d.mts, scripts/ai-skills/hooks/plan/bundles.mjs, scripts/ai-skills/hooks/plan/auto-approve.mjs, scripts/ai-skills/plan-tasks.test.ts, scripts/ai-skills/plan-bundles.test.ts, scripts/ai-skills/plan-auto-approve.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-tasks.test.ts scripts/ai-skills/plan-bundles.test.ts scripts/ai-skills/plan-auto-approve.test.ts && pnpm run prism:check-types
+- proof fails on main: yes
+- depends on: none
+- behavior change: `tasks.mjs` and `bundles.mjs` exit 2 naming the file when `.ai-skills/config.json` exists but does not parse, where before they read the defaults. `auto-approve.mjs` keeps its exit 2 and its message.
+
+Owner: Clove. Child 4's `auto-approve.mjs` already refuses an unreadable config through its private `readStopPathConfig`, while `tasks.mjs` and `bundles.mjs` call `readRepoConfig` from `lib/command.mjs`, which returns null for a broken file. The skills in PR B are their first callers.
+
+- **`tasks.mjs`.** Move `readStopPathConfig` here as an exported `readPlanConfig(repoRoot)`, with its JSDoc, check, and message unchanged. It throws a `PlanConfigError`, a new exported `Error` subclass, when the file exists but `readRepoConfig` returns null. `loadPlanState` reads `ticketPrefix` and `defaultBranch` through it.
+- **`tasks.d.mts`.** Declare `readPlanConfig` and `PlanConfigError`.
+- **`bundles.mjs`.** `readAliases` reads through `readPlanConfig`.
+- **The CLI catch blocks** in `tasks.mjs` and `bundles.mjs` set exit 2 for a `PlanConfigError` and keep exit 1 for every other error.
+- **`auto-approve.mjs`.** Delete `readStopPathConfig` and call `readPlanConfig` from `./tasks.mjs`, which it already imports.
+- Leave `readRepoConfig` alone. The git hooks need its null for a broken file, as child 4 recorded.
+
+Tests:
+
+- **`plan-tasks.test.ts`.** A CLI case: in a fixture repo whose `.ai-skills/config.json` holds `{"ticketPrefix": "ACME",}`, `tasks.mjs <plan.md>` exits 2 and stderr names `.ai-skills/config.json`. Without the trailing comma, the same run exits 0.
+- **`plan-bundles.test.ts`.** The same pair for `bundles.mjs`.
+- **`plan-auto-approve.test.ts`.** The existing case that matches `exists but is not a readable JSON object` still passes unchanged.
+
 ## Challenge
 
 ## Decisions
 
 - **The plan uses the folder shape and the chain task shape, as child 4's does.** The round runner lands in this child, so no challenge rounds ran and `status` stays `draft`. Commits use `PRISM-522: <summary> (T<n>)`, because the `T<n>:` subject rule lands here in T21.
+  - **Where the bridge ends.** Child 4's closed plan named this child as the end of the folder-shape bridge, because this child lands approval, the round runner, and the `T<n>:` subject rule. This plan still can't use them on itself. It has no `intent.md` or `spec.md`, so `auto-approve.mjs` has nothing to check, and the tools are not merged while it builds. The first plan off the bridge is the next child's.
+  - **Done is tracked by hand.** `tasks.mjs` reads `PRISM-522:` subjects as ticket subjects that complete nothing, so it reports every task open for the whole build. The session tracks done tasks from `## History` and `git log`, and builds the groups listed under `## Tasks` rather than running `bundles.mjs` on this plan. The groups match `analyzeBundles` run one stack PR at a time.
 - **The shared workflow mechanics live in one always-on rule, `.prism/rules/workflow.md`, first in the AGENTS.md lead list.**
   - **Root cause.** The spec asks for the workflow block in `AGENTS.md` and `CLAUDE.md` as generated content. PRISM's `CLAUDE.md` is a pointer, and Claude reads always-on rules from `.claude/rules/`.
   - **Alternatives considered.** Hand-written blocks in the preamble and in `CLAUDE.md`, which drift. A reference file each skill cites, which charges every stage skill's line cap.
@@ -761,17 +810,27 @@ Owner: Eli. Set `last_updated`.
 - **The resume table's later rows use existing skills until child 6.** Verify runs `verification-commands.md`, review runs `prism-self-review` writing `## Review`, PR runs the new `shipping-flow.md`, and retro runs `prism-retro`, then the session writes `Retro:`. Every merged step works before `prism-verify` and `REVIEW.md` exist, and child 6 swaps the rows.
 - **The pause-before-commit preference fires at the PR push on a folder plan.** The stages commit through `commit.mjs` many times per run, and a pause per bundle would put the person back in the loop the intent removes. ADR-0082 records it.
 - **The "Winston" sweep (T22) runs over spec surfaces only.** Root files outside the spec's Affected systems (`CONTEXT.md`, `README.md`, `CHANGELOG.md`, `SECURITY.md`) and dated records (`.prism/prds/`, `.prism/qa/`, `.prism/research/`) are left alone. Child 9 owns the user docs.
+- **`tasks.mjs` and `bundles.mjs` fail closed on a config that does not parse, through one reader shared with `auto-approve.mjs` (T25).**
+  - **Root cause.** Child 4 left this to the child that writes the first callers, which is this one. Both scripts read config through `readRepoConfig`, which returns null for a broken file, so a trailing comma silently drops `importAliases`, `ticketPrefix`, and `defaultBranch`. Dropped aliases lose import edges, so two tasks that should run in order can run side by side. A dropped `defaultBranch` reads the wrong commit range for a plan with no `intent.md`, which can mark a task done that isn't.
+  - **Alternatives considered.** Leaving them lenient, since `auto-approve.mjs` exits 2 on the same file before any build starts. Rejected, because the plan stage runs `bundles.mjs` before approval, and a config broken after approval reaches `bundles.mjs --base` and `tasks.mjs` with no check in front. A new `plan/config.mjs` module was the other home. Rejected, because `tasks.mjs` is already imported by both other scripts, and a new module adds a `HOOK_RUNTIME_FILES` entry and a delivery test for one function.
+  - **Chosen approach.** `readStopPathConfig` moves to `tasks.mjs` as `readPlanConfig`, throwing `PlanConfigError`. Every chain command then gives one answer for a broken config: exit 2.
+  - **Implementation guidance.** `readRepoConfig` stays unchanged for the git hooks. T25 sits in PR A because it changes runtime code the PR B skills call.
+- **Exit 2 from a chain script stops the run, and exit 1 is the only failure that reaches the person as an approval ask.** Thrive's workflow says `plan.md` goes to the person "when `auto-approve.mjs` fails". Child 4's script now has two failures. Exit 1 means a condition failed, such as a stop path or a missing challenge round, and a person can judge the plan instead. Exit 2 means the config couldn't be read, so no stop path was checked, and an approval ask would have the person approve without knowing that. The same split applies in a build: a chain script's exit 2, or a `commit.mjs` git failure, returns `blocked`. T10, T14, and T16 carry it.
+- **Git hook shims and the `.gitignore` lines stay gated on `claude` or `codex` when Cursor-only installs receive the runtime files (T6).** `git-hooks.md` records child 2's call that a Cursor-only consumer gets no git hooks, and the shim removal and `core.hooksPath` unset live in the same branch T6 removes. Deleting that branch whole would hand Cursor-only consumers git hooks as a side effect. T6 therefore narrows the branch to the runtime files, and `git-hooks-delivery.test.ts`'s Cursor-only cases stay unchanged as the proof. The `.gitignore` lines cover state files that only the registered entry points write, so a Cursor-only repo has nothing to ignore. This refines how T6 delivers, and leaves the pending call on Cursor-only delivery itself as it was.
+- **`plan-chain-scripts.md` keeps its Templates paragraph after the skills cite the templates.** Child 4 cited the four templates there so `ship-closure` could reach them before any skill did, and named this child as the end of that bridge. T12, T13, T14, and T18 cite them from skills, so the bridge reason ends. The paragraph stays, because what it says about the headings and frontmatter keys the scripts read by name is a contract a template editor needs, whatever cites the files.
 - **The issue's acceptance criteria were not synced.** Issue #522 states its proof in one line. Writing the criteria below into it is a tracker edit, so it waits for a person's go-ahead.
 - **OPEN — TBD, needs a live Codex run.** Whether a Codex hook payload's `session_id` equals the `CODEX_THREAD_ID` a command sees. **Default path (used until resolved):** `approve.mjs` compares a chat token's session against `CODEX_THREAD_ID`, so a mismatch fails closed, and a Codex user approves from a terminal.
-- **OPEN — TBD, needs Hunter's input.** Whether child 5 ships as a stack of two PRs. It is far past ten files and five hundred lines. The approval trio alone is about 1,800 lines of source and 2,600 of tests. **Default path (used until resolved):** propose two PRs. PR A is T1 to T8, the approval mechanics, registered and delivered but called by no skill, so it ships inert and self-consistent. PR B is T9 to T24, the skills, rules, and docs that use it. Whoever opens the PR asks Hunter first.
+- **OPEN — TBD, needs Hunter's input.** Whether child 5 ships as a stack of two PRs. It is far past ten files and five hundred lines. The approval trio alone is about 1,800 lines of source and 2,600 of tests. **Default path (used until resolved):** propose two PRs. PR A is T1 to T8 plus T25, the approval mechanics and the chain scripts' config check, registered and delivered but called by no skill, so it ships inert and self-consistent. PR B is T9 to T24, the skills, rules, and docs that use it. The groups under `## Tasks` build PR A first, so its commits form a prefix of the branch. Whoever opens the PR asks Hunter first.
 
 ## History
 
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Plan created: approval script, chat approval, and guard with delivery; registry agent type and preloads; workflow rule; architect, intent, spec, plan, and challenge skills; commit-only stages; user-stories removal; rule, ADR, and doc edits; as 24 tasks.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Merged `origin/main` with child 4 (bd666c58) and reconciled every task against its source: T3, T4, T6, T7, T10, T14, and T16 changed, T25 added for the config check, and the groups were rebuilt per stack PR and checked with `analyzeBundles`. The new Decisions cover the config check, exit-code routing, shim gating, and the Templates paragraph.
 
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: plan child 5 (chain skills and approval) to the detail bar from the epic spec and thrive at db3570975. Bounds: plan file only, no code, no PR, nothing outside the spec's Affected systems, no new dependency, and flag any shared-type or public-surface change. Approach: put shared mechanics in one always-on workflow rule so stage skills fit the cap, port the approval trio onto PRISM's runtime, and order tasks so the approval mechanics form a clean first stack PR. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: refresh this plan against what child 4 merged (#528, bd666c58). Bounds: plan file only, no code; keep the two-PR stack unless the refresh changes what ships together; leave Hunter's four pending calls as they are. Approach: merge main, diff every task's named module, export, flag, exit code, and config key against child 4's source, decide child 4's two hand-offs as Decisions, and recheck the groups with `analyzeBundles`. · close: scope held; PR A gains T25, and T6 narrowed to keep child 2's git hook gating
 
 ## Verification
 
@@ -793,20 +852,23 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
   - Evidence (machine): `skill-loaded-lines.test.ts` passes, and `OVER_CAP_ALLOWLIST` has one entry · UNMET looks like: a `prism-plan` or `prism-user-stories` entry left, or a new one added.
 - [ ] **AC-6** "Winston" routes to `prism-architect`, "write the intent" or "write user stories" routes to `prism-intent`, and `prism-user-stories` no longer exists.
   - Evidence (machine): `routing-coverage.test.ts` passes. `git grep -l prism-user-stories` matches only plans, retros, audits, ADRs, `CHANGELOG.md`, and `.prism/lessons.md`. No `prism-user-stories` directory exists under `.claude/skills/` or `.cursor/skills/` · UNMET looks like: a routing failure, or a live reference left.
-- [ ] **AC-7** A consumer update delivers and registers the approve guard, and a Cursor-only install receives the runtime files with no registration.
-  - Evidence (machine): `approve-guard-registration.test.ts` and `plan-runtime-delivery.test.ts` pass, including the Cursor-only case · UNMET looks like: a missing guard entry on Claude or Codex, or a registration written for Cursor.
+- [ ] **AC-7** A consumer update delivers and registers the approve guard, and a Cursor-only install receives the runtime files with no registration and no git hook shims.
+  - Evidence (machine): `approve-guard-registration.test.ts`, `plan-runtime-delivery.test.ts`, and `git-hooks-delivery.test.ts` pass, including their Cursor-only cases · UNMET looks like: a missing guard entry on Claude or Codex, a registration written for Cursor, or a `.githooks/` shim delivered to a Cursor-only install.
 - [ ] **AC-8** The implement agent preloads `tdd`, and a preload naming no skill fails the build.
   - Evidence (machine): `.claude/agents/prism-implement.md` frontmatter holds `skills:` with `- tdd`, and `role-preloads.test.ts` passes its unknown-preload throw case · UNMET looks like: no `skills:` line, or an unknown preload that builds.
 - [ ] **AC-9** Approval from Claude Code's own shell mode counts as an agent session, not a terminal, answering the intent's open question on Claude Code.
   - Evidence (human): in a Claude Code session with no chat approval, running the approve command through the `!` shell prefix is refused. Record the observed result in `## History`, and if it was accepted, record that and open an `OPEN` Decision · UNMET looks like: the run not done, or its result not recorded.
 - [ ] **AC-10** The whole check suite passes on both CI platforms.
   - Evidence (machine): the PR's `prism-check` CI is green on `ubuntu-latest` and `windows-latest` · UNMET looks like: either leg red.
+- [ ] **AC-11** A chain command run against a config file that does not parse stops with a config error instead of reading the defaults.
+  - Evidence (machine): in `plan-tasks.test.ts` and `plan-bundles.test.ts`, the CLI exits 2 naming `.ai-skills/config.json` on a config with a trailing comma, and exits 0 on the same config without it · UNMET looks like: an exit 0 or 1 on the broken config, or a nonzero exit on the valid one.
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC from the issue's proof line | written | not synced (awaiting go-ahead) |
+| 2026-11-18 | Winston | Refreshed against child 4: AC-7 adds the git hook shims, AC-11 added for T25 | written | not synced (awaiting go-ahead) |
 
 ## PR Readiness
 
