@@ -232,7 +232,7 @@ test("SessionStart on a filename miss sends the session to the full plan lookup"
 	}
 });
 
-test("the PostCompact arm prints nothing, leaving PreCompact stdout to one writer", () => {
+test("the PostCompact arm prints nothing to stdout, leaving PreCompact stdout to one writer", () => {
 	const root = makeRepo("main");
 	try {
 		const postCompact = spawnSync("node", [HOOK_ENTRY, "--tool=claude", "--event=PostCompact"], {

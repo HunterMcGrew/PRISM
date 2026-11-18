@@ -110,7 +110,7 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 ### PostCompact test title says "prints nothing" but asserts only stdout
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/compact-handoff.test.ts:235`
 - **Problem:** The test is named "the PostCompact arm prints nothing, leaving PreCompact stdout to one writer" and asserts `stdout === ""` only. `runPostCompactArm` writes to stderr on a missing session id and on a failed reset, which is the same overstatement pass 1 fixed in the docs and the module header.
 - **Suggested fix:** Rename to "the PostCompact arm prints nothing to stdout, leaving PreCompact stdout to one writer".
