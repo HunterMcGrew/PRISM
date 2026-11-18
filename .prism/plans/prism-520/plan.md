@@ -786,6 +786,42 @@ Briar self-review, 2026-11-18, of 2c4f7de6..e9705bfc (the seven fix commits and 
 
 **Considered and not filed.** The alias swap's `path.posix.join` maps a key that ends mid-segment differently from the old string paste: `{ "@lib": "src/lib" }` sends `@libfoo` to `src/lib/foo`, not `src/libfoo`. The Decision on the alias swap accepts that trade, and the documented key shape ends in `/`.
 
+### PR review: the whole PR against main
+
+Eric PR review, 2026-11-18, of 35f6ca7a..e9ad165b. Two Major findings and two Minor ones. CI run 44290931324 on e9ad165b is green on `ubuntu-latest` and `windows-latest`, and `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally (1505 tests, 1504 pass, 0 fail, 1 skipped). Both Majors were confirmed with a probe, not read off the code alone.
+
+#### An unparseable config lets auto-approval run with no contract stop paths
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/plan/auto-approve.mjs:389`
+- **Problem:** `readRepoConfig` returns null when `.ai-skills/config.json` does not parse, so `resolveStopPaths(null)` returns the defaults with an empty contract list and the plan approves. Probed: the `contract-path` fixture with `{ "stopPaths": { "contract": ["src/contracts/**"] }, }` (a trailing comma) passes `--check` with exit 0, and the same config without the comma exits 1 on the stop path. `plan-chain-scripts.md:81` and the comment at `auto-approve.mjs:391` both say a config it can't read exits 2 without approving.
+- **Suggested fix:** leave the shared `readRepoConfig` alone. In `runCli`, when `<repoRoot>/.ai-skills/config.json` exists and `readRepoConfig` returns null, print that the config can't be parsed and exit 2. An absent file keeps the defaults. Add a CLI test with a trailing-comma config.
+
+#### The install stub routes `.claude/hooks/plan/**`, which the hook runtime doc says stays unrouted
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/manifest.stub.json:28`
+- **Problem:** `hook-runtime.md:31` says the consumer-side files under `.claude/hooks/` are deliberately unrouted, because in a consumer repo they belong to the consumer. The new route puts them under the write gate. Probed: in a consumer fixture with the shipped stub as its manifest, a `PreToolUse` Bash call running `node .claude/hooks/plan/tasks.mjs …` or `node .claude/hooks/plan/commit.mjs …` is denied until `plan-chain-scripts.md` is read. The Decision on the stub route cites `.githooks/**` as precedent, but `.githooks/` is not on the doc's unrouted list and `.claude/hooks/` is.
+- **Suggested fix:** route the doc in the stub the way the base manifest does, with `.prism/templates/plan.md` and `.prism/templates/spec.md` pointing at `_toolkit/plan-chain-scripts.md`, drop the `.claude/hooks/plan/**` route, and rerun `prism:verify-manifest`. If the `.claude/hooks/` route is wanted, amend the sentence in `hook-runtime.md` and record why in Decisions.
+
+#### The copied extractImportSpecifiers JSDoc cites a missing module and reads as a changelog
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/plan/bundles.mjs:188`
+- **Problem:** the JSDoc came over verbatim. It compares the function to a "shell-token extractor" that does not exist in PRISM, and its closing sentences narrate history ("silently dropped that fourth one", "a specifier that matches today"), which `code-comments.md` lists under Not Allowed.
+- **Suggested fix:** keep the invariants (the four import forms, that a specifier in a comment can add an edge but never drop one, and why the two `from` patterns are bounded differently) and drop the comparison and the history.
+
+#### The resolver test header lists the tiers from before the lookup moved
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/lib/resolve-live-plan.test.ts:4`
+- **Problem:** the header says the suite exercises "every fallback tier" and lists a plan folder's `<id>/plan.md`, `<id>.md`, and `epic-<id>.md`. This PR added the intent-only folder, the epic folder, and the folder ticket-field cases, so the list is now incomplete.
+- **Suggested fix:** name the order in `lookup.mjs`, or drop the list and point at `lookup.mjs`.
+
 ## Acceptance Criteria
 
 The issue's one-line proof ("every suite passes, and a plan with two tasks on one file is rejected"), expanded into checkable criteria.
@@ -828,13 +864,13 @@ The issue's one-line proof ("every suite passes, and a plan with two tasks on on
 
 ## PR Readiness
 
-- [ ] No critical or major issues — the first pass's two Majors are fixed and the Windows leg is green on them. The second pass's Major (the commit script's doc claims stdout passes through on a failed `git status`) is open
+- [ ] No critical or major issues — both self-review passes' findings are fixed. PR review left two Majors open: auto-approval runs on default stop paths when the config does not parse, and the install stub routes `.claude/hooks/plan/**` against `hook-runtime.md`
 - [x] Types correct — `pnpm prism:check-types` passes for both tsconfigs, and the modules use JSDoc types with no `any`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — the missing T10 and T12 cases were added with the review fixes
+- [ ] Tests written for new logic and edge cases — no test covers auto-approval on a config that does not parse
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run 2026-11-18 on e9705bfc: `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally, and CI run 44289419823 is green on `ubuntu-latest` and `windows-latest`
-- [ ] PR description up to date — its Not-verified line still says the Windows leg needs a rerun, which run 44289419823 has now done green
+- [x] Build passes — last run 2026-11-18 on e9ad165b: `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally, and CI run 44290931324 is green on `ubuntu-latest` and `windows-latest`
+- [ ] PR description up to date — its Not-verified line still lists the commits after e9705bfc on CI, which run 44290931324 has now run green
 - [ ] Lasting decisions promoted to architect context (if applicable) — close-time work, not yet done
 
 **Last updated:** 2026-11-18
