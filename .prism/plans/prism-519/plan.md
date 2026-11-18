@@ -265,6 +265,30 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
 ## Review Issues
 
+### Doctor's codex-doc-limit check prescribes `prism update` on a never-adopted repo
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/doctor.ts:1404`
+- **Problem:** `checkCodexDocLimit` runs before the repo is adopted. A never-adopted repo whose own `AGENTS.md` is over 32 KiB gets a warning that says to run `prism update`, but the right command there is `prism adopt`. `install-layout.md` (the `runDoctor` call-site gate paragraph) warns against exactly this. It is Minor because the finding is a warning, `healthy` stays true, and it only fires on a pre-adopt repo with a large AGENTS.md.
+- **Suggested fix:** wrap the call in the same `syncResult.syncState.manifest !== null` gate that `checkSeedDelivery` uses, and add a no-manifest test.
+
+### compatibility.md's per-tool ownership list omits `.codex/config.toml`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/docs/compatibility.md:42`
+- **Problem:** `install-layout.md` now lists `.codex/config.toml` as committed, and it cites compatibility.md § Per-Tool Directory Ownership as the source of that contract. That section's `.codex/` bullet does not mention the file, so the source and its summary disagree. It is Minor because only the docs disagree. Behavior is unaffected.
+- **Suggested fix:** add `config.toml` (PRISM sets only `project_doc_max_bytes`) to the tracked list in that bullet.
+
+### Budget test JSDoc names a workflow block that does not exist
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/agents-md-budget.test.ts:7`
+- **Problem:** The JSDoc says "The workflow block added to the same list must fit too", but `AGENTS_MD_LEAD_RULES` has no workflow block. A reader coming to this cold cannot resolve the reference, because it describes child 5's future work. It is Minor because only the comment is affected.
+- **Suggested fix:** cut the clause so the sentence reads "Growing the list means shortening a lead rule or moving one out."
+
 ---
 
 ## Acceptance Criteria
@@ -311,13 +335,13 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date, and it lists the OPEN Decision
+- [x] No critical or major issues (three Minors open)
+- [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` clean)
+- [x] No stray console.logs or debug artifacts (the build's size line and the update/build warnings are intended output)
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-11-18 (`pnpm prism:check` exit 0: 993 tests, 0 failed; size line reports lead sections ending at byte 30,549 of 32,768)
+- [x] PR description up to date, and it lists the OPEN Decision
 - [ ] Lasting decisions promoted to architect context (if applicable)
 - [ ] `> Retro:` line recorded at close
 
