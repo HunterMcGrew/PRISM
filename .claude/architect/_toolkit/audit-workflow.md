@@ -23,7 +23,7 @@ Zoe walks four surfaces in a single audit run. Each surface produces a section i
 
 ## Per-Decision verdict procedure
 
-For every `## Decisions` entry in every plan file, Zoe issues exactly one verdict. The verdict is written as a sub-bullet directly on the Decision entry — it does not live in a separate report-only artifact, because downstream personas (Winston, Clove, Briar, Eric, Zoe) need to see the verdict when they read the plan.
+For every `## Decisions` entry in every plan file, Zoe issues exactly one verdict. The verdict is written as a sub-bullet directly on the Decision entry — it does not live in a separate report-only artifact, because downstream personas (the plan stage, Clove, Briar, Eric, Zoe) need to see the verdict when they read the plan.
 
 The four verdicts:
 
@@ -37,7 +37,7 @@ Verdicts are mutually exclusive — exactly one applies. When a decision matches
 The verdict sub-bullet format:
 
 ```markdown
-- The original decision text from Winston.
+- The original decision text from the plan stage.
   - **Zoe verdict (YYYY-MM-DD):** `live` | `archive-candidate` | `overdue-archive` | `open-stale` — one-line reason.
 ```
 

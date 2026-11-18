@@ -31,15 +31,15 @@ Each plan section has designated readers and writers. This prevents conflicts an
 
 | Plan Section                                  | Written by                                                             | Read by                                     |
 | ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
-| `## Goal`                                     | Winston, Nora                                                          | All                                         |
-| `## User Stories`                             | Mira                                                                   | Winston, Clove, Eli                         |
-| `### Story Map` (under `## User Stories`, epic plans) | Mira                                                            | Winston, Nora                               |
-| `## Decisions`                                | Winston                                                                | All                                         |
-| `## Implementation Tasks`                     | Winston                                                                | Clove                                       |
-| `## Acceptance Criteria`                      | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
-| `## Acceptance Criteria` → the ticket tracker | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
+| `## Goal`                                     | The plan stage, Nora                                                   | All                                         |
+| `## User Stories`                             | Mira, on legacy flat plans                                             | The plan stage, Clove, Eli                  |
+| `### Story Map` (under `## User Stories`, epic plans) | Mira, on legacy flat plans                                      | The plan stage, Nora                        |
+| `## Decisions`                                | The plan stage                                                         | All                                         |
+| `## Implementation Tasks`                     | The plan stage                                                         | Clove                                       |
+| `## Acceptance Criteria`                      | The intent stage (generates), Briar (validates/updates), Nora (bug AC) | Clove, Briar, Eric                          |
+| `## Acceptance Criteria` → the ticket tracker | The intent stage (on a yes), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
 | AC Sync Log                                   | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
-| `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
+| `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | The plan stage, Clove                       |
 | `## History`                                  | All (append-only)                                                      | All                                         |
 | `## Debugged Issues`                          | Clove (creates and marks fixed; any implementer may write it)          | Clove, Briar, Eric                          |
 | `## Review Issues`                            | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |

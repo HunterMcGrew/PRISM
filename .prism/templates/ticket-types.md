@@ -21,8 +21,8 @@ A new capability that doesn't exist yet.
 - **Label:** `feature`
 - **Required fields:** objective, scope, user-facing behavior description
 - **Description structure:** objective paragraph, scope bullets, link to plan if available
-- **Typical workflow:** Nora → Mira (user stories) → Winston (plan) → Clove (implement) → Briar (self-review)
-- **User stories:** recommended — Mira writes them before Winston plans
+- **Typical workflow:** Nora → Mira (intent) → the plan stage → Clove (implement) → Briar (self-review)
+- **Intent:** Mira writes it, with its acceptance criteria, before the plan stage
 
 ## Improvement
 
@@ -31,8 +31,8 @@ An enhancement to existing functionality — it works, but could work better.
 - **Label:** `improvement`
 - **Required fields:** current behavior, proposed change, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z."
-- **Typical workflow:** Nora → Winston (plan) or Mira (requirements) → Clove (implement) → Briar (self-review)
-- **User stories:** optional — depends on scope
+- **Typical workflow:** Nora → the plan stage, or Mira (intent) first → Clove (implement) → Briar (self-review)
+- **Intent:** optional — depends on scope
 
 ## DX (Developer Experience)
 
@@ -43,7 +43,7 @@ The trap: "improves the codebase" is colloquial; Improvement as a ticket type is
 - **Label:** `DX`
 - **Required fields:** current state, what changed, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z." — matches the Improvement format. File-level change details live in the GitHub diff, not the ticket description.
-- **Typical workflow:** Nora → Winston (plan, if non-trivial) → Clove (implement) → Briar (self-review)
+- **Typical workflow:** Nora → the plan stage (if non-trivial) → Clove (implement) → Briar (self-review)
 - **User stories:** not applicable
 - **Acceptance criteria:** always "None for this ticket." — DX work is verified by the developer, not QA.
 

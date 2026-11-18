@@ -16,12 +16,14 @@ Handoffs. It does not cover what goes inside a plan file — that is
 
 Four types drive workflow decisions. See `.prism/templates/ticket-types.md` for full details.
 
-- **Bug** (label: `bug`) — something is broken. Use the bug report template. Skip user stories.
-- **Feature** (label: `feature`) — a new capability. Write user stories first.
-- **Improvement** (label: `improvement`) — existing functionality made better. User stories optional.
+- **Bug** (label: `bug`) — something is broken. Use the bug report template. Skip the intent.
+- **Feature** (label: `feature`) — a new capability. Write the intent first.
+- **Improvement** (label: `improvement`) — existing functionality made better. The intent is optional.
 - **DX** (label: `DX`) — work QA cannot verify. See `.prism/templates/ticket-types.md` for the full decision rule.
 
 **Detection:** check the ticket's labels first, ask the user if no label matches. Never guess.
+
+On a plan folder, the workflow rule's stage order replaces the sequences under Common Workflows.
 
 
 ---
@@ -31,13 +33,13 @@ Four types drive workflow decisions. See `.prism/templates/ticket-types.md` for 
 ### Feature (typical)
 
 ```
-Nora → Mira → [Pixel] → Winston → Clove → Briar → [Eric] → [Sage/Eli/Reese]
+Nora → Mira → [Pixel] → the plan stage → Clove → Briar → [Eric] → [Sage/Eli/Reese]
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement, creates the branch, summarizes requirements
-2. **Mira** writes user stories with AC hints
+2. **Mira** writes the intent, with its acceptance criteria
 3. **[Pixel]** designs UI if no mock exists or mock has gaps (invoke-only — include when needed)
-4. **Winston** evaluates the approach, builds implementation tasks, generates AC
+4. **The plan stage** (`prism-plan`) builds the implementation tasks; Winston gives a fit verdict when asked
 5. **Clove** implements, writes tests, updates the plan
 6. **Briar** self-reviews the branch
 7. **Eric** reviews the PR (optional — for team PRs)
@@ -57,11 +59,11 @@ Nora (verify + scaffold + AC) → Clove (confirm root cause, then fix) → Briar
 ### Improvement
 
 ```
-Nora → Winston (or Mira first) → Clove → Briar → [Eric]
+Nora → the plan stage (or Mira first) → Clove → Briar → [Eric]
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement
-2. **Winston** plans the work (or **Mira** fleshes out requirements first if scope is unclear)
+2. **The plan stage** plans the work (or **Mira** writes the intent first if scope is unclear)
 3. **Clove** implements
 4. **Briar** self-reviews
 
@@ -77,7 +79,7 @@ When the fix is obvious and scoped, skip straight to implementation.
 
 The `docs/` folder contains human-facing documentation (see `.prism/architect/_toolkit/documentation.md`). Three skills keep docs in sync with code:
 
-- **Winston** — in plan mode, includes docs update tasks when the work changes user-facing behavior for a documented feature
+- **The plan stage** — includes docs update tasks when the work changes user-facing behavior for a documented feature
 - **Briar** — after review, checks whether changed files have corresponding `docs/` files and flags potential staleness
 - **Eli** — after generating draft docs to `.claude/docs/`, offers a "publish" mode that adapts and writes to `docs/` with frontmatter and audience-appropriate prose
 
@@ -96,10 +98,10 @@ Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes.
 **UX Concern from Review** — Briar or Eric surfaces a UX problem, not just a code problem:
 
 ```
-Briar/Eric → Pixel → Winston → Clove → Briar → Eric
+Briar/Eric → Pixel → the plan stage → Clove → Briar → Eric
 ```
 
-Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without Winston — see ADR-0034 for the routing rule.
+Pixel specs the fix (mode 2). The plan stage plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without the plan stage — see ADR-0034 for the routing rule.
 
 **UI/UX Quick Question** — dev needs a quick answer without full design work:
 
@@ -111,9 +113,9 @@ Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. 
 
 **Decision tree — no mocks / mocks have gaps:**
 
-- Ticket has UI work but no mock → invoke Pixel before Winston
+- Ticket has UI work but no mock → invoke Pixel before the plan stage
 - Mock exists but missing states (empty, error, loading) → invoke Pixel to fill gaps
-- Mock exists and is complete → skip Pixel, proceed to Winston
+- Mock exists and is complete → skip Pixel, proceed to the plan stage
 
 
 ---
@@ -122,7 +124,7 @@ Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. 
 
 - **Default to story.** Most tickets are stories.
 - **Promote to epic** when: >5 implementation tasks AND they cross system boundaries (frontend + backend + infrastructure, or multiple unrelated components).
-- Winston detects epic candidates after building implementation tasks and flags them for the user.
+- The plan stage detects epic candidates after building implementation tasks and flags them for the user.
 - Epic plans use the filename `epic-<name>.md` and contain a `## Stories` section referencing individual story plans.
 
 See ADR-0012 for the threshold rationale.

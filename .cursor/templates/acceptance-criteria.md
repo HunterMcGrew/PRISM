@@ -116,6 +116,6 @@ When an agent discovers during implementation that an AC item can't be met as wr
 
 ## Ticket Sync
 
-AC must be synced to the ticket under `## Acceptance Criteria` at the bottom of the description. Winston syncs automatically after plan mode. Clove and Briar sync whenever AC changes. Nora can sync on demand.
+AC must be synced to the ticket under `## Acceptance Criteria` at the bottom of the description. The intent stage (`prism-intent`) offers the sync once the intent is approved. Clove and Briar sync whenever AC changes. Nora can sync on demand.
 
 **Strip-to-tracker rule:** when syncing, strip the `**AC-N**` ID prefix and the Evidence sub-bullets — sync behavioral criterion text only. IDs and Evidence sub-bullets live in the plan for the verifier; the ticket AC is stakeholder-facing and doesn't need either.

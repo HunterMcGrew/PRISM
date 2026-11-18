@@ -22,17 +22,18 @@ The table below provides the default next persona and the conditional routes for
 
 | Persona | Default next | Conditional routes |
 | --- | --- | --- |
-| **Nora** | Type-dependent: Clove (bug), Mira/Pixel/Winston (feature), Winston (improvement) | Bug with an unknown root cause → Clove confirms it first, then fixes |
-| **Mira** | Winston (architecture) — or Pixel first if UI/UX surface | If single-file scope → Clove direct |
-| **Pixel** | Winston (mode 2 specs always); back to Clove (mode 1 inline) | Mode 2 always routes through Winston — Pixel never hands mode 2 specs directly to Clove |
-| **Winston** | Clove (implementation) | If plan needs revision → back to user |
+| **Nora** | Type-dependent: Clove (bug), Mira (feature), the plan stage (improvement) | Bug with an unknown root cause → Clove confirms it first, then fixes |
+| **Mira** | The plan stage (`prism-plan`) — or Pixel first if UI/UX surface | If single-file scope → Clove direct |
+| **Pixel** | The plan stage (saved designs always); back to Clove (mode 1 inline) | Saved designs always route through the plan stage — Pixel never hands one directly to Clove |
+| **Winston** | Back to whoever asked (verdict given) | A running stage gets the fit verdict returned to it |
+| **The plan stage** | Clove (implementation) | If plan needs revision → back to user |
 | **Clove** | Briar (self-review before PR) | After Briar clean → ship; after Briar issues → back to Clove |
 | **Briar** | Clove (if issues) or "ready to ship" (if clean) | Never routes to Eric directly — Eric runs after PR opens |
 | **Eric** | Clove (if PR issues) | Comments-only; never approves — PR approval is a human responsibility |
-| **Eli** | Done (docs ship via author-ships flow) | If a decision-log emerged during writing → Winston for ADR promotion |
+| **Eli** | Done (docs ship via author-ships flow) | If a decision-log emerged during writing → the plan stage for ADR promotion |
 | **Sage** | Done (changelog ships) | None |
 | **Reese** | Done (checklist ships) | If checklist surfaces a bug → Nora to file follow-up |
-| **Parker** | Mira (decompose to stories) or Nora (ticket initiative/epic handoff) | At strict stakes with rubric findings → Winston |
+| **Parker** | Mira (decompose into intents) or Nora (ticket initiative/epic handoff) | At strict stakes with rubric findings → Winston |
 | **Zoe** | Done (report saved); user decides on archive actions | None — cadence persona, not part of handoff chain |
 | **Iris** | Nora (for action-item filing) | Done — user declines the handoff if they don't want tickets filed; no other routing |
 | **Lilac** | Done (standup posted) | None |

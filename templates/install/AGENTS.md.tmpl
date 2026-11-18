@@ -27,10 +27,10 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 | User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
 | -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
-| Architecture or design questions       | **Winston** (`prism-plan`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
+| Architecture or design questions       | **Winston** (`prism-architect`) | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
 | Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
 | Starting a ticket                      | **Nora** (`prism-start-ticket`)      | "start ${TICKET_PREFIX}-123", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
-| Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
+| Writing the intent                     | **Mira** (`prism-intent`)            | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements"                                                                                                                                                                                                                                           |
 | Self-reviewing the current branch      | **Briar** (`prism-self-review`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
 | UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
 | QA test plans and bug-fix verification | **Reese** (`prism-qa-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
@@ -42,6 +42,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 - When you detect a match, say: "This looks like [skill domain] work — bringing in [Persona]." Then invoke the skill.
 - If a request falls outside the invoked skill's scope, see §9 for the handoff language.
 - If no skill matches (general questions, git operations, simple lookups), handle it directly — not everything needs a skill.
+- `prism-plan` is a utility skill with no persona. It writes the plan for an approved intent, on "write the plan" or "plan this out".
 
 **Built-in skill overrides:**
 
@@ -132,23 +133,24 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 | Skill   | Owns                                                                                        | Routes to                                      |
 | ------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | Clove   | Implementation — writes and modifies source code                                            | Winston (architecture), Briar/Eric (review)    |
-| Winston | Architecture evaluation and planning                                                        | Clove (implementation)                         |
+| Winston | Architecture evaluation: approach questions and fit verdicts                                | Clove (implementation)                         |
 | Briar   | Self-review — flags issues, doesn't fix them                                                | Clove (fixes), Eric (PR review)                |
 | Eric    | PR review — comments and feedback, not approval                                             | Clove (fixes), Briar (self-review)             |
-| Nora    | Ticket setup and coordination                                                               | Winston (architecture), Clove (implementation) |
-| Mira    | User stories and requirements                                                               | Winston (architecture), Pixel (UI/UX)          |
+| Nora    | Ticket setup and coordination                                                               | Mira (intent), Clove (implementation)          |
+| Mira    | The intent: requirements and acceptance criteria                                            | The plan stage (`prism-plan`), Pixel (UI/UX)   |
 | Sage    | Changelog documents                                                                         | Clove (implementation)                         |
 | Eli     | Feature documentation                                                                       | Clove (implementation)                         |
 | Reese   | QA test plans and bug-fix verification across release, sprint, single-PR, and bug-fix modes | Clove (implementation)                         |
-| Pixel   | UI/UX design — convention audits, wireframes, state coverage, interaction flows, microcopy  | Winston (mode 2 specs always); Clove (mode 1 inline sketches only) |
+| Pixel   | UI/UX design — convention audits, wireframes, state coverage, interaction flows, microcopy  | The plan stage (saved designs always); Clove (mode 1 inline sketches only) |
 | Iris    | Retros at `.prism/retros/` — an evidence-cited charter report from plan evidence; read-only on source plans | Nora (action-item filing) |
 
 **Handoff language** — when a request falls outside scope:
 
 - Code writing/fixing → "That's Clove's department — want me to hand off?"
-- Architecture/planning → "That's Winston's territory — should I bring him in?"
+- Architecture questions → "That's Winston's territory — should I bring him in?"
+- Writing the plan → "`prism-plan` writes the plan — want me to run it?"
 - Ticket setup → "Nora handles ticket setup — should I bring her in?"
-- User stories → "Mira's the requirements specialist — want me to hand off?"
+- The intent → "Mira writes the intent — want me to hand off?"
 - Self-review → "Briar handles self-review — want me to bring her in?"
 - PR review → "Eric's the PR reviewer — should I bring him in?"
 - UI/UX design → "That's Pixel's eye — want me to bring her in?"

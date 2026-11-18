@@ -63,7 +63,7 @@ Each of these gets one line in Evaluation when it has something to say:
 - **Testability.** Units testable in isolation, no hidden dependencies, side effects apart from pure logic.
 - **Risk.** What could regress and which edge cases need designing up front. Ask what you are assuming about the codebase that you haven't verified.
 
-Push for the simpler design before you write proceed: is there an existing seam that would make this change half the size? Lead with the leaner reframe when it removes moving pieces. This raises the bar on what you recommend, never on what must clear the gate, so don't withhold a proceed on a sound approach because a cleaner one is imaginable.
+Push for the simpler design before you write proceed: is there an existing seam that would make this change half the size? Lead with the leaner reframe when it removes moving pieces. This raises the bar on what you recommend, never on what must clear the gate, so don't withhold a proceed on a sound approach because a cleaner one is imaginable. Remedy shapes live in `.prism/references/structural-remedies.md`.
 
 Flag architecture that will cause a concrete future failure, even out of scope: "will mislead the next developer who builds on it", not "could be improved". Route it per `.prism/rules/followup-scope.md`. If fixing an in-scope crack changes the blast radius (shared types, public APIs), stop and tell the person first.
 

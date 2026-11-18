@@ -7,7 +7,7 @@ paths:
 
 # Implementation Task Detail
 
-When authoring artifacts that drive implementation — Winston's `## Implementation Tasks` in a branch plan, or Pixel's mode 2 mock specs in `.prism/design/mocks/<slug>.md` — the bar is: any LLM at any effort level should be able to execute the artifact without making judgment calls about what file to touch, what specific change to make, or how to verify it worked. **Front-load every decision; do not front-load every keystroke.**
+When authoring artifacts that drive implementation — the plan stage's tasks in a branch plan, or Pixel's mode 2 mock specs in `.prism/design/mocks/<slug>.md` — the bar is: any LLM at any effort level should be able to execute the artifact without making judgment calls about what file to touch, what specific change to make, or how to verify it worked. **Front-load every decision; do not front-load every keystroke.**
 
 **Why:** Cross-LLM portability is one of PRISM's core promises. Sonnet, low-effort Opus, ChatGPT, Cursor — they all hit ambiguity differently, but they all hit it. A plan that leaves decisions to the implementer produces divergent outputs across runs and across models. Codifying the bar means the next planner doesn't have to reinvent the pattern, and the next reviewer has a concrete standard to flag against.
 
@@ -15,8 +15,8 @@ When authoring artifacts that drive implementation — Winston's `## Implementat
 
 Two artifact classes are in scope:
 
-- **`## Implementation Tasks` in branch plans** — written by Winston in plan mode. Each task line is a unit of work Clove (or another implementing persona) executes against.
-- **Mode 2 saved mock specs** — written by Pixel at `.prism/design/mocks/<slug>.md`. The spec is the implementation guide for the design portion of the work; Winston reads it when writing tasks.
+- **`## Implementation Tasks` in branch plans** — written by the plan stage (`prism-plan`). Each task line is a unit of work Clove (or another implementing persona) executes against.
+- **Mode 2 saved mock specs** — written by Pixel at `.prism/design/mocks/<slug>.md`. The spec is the implementation guide for the design portion of the work; The plan stage reads it when writing tasks.
 
 Two artifact classes are explicitly **exempt**:
 
@@ -45,7 +45,7 @@ When the artifact restates a concept defined elsewhere — a doctrine, a templat
 
 **How to apply:** When authoring a rule, ADR, architect doc, or skill section that touches a concept owned by another doc, link to the owning doc and quote at most a sentence for context. Don't re-enumerate. If you find yourself writing "the five [things] are: a, b, c, d, e" and another doc already enumerates them, replace the list with `per [doc] § [section]`.
 
-## How to apply — Winston's `## Implementation Tasks`
+## How to apply — the plan stage's tasks
 
 Each task names:
 
@@ -68,7 +68,7 @@ The bad version leaves: which file, which surface, which line, what specific tex
 
 ## How to apply — Pixel's mode 2 mock specs
 
-A spec at this bar gives Winston enough fidelity to write `## Implementation Tasks` against it without round-tripping back to Pixel for clarification. Required elements:
+A spec at this bar gives the plan stage enough fidelity to write `## Implementation Tasks` against it without round-tripping back to Pixel for clarification. Required elements:
 
 1. **Measurable units in every wireframe.** Use Tailwind tokens (`text-lg`, `p-4`, `gap-2`, `max-w-md`) when they fit; explicit px or rem when they don't. Spacing, typography scale, color tokens, layout dimensions — all named.
 2. **Cited principles for each interaction or layout decision.** Name the framework: Hick's Law, Fitts's Law, Miller's Law, Nielsen heuristic by number (Nielsen #4, Nielsen #8), Gestalt principle by name (proximity, common region). The intuition explains why the design feels right; the citation makes it auditable.
@@ -76,7 +76,7 @@ A spec at this bar gives Winston enough fidelity to write `## Implementation Tas
 4. **Copy direction precise enough to write final strings without judgment.** Not the final strings — the direction. "The delete confirmation should feel like a pause, not a warning. Use 'Remove link' not 'Delete link forever' — it's reversible." Final strings can be written from this direction without needing a second design pass.
 5. **Keyboard flow, focus order, ARIA roles named.** Tab order through interactive elements. Focus trap behavior on dialogs. ARIA roles (`role="dialog"`, `aria-labelledby`, `aria-describedby`). Escape key behavior. Where focus moves on dismiss.
 6. **Reused components named with file paths.** `frontend/components/Button.tsx`, `backend/plugins/.../blocks/<name>/`. Include server/client classification — RSC default; mark `'use client'` requirement explicitly when local state, hooks, or browser APIs are involved.
-7. **Architectural inputs for Winston** — a dedicated section covering data flow (where state lives, where it's fetched), server/client component classification, and any architectural concerns Pixel surfaced (new shared component candidate, coupling risk, design pattern question).
+7. **Architectural inputs for the spec** — a dedicated section covering data flow (where state lives, where it's fetched), server/client component classification, and any architectural concerns Pixel surfaced (new shared component candidate, coupling risk, design pattern question).
 
 ### Example — good
 
@@ -96,7 +96,7 @@ The bad version leaves: which Tailwind classes? Which principles justify which c
 
 ## Who runs this rule
 
-- **Winston** (`prism-plan`) — applies the bar when authoring `## Implementation Tasks` in plan mode. The bar is a baseline for every task Winston writes.
+- **The plan stage** (`prism-plan`) — applies the bar when authoring tasks. The bar is a baseline for every task it writes.
 - **Pixel** (`prism-design`) — applies the bar when authoring mode 2 saved mock specs. Mode 1 inline sketches and mode 3 HTML mocks are exempt.
 - **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — flag tasks or specs that fail the bar during self-review and PR review.
 

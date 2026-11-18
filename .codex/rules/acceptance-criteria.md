@@ -44,7 +44,7 @@ Every AC item traces back to one of three sources: a user story written by Mira,
 
 **Why:** Citations make AC auditable. A reader scanning the AC can answer "why is this here?" without re-reading the entire plan — the citation points to the source. Uncited AC items drift, because nothing anchors them to the work that justified them.
 
-**How to apply:** When Winston, Briar, or any AC-writing skill drafts a behavioral or non-behavioral AC item, append the citation as the last token of the line. ACs without citations are flagged in self-review as Minor and routed back for sourcing.
+**How to apply:** When the intent stage (`prism-intent`), Briar, or any AC-writing skill drafts a behavioral or non-behavioral AC item, append the citation as the last token of the line. ACs without citations are flagged in self-review as Minor and routed back for sourcing.
 
 Example:
 
