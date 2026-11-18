@@ -60,7 +60,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
    - **Proof fails on main:** yes. The new tests import `AGENTS_MD_LEAD_RULES` and `measureLeadSectionEnds`, which do not exist there.
    - **Behavior change:** yes. The generated block's order changes for PRISM and for every consumer on their next `prism update`. No existing test pins the order of these names (checked: no lead name appears in a render assertion in `agents-md-block.test.ts`, `update.test.ts`, `adopt.test.ts`, or `eject.test.ts`).
 
-2. **Add the Codex project-doc module.**
+2. **Add the Codex project-doc module.** *(Amended 2026-11-18, PR #521 review.)*
    - **Files:** new `scripts/ai-skills/codex-project-doc.ts`, new `scripts/ai-skills/codex-project-doc.test.ts`.
    - **Exports** (exact shapes):
 
@@ -77,7 +77,11 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
      export function readProjectDocMaxBytes(toml: string | null): ProjectDocMaxBytesSetting;
 
-     export function mergeProjectDocMaxBytes(toml: string | null, value: number): string;
+     export function mergeProjectDocMaxBytes(
+     	toml: string | null,
+     	setting: Exclude<ProjectDocMaxBytesSetting, { kind: "unparseable" }>,
+     	value: number
+     ): string;
 
      export async function syncCodexProjectDocLimit(
      	repoRoot: string,
@@ -87,8 +91,8 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
      `FileOutcome` is a type-only import from `./update` (`import type`), so no runtime cycle forms.
    - **`computeProjectDocMaxBytes`:** round up to a multiple of 65,536, then add 65,536. 132,790 gives 262,144. 65,536 gives 131,072. 1 gives 131,072. The caller never passes 0, because an absent `AGENTS.md` skips the write.
-   - **`readProjectDocMaxBytes`:** the top-level region is every line before the first line matching `^\s*\[`, which is the first table or array-of-tables header. In that region, match `^\s*project_doc_max_bytes\s*=\s*(.*?)\s*(#.*)?$`. No match, or a `null` input, gives `absent`. A captured value matching `^[0-9][0-9_]*$` gives `set`, with underscores removed before `Number()`. Any other value gives `unparseable` with the raw text. A key inside a table does not count.
-   - **`mergeProjectDocMaxBytes`:** preserve the file's line ending (`\r\n` when the input contains one, otherwise `\n`). When the key is `set`, replace only the digits on that line and keep any trailing comment. When it is `absent`, prepend these two lines and one blank line before any existing content:
+   - **`readProjectDocMaxBytes`:** the top-level region is every line before the first table or array-of-tables header. A header line is `[a.b]` or `[[a.b]]` with optional quoted key segments and a trailing comment, and nothing else on the line, so an array element such as `[1, 2],` does not end the region. In that region, match `^\s*project_doc_max_bytes\s*=\s*(.*?)\s*(#.*)?$`. No match, or a `null` input, gives `absent`. A captured value matching `^[0-9][0-9_]*$` gives `set`, with underscores removed before `Number()`. Any other value gives `unparseable` with the raw text. A key inside a table does not count.
+   - **`mergeProjectDocMaxBytes`:** take the `setting` that `readProjectDocMaxBytes` already returned, so the config is parsed once. Preserve the file's line ending (`\r\n` when the input contains one, otherwise `\n`). When the key is `set`, replace only the digits on that line and keep any trailing comment. When it is `absent`, prepend these two lines and one blank line before any existing content:
 
      ```toml
      # Raises Codex's AGENTS.md read limit (32 KiB by default). prism update keeps it at or above the file's size.
@@ -96,7 +100,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
      ```
 
      With a `null` input, the result is those two lines and a trailing line ending.
-   - **`syncCodexProjectDocLimit`:** read `<repoRoot>/AGENTS.md`. If it is absent, return `null`. Otherwise compute the value from its byte length, then read `<repoRoot>/.codex/config.toml` (absent is `null`).
+   - **`syncCodexProjectDocLimit`:** read `<repoRoot>/AGENTS.md`. If it is absent, return `null`. Otherwise read `<repoRoot>/.codex/config.toml` (absent is `null`). When the config is absent and `AGENTS.md` is at most `CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES`, return `null` as well, because Codex already reads the whole file (AC-2 says "over 32 KiB"). Otherwise compute the value from the byte length.
      - `unparseable` gives `{ outcome: { relativePath: ".codex/config.toml", action: "no-op" }, warning: ".codex/config.toml sets project_doc_max_bytes to <raw>, which PRISM cannot read; left unchanged. Set it to <value> or more." }`.
      - `set` with a value at or above the computed one gives action `no-op`, because a larger value may be the team's own choice.
      - Otherwise write the merged text (create `.codex/` with `fs.mkdir(..., { recursive: true })` first), unless `dryRun`. The action is `written` when the file was absent and `overwritten` when it existed.
@@ -110,6 +114,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
      - merge replacing an existing smaller value keeps its trailing comment;
      - merge preserves `\r\n`;
      - `syncCodexProjectDocLimit` in a temp dir covers no `AGENTS.md` (gives `null`), a 40,000-byte `AGENTS.md` with no config (gives `written` and the value 131,072), a larger existing value (gives `no-op` with the file unchanged), and `dryRun` (gives the outcome with nothing on disk).
+   - **Amended:** the `mergeProjectDocMaxBytes` signature (the self-review cleaner path, recorded in History), the table-header test, and the small-file skip. Added tests: a multi-line array above the key, dotted and quoted headers, and the skip at 32,768 bytes versus 32,769.
    - **Proof:** `pnpm exec tsx --test scripts/ai-skills/codex-project-doc.test.ts` passes, and `pnpm prism:check-types` passes.
    - **Proof fails on main:** yes, because the module does not exist.
    - **Behavior change:** no. The module is new and nothing calls it until tasks 3 and 5.
@@ -136,24 +141,26 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
    - **Proof fails on main:** yes. `git show origin/main:AGENTS.md | head -c 32768 | grep -c 'source: .prism/rules/skill-routing.md'` prints `0`, and main has no `.codex/config.toml`.
    - **Behavior change:** yes. Build output gains one line in both modes, and `prism:check` now fails when `.codex/config.toml` is stale against `AGENTS.md`'s size.
 
-4. **Add the repo budget test.** After task 3.
+4. **Add the repo budget test.** After task 3. *(Amended 2026-11-18, PR #521 review.)*
    - **Files:** new `scripts/ai-skills/agents-md-budget.test.ts`.
    - **Change.** One `node:test` test that reads the repo-root `AGENTS.md` (resolved from `import.meta.url`, two directories up from `scripts/ai-skills/`). It calls `measureLeadSectionEnds` and asserts, for every entry:
      - `endByte !== null`, with message `<name> is in AGENTS_MD_LEAD_RULES but not in AGENTS.md`;
      - `endByte <= CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES`, with message `<name> ends at byte <endByte>, past the <32768> bytes Codex reads by default. Shorten a lead rule or move one out of AGENTS_MD_LEAD_RULES.`
 
-     The file JSDoc says what the test protects and that child 5 adds the workflow block to the same list.
+     The file JSDoc says what the test protects and what growing the list costs. It does not mention child 5's workflow block, which does not exist on this branch.
+   - **Amended:** the JSDoc clause naming child 5's block was cut in the self-review fix (see Review Issues).
    - **Proof:** `pnpm exec tsx --test scripts/ai-skills/agents-md-budget.test.ts` passes.
    - **Proof fails on main:** yes. Run against `origin/main`'s `AGENTS.md` (alphabetical), `skill-routing.md` ends near byte 110,796.
    - **Behavior change:** no.
 
-5. **Write the limit from `prism update` when Codex is a host.** After task 2.
+5. **Write the limit from `prism update` when Codex is a host.** After task 2. *(Amended 2026-11-18, PR #521 review.)*
    - **Files:** `scripts/ai-skills/update.ts`, `scripts/ai-skills/update.test.ts`.
    - **Change.** In `runUpdate`, right after the `refreshConsumerAgentsMdBlock` call, run `const codexDocLimit = hosts.includes("codex") ? await syncCodexProjectDocLimit(consumerRepoRoot, dryRun) : null;`.
      - When it carries a `warning`, print it with `console.warn` prefixed `prism:update: `.
      - Fold `codexDocLimit.outcome` into the returned `outcomes` beside `hookOutcomes`, so `reportSummary` and `--dry-run` show it. This is the same pattern the hook runtime uses, and its existing comment explains why.
      - Do not add a field to `RunUpdateSummary`.
-     - In dry-run the size comes from the pre-refresh `AGENTS.md`, because the refresh writes nothing in dry-run. Accept that: it can differ from the real run by at most one 64 KiB step.
+     - In dry-run the size comes from the pre-refresh `AGENTS.md`, because the refresh writes nothing in dry-run. Accept that: the previewed action can differ from the real run's, with no bound. An `AGENTS.md` whose marker pair is still empty grows by more than 100 KB on refresh, so the preview can say `no-op` where the real run overwrites.
+     - **Amended:** the "at most one 64 KiB step" bound was unsupported and is dropped.
    - **Tests to add** in `update.test.ts`, using the file's existing temp-consumer fixture helpers:
      - hosts absent (all hosts) and a consumer `AGENTS.md` over 32 KiB gives a `.codex/config.toml` with the computed value and an outcome for `.codex/config.toml`;
      - `hosts: ["claude"]` leaves no `.codex/config.toml` behind;
@@ -162,7 +169,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
    - **Proof fails on main:** yes. The new tests expect a `.codex/config.toml` that main never writes.
    - **Behavior change:** yes. When Codex is a host and `AGENTS.md` exists, `runUpdate` reports one more outcome. Edit an existing `update.test.ts` or `adopt.test.ts` assertion only when it pins the full outcome list, and only by adding the `.codex/config.toml` entry.
 
-6. **Add the doctor check.** After task 2.
+6. **Add the doctor check.** After task 2. *(Amended 2026-11-18, PR #521 review.)*
    - **Files:** `scripts/ai-skills/doctor.ts`, `scripts/ai-skills/doctor.test.ts`.
    - **Change, union.** Add `| "codex-doc-limit"` to `DoctorFinding["check"]`. Only `doctor.ts` and its tests use the type, and doctor has no JSON output, so this is not a public-API change.
    - **Change, check.** Add `async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFinding[]>`:
@@ -176,14 +183,17 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
      | `unparseable` | `warning` | `.codex/config.toml sets project_doc_max_bytes to <raw>, which PRISM cannot read. Set it to <computed> or more. <FALLBACK>` |
      | `set`, at or above `size` | `info` | `.codex/config.toml sets project_doc_max_bytes = <value>, enough for AGENTS.md (<size> bytes). <FALLBACK>` |
 
+     In the two `warning` rows that read a size or a value (`absent` and `set`, below `size`), the message gains the sentence ` The routing and behavioral-norm rules at the top of the generated block end at byte <leadRulesEnd>, so Codex misses those too.` after `miss the rest.`, when `leadRulesEnd` (the largest non-null `endByte` from `measureLeadSectionEnds(AGENTS.md)`) is past the limit in force: 32768 for `absent`, the configured value for `set`.
+
      The `info` row is the fallback the OPEN Decision's default path names. Keep it whatever the live run in task 8 finds, because an untrusted project or an older Codex can still skip the repo file.
-   - **Change, wiring.** In `runDoctor`, push `...(await checkCodexDocLimit(consumerRepoRoot))` immediately after the `checkHookRegistration` line.
-   - **Tests to add** in `doctor.test.ts`, using its temp-repo helpers. Cover the four rows above, a `hosts: ["claude"]` repo with a 40,000-byte `AGENTS.md` (no finding), and a 30,000-byte `AGENTS.md` (no finding). Assert `healthy` stays `true` in every case, because none of these is an `error`.
+   - **Change, wiring.** In `runDoctor`, push `...(await checkCodexDocLimit(consumerRepoRoot))` immediately after the `checkHookRegistration` line, inside the `syncResult.syncState.manifest !== null` gate that `checkSeedDelivery` uses, so a never-adopted repo gets no `prism update` advice.
+   - **Tests to add** in `doctor.test.ts`, using its temp-repo helpers. Cover the four rows above, a `hosts: ["claude"]` repo with a 40,000-byte `AGENTS.md` (no finding), and a 30,000-byte `AGENTS.md` (no finding). Assert `healthy` stays `true` in every case, because none of these is an `error`. Also cover a never-adopted repo (no finding), and four lead-rule cases built from a large preamble above a rendered block: lead rules past the default window with no config, lead rules past a configured 32768, lead rules inside the window, and a configured limit that covers the lead rules but not the whole file (the last two carry no lead-rule sentence).
+   - **Amended:** the manifest gate, the lead-rule sentence, and the extra tests. A lead rule cannot end past the end of the file, so the lead-rule sentence only ever accompanies a warning the size check already raises; it adds what is cut, not a new finding.
    - **Proof:** `pnpm exec tsx --test scripts/ai-skills/doctor.test.ts` passes.
    - **Proof fails on main:** yes. Main produces no `codex-doc-limit` finding.
    - **Behavior change:** yes. `prism doctor` prints one more line for a Codex repo whose `AGENTS.md` is over 32 KiB.
 
-7. **Document the behavior, then run the full check.** After tasks 3, 5, and 6. This is the docs work absorbed into this PR (see Decisions).
+7. **Document the behavior, then run the full check.** *(Amended 2026-11-18, PR #521 review.)* After tasks 3, 5, and 6. This is the docs work absorbed into this PR (see Decisions).
    - **`.prism/architect/_toolkit/consumer-sync-flow.md`.** In the "Steady-state persona-skill distribution" section, insert a paragraph right after the paragraph that starts `**The hook runtime rides the same update.**`. It must say:
      - when Codex is in `hosts` and `AGENTS.md` exists, `runUpdate` sets `project_doc_max_bytes` in the repo's `.codex/config.toml` through `syncCodexProjectDocLimit` (`scripts/ai-skills/codex-project-doc.ts`);
      - the value is the file size rounded up to the next 64 KiB, plus one 64 KiB step;
@@ -195,7 +205,8 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
    - **`templates/install/.prism/architect/_toolkit/consumer-sync-flow.md`.** This is the curated twin. Insert the same paragraph at the same place, minus the two `scripts/ai-skills/...` paths and the two code identifiers, which a consumer cannot reach (`install-layout.md`, "Curated seed twins: the curation boundary", Test 2). Attribute the mechanism to `prism update`.
    - **`.prism/architect/_toolkit/install-layout.md`.** In "Direct-write tool outputs", add a bullet after the `.codex/codex-config.toml` bullet: `` `.codex/config.toml` is **committed** — the repo's own Codex project config. PRISM sets only `project_doc_max_bytes` in it, through `prism update` when Codex is among the hosts, and leaves every other key alone. ``
    - **`templates/install/.prism/architect/_toolkit/install-layout.md`.** Add the same bullet after its `.codex/codex-config.toml` bullet.
-   - **`docs/adopting-into-existing-repos.md`.** In "Why a pre-existing AGENTS.md matters most for Codex", add a paragraph after the one that starts `That inlining step`. It says Codex reads only the first 32 KiB of `AGENTS.md` unless `project_doc_max_bytes` is raised. PRISM puts routing and the behavioral-norm rules first, so they fit in that window. `prism update` raises the limit in `.codex/config.toml` when Codex is among your hosts, and `prism doctor` warns when the file is bigger than the limit. Update the page's `last_updated` frontmatter to the commit date.
+   - **`docs/adopting-into-existing-repos.md`.** In "Why a pre-existing AGENTS.md matters most for Codex", add a paragraph after the one that starts `That inlining step`. It says Codex reads only the first 32 KiB of `AGENTS.md` unless `project_doc_max_bytes` is raised. PRISM puts routing and the behavioral-norm rules first, so they sit inside that window whenever the content above the generated block is small. `prism update` raises the limit in `.codex/config.toml` when Codex is among your hosts, and `prism doctor` warns when the file is bigger than the limit. Update the page's `last_updated` frontmatter to the commit date.
+   - **Amended:** the first-paragraph claim that the lead rules fit "even where the limit is never raised" is replaced, in the canonical architect doc, its twin, and the guide, by "whenever the content above the block's begin marker is small", plus a sentence that `prism doctor` warns when the limit in force ends before them. The canonical `install-layout.md` bullet also says PRISM's own build writes the key and `prism:check` fails when it is stale.
    - **Then run** `pnpm prism:build` to refresh the platform copies of the two architect docs, and commit everything.
    - **Proof:** `pnpm prism:check` passes; this covers crossref-lint, seed drift, the literal and leftover-token guards, spec-scope-lint, and the full suite. Also run `git diff origin/main --stat -- package.json pnpm-lock.yaml`, which prints nothing.
    - **Proof fails on main:** no. These are docs.
@@ -236,6 +247,9 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **PRISM's own build writes PRISM's `.codex/config.toml`.** Then the live run in task 8 can test this repo, and `prism:check` catches a stale value when a rule edit grows `AGENTS.md` past a 64 KiB step. Consumers get the write through `runUpdate`, which `prism adopt` delegates to. Onboarding regenerates through `prism update` in consumer context and `pnpm prism:build` in toolkit context (`prism-onboard`, its install-context table). So adopt, update, and onboarding are all covered with no skill edit.
 - **Only the repo-root `AGENTS.md` is sized.** Codex's limit covers the combined files on its root-to-working-directory walk. The one 64 KiB headroom step covers small nested files, and a team with large ones raises the value by hand, which the never-lower rule then keeps.
 - **Dropping Codex from `hosts`, and `prism eject`, both leave the key.** The key is harmless without Codex. The file is the team's committed config, and the value may be one they raised themselves, so removing it could undo a choice PRISM did not make.
+- **The lead rules fit the default window only while the content above the block is small.** The ordering is guaranteed, the fit is not: the lead rules run to about 27 KB, so a consumer who added the marker pair to a file with more than about 5 KB above it pushes them past 32 KiB. Only PRISM's own file is measured in CI. Doctor measures the consumer's file with `measureLeadSectionEnds` and says so when the limit in force ends before the lead rules.
+  - **Alternatives considered:** a separate doctor finding for the lead rules. Rejected, because a lead rule cannot end past the end of the file, so the finding would always duplicate the existing size warning.
+- **`prism update` writes no Codex config for an `AGENTS.md` inside the default window.** Codex already reads the whole file, so the config would be a committed file with no effect. An existing config is still updated, because a team that has one may have lowered the value.
 - **Doctor warns rather than errors, and always names the per-developer fallback.** A short read limit degrades Codex sessions without breaking the install, and `healthy` keys on `error` alone. The `~/.codex/config.toml` sentence carries the OPEN Decision's default path below.
 - **The docs land in this PR, written by Clove.** The two architect docs, their curated twins, and the consumer guide describe behavior this PR adds. A separate docs PR would describe code that has not merged. This is a documented absorption of the docs lane, per `branch-plan.md` (Implementation Tasks).
 - **The plan is a folder `plan.md` with the flat-plan sections.** The spec puts each child in `.prism/plans/prism-<n>/`. The folder templates and task grammar arrive in child 4, so this plan uses the `branch-plan.md` template, the only one on `main`. `resolveLivePlan` already finds `prism-519/plan.md`. The plan cites sections by name only and never points History at a Decision, so child 4's plan-folder citation lint will not need to allowlist it.
@@ -251,6 +265,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — plan child 3 (Codex AGENTS.md budget) from the epic spec; Bounds — this plan folder only, commit and push, no PR, no code; Approach — measure the real byte layout, order inside `renderTier1Block`, one line-based TOML writer shared by build and update, one doctor check · close: scope held
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — build tasks 1–7 of this plan; Bounds — the plan's files only, no dependency, task 8 (live Codex run) skipped because Codex is not installed here; Approach — one commit per task, generated outputs rebuilt in tasks 3 and 7 · close: scope held
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the three Minor self-review findings plus the merge-signature cleaner path; Bounds — doctor gate and test, compatibility.md, budget-test JSDoc, `mergeProjectDocMaxBytes`, this plan · close: scope held
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the PR #521 review findings (one Major, two Minor) and the review's extra observations; Bounds — the doc-limit code and tests, the three docs naming the fit claim, the canonical install-layout bullet, this plan; Approach — reword the claim, extend doctor, then record the plan amendments in a separate commit · close: scope held
 
 ---
 
@@ -259,6 +274,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Plan created from the epic spec at `origin/huntermcgrew/prism-499-approve-once`. It has eight tasks, all Clove's, and one carried OPEN; the AC was not synced to #519 in this run.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Built tasks 1–7: lead-first block order, the `.codex/config.toml` limit sync in build and `prism update`, the budget test, the doctor check, and the docs. Task 8 was not run, so the OPEN Decision stays on its default path; the lead sections end at byte 30,549 of 32,768 on this branch.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the three Minor self-review findings in 0b142e12: doctor's codex-doc-limit check runs only for an adopted repo, compatibility.md lists `.codex/config.toml`, and the budget-test JSDoc no longer names child 5's block. `mergeProjectDocMaxBytes` now takes the already-read setting, so the config is parsed once.
+- 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the PR #521 review findings in 29d3f79b: the lead-rule fit claim is reworded in three docs and doctor now notes when the lead rules are cut, the TOML header test no longer trips on array elements, and an `AGENTS.md` inside 32 KiB gets no config. Amended Tasks 2, 4, 5, 6, and 7 to match the code.
 
 ---
 
@@ -294,6 +310,60 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **Problem:** The JSDoc says "The workflow block added to the same list must fit too", but `AGENTS_MD_LEAD_RULES` has no workflow block. A reader coming to this cold cannot resolve the reference, because it describes child 5's future work. It is Minor because only the comment is affected.
 - **Suggested fix:** cut the clause so the sentence reads "Growing the list means shortening a lead rule or moving one out."
 - **Fixed in:** 0b142e12 — the JSDoc clause is cut.
+
+### The lead rules are promised to fit the default window in a consumer's file
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/consumer-sync-flow.md:69`
+- **Problem:** the sentence says the lead rules "fit in that default window even where the limit is never raised". That holds for PRISM's own `AGENTS.md`, which has about 3 KB above the block, not for a consumer with more above it. The same sentence is in the install twin and in `docs/adopting-into-existing-repos.md`.
+- **Suggested fix:** narrow the claim to what holds, or make doctor measure the consumer's file.
+- **Fixed in:** 29d3f79b — the claim is reworded in all three docs, and `checkCodexDocLimit` runs `measureLeadSectionEnds` on the consumer's `AGENTS.md` and adds the lead-rule sentence when the limit in force ends before them. Four doctor tests cover it.
+
+### The dry-run comment bounds a gap that has no bound
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/update.ts:595`
+- **Problem:** the comment says the dry-run size differs from a real run by at most one 64 KiB step. A consumer file with an empty marker pair grows by more than 100 KB on refresh, so the preview can say `no-op` where the real run overwrites. The plan repeated the bound.
+- **Suggested fix:** drop the bound.
+- **Fixed in:** 29d3f79b — the comment and Task 5 no longer state a bound.
+
+### `## Implementation Tasks` contradicts the diff in three places
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-519/plan.md:80`
+- **Problem:** Task 2 showed the old `mergeProjectDocMaxBytes(toml, value)` signature, Task 4 said the budget-test JSDoc names child 5's block, and Task 6 wired the doctor check without the manifest gate.
+- **Suggested fix:** update the three task bullets.
+- **Fixed in:** the plan-record commit after 29d3f79b — Tasks 2, 4, and 6 are marked amended and match the code. Tasks 5 and 7 are amended too, for this round's other changes.
+
+### The TOML top-level scan treats any line starting with `[` as a table header
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/codex-project-doc.ts:25`
+- **Problem:** an element of a multi-line array, such as `[1, 2],`, ended the top-level region. A `project_doc_max_bytes` below it read as `absent`, and the merge would prepend a second key and make the TOML invalid.
+- **Suggested fix:** match only real header lines.
+- **Fixed in:** 29d3f79b — `TABLE_HEADER` matches `[a.b]` and `[[a.b]]` lines only. A header-shaped line inside a multi-line string still ends the region; a parser would be needed to tell it apart.
+
+### No test pins the small-file update case, and the update test's title implies a threshold
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/update.test.ts:755`
+- **Problem:** `runUpdate` wrote `.codex/config.toml` for any Codex repo with an `AGENTS.md`, while the test title said "over 32 KiB".
+- **Suggested fix:** skip the write inside the default window and pin it with a test.
+- **Fixed in:** 29d3f79b — `syncCodexProjectDocLimit` returns `null` for an `AGENTS.md` of 32 KiB or less with no config. The existing test's title is now accurate, so it was kept, and a new `runUpdate` test pins the small-file case.
+
+### The canonical install-layout bullet omits PRISM's own build
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/install-layout.md:68`
+- **Problem:** the bullet says PRISM sets the key "through `prism update`". PRISM's own build also writes it, and `prism:check` fails on a stale value, which a maintainer would not expect from that bullet.
+- **Suggested fix:** say so in the bullet.
+- **Fixed in:** 29d3f79b.
 
 ---
 
