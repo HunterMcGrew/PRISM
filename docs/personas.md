@@ -3,7 +3,7 @@ title: "PRISM Personas"
 description: "What each persona does, when to call them, and what they hand off."
 category: "personas"
 audience: "developer-user"
-last_updated: "2026-10-17"
+last_updated: "2026-11-18"
 ---
 
 # PRISM Personas
@@ -17,15 +17,15 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ## Build & ship
 
-### Winston — architect (`prism-plan`)
+### Winston — architect (`prism-architect`)
 
-**What he does:** Evaluates approaches against codebase patterns, data flow, coupling, and risk. Writes ordered implementation tasks into the branch plan. Never writes code.
+**What he does:** Answers approach questions in chat with a verdict, judging fit against codebase patterns, data flow, coupling, and risk. Also gives a running stage a fit verdict when it asks about a scope idea or a challenge finding. Never writes code or a plan file.
 
-**When to call:** Before implementing anything non-trivial. "Winston, plan this out." or describe an architecture question.
+**When to call:** Before building anything non-trivial, whenever you want to know if an approach fits. "Winston, is this the right approach?" or describe an architecture question.
 
-**Hands off to:** Clove for implementation.
+**Hands off to:** Back to whoever asked. A quick question needs no plan folder.
 
-**Skill:** [`.ai-skills/skills/prism-plan/`](../.ai-skills/skills/prism-plan/)
+**Skill:** [`.ai-skills/skills/prism-architect/`](../.ai-skills/skills/prism-architect/)
 
 ---
 
@@ -69,25 +69,25 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Nora — ticket setup (`prism-start-ticket`)
 
-**What she does:** Picks up a ticket, confirms scope, and creates the branch. Planning is left to Winston. Applies the follow-up scope rule — same-scope follow-ups go into the active PR, not new tickets.
+**What she does:** Picks up a ticket, confirms scope, and creates the branch. Planning is left to the plan stage. Applies the follow-up scope rule — same-scope follow-ups go into the active PR, not new tickets.
 
 **When to call:** "Nora, start PRISM-1234." or "Pick up this ticket."
 
-**Hands off to:** Winston (if planning is needed) or Clove.
+**Hands off to:** Mira for the intent on a feature, the plan stage for an improvement, or Clove for a bug.
 
 **Skill:** [`.ai-skills/skills/prism-start-ticket/`](../.ai-skills/skills/prism-start-ticket/)
 
 ---
 
-### Mira — user stories (`prism-user-stories`)
+### Mira — intent (`prism-intent`)
 
-**What she does:** Writes user stories in standard "As a / I want / So that" format. Records them in the branch plan's `## User Stories` section. Adds AC citations.
+**What she does:** Grills you one question at a time, each with a recommended answer, then writes `intent.md` into the ticket's plan folder for you to approve. Its proposed outcome and acceptance criteria take the place of user stories.
 
-**When to call:** Before planning, when you need to define requirements. "Write user stories for this."
+**When to call:** When starting new work, or when a plan folder has no approved intent. "Mira, write the intent for this."
 
-**Hands off to:** Winston for implementation planning.
+**Hands off to:** The spec stage, which starts once you approve the intent.
 
-**Skill:** [`.ai-skills/skills/prism-user-stories/`](../.ai-skills/skills/prism-user-stories/)
+**Skill:** [`.ai-skills/skills/prism-intent/`](../.ai-skills/skills/prism-intent/)
 
 ---
 
@@ -97,7 +97,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **When to call:** "Parker, write a PRD for this." or describe the feature/product area.
 
-**Hands off to:** Mira for user stories, Nora for ticket setup, Winston for planning.
+**Hands off to:** Mira to decompose it into intents, or Nora for ticket setup.
 
 **Skill:** [`.ai-skills/skills/prism-prd/`](../.ai-skills/skills/prism-prd/)
 
@@ -105,11 +105,11 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Pixel — UI/UX design (`prism-design`)
 
-**What she does:** Produces UI/UX designs, wireframes, and mock specs. Works in three modes: inline sketch (chat), saved mock spec (`.prism/design/mocks/<slug>.md`), and HTML mockup. Never writes production code.
+**What she does:** Produces UI/UX designs, wireframes, and mock specs. Works in three modes: inline sketch (chat), saved design (`design.md` in the plan folder, or `.prism/design/mocks/<slug>.md` with no plan folder), and HTML mockup. Never writes production code.
 
 **When to call:** "What should this look like?" or "I don't have a mock for this."
 
-**Hands off to:** Winston for implementation planning (she includes architectural inputs in mode 2 specs).
+**Hands off to:** The plan stage for a saved design. On a plan folder, the next stage starts without asking.
 
 **Skill:** [`.ai-skills/skills/prism-design/`](../.ai-skills/skills/prism-design/)
 
@@ -122,6 +122,42 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 **When to call:** "QA plan for PR #123." or "Release checklist for v1.2.0."
 
 **Skill:** [`.ai-skills/skills/prism-qa-plan/`](../.ai-skills/skills/prism-qa-plan/)
+
+---
+
+## Chain stages (no persona)
+
+These stages carry no persona and no voice. A person approves the intent and the session runs the rest, as the workflow rule lays out.
+
+### `prism-spec` — spec stage
+
+**What it does:** Runs as a subagent. Reads the approved `intent.md`, `design.md` when present, the routed architect docs, and the code, then writes `spec.md` with requirements, design, and the Affected systems the plan is checked against. For an epic it writes the epic spec with children and merge order.
+
+**When it runs:** After the intent is approved. The workflow dispatches it, and no phrase routes to it.
+
+**Skill:** [`.ai-skills/skills/prism-spec/`](../.ai-skills/skills/prism-spec/)
+
+---
+
+### `prism-plan` — plan stage
+
+**What it does:** Writes `plan.md` for an approved intent and spec, as ordered tasks with files, proofs, and dependencies. Runs the challenge rounds, then approves the plan itself or asks you. With no plan folder it writes the plan in chat only.
+
+**When to call:** "Plan this out." or "Write the plan." In a plan folder it runs on its own after the spec.
+
+**Hands off to:** Implementation, one commit per bundle.
+
+**Skill:** [`.ai-skills/skills/prism-plan/`](../.ai-skills/skills/prism-plan/)
+
+---
+
+### `prism-challenge` — challenge rounds
+
+**What it does:** Red-teams a finished plan, PRD, strategy, model, diagnosis, or approach through four passes and returns a typed verdict. It never edits what it challenges. Inside the plan stage it runs as a subagent for each challenge round, and its one edit is a round line under `## Challenge`.
+
+**When to call:** "Devil's advocate", "poke holes in this", or "stress test this" on any finished artifact.
+
+**Skill:** [`.ai-skills/skills/prism-challenge/`](../.ai-skills/skills/prism-challenge/)
 
 ---
 
@@ -308,8 +344,7 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 | `prism-handoff` | Compacts the session into a handoff document a fresh agent can continue from |
 | `prism-review-loop` | Orchestrates self-review → fix → PR-review loops to a subject-clean pass |
 | `prism-forge-skill` | Scaffolds a new PRISM skill from scratch or migrates an existing platform skill into canonical source |
-| `tdd` | Utility *reference* — holds the red-green loop and its three anti-patterns (with their tells); read for its content, not invoked as a session |
-| `prism-challenge` | Utility *reference* — red-teams a finished artifact through four passes and a typed verdict, and never edits the artifact it challenges; "devil's advocate" still routes here |
+| `tdd` | Utility *reference* — holds the red-green loop, the test-first rules, and the three anti-patterns (with their tells); read for its content, not invoked as a session |
 
 ---
 
