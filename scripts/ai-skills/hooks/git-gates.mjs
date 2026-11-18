@@ -15,7 +15,10 @@
  *   `commands.format` run before every `git push`, and a non-zero exit denies
  *   the push with the output tail. A command that times out or cannot start
  *   allows the push and says so — a silent allow would make a broken lint
- *   command indistinguishable from a passing one.
+ *   command indistinguishable from a passing one. When PRISM's git hooks are
+ *   installed, `lint` is skipped if `gitHooks.prePush.command` is set and
+ *   `format` is skipped if `gitHooks.preCommit.command` is set, because the
+ *   git hook already ran it.
  *
  * The contract every path keeps: exit 0, at most one deny per invocation, and
  * nothing written when the config has no `hooks` block. A `git commit && git
@@ -40,13 +43,24 @@ import {
 	readStdin,
 	resolveHarnessFromArgv,
 } from "./hook.mjs";
+import { readGitHooksState } from "./git-hooks/install.mjs";
+import { isCommandNotFound } from "./lib/command.mjs";
 import { splitShellSegments, unquote } from "./lib/shell.mjs";
 
 const STATE_FILE_PREFIX = "git-gates-state.";
 
 const DEFAULT_PUSH_VERIFICATION_TIMEOUT_MS = 120000;
 
-const PUSH_VERIFICATION_SLOTS = ["lint", "format"];
+/**
+ * The push-verification command slots, each paired with the git hook that
+ * already runs the same check once that hook is installed and configured.
+ *
+ * @type {Array<{ slot: "lint" | "format", gitHook: "pre-push" | "pre-commit", gitHooksKey: "prePush" | "preCommit" }>}
+ */
+const PUSH_VERIFICATION_SLOTS = [
+	{ slot: "lint", gitHook: "pre-push", gitHooksKey: "prePush" },
+	{ slot: "format", gitHook: "pre-commit", gitHooksKey: "preCommit" },
+];
 
 const COMMIT_DENY_REASON = [
 	"Cleanup pass before this commit (once per HEAD — the retry of this same command goes through).",
@@ -54,17 +68,6 @@ const COMMIT_DENY_REASON = [
 	"cat .prism/references/cleanup-pass.md",
 	"git diff --cached",
 ].join("\n");
-
-/**
- * How a shell reports that the command it was handed does not exist. Under
- * `shell: true` a missing binary never surfaces as `ENOENT` on `result.error`
- * — the shell starts fine and reports the miss itself: every POSIX shell as
- * exit `127`, `cmd.exe` as exit `1` with this message on stderr. The
- * fail-open path recognizes both, so a lint command that is not installed
- * announces itself rather than holding every push until the config changes.
- */
-const POSIX_COMMAND_NOT_FOUND_STATUS = 127;
-const CMD_EXE_COMMAND_NOT_FOUND = /is not recognized as an internal or external command/;
 
 /**
  * One recognized segment: which gate it reaches, and every `-C <dir>` the
@@ -468,9 +471,27 @@ function runPushGate(spec, configRoot, config, hooks) {
 			? configuredTimeout
 			: DEFAULT_PUSH_VERIFICATION_TIMEOUT_MS;
 
-	for (const slot of PUSH_VERIFICATION_SLOTS) {
+	const gitHooks =
+		typeof config.gitHooks === "object" && config.gitHooks !== null
+			? /** @type {Record<string, any>} */ (config.gitHooks)
+			: {};
+	const gitHooksInstalled = readGitHooksState(configRoot).installed;
+
+	for (const { slot, gitHook, gitHooksKey } of PUSH_VERIFICATION_SLOTS) {
 		const command = commands[slot];
 		if (typeof command !== "string" || command.trim().length === 0) {
+			continue;
+		}
+
+		const gitHookCommand = gitHooks[gitHooksKey]?.command;
+		if (
+			gitHooksInstalled &&
+			typeof gitHookCommand === "string" &&
+			gitHookCommand.trim().length > 0
+		) {
+			process.stderr.write(
+				`git-gates: skipped commands.${slot}; the installed ${gitHook} git hook runs it\n`
+			);
 			continue;
 		}
 
@@ -484,10 +505,7 @@ function runPushGate(spec, configRoot, config, hooks) {
 		});
 
 		const spawnError = /** @type {NodeJS.ErrnoException | undefined} */ (result.error);
-		const notFound =
-			result.status === POSIX_COMMAND_NOT_FOUND_STATUS ||
-			(result.status !== 0 && CMD_EXE_COMMAND_NOT_FOUND.test(result.stderr ?? ""));
-		if (spawnError || notFound) {
+		if (spawnError || isCommandNotFound(result)) {
 			const why =
 				spawnError?.code === "ETIMEDOUT"
 					? `timed out after ${timeout}ms`

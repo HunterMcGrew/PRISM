@@ -409,6 +409,141 @@ test("push gate: a command that does not exist allows with an announcement rathe
 	});
 });
 
+/** A command that appends one line to `file` each time it runs, so a test can count its runs. */
+function countingCommand(file: string): string {
+	return `node -e "require('node:fs').appendFileSync('${file}', 'x\\n')"`;
+}
+
+/**
+ * A repo whose config carries `commands` and a `gitHooks` block, with PRISM's
+ * marked pre-commit shim in `.githooks/`. The push gate reads git config
+ * through `process.env`, so it is isolated from the developer's own for the
+ * duration of `body`.
+ */
+async function withGitHooksRepo(
+	gitHooks: Record<string, unknown>,
+	commands: Record<string, string>,
+	body: (root: string) => Promise<void>
+): Promise<void> {
+	await withTempRepo(async (root) => {
+		await seedGitRepo(root, { pushVerification: true }, commands);
+		const config = JSON.parse(
+			await fs.readFile(path.join(root, ".ai-skills", "config.json"), "utf8")
+		);
+		await fs.writeFile(
+			path.join(root, ".ai-skills", "config.json"),
+			JSON.stringify({ ...config, gitHooks }),
+			"utf8"
+		);
+		await fs.mkdir(path.join(root, ".githooks"));
+		await fs.writeFile(
+			path.join(root, ".githooks", "pre-commit"),
+			"#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n",
+			"utf8"
+		);
+
+		const saved = { ...process.env };
+		try {
+			for (const key of Object.keys(process.env)) {
+				if (key.startsWith("GIT_")) {
+					delete process.env[key];
+				}
+			}
+			const emptyConfig = path.join(root, ".git", "empty-gitconfig");
+			await fs.writeFile(emptyConfig, "", "utf8");
+			process.env.GIT_CONFIG_NOSYSTEM = "1";
+			process.env.GIT_CONFIG_GLOBAL = emptyConfig;
+
+			await body(root);
+		} finally {
+			for (const key of Object.keys(process.env)) {
+				delete process.env[key];
+			}
+			Object.assign(process.env, saved);
+		}
+	});
+}
+
+async function countLines(root: string, file: string): Promise<number> {
+	try {
+		return (await fs.readFile(path.join(root, file), "utf8")).split("\n").filter(Boolean).length;
+	} catch {
+		return 0;
+	}
+}
+
+test("push gate: with the git hooks installed and gitHooks.prePush.command set, lint is skipped and announced", async () => {
+	await withGitHooksRepo(
+		{ prePush: { command: "eslint {files}", globs: ["**/*.ts"] } },
+		{ lint: countingCommand("lint-ran.txt") },
+		async (root) => {
+			git(root, "config", "--local", "core.hooksPath", ".githooks");
+
+			let result: string | null = null;
+			const stderr = await captureStderr(async () => {
+				result = await runGitGatesArm("claude", claude, shellPayload(root, "git push"), CLEAN_ENV);
+			});
+
+			assert.equal(result, null);
+			assert.equal(await countLines(root, "lint-ran.txt"), 0, "lint never ran");
+			assert.match(
+				stderr,
+				/git-gates: skipped commands\.lint; the installed pre-push git hook runs it/
+			);
+		}
+	);
+});
+
+test("push gate: with core.hooksPath unset the same config runs lint exactly once", async () => {
+	await withGitHooksRepo(
+		{ prePush: { command: "eslint {files}", globs: ["**/*.ts"] } },
+		{ lint: countingCommand("lint-ran.txt") },
+		async (root) => {
+			const result = await runGitGatesArm(
+				"claude",
+				claude,
+				shellPayload(root, "git push"),
+				CLEAN_ENV
+			);
+
+			assert.equal(result, null);
+			assert.equal(await countLines(root, "lint-ran.txt"), 1);
+		}
+	);
+});
+
+test("push gate: with only prePush configured, commands.format still runs", async () => {
+	await withGitHooksRepo(
+		{ prePush: { command: "eslint {files}", globs: ["**/*.ts"] } },
+		{ lint: countingCommand("lint-ran.txt"), format: countingCommand("format-ran.txt") },
+		async (root) => {
+			git(root, "config", "--local", "core.hooksPath", ".githooks");
+
+			await runGitGatesArm("claude", claude, shellPayload(root, "git push"), CLEAN_ENV);
+
+			assert.equal(await countLines(root, "lint-ran.txt"), 0);
+			assert.equal(await countLines(root, "format-ran.txt"), 1);
+		}
+	);
+});
+
+test("push gate: with preCommit configured and the git hooks installed, format is skipped", async () => {
+	await withGitHooksRepo(
+		{ preCommit: { command: "prettier --stdin-filepath {path}", globs: ["**/*.ts"] } },
+		{ format: countingCommand("format-ran.txt") },
+		async (root) => {
+			git(root, "config", "--local", "core.hooksPath", ".githooks");
+
+			const stderr = await captureStderr(async () => {
+				await runGitGatesArm("claude", claude, shellPayload(root, "git push"), CLEAN_ENV);
+			});
+
+			assert.equal(await countLines(root, "format-ran.txt"), 0);
+			assert.match(stderr, /skipped commands\.format; the installed pre-commit git hook runs it/);
+		}
+	);
+});
+
 test("push gate: the output tail is bounded by MAX_EMISSION_BYTES", async () => {
 	await withTempRepo(async (root) => {
 		await seedGitRepo(
