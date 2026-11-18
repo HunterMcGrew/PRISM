@@ -34,6 +34,7 @@ import {
 	removeManagedContentAreas,
 	syncAllPlatformContentCopies,
 } from "./build";
+import { syncCodexProjectDocLimit } from "./codex-project-doc";
 import {
 	buildRoleMap,
 	generatePlatformSkills,
@@ -591,13 +592,26 @@ export async function runUpdate(
 
 	const agentsMdRefresh: AgentsMdRefreshOutcome = { refreshed };
 
-	// The hook runtime lands outside the content root the file pass walks, so
-	// its outcomes are folded in here rather than returned by `applyFilePass`.
-	// Without this the seam would write into a consumer's tree without
-	// appearing in the run summary or the `--dry-run` preview at all.
+	// In dry-run the refresh above writes nothing, so the limit is sized from the
+	// pre-refresh AGENTS.md; it can differ from a real run by at most one 64 KiB step.
+	const codexDocLimit = hosts.includes("codex")
+		? await syncCodexProjectDocLimit(consumerRepoRoot, dryRun)
+		: null;
+
+	if (codexDocLimit?.warning !== undefined) {
+		console.warn(`prism:update: ${codexDocLimit.warning}`);
+	}
+
+	// The hook runtime and the Codex limit land outside the content root the file
+	// pass walks, so their outcomes are folded in here rather than returned by
+	// `applyFilePass`. Without this the seam would write into a consumer's tree
+	// without appearing in the run summary or the `--dry-run` preview at all.
+	const externalOutcomes =
+		codexDocLimit === null ? hookOutcomes : [...hookOutcomes, codexDocLimit.outcome];
+
 	return {
 		...summary,
-		outcomes: [...summary.outcomes, ...hookOutcomes],
+		outcomes: [...summary.outcomes, ...externalOutcomes],
 		backups: [
 			...summary.backups,
 			...hookOutcomes
