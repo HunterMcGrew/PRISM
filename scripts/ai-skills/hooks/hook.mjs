@@ -50,6 +50,7 @@ import {
 	resolveUnreadDocs,
 	toRepoRelativePath,
 } from "./architect-route.mjs";
+import { runPreCompactArm, runSessionStartArm } from "./compact-handoff.mjs";
 import {
 	HARNESSES,
 	resolveListedToolKind,
@@ -1229,10 +1230,17 @@ async function main() {
 		return;
 	}
 
-	const output =
-		eventName === "PreToolUse"
-			? await runPreToolUseArm(tool, spec, rawStdin)
-			: await runPostToolUseArm(tool, spec, rawStdin);
+	let output;
+
+	if (eventName === "PreCompact") {
+		output = await runPreCompactArm(rawStdin);
+	} else if (eventName === "SessionStart") {
+		output = await runSessionStartArm(rawStdin);
+	} else if (eventName === "PreToolUse") {
+		output = await runPreToolUseArm(tool, spec, rawStdin);
+	} else {
+		output = await runPostToolUseArm(tool, spec, rawStdin);
+	}
 	if (output !== null) {
 		process.stdout.write(output);
 	}
