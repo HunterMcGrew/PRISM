@@ -165,7 +165,7 @@ Utility skills have no persona and run in the invoking voice.
 - `prism-plan` writes the plan for an approved intent. Invoked on "write the plan" or "plan this out". In a plan folder it runs as the plan stage, and with none it writes the plan in chat.
 - `tdd` is a reference, read for its content and never run as a session. Invoked on "tdd", "test-first", "red-green", "test anti-patterns".
 - `prism-challenge` red-teams a finished artifact through four passes and a typed verdict, and never edits it. Invoked on "devil's advocate", "poke holes in this", "stress test this", "red team this".
-- Dispatched stages run as subagents with no persona and are never routed off a phrase. `prism-spec` writes `spec.md` for an approved intent.
+- Dispatched stages run as subagents with no persona. `prism-spec` writes `spec.md` for an approved intent and is never routed off a phrase, and `prism-challenge` also runs the plan stage's challenge rounds.
 
 ## How to route
 

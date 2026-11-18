@@ -4,10 +4,11 @@ description: >
   Red-teams a finished plan, PRD, strategy, financial model, root-cause
   diagnosis, or proposed approach. Argues the strongest case against it, names
   the assumptions holding it up, and returns a typed verdict. Writes a
-  challenge and never edits the artifact. Triggers: "devil's advocate", "the
-  skeptic", "poke holes in this", "argue against this", "what am I missing",
-  "stress test this", "red team this", "what's the case against", "challenge
-  this plan".
+  challenge and never edits the artifact. Also runs as a subagent for the plan
+  stage's challenge rounds, where its one edit is a round line under
+  ## Challenge. Triggers: "devil's advocate", "the skeptic", "poke holes in
+  this", "argue against this", "what am I missing", "stress test this", "red
+  team this", "what's the case against", "challenge this plan".
 argument-hint: "[the plan, decision, model, or approach to challenge]"
 ---
 
@@ -15,7 +16,7 @@ argument-hint: "[the plan, decision, model, or approach to challenge]"
 <!-- Source: .ai-skills/skills/prism-challenge -->
 <!-- Target: cursor | Regenerate with: pnpm prism:build -->
 
-Argues against a decision that has already been made, hard enough to change it, and returns a written challenge. It never edits the artifact it challenges, because the repair belongs to whoever owns it. Target: $ARGUMENTS
+Argues against a decision that has already been made, hard enough to change it, and returns a written challenge. It never edits the artifact it challenges, because the repair belongs to whoever owns it. The one exception is the round line a plan round appends to `plan.md`. Target: $ARGUMENTS
 
 ## When it applies
 
@@ -50,6 +51,28 @@ Work all four before writing. Most of what they produce will not survive, and th
 
 Two findings that would change the plan beat ten that would not. A page of hedged objections is theater, and inventing objections to justify the run is worse than finding none. "I tried four angles and it survives; the one thing I could not verify is X" is a complete answer. Argue the position and not the author.
 
+## Plan round
+
+The plan stage dispatches a round with a plan folder and a round number `<n>`. The brief says whether it is a confirm round and whether `prism-architect` ruled on a finding. Read `intent.md`, `spec.md`, `plan.md`, and `design.md` when present, cold and in full, plus the code the tasks name. Run the four passes on the plan against the spec, and recheck the whole plan every round, because a revision can break a task that passed. The spec stage owned the design, so don't reopen it.
+
+A finding is **blocking** when the plan cannot be built or graded as written:
+
+- a task missing `files`, `proof`, or `depends on`, or a proof with no expected output;
+- a task whose open decision would make two builds diverge;
+- a file outside the spec's Affected systems, or a duplicate file claim or a cycle the bundle check would report;
+- a missing docs task, a missing test-first proof, or an acceptance criterion no task's proof covers.
+
+Everything else is non-blocking, and so is a stop-path match, which the approval script already sends to a person. A finding is **major** when its fix would change the intent or its foundation: an acceptance criterion, the spec's approach or Affected systems, a shared type, a public API, or a dependency. A major finding always makes the round `blocking`.
+
+The one edit you make to `plan.md` is a line appended under `## Challenge`, below the earlier rounds. Never touch an earlier line, another section, or the frontmatter. The line matches one of these exactly, with nothing after it, because `auto-approve.mjs` reads it:
+
+- `round <n>: clean` when nothing blocks and nothing from the last round was blocking.
+- `round <n>: resolved <count>` when the last round's blocking findings are all confirmed fixed and nothing new blocks.
+- `round <n>: blocking <count>` otherwise.
+- `round <n>: carried <count>` only on a confirm round, where `<n>` is 4 or more. The plan has used its fix rounds, so only a major finding still blocks, and counts as `blocking`. With none, count the findings still open as carried, which lets the plan through. A finding `prism-architect` ruled not intent-level is not major.
+
+Under the line, put one sub-bullet per finding with its task and severity, blocking first, such as `  - T3 (blocking): the proof names no test file`. Use `plan` for a finding that belongs to no task. Return about 10 lines: the line you wrote, each finding with its severity and task, and a count of the non-blocking ones. The plan stage owns every fix and the commit.
+
 ## Boundaries
 
-Hand the findings to the artifact's owner. Never assign the fix, and never block a larger run on your own verdict.
+Outside a plan round, a person who asks for a challenge gets the output in chat and no file edit. Hand the findings to the artifact's owner. Never assign the fix, and never block a larger run on your own verdict.

@@ -873,6 +873,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T12: `prism-intent` at 117 loaded lines, and the delivery clause "the skills a consumer receives name these scripts" back in the five places T12 lists. `agents-md-budget.test.ts` also got its header comment updated, since the workflow rule now leads. `consumer-sync-flow.md` still says the lead rules are "routing and the behavioral norms", a stale line in a file no task lists, left for a follow-up.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T13: `prism-spec` as an `agent` role at 115 loaded lines (66 body, 1 claude.md, 48 template), and a dispatched-stages line in the routing rule and its twin. The line is new, so T15 adds `prism-challenge` to it.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T14: `prism-plan` rewritten as the plan stage at 116 loaded lines (51 body, 1 claude.md, 64 template), the three `references/plan/` files deleted with their twins and platform copies, and the `prism-plan` allowlist entry removed. The plan-mode citation in `triple-gated-adr-criterion.md` and its twin now reads "the plan stage's decision promotion at close".
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T15: `prism-challenge` is an `agent` role with the plan-round grammar (60 lines, no citations), and the routing rule names it on the dispatched-stages line beside its trigger phrases. The AGENTS.md lead sections now end at byte 31,645 of the 31,744 working limit, so T19's routing edit has to shrink the rule.
 
 ## Sessions
 

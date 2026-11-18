@@ -157,7 +157,7 @@
 		},
 		{
 			"id": "prism-challenge",
-			"type": "utility",
+			"type": "agent",
 			"routing": "named-only"
 		}
 	]
