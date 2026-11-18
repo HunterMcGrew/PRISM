@@ -16,6 +16,7 @@ import { runAdoptCli } from "./adopt";
 import { runDetectCli } from "./detect";
 import { runDoctorCli } from "./doctor";
 import { runEjectCli } from "./eject";
+import { runHooksCli } from "./hooks-cli";
 import { runInitCli } from "./init";
 import { runUpdateCli } from "./update";
 
@@ -27,6 +28,7 @@ Usage:
   prism detect   Report the detected tech stack and doc layout as JSON (read-only)
   prism update   Pull PRISM's latest canonical content into this repo (steady-state)
   prism doctor   Report install health — config, git repo, sync state, version
+  prism hooks install   Point git at PRISM's .githooks (leaves another hooks setup alone)
   prism eject    Remove PRISM from this repo (requires --yes; --dry-run to preview)
 
 Run from your consumer repo root. PRISM source is auto-derived from the linked
@@ -54,6 +56,9 @@ async function main(): Promise<void> {
 			break;
 		case "doctor":
 			await runDoctorCli();
+			break;
+		case "hooks":
+			await runHooksCli(process.argv.slice(3));
 			break;
 		case "eject":
 			await runEjectCli();
