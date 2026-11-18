@@ -541,3 +541,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-18 (PRISM-516) — `deliverGitHookShims` ran `chmod 0o755` only after a write, so a byte-identical shim that had lost its mode (a commit from a `core.fileMode=false` clone) was never repaired. Git skipped the hook silently while doctor and the push gate, which checked only the marker, reported it installed.
 
 **How to apply:** In any copy step that owns an executable file, set the mode on every pass, including the no-op, and make every "is it installed" check require the executable bit off Windows. The authoring-side twin is the `git add` lesson above.
+
+## Compare paths only when both sides come from the same source
+
+**Why:** 2026-11-18 (PRISM-516) — `otherWorktreeHasShim` compared Node's `realpathSync(repoRoot)` with the paths in `git worktree list --porcelain`. Windows spells the same directory differently in Node and in git, so the current worktree counted as a sibling and `removeGitHooksPath` kept the value. Linux CI passed, and Windows CI failed on the unset test.
+
+**How to apply:** Compare paths only when both sides come from one source, both from git or both from Node, and normalize both the same way. For "is this the current worktree", take self from `git rev-parse --show-toplevel`, as the list entries are, the way `classifyHooksPath` uses `resolveCommonDir`.

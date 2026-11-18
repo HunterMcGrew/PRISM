@@ -452,6 +452,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed all 12 self-review findings and the orchestrator's `.git/hooks` bypass, in four commits (code, quoteForShell JSDoc, architect docs, consumer docs) separate from the review record; see the Decisions on `.git/hooks`, active hooks, and the guarded setup line.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed the three re-review findings in two commits: the `core.hooksPath` unset now runs when `.githooks/` is already gone, the installer follows `include.path` on scoped reads, and its stale header is corrected. Tests for the first two failed on the previous head.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed Eric's six Minor findings on PR #523 in three commits (installer and worktree code, `unknown` config types, docs and mirrors); see Decisions on the shim mode and on dropping both hosts. The installer now repairs a non-executable shim, and the `core.hooksPath` unset waits for sibling worktrees.
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed Eric's Major on PR #523 in 07f234b5: `otherWorktreeHasShim` takes the current worktree from `git rev-parse --show-toplevel`, since Windows spells Node's and git's paths differently and CI went red on 874d5d99. The same commit corrects the dry-run wording and the partial-chmod message. The new test failed on the previous head, and Windows was not run locally.
 
 ## Sessions
 
@@ -463,6 +464,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix the three open findings in the re-review of the fix round. Bounds: this PR's files only, a failing test first for each behavior fix, fix commits separate from the plan record; no new dependency, no merge, PR stays draft. Approach: reproduce each finding as a failing test on the previous head, fix it, then correct the architect and consumer docs and rebuild the mirrors. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: self-review the re-review fixes `5594e724..acdc112f` on PR #523. Bounds: findings into `## Review` and `## PR Readiness` only, landed as a plan-only commit; no source fixes, no GitHub posts, no merge. Approach: run `prism:check`, run the new tests against the previous head's source, and source-verify each fix and changed doc claim. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix Eric's six Minor findings on PR #523. Bounds: this PR's files only, a failing test first for each behavior fix, fix commits separate from the plan record; no new dependency, no merge, PR stays draft, review threads left for Eric to resolve. Approach: repair the shim mode in the installer, skip the unset for sibling worktrees, narrow the config types, then correct the docs and rebuild the mirrors. · close: scope held, with the `hooks install` and session-start test fixtures now writing executable shims
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix Eric's Major on the worktree self-check, plus the dry-run grammar and partial-chmod message. Bounds: `install.mjs`, its test, the architect doc sentence and mirrors, the plan, and one lesson; no new dependency, no merge, PR stays draft, no review threads resolved. Approach: a failing test first, then take self from git, then the plan record in its own commit. · close: scope held, with the `git-hooks.md` sentence on unfixable shims corrected because the message behavior changed
 
 ## Verification
 
@@ -660,6 +662,15 @@ PR review 2026-11-18 [huntermcgrew/prism-516-git-hooks] at `4021624a`, summary c
 
 Eric's cross-cutting observation is recorded in `git-hooks.md` § Configuration and the skip rule (93066e8f): `pnpm exec <missing-bin>` exits 1, not 127, so with a package-runner command a clone missing the tool fails the commit instead of skipping it. No test covers that shape, by design: the behavior is the package runner's.
 
+### The worktree self-check compares Node's path with git's, so Windows counts the current worktree as a sibling
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/git-hooks/install.mjs:391`
+- **Problem:** Eric's finding on PR #523, confirmed by Windows CI going red on 874d5d99 at `removeGitHooksPath unsets only a local value of exactly .githooks` (`git-hooks-install.test.ts:417`). `otherWorktreeHasShim` compared `realpathSync(repoRoot)` with the paths from `git worktree list --porcelain`. Windows spells one directory differently in Node and in git, so the current worktree, which still has its shims on disk, counted as a sibling and the unset was skipped. Linux spells both the same, so the failure does not reproduce locally.
+- **Suggested fix:** Take self from git, `git rev-parse --show-toplevel`, and normalize it the same way as the list entries, as `classifyHooksPath` does with `resolveCommonDir`.
+- **Fixed in:** 07f234b5 self is `resolve(git rev-parse --show-toplevel)` with the same `realpathSync` as the list entries. The new test passes a path inside the linked worktree, which Node does not normalize to the toplevel, and failed on 874d5d99. It also runs the self-exclusion from the linked worktree while its shim is on disk, and checks that the main checkout still sees that shim. Windows was not run locally, so the Windows leg of CI on the new head is the confirmation. The same commit corrects two installer messages: the dry run says "make" instead of "made", and a partial chmod now names the shim it fixed as well as the one it could not.
+
 ## Cleanup Items
 
 - `scripts/ai-skills/git-hooks-pre-commit.test.ts`, `git-hooks-pre-push.test.ts`, `git-hooks-install.test.ts`, `git-hooks-shim.test.ts`, `git-hooks-delivery.test.ts`, `hooks-cli.test.ts`, and `session-start-install.test.ts` — each builds its own git fixture with the same isolation env (`GIT_CONFIG_NOSYSTEM`, an empty global config, stripped `GIT_*`). A shared helper would remove the copies, but it spans seven new files and the existing `git-gates.test.ts` and `doctor.test.ts`, which carry the same env, so it is out of this child's frame.
@@ -692,12 +703,12 @@ The issue's checklist, with IDs and evidence added. The criterion text matches t
 
 ## PR Readiness
 
-- [x] No critical or major issues: the self-review of `5594e724..acdc112f` found none, and its 2 minors plus Eric's other 4 are fixed in `c95ac903..93066e8f`
+- [x] No critical or major issues: the self-review of `5594e724..acdc112f` found none, and its 2 minors plus Eric's other 4 are fixed in `c95ac903..93066e8f`; Eric's later Major on the worktree self-check is fixed in `07f234b5`
 - [x] Types correct: `prism:check-types` passes on both tsconfigs
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases: the already-absent `.githooks/` case and the `include.path` case are covered, and both fail on 5594e724. The linked-worktree unset and the shim-mode repair each have tests that fail on 4021624a
+- [x] Tests written for new logic and edge cases: the already-absent `.githooks/` case and the `include.path` case are covered, and both fail on 5594e724. The linked-worktree unset and the shim-mode repair each have tests that fail on 4021624a, and the worktree self-exclusion test fails on 874d5d99
 - [x] All debugged issues resolved (none recorded)
-- [x] Build passes: last run 2026-11-18 at 93066e8f, `pnpm prism:check` green (1137 tests, 0 failed, 0 skipped; spec-scope skipped on a detached checkout). CI on the new head is pending
+- [ ] Build passes: `pnpm prism:check` is green locally on Linux at `07f234b5`, but CI went red on 874d5d99 (the Windows leg, `git-hooks-install.test.ts:417`). The fix is pushed and CI on the new head is pending. Windows was not run locally
 - [x] PR description up to date: the body covers the `.git/hooks` leave-alone and the per-hook executable-shim rule; its "any of four scopes" line still holds with includes followed
 - [ ] Lasting decisions promoted to architect context: at close
 
