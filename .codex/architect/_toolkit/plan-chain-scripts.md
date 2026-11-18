@@ -27,7 +27,7 @@ In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, ru
 
 ## Entry guards
 
-The four commands end with a guard that compares the realpath of `process.argv[1]` to the module's own path, so a symlinked invocation still counts as direct. That guard is only right while nothing in the `dist/cli.js` bundle imports these modules. The esbuild bundle collapses every module's `import.meta.url` to one file, so a bundled guard would fire on every invocation. The runtime can't use `isDirectCliEntry` instead, because it ships no TypeScript. Before a bundled module imports one of the four, split the CLI from the logic.
+Every command ends with a guard that compares the realpath of `process.argv[1]` to the module's own path, so a symlinked invocation still counts as direct. That guard is only right while nothing in the `dist/cli.js` bundle imports these modules. The esbuild bundle collapses every module's `import.meta.url` to one file, so a bundled guard would fire on every invocation. The runtime can't use `isDirectCliEntry` instead, because it ships no TypeScript. Before a bundled module imports a command module, split the CLI from the logic.
 
 ## Globs
 
