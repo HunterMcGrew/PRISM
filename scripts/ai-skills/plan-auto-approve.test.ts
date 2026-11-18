@@ -306,6 +306,26 @@ describe("failing conditions print one line, exit 1, and write nothing", () => {
 		assert.equal(readPlan(folder), before);
 	});
 
+	test("the CLI exits 2 on a stop-path list that is a string instead of an array", () => {
+		const folder = copyFixture("contract-path");
+		const configDir = path.join(repoRootOf(folder), ".ai-skills");
+		mkdirSync(configDir);
+		writeFileSync(
+			path.join(configDir, "config.json"),
+			JSON.stringify({ stopPaths: { contract: "src/contracts/**" } })
+		);
+		const before = readPlan(folder);
+
+		const child = run(folder, "--check");
+
+		assert.equal(child.status, 2);
+		assert.equal(
+			child.stderr,
+			'auto-approve: stopPaths.contract is "src/contracts/**", which is not an array of patterns.\n'
+		);
+		assert.equal(readPlan(folder), before);
+	});
+
 	test("the CLI exits 2 on a config that does not parse instead of using the default stop paths", () => {
 		const folder = copyFixture("contract-path");
 		const configDir = path.join(repoRootOf(folder), ".ai-skills");

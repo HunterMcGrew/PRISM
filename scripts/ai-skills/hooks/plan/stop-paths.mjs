@@ -62,9 +62,10 @@ const KINDS = ["dependency", "contract"];
  * The two lists a repo's config sets, each falling back to its default when
  * the config leaves it unset. A list that is set replaces its default.
  *
- * Throws when the config misspells a key, lists something other than a
- * string, or uses a `{` brace pattern, because the config validator accepts
- * all three and each would otherwise turn a stop path off without a word.
+ * Throws when the config misspells a key, sets a list to something other than
+ * an array, lists something other than a string, or uses a `{` brace pattern,
+ * because the config validator accepts all four and each would otherwise turn
+ * a stop path off without a word.
  *
  * @param {{ stopPaths?: { dependency?: unknown, contract?: unknown } } | null | undefined} config
  * @returns {StopPaths}
@@ -79,19 +80,35 @@ export function resolveStopPaths(config) {
 		}
 	}
 
-	const dependency = stopPaths?.dependency;
-	const contract = stopPaths?.contract;
-	if (Array.isArray(dependency))
-		dependency.forEach((entry) => checkPattern("dependency", entry));
-	if (Array.isArray(contract))
-		contract.forEach((entry) => checkPattern("contract", entry));
+	const dependency = checkList("dependency", stopPaths?.dependency);
+	const contract = checkList("contract", stopPaths?.contract);
 
 	return {
-		dependency: Array.isArray(dependency)
-			? dependency
-			: DEFAULT_DEPENDENCY_FILES,
-		contract: Array.isArray(contract) ? contract : [],
+		dependency: dependency ?? DEFAULT_DEPENDENCY_FILES,
+		contract: contract ?? [],
 	};
+}
+
+/**
+ * The list a config set for `kind`, or undefined when the config left it
+ * unset. A set value that is not an array would otherwise fall back to its
+ * default, and an empty default for `contract` approves past the paths the
+ * config meant to stop on.
+ *
+ * @param {string} kind
+ * @param {unknown} list
+ * @returns {string[] | undefined}
+ */
+function checkList(kind, list) {
+	if (list === undefined) return undefined;
+	if (!Array.isArray(list)) {
+		throw new Error(
+			`stopPaths.${kind} is ${JSON.stringify(list)}, which is not an array of patterns.`
+		);
+	}
+	list.forEach((entry) => checkPattern(kind, entry));
+
+	return list;
 }
 
 /**

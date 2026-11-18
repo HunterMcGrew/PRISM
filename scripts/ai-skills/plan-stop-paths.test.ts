@@ -150,10 +150,25 @@ test("a configured dependency list replaces the default", () => {
 	});
 });
 
-test("an unset or malformed list falls back to its default", () => {
+test("an unset list falls back to its default", () => {
 	assert.deepEqual(resolveStopPaths(undefined).dependency, DEFAULT_DEPENDENCY_FILES);
-	assert.deepEqual(
-		resolveStopPaths({ stopPaths: { dependency: "package.json", contract: 3 } }),
-		{ dependency: DEFAULT_DEPENDENCY_FILES, contract: [] }
+	assert.deepEqual(resolveStopPaths({ stopPaths: {} }), {
+		dependency: DEFAULT_DEPENDENCY_FILES,
+		contract: [],
+	});
+});
+
+test("a list that is set but is not an array is a config error", () => {
+	assert.throws(
+		() => resolveStopPaths({ stopPaths: { contract: "src/contracts/**" } }),
+		/stopPaths\.contract is "src\/contracts\/\*\*", which is not an array of patterns/
+	);
+	assert.throws(
+		() => resolveStopPaths({ stopPaths: { dependency: 3 } }),
+		/stopPaths\.dependency is 3, which is not an array of patterns/
+	);
+	assert.throws(
+		() => resolveStopPaths({ stopPaths: { contract: null } }),
+		/stopPaths\.contract is null, which is not an array of patterns/
 	);
 });
