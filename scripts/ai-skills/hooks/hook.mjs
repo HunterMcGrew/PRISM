@@ -184,17 +184,20 @@ function resolveCdTarget(tokens) {
 }
 
 /**
- * True when a `cd` target enters a named directory and then leaves it with
- * `..`, as in `missing/..`. The shell fails that `cd` when the name does not
- * exist and runs nothing after `&&`, while `path.resolve` collapses the pair
- * and would credit the doc a later `cat` names. Leading `..` segments are
- * fine, because `cd ..` cannot fail on a missing name.
+ * True when a directory the read arm reached by `cd` enters a name and then
+ * leaves it with `..`, as in `missing/..`. The shell fails the `cd` into a
+ * name that does not exist and runs nothing after `&&`, while `path.resolve`
+ * collapses the pair and would credit the doc a later `cat` names. The caller
+ * passes the directory composed from every `cd` so far, so `cd missing && cd
+ * ..` is caught as well as `cd missing/..`. Leading `..` segments are fine,
+ * because `cd ..` cannot fail on a missing name.
  *
- * @param {string} target
+ * @param {string} directory
  * @returns {boolean}
  */
-function checkStepsBackOutOfName(target) {
-	return /(^|\/)\.\.(\/|$)/.test(target.replace(/^(\.\.(\/|$))+/, ""));
+function checkStepsBackOutOfName(directory) {
+	const withoutLeadingSteps = directory.replace(/^(\.(\/|$))+/, "").replace(/^(\.\.(\/|$))+/, "");
+	return /(^|\/)\.\.(\/|$)/.test(withoutLeadingSteps);
 }
 
 /**
@@ -310,12 +313,12 @@ export function parseShellReadTargets(command) {
 	for (const tokens of splitShellSegments(normalized)) {
 		const cdTarget = resolveCdTarget(tokens);
 		if (cdTarget !== null) {
-			directory =
-				cdTarget === undefined ||
-				directory === undefined ||
-				checkStepsBackOutOfName(cdTarget)
+			/** @type {string | undefined} */
+			const next =
+				cdTarget === undefined || directory === undefined
 					? undefined
 					: joinShellPath(directory, cdTarget);
+			directory = next === undefined || checkStepsBackOutOfName(next) ? undefined : next;
 			continue;
 		}
 

@@ -93,7 +93,7 @@ The architect-doc write gate records every read it observes, follows a literal `
 ### A failed `cd` over-credits when its target ends in `..`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **Re-review 2026-11-18 (f7db0ca):** the single-target form is fixed, but the check sees one `cd` at a time. `parseShellReadTargets("cd missing && cd .. && cat .prism/architect/_toolkit/d.md")` still returns `./missing/../.prism/architect/_toolkit/d.md` with `credit: true` (so does the `;` form), while bash fails the first `cd` and runs nothing after `&&`. Fix: end credit when a `..` step would leave a directory the command itself entered.
 - **File:** `scripts/ai-skills/hooks/hook.mjs:105`
 - **Problem:** the `checkShellReadSafe` comment says a failed `cd` can only under-credit. `parseShellReadTargets("cd missing/.. && cat .prism/architect/_toolkit/d.md")` returns the real doc with `credit: true`, yet bash fails that `cd` ("No such file or directory") and the `cat` never runs. `main` returns no target. Whether Claude Code fires `PostToolUse` after the failed command is host behavior I did not verify.

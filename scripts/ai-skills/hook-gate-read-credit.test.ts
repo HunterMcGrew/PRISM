@@ -174,6 +174,9 @@ test("a cd whose target the hook cannot know credits nothing after it", async ()
 			`cd && cat .prism/architect/${GATE_DOC}`,
 			`cd ~/repo && cat .prism/architect/${GATE_DOC}`,
 			`cd missing/.. && cat .prism/architect/${GATE_DOC}`,
+			`cd missing && cd .. && cat .prism/architect/${GATE_DOC}`,
+			`cd missing; cd ..; cat .prism/architect/${GATE_DOC}`,
+			`cd a/b && cd ../.. && cat .prism/architect/${GATE_DOC}`,
 		]) {
 			assert.deepEqual(await runRead(repoRoot, command), [], command);
 		}
@@ -188,6 +191,14 @@ test("a cd up to a parent credits the doc it reads from there", async () => {
 			path.join(repoRoot, "src")
 		);
 		assert.deepEqual(read, [GATE_DOC]);
+
+		const nested = path.join(repoRoot, "src", "deep");
+		await fs.mkdir(nested);
+		assert.deepEqual(
+			await runRead(repoRoot, `cd .. && cd .. && cat .prism/architect/${GATE_DOC}`, nested),
+			[GATE_DOC],
+			"two leading steps up still credit"
+		);
 	});
 });
 
