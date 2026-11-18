@@ -33,9 +33,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { findRepoRoot, matchDocsForPath } from "../architect-route.mjs";
-import { asRecord, readRepoConfig } from "../lib/command.mjs";
+import { asRecord } from "../lib/command.mjs";
 import { approvalLines } from "./frontmatter.mjs";
-import { loadPlanState, parseCliArgs } from "./tasks.mjs";
+import {
+	loadPlanState,
+	parseCliArgs,
+	PlanConfigError,
+	readPlanConfig,
+} from "./tasks.mjs";
 
 /**
  * @typedef {import("./tasks.mjs").Task} Task
@@ -434,7 +439,7 @@ function formatReport(result) {
  * @returns {Record<string, string>}
  */
 function readAliases(repoRoot) {
-	const configured = asRecord(readRepoConfig(repoRoot)?.["importAliases"]);
+	const configured = asRecord(readPlanConfig(repoRoot)?.["importAliases"]);
 
 	/** @type {Record<string, string>} */
 	const aliases = {};
@@ -504,7 +509,7 @@ async function runCli(argv) {
 		process.stderr.write(
 			`bundles.mjs: ${(error instanceof Error ? error.message : String(error)).trim()}\n`
 		);
-		process.exitCode = 1;
+		process.exitCode = error instanceof PlanConfigError ? 2 : 1;
 		return;
 	}
 

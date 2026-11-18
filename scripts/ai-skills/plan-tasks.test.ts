@@ -470,13 +470,37 @@ describe("tasks.mjs CLI", () => {
 				T2: "done",
 			});
 		});
+	});
 
-		test("reads from origin/main when the config is unreadable", () => {
-			const repo = repoWithTwoRemoteRefs(null);
+	describe("a config file that does not parse", () => {
+		const runWithConfig = (configText: string) => {
+			const repo = mkdtempSync(path.join(os.tmpdir(), "plan-tasks-"));
+			tempDirs.push(repo);
+			git(repo, "init", "-q");
 			mkdirSync(path.join(repo, ".ai-skills"));
-			writeFileSync(path.join(repo, ".ai-skills", "config.json"), "{ not json");
+			writeFileSync(path.join(repo, ".ai-skills", "config.json"), configText);
+			writeFileSync(path.join(repo, "plan.md"), PLAN);
+			git(repo, "add", ".");
+			git(repo, "commit", "-q", "-m", "ACME-1: Base");
 
-			assert.deepEqual(planDefault(repo), { T1: "done", T2: "done" });
+			return spawnSync(
+				process.execPath,
+				[TASKS_CLI, path.join(repo, "plan.md"), "--base", "HEAD"],
+				{ env: GIT_ENV, encoding: "utf8" }
+			);
+		};
+
+		test("exits 2 naming the config file when it has a trailing comma", () => {
+			const result = runWithConfig('{"ticketPrefix": "ACME",}');
+
+			assert.equal(result.status, 2);
+			assert.match(result.stderr, /\.ai-skills\/config\.json/);
+		});
+
+		test("exits 0 on the same config without the trailing comma", () => {
+			const result = runWithConfig('{"ticketPrefix": "ACME"}');
+
+			assert.equal(result.status, 0, result.stderr);
 		});
 	});
 

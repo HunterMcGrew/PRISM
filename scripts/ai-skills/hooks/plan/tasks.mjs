@@ -283,6 +283,35 @@ export function parseCliArgs(argv) {
 		: null;
 }
 
+/** Raised when `.ai-skills/config.json` exists but cannot be read as a JSON object. */
+export class PlanConfigError extends Error {}
+
+/**
+ * The repo's parsed config, or null when the file is absent.
+ *
+ * `readRepoConfig` also returns null for a file it cannot parse, and a null
+ * config resolves to the default stop paths. A typo in a config that sets
+ * `stopPaths` would then approve a plan the configured paths should stop, so
+ * a file that exists but yields null throws instead.
+ *
+ * @param {string} repoRoot
+ * @returns {Record<string, unknown> | null}
+ */
+export function readPlanConfig(repoRoot) {
+	const config = readRepoConfig(repoRoot);
+
+	if (
+		config === null &&
+		existsSync(path.join(repoRoot, ".ai-skills", "config.json"))
+	) {
+		throw new PlanConfigError(
+			".ai-skills/config.json exists but is not a readable JSON object, so its stop paths cannot be applied."
+		);
+	}
+
+	return config;
+}
+
 /**
  * Reads the plan and the commit subjects in `<base>..HEAD`, with git run from
  * the plan's directory so the CLI works from any working directory. With no
@@ -305,7 +334,7 @@ export function loadPlanState(planPath, base) {
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 
-	const config = readRepoConfig(git(["rev-parse", "--show-toplevel"]).trim());
+	const config = readPlanConfig(git(["rev-parse", "--show-toplevel"]).trim());
 	const defaultBranch =
 		typeof config?.["defaultBranch"] === "string" && config["defaultBranch"]
 			? config["defaultBranch"]
@@ -441,7 +470,7 @@ function runCli(argv) {
 		process.stderr.write(
 			`tasks.mjs: ${(error instanceof Error ? error.message : String(error)).trim()}\n`
 		);
-		process.exitCode = 1;
+		process.exitCode = error instanceof PlanConfigError ? 2 : 1;
 		return;
 	}
 
