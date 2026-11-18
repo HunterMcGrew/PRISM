@@ -603,6 +603,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: The orchestrator approved the stub route and the one-PR call, so both Decisions are resolved. `prism:check` was then run as one command with `GITHUB_HEAD_REF` set.
 
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed all thirteen self-review findings and the cleanup items in seven commits, each behavior fix with a test that fails on the old head; see the Decisions on container paths, stop-path globs, and the removed manifest fallback. `prism:check` passes on Linux, and the Windows leg has not run on the fix yet.
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed the second-pass Major and both Minors in 5f506cb0, with a test that fails on the old source for the first two. CI on e9705bfc is green on both legs, and the new commits have not run there yet.
 
 ## Sessions
 
@@ -612,13 +613,15 @@ Owner: Eli. Set `last_updated` to the edit date.
 
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix every open self-review finding on PR #528 under the orchestrator's decisions. Bounds: the findings and cleanup items only, no change to `lib/match.mjs` or the config validator, no merge, no ready flip. Approach: one fix commit per concern, each test shown red on the old head, then `prism:check`. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: self-review the review-fix commits 2c4f7de6..e9705bfc on PR #528. Bounds: plan Review and PR Readiness only, no source fix, no GitHub post, no merge. Approach: run `prism:check`, read both CI legs on the head, check each fix against its finding, and verify the changed architect-doc claims against source. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix the three open second-pass findings on PR #528. Bounds: those findings, the plan's Verification and Review records, and the PR body's Windows line; no merge, no ready flip. Approach: one fix commit with tests shown red on the old source, a separate plan commit, then `prism:check`. · close: scope held
 
 ## Verification
 
 - `pnpm exec tsc --noEmit` passes for both `scripts/ai-skills/tsconfig.json` and `tsconfig.hooks.json`.
-- `pnpm run prism:test` reports 1504 passing and 0 failing, after the review fixes. Each behavior fix has a test that fails on the head before it.
+- `pnpm run prism:test` reports 1504 passing, 0 failing, and 1 skipped, after the second-pass fixes. The skip is the existing `.agents` round-trip case, which waits on `prism:build`. Each behavior fix has a test that fails on the head before it.
 - `prism:crossref-lint`, `prism:plan-citations`, `prism:spec-scope-lint`, `prism:ship-closure`, `prism:verify-manifest`, and `prism:verify-pack` pass, and `pnpm prism:check` run as one command with `GITHUB_HEAD_REF=huntermcgrew/prism-520-chain-scripts` exits 0.
-- Not verified: the Windows CI leg on the review fixes (the leg ran once and failed 7 tests, which the container-path and test-literal fixes target), and the delivered scripts under a real Claude Code session.
+- CI run 44289419823 on e9705bfc is green on `ubuntu-latest` and `windows-latest`. The leg that had failed 7 tests passes with the container-path and test-literal fixes.
+- Not verified: the second-pass fix commit on the Windows leg, and the delivered scripts under a real Claude Code session.
 
 ## Review
 
@@ -757,7 +760,8 @@ Briar self-review, 2026-11-18, of 2c4f7de6..e9705bfc (the seven fix commits and 
 #### The commit script's doc says a failed git status passes stdout through, and it drops it
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 5f506cb0: `commit.mjs` returns `status.stdout` when `git status` fails, and a new test with a `git` stand-in that prints to stdout on `status` asserts it. The test sits beside the real-git status test, because the stand-in is POSIX-only and that test also runs on Windows.
 - **File:** `.prism/architect/_toolkit/plan-chain-scripts.md:93`
 - **Problem:** the doc says any other git failure, "including a failed `git status` during the unchanged-path check", exits with git's code, stdout, and stderr. `scripts/ai-skills/hooks/plan/commit.mjs:87` returns `stdout: ""` on that path. `architect-doc-verification.md` grades a diverged claim Major at minimum, because the next agent loads the doc as fact. The runtime cost is small: a failing `git status --porcelain` writes its error to stderr, which does pass through.
 - **Suggested fix:** return `stdout: status.stdout` at `commit.mjs:87`, which also matches the Decision that `commit.mjs` returns git's stdout on failure. The existing status-failure test can assert it. Editing the doc instead would leave the code and that Decision disagreeing.
@@ -765,7 +769,8 @@ Briar self-review, 2026-11-18, of 2c4f7de6..e9705bfc (the seven fix commits and 
 #### The post-compact note still says the plan was missed by name
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 5f506cb0: the note opens with the template's wording, and the existing plan-lookup-miss test pins it.
 - **File:** `scripts/ai-skills/hooks/compact-handoff.mjs:245`
 - **Problem:** the earlier fix in 7ce44412 reworded the PreCompact status line and template, but `buildPostCompactNote` still opens with "No plan file named for this branch's ticket was found". After T9, a miss means the name tiers, the ticket-field scan, and the archive all came up empty. This is Minor because the note still sends the session to the full Plan Lookup, so the only cost is a repeated scan.
 - **Suggested fix:** use the template's wording, "No plan file was found for this branch's ticket, by name, by ticket field, or in the archive", and pin it in `compact-handoff.test.ts`.
@@ -773,7 +778,8 @@ Briar self-review, 2026-11-18, of 2c4f7de6..e9705bfc (the seven fix commits and 
 #### resolveLivePlan's new JSDoc is written in changelog voice
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 5f506cb0: the JSDoc keeps the invariant and drops the history clause.
 - **File:** `scripts/ai-skills/lib/resolve-live-plan.ts:142`
 - **Problem:** "resolves as no plan, as it did before the lookup moved to `resolvePlan`" describes the commit, not the code. `code-comments.md` lists changelog voice under Not Allowed. This is Minor because the next sentence already gives the real reason, so only the clause misleads.
 - **Suggested fix:** keep the invariant and drop the history: "A plans directory that can't be read resolves as no plan, because `resolvePlan` throws on it and `spec-scope-lint` passes a branch whose plan is missing."
