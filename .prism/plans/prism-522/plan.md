@@ -918,6 +918,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: fix Briar's PR B findings and Winston's three scope items. Bounds: the files the findings and items name, with their twins and generated copies; no new dependency, no merge, draft PR only. Approach: verify each cited line against the current text before editing, rule on findings 5, 6, and 7 from the spec and ADR-0080, and commit the fixes before the plan record. · close: scope held; the same-class routes the finding 1 entry lists were left alone, and findings 5 and 6 stay open
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: apply the orchestrator's rulings on findings 6, 5, and 1's leftovers. Bounds: the files those three items name, with their twins and generated copies, and the plan record; no new dependency, no merge, draft PR only. Approach: grep every `plan: review` and every same-class route, fix them in two commits, then record both in the plan. · close: scope held; `prism-start-ticket`'s handoff line sends an improvement to `prism-plan` and was left for a call, since no item names it
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: apply the orchestrator's rulings on the leftovers of finding 1's class. Bounds: `prism-start-ticket`, the Pixel decision tree, the two optional-intent lines, and the plan record, with twins and generated copies; no merge, draft PR only. Approach: take the DX route from `ticket-types.md` where it gives one, and fix it too when it is the refused plan-stage route. · close: scope held; the DX workflow line of `ticket-types.md` named the plan stage, so it was changed with the skill
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: re-review PR B's commits `fb46a9c6..5a4069ff` and confirm the first pass's findings are closed. Bounds: the review record in this plan only; no source edits, no merge. Approach: tree-search each first-pass finding, verify the new routes against `approve.mjs` and the skills they name, run `prism:check`, and read the head's CI. · close: scope held
 
 ## Verification
 
@@ -1202,6 +1203,26 @@ Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-
 - **Problem:** "A new component or block gets a story plus tests" assumes a component-explorer stack. T17 dropped "Where tests live" from this reference for that same reason.
 - **Suggested fix:** drop the line, or condition it on the repo having a component explorer.
 
+### PR B, second pass: Briar's re-review
+
+Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2], range `fb46a9c6..5a4069ff`. The ten fixed first-pass findings are closed in the files they name, and a tree search found no remaining `plan: review`, `Needs copy pass`, `startup step 3`, Voice block, or plan-stage route for Nora, Mira, or Pixel. The epic resume row is deferred to child 6 as ruled. The new changes add 1 major and 1 minor, both open. `pnpm run prism:check` passes locally at `5a4069ff` (2163 pass, 0 fail, 2 skipped), `ship-closure` holds at 267 files, and CI run 44373296490 on `5a4069ff` is green on `ubuntu-latest` and `windows-latest`.
+
+### DX tickets now go to the intent stage, which refuses the "None" criteria DX tickets must carry
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/templates/ticket-types.md:46`
+- **Problem:** `ad481ce3` routes a non-trivial DX ticket through Mira's intent at line 46 and in `prism-start-ticket/shared.md` line 47. Line 48 and `prism-start-ticket/shared.md` line 15 still say a DX ticket's acceptance criteria are always "None for this ticket.", and `approve.mjs` line 361 refuses `none` criteria on any intent that is not an epic. This is major because a DX ticket that follows both instructions stalls at the approval script's refusal, the same failure the first pass's handoff finding graded major. If Mira writes criteria instead, she contradicts the DX rule and syncs QA-facing criteria to a ticket that must carry none.
+- **Suggested fix:** pick one rule and use it in all four places and their twins. Either the DX criteria line limits "None" to the tracker and lets the intent hold developer-verified criteria with machine evidence, or DX skips the intent stage. This needs a ruling, since the orchestrator chose the DX route.
+
+### The no-folder route for a saved design differs between `prism-design` and the handoff tables
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-design/shared.md:33`
+- **Problem:** the skill sends a saved design with no plan folder to `prism-architect`, then the plan skill, because the design needs an architecture review. `closing-messages.md` line 27, `AGENTS.md.tmpl` line 144, and the `skills-ecosystem.md` Pixel row (line 93, and line 91 of its install twin) send it straight to the plan skill. This is minor because a reader following the tables reaches a plan, but skips the architecture review the skill says the design needs.
+- **Suggested fix:** add the `prism-architect` step to the three tables, or drop it from the skill.
+
 ## Acceptance Criteria
 
 The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
@@ -1263,8 +1284,8 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
-- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530).
-- [x] PR B build passes: `pnpm run prism:check` and `ship-closure.ts` pass locally on Linux at `ad481ce3` (2026-11-18). CI run 44368244035 on `2cf5d71b` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
+- [ ] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both open.
+- [x] PR B build passes: `pnpm run prism:check` passes locally on Linux at `5a4069ff` (2026-11-18), with `ship-closure` holding at 267 files. CI run 44373296490 on `5a4069ff` is green on `ubuntu-latest` and `windows-latest`.
 - [x] PR B has no stray debug artifacts, and the new logic has tests: `role-preloads.test.ts`, the `agents-md-budget.test.ts` order case, and two `approve-guard.test.ts` token cases.
 - [ ] AC for PR B: AC-4, AC-5, AC-6, AC-8, and AC-10 are met, and AC-10 is met by CI run 44368244035. AC-1 and AC-9 need a live run and were not run.
 
