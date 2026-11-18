@@ -43,9 +43,9 @@ The trap: "improves the codebase" is colloquial; Improvement as a ticket type is
 - **Label:** `DX`
 - **Required fields:** current state, what changed, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z." — matches the Improvement format. File-level change details live in the GitHub diff, not the ticket description.
-- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review), or Clove → Briar for a trivial change
+- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review), or Clove → Briar for a trivial change. The intent holds the criteria the developer proves with machine evidence.
 - **User stories:** not applicable
-- **Acceptance criteria:** always "None for this ticket." — DX work is verified by the developer, not QA.
+- **Acceptance criteria:** the tracker's AC field says "None for this ticket." because QA has nothing to click through. The intent's criteria are the developer's, each proved by a machine check such as a passing build or test or a lint rule that fires, and they are not synced to the tracker. The approval script refuses an intent whose criteria open with "none", so the intent never says it.
 
 **Examples:**
 - Architect docs and ADRs (`.prism/architect/`, `.prism/spec/adrs/`)

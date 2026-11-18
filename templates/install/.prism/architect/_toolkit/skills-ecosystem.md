@@ -88,7 +88,7 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 | **Clove**   | Briar (in-session) or Eric (fresh chat)                                                                  | After PR is pushed                                                                                                        |
 | **Briar**   | Eric (in a fresh chat)                                                                                   | After clean self-review                                                                                                   |
 | **Eric**    | Clove (if issues found)                                                                                  | After PR review                                                                                                           |
-| **Pixel**   | The plan stage (always for a saved design, or the next stage on a plan folder); Clove (mode 1 inline sketches only — mid-ticket gap-fill)             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. Mode 2 routes to the next stage on a plan folder and to the plan skill with none; mode 1 inline sketches go directly to Clove. |
+| **Pixel**   | The next stage on a plan folder, or `prism-architect` then the plan skill with none (always for a saved design); Clove (mode 1 inline sketches only — mid-ticket gap-fill)             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. Mode 2 routes to the next stage on a plan folder and to `prism-architect`, then the plan skill, with none; mode 1 inline sketches go directly to Clove. |
 
 ### Handoff phrases
 

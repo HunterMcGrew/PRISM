@@ -565,3 +565,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-18 (PRISM-522, PR #531) — Eric's first review found the Token bullet claimed too much about the prompt-event half, and the fix probed that half only. The same sentence's file-edit half was reworded to "whose target is the token file", which understated the Codex `apply_patch` case, where the target is the whole patch text. A second review caught it by probing the guard.
 
 **How to apply:** When a fix rewords a sentence with two clauses, re-probe both before committing, including the clause the finding did not name. Rewording is a new claim and gets the same source check as the first draft.
+
+## A changed route has to clear the new destination's gate for what that ticket type carries
+
+**Why:** 2026-11-18 (PRISM-522, PR #532) — sending improvement and DX tickets to the intent stage was a one-word route fix. Briar's re-review found that the approval script refuses "none" criteria on a non-epic intent, and the DX docs said a DX ticket's criteria are always "None", so a ticket following both instructions would stall at approval.
+
+**How to apply:** When a change reroutes a ticket type to another stage, read that stage's entry checks (the script or refusal that gates it) and compare them with what the type carries, not only with whether the stage exists.
