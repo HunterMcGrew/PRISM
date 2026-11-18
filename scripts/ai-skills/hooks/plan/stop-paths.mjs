@@ -1,0 +1,137 @@
+// @prism-hook-runtime — PRISM delivers this file into a consumer's `.claude/hooks/`.
+// A copy carrying this line is PRISM's own and is replaced in place; one without it
+// is the consumer's own file and is backed up to `.bak` before being replaced.
+/**
+ * The repo paths that stop auto-approval of a folder plan: dependency
+ * manifests and lockfiles, and the shared contract trees other systems read.
+ *
+ * Auto-approval and any later gate that checks stop paths read the same two
+ * lists through `resolveStopPaths`, so they never disagree on what a stop path
+ * is. Paths are repo-relative with forward slashes.
+ */
+import path from "node:path";
+
+import { compileMatcher } from "../lib/match.mjs";
+
+/**
+ * @typedef {{ dependency: string[], contract: string[] }} StopPaths
+ */
+
+// Each root file is listed on its own, because a `**/` prefix does not match a
+// file at the repo root.
+export const DEFAULT_DEPENDENCY_FILES = [
+	"package.json",
+	"**/package.json",
+	"package-lock.json",
+	"**/package-lock.json",
+	"pnpm-lock.yaml",
+	"**/pnpm-lock.yaml",
+	"yarn.lock",
+	"**/yarn.lock",
+	"bun.lockb",
+	"**/bun.lockb",
+	"composer.json",
+	"**/composer.json",
+	"composer.lock",
+	"**/composer.lock",
+	"pyproject.toml",
+	"**/pyproject.toml",
+	"poetry.lock",
+	"**/poetry.lock",
+	"uv.lock",
+	"**/uv.lock",
+	"requirements.txt",
+	"**/requirements.txt",
+	"go.mod",
+	"**/go.mod",
+	"go.sum",
+	"**/go.sum",
+	"Cargo.toml",
+	"**/Cargo.toml",
+	"Cargo.lock",
+	"**/Cargo.lock",
+	"Gemfile",
+	"**/Gemfile",
+	"Gemfile.lock",
+	"**/Gemfile.lock",
+];
+
+/**
+ * The two lists a repo's config sets, each falling back to its default when
+ * the config leaves it unset. A list that is set replaces its default.
+ *
+ * @param {{ stopPaths?: { dependency?: unknown, contract?: unknown } } | null | undefined} config
+ * @returns {StopPaths}
+ */
+export function resolveStopPaths(config) {
+	const dependency = config?.stopPaths?.dependency;
+	const contract = config?.stopPaths?.contract;
+
+	return {
+		dependency: Array.isArray(dependency)
+			? dependency
+			: DEFAULT_DEPENDENCY_FILES,
+		contract: Array.isArray(contract) ? contract : [],
+	};
+}
+
+/**
+ * Returns `{ kind, glob }` for the first stop-path pattern the file matches,
+ * where `kind` is `"dependency"` or `"contract"`, or null when none match.
+ * `glob` is the pattern as the config spelled it.
+ *
+ * Case is ignored, because macOS paths ignore it. A directory that holds a
+ * stop path, such as `src` or `src/contracts`, matches as well, judged
+ * against the part of the pattern before its first wildcard segment.
+ *
+ * @param {string} file
+ * @param {StopPaths} stopPaths
+ * @returns {{ kind: "dependency" | "contract", glob: string } | null}
+ */
+export function matchStopPath(file, stopPaths) {
+	const normalized = path.posix
+		.normalize(file)
+		.replace(/^\.\//, "")
+		.replace(/\/+$/, "")
+		.toLowerCase();
+
+	/** @type {["dependency" | "contract", string[]][]} */
+	const kinds = [
+		["dependency", stopPaths.dependency],
+		["contract", stopPaths.contract],
+	];
+	for (const [kind, globs] of kinds) {
+		for (const glob of globs) {
+			const pattern = glob.toLowerCase();
+			if (
+				compileMatcher(pattern)(normalized) ||
+				holdsGlob(normalized, pattern)
+			)
+				return { kind, glob };
+		}
+	}
+
+	return null;
+}
+
+/**
+ * True when `directory` is, or sits above, the literal part of `glob`.
+ *
+ * @param {string} directory
+ * @param {string} glob
+ * @returns {boolean}
+ */
+function holdsGlob(directory, glob) {
+	/** @type {string[]} */
+	const literal = [];
+	for (const segment of glob.split("/")) {
+		if (segment.includes("*")) break;
+
+		literal.push(segment);
+	}
+
+	const prefix = literal.join("/");
+	if (!prefix) return false;
+
+	return prefix === directory || prefix.startsWith(`${directory}/`);
+}
