@@ -580,6 +580,20 @@ Owner: Eli. Set `last_updated` to the edit date.
 - **`plan-chain-scripts.md` cites the four chain templates by path.** `pnpm prism:ship-closure` fails when a shipped template is reachable from nothing, and no skill cites them until child 5. The architect doc is routed from the base manifest, and it genuinely depends on the templates' headings, so it names them in a short Templates paragraph.
 - **The `plan.md` template's Retro comment allows "declined".** Thrive's comment said the retro always runs, which contradicts the plan rule's declinable retro line. The comment now reads "the retro report's path, or `declined — <reason>`". The `Retro:` line and every heading stay as thrive has them.
 - **Two T4 schema cases are pinned on the schema document, not the validator.** The config validator does not enforce `additionalProperties`, so an unknown `stopPaths` key and a non-string `importAliases` value pass it. The test asserts the schema declares both rules.
+- **A container's directories resolve as POSIX paths, and `~` and a bare `cd` inside one read as unknown.** The orchestrator decided the cwd uses `path.posix` with no `toHostPath`, after the Windows leg of PR #528 failed on four docker segment tests.
+  - **Root cause.** `unwrapDocker` and a `cd` inside a container went through the host's `resolveDir`, so a Windows host turned `/workspace` into `\workspace` and `-w /w` into `W:\`.
+  - **Chosen approach.** `resolveContainerDir` in `segments.mjs`, used for a `docker -w`, for any wrapper that runs after a docker one, and for every `cd` in a segment whose container is set. `~` and a bare `cd` are null, because the host's home directory is wrong inside a container, and null is the walk's existing "unknown" value.
+  - **Implementation guidance.** A test sets `process.platform` to `win32` on Linux, since `path.win32` can't be injected into the module. Expected host paths in the segment tests use `path.normalize`, not `path.resolve`, because `resolveDir` normalizes and `path.resolve` would add a drive letter it never produces. The Windows leg itself has not run on this fix, so the next CI run is its proof.
+- **`WRAPPERS` is read behind `Object.hasOwn`.** A prototype name such as `toString` or `constructor` is a plain command word, not a wrapper, and never throws. A null-prototype map was the other option, but the own-property check keeps the table a literal.
+- **Stop-path globs are fixed in `stop-paths.mjs` only, and the shared `compileMatcher` is untouched.** Architect routing depends on that matcher, and changing a shared utility needs its own approval.
+  - **Chosen approach.** `expandMiddleGlobstars` tries every combination of crossing or skipping each mid-path `**/`, and a pattern holding `{` is a config error, because the matcher reads braces literally and a brace pattern would never match. A leading `**/` is unchanged, so root files are still listed on their own.
+  - **Implementation guidance.** The schema description, `plan-chain-scripts.md`, and `docs/parameterization.md` state both rules. The affected-systems globs in `spec.md` still go through the unexpanded matcher, so a mid-path `**/` there needs a directory, which fails closed to a person.
+- **`resolveStopPaths` rejects an unknown `stopPaths` key and a non-string entry, and `auto-approve.mjs` exits 2 with the message.** The config validator does not enforce `additionalProperties`, so a misspelled `contracts` key turned contract protection off with no output. The shared validator is left alone, and issue #526 tracks it. A list that is set but is not an array still falls back to its default, as the existing test pins.
+- **`parseFiles` rejects a backslash.** This closes the stop-path and outside-the-repo bypass at the parse, in one place, instead of normalizing in each check.
+- **The alias swap joins the value with `path.posix.join` instead of stripping `./` and a trailing slash at read time.** It accepts the same spellings the orchestrator named (`./src/`, `src`) and a few more, and it needs no second copy of the normalization.
+- **The bundle check's `{}` manifest fallback is removed, not made reachable.** `findRepoRoot` finds the root by the manifest, so a repo with none could never reach the fallback. Making it reachable would need a second root finder keyed on `.git`, for a state no install is in, because every install ships the stub manifest. A plan with no manifest above it exits 1 naming the path, and a test pins that.
+- **`resolveLivePlan` swallows lookup errors again.** T8's behavior-change field names only the folder precedence, and `spec-scope-lint` passes a branch whose plan is missing, so restoring the old null keeps both true. Recording a new throw would have meant a lint that crashes on a permissions error it never crashed on before. `resolvePlan` still throws, because the hook callers want to know.
+- **`commit.mjs` returns git's stdout on failure, reports a failed `git status`, and honors a delay of `0`.** A failed status used to read as an unchanged path, and a hook or git message on stdout used to vanish.
 - **The seed copy of `branch-plan.md` now mentions the plan-folder citation lint.** T16 says to apply both edits to the twin. That lint exists only in PRISM's own tree, so a consumer reads a sentence about a check it does not have. Child 5 or a later pass can soften it.
 
 ## History
@@ -588,27 +602,32 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Built T1 to T18, one commit each, with 1482 tests passing. `prism:check` fails only on the stub route recorded in Decisions, so the PR is held.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: The orchestrator approved the stub route and the one-PR call, so both Decisions are resolved. `prism:check` was then run as one command with `GITHUB_HEAD_REF` set.
 
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed all thirteen self-review findings and the cleanup items in seven commits, each behavior fix with a test that fails on the old head; see the Decisions on container paths, stop-path globs, and the removed manifest fallback. `prism:check` passes on Linux, and the Windows leg has not run on the fix yet.
+
 ## Sessions
 
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: plan child 4 (chain scripts) to the detail bar from the epic spec and thrive at db3570975. Bounds: plan file only, no code, no PR, nothing outside the spec's Affected systems, no new dependency or shared-type change. Approach: port thrive's modules onto PRISM's hook runtime, matcher, manifest, and config, with one lookup copy shared by the build lint and the compaction hook. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: build T1 to T18 and open one draft PR. Bounds: only the plan's file lists, plus pinned tests and mirrors. Approach: one commit per task, port thrive's suites case for case, then run `prism:check`. · close: drifted — reworded citations in `prism-516/plan.md` and added a stub route, both recorded in Decisions.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: full self-review of PR #528. Bounds: plan Review and PR Readiness only, no source fix, no GitHub post. Approach: run `prism:check`, read the Windows CI log, diff the ports against thrive at db35709, and verify the architect doc against source. · close: scope held
 
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix every open self-review finding on PR #528 under the orchestrator's decisions. Bounds: the findings and cleanup items only, no change to `lib/match.mjs` or the config validator, no merge, no ready flip. Approach: one fix commit per concern, each test shown red on the old head, then `prism:check`. · close: scope held
+
 ## Verification
 
 - `pnpm exec tsc --noEmit` passes for both `scripts/ai-skills/tsconfig.json` and `tsconfig.hooks.json`.
-- `pnpm run prism:test` reports 1482 passing and 0 failing.
+- `pnpm run prism:test` reports 1504 passing and 0 failing, after the review fixes. Each behavior fix has a test that fails on the head before it.
 - `prism:crossref-lint`, `prism:plan-citations`, `prism:spec-scope-lint`, `prism:ship-closure`, `prism:verify-manifest`, and `prism:verify-pack` pass, and `pnpm prism:check` run as one command with `GITHUB_HEAD_REF=huntermcgrew/prism-520-chain-scripts` exits 0.
-- Not verified: the Windows CI leg, and the delivered scripts under a real Claude Code session.
+- Not verified: the Windows CI leg on the review fixes (the leg ran once and failed 7 tests, which the container-path and test-literal fixes target), and the delivered scripts under a real Claude Code session.
 
 ## Review
 
-Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Major findings and eleven Minor ones. AC-1 is unmet, because the Windows leg of PR #528's `prism-check` is red with 7 failures, all in `hook-segments.test.ts`. AC-2 through AC-9 hold on the diff and on the Linux run.
+Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Major findings and eleven Minor ones. AC-1 is unmet, because the Windows leg of PR #528's `prism-check` is red with 7 failures, all in `hook-segments.test.ts`. AC-2 through AC-9 hold on the diff and on the Linux run. Every finding below is marked fixed in the review-fix commits, with its commit named; the Windows leg is the one thing left to confirm.
 
 ### A container's working directory resolves as a Windows host path
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 86e51eaa: a container's directories resolve through `resolveContainerDir` with `path.posix`, with no drive mapping. A test fakes `win32` on Linux to cover it.
 - **File:** `scripts/ai-skills/hooks/lib/segments.mjs:668`
 - **Problem:** `unwrapDocker` (and `bash -lc 'cd /workspace'` walked inside a container) resolves the container cwd through the host's `resolveDir` and `toHostPath` (lines 212 and 266). On a Windows host `/workspace` becomes `\workspace`, and `-w /w` becomes `W:\`. This is Major because the Windows CI leg fails (AC-1 unmet), and any Windows gate that reads a container segment's `cwd` would get a wrong path. The behavior is inherited from thrive. Failing tests: "a docker exec'd bash -lc string…", "docker exec -w sets the container cwd…", "docker compose exec and run…", and "docker container exec strips like docker exec".
 - **Suggested fix:** inside a container, resolve with `path.posix` and skip `toHostPath`. Add a test that pins it with `path.win32` injected, so the Linux leg covers it too.
@@ -616,7 +635,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### Three segment tests assert POSIX literals for host paths
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 86e51eaa: the three expected values are built with `path.normalize`.
 - **File:** `scripts/ai-skills/hook-segments.test.ts:201`
 - **Problem:** the assertions at lines 201, 369, and 409 compare host-resolved paths with `"/abs"` and `"/x"`. On Windows, `path.normalize` gives `\abs` and `\x`, so "a shell string reached past argv[0]…", "cd reads ~ as home…", and "resolveDir needs a base…" fail. This is Major because it is the other half of the red Windows leg that leaves AC-1 unmet. The literals are inherited from thrive's tests.
 - **Suggested fix:** build each expected value with `path.resolve` or `path.normalize`, the same way the suite already builds `REPO` with `path.join`.
@@ -624,7 +644,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### A command word naming an Object.prototype member breaks the whole walk
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 86e51eaa: `WRAPPERS` is read behind `Object.hasOwn`.
 - **File:** `scripts/ai-skills/hooks/lib/segments.mjs:648`
 - **Problem:** `WRAPPERS[name]?.(...)` resolves inherited members. `toString x`, `valueOf x`, and `__proto__ x` throw, and `constructor git push` is stripped as if it were a wrapper. One such word anywhere in a chain discards the walk. This is Minor because nothing calls the module yet. It becomes a guard bypass if child 5's approve guard fails open on a throw. Inherited from thrive.
 - **Suggested fix:** give `WRAPPERS` (line 713) a null prototype, or check with `Object.hasOwn`.
@@ -632,7 +653,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### A stop path with a mid-path globstar or braces silently never matches
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 55b0b923 and 3c1a18f9: `stop-paths.mjs` expands a mid-path globstar to zero directories and rejects `{`. The schema description, the architect doc, and `docs/parameterization.md` say so.
 - **File:** `.ai-skills/config.schema.json:226`
 - **Problem:** `compileMatcher` needs at least one directory for a `/**/` in the middle and reads braces literally. Probed: `api/**/schema.graphql` does not match `api/schema.graphql`, and `src/**/*.{ts,tsx}` matches nothing. On the stop-path side this fails open, so auto-approval can pass a plan through the tree the pattern was meant to protect. The schema description, `plan-chain-scripts.md` line 32, and the `stopPaths` rows in `docs/parameterization.md` warn only about a leading `**/`.
 - **Suggested fix:** state both caveats wherever the root caveat is stated, or have `resolveStopPaths` reject patterns containing `{`.
@@ -640,7 +662,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### A misspelled stopPaths key turns contract protection off with no warning
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 55b0b923: `resolveStopPaths` throws on an unknown key or a non-string entry, and `auto-approve.mjs` prints it and exits 2.
 - **File:** `scripts/ai-skills/hooks/plan/stop-paths.mjs:66`
 - **Problem:** `config-schema-validate.ts` does not enforce `additionalProperties`, which the plan's Decisions already record for the T4 tests. The runtime consequence is not recorded: `stopPaths: { contracts: [...] }` passes `prism update`, and `resolveStopPaths` returns `contract: []`. A non-string entry throws at line 105 instead. That fails closed, but the output is a stack trace.
 - **Suggested fix:** have `resolveStopPaths` warn on unknown keys and non-string entries. Fixing the shared validator instead needs a heads-up first, per code-standards on shared utilities.
@@ -648,7 +671,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### An alias value with a leading ./ or no trailing slash drops import edges
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 53a8c475: the alias swap joins the value to the rest of the specifier with `path.posix.join`. Four spellings are tested.
 - **File:** `scripts/ai-skills/hooks/plan/bundles.mjs:287`
 - **Problem:** the alias target is pasted in without normalizing. `{ "@/": "./src/" }`, the tsconfig spelling, and `{ "@/": "src" }` both yield no edge, so two tasks that import each other land in one parallel group with no message.
 - **Suggested fix:** `path.posix.normalize` the joined result and strip a leading `./`. Add a case for each spelling.
@@ -656,7 +680,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### Backslash paths skip the stop paths and the outside-repo check
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 53a8c475: `parseFiles` rejects `\`, which closes the stop-path and outside-repo bypass at the parse.
 - **File:** `scripts/ai-skills/hooks/plan/stop-paths.mjs:92`
 - **Problem:** probed: `matchStopPath("src\\contracts\\x.ts", …)` returns null. `auto-approve.mjs:190` likewise lets `..\x` past the outside-repo check, and `tasks.mjs` does not reject `\` in `files`. A Windows-authored plan could auto-approve over a stop path. Inherited from thrive. Minor because plan authors write forward slashes and nothing calls auto-approve until child 5.
 - **Suggested fix:** reject `\` in `parseFiles`, matching the existing rule against spaces and glob characters.
@@ -664,7 +689,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### The compaction summary still says the plan was missed by filename
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 7ce44412: the status line reads `none found`, the template says by name, ticket field, or archive, and the pinned test follows.
 - **File:** `scripts/ai-skills/hooks/compact-handoff.mjs:179`
 - **Problem:** after T9 a miss means the name tiers, the ticket-field scan, and the archive all came up empty. The summarizer copies "none found by filename" as fact, which understates the search. `compact-handoff.test.ts:96` pins the old text.
 - **Suggested fix:** reword it to "none found" (or "none found by name or ticket field") and update the pinned test.
@@ -672,7 +698,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### T12's "--check on an approved plan" case is missing
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 55b0b923: the CLI case asserts exit 0 and byte-identical bytes.
 - **File:** `scripts/ai-skills/plan-auto-approve.test.ts:100`
 - **Problem:** T12 requires that `--check` on an approved plan exits 0 and writes nothing. The only `--check` case runs on a draft, and the already-approved case runs without `--check`.
 - **Suggested fix:** add the case, asserting exit 0 and byte-identical bytes.
@@ -680,7 +707,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### T10's duplicates return value and docs: none text go unasserted
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 53a8c475: `analyzeBundles` is asserted for `duplicates`, and a text-report run asserts `docs: none`.
 - **File:** `scripts/ai-skills/plan-bundles.test.ts:273`
 - **Problem:** T10 requires `duplicates: [{ file: "src/a.ts", ids: ["T1", "T2"] }]` from `analyzeBundles`. The test checks only the CLI's stderr. The `docs: none` line from `formatReport` (around line 317) is never exercised, because every case runs `--json`. AC-2's evidence (the CLI exit and message) still holds.
 - **Suggested fix:** assert the `analyzeBundles` return, and add one non-JSON run that checks `docs: none`.
@@ -688,7 +716,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### The bundle check's {} manifest fallback is unreachable
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 53a8c475: the dead fallback is removed and a test pins the exit 1 naming the manifest. See the Decision on the stricter behavior.
 - **File:** `scripts/ai-skills/hooks/plan/bundles.mjs:454`
 - **Problem:** T10 says the manifest is `{}` when the file is absent. `findRepoRoot` from `architect-route.mjs` only returns a directory that holds the manifest, so `readManifest`'s fallback never runs, and a repo with no manifest exits 1 with "no .prism/architect/manifest.json above the plan". Every install ships the stub manifest, which is why this is Minor.
 - **Suggested fix:** find the root by `.git` when no manifest is found, or delete the dead fallback and record the stricter behavior in the plan.
@@ -696,7 +725,8 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### resolveLivePlan now throws on fs errors it used to swallow
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 7ce44412: `resolveLivePlan` catches and returns null again, with a `chmod` test.
 - **File:** `scripts/ai-skills/lib/resolve-live-plan.ts:151`
 - **Problem:** before this change, a permission error on `.prism/plans/` read as "no plan". `resolvePlan` rethrows anything other than ENOENT and ENOTDIR, so `resolveLivePlan`, and through it `spec-scope-lint`, now throws. That is defensible for a lint, but T8's behavior-change field names only the folder precedence.
 - **Suggested fix:** add a sentence to T8's behavior-change field, or catch and return null in `resolveLivePlan`.
@@ -704,19 +734,20 @@ Briar self-review, 2026-11-18, of 35f6ca7a..9ddb7de4 (all of T1 to T18). Two Maj
 ### The citation lint's JSDoc says plans can be deleted
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** 7ce44412: the JSDoc now gives the folder-files-move reason and says plans are never deleted.
 - **File:** `scripts/ai-skills/plan-folder-citations.ts:10`
 - **Problem:** "Plans can be deleted at any time" is carried over from thrive. PRISM's plan rule and ADR-0047 say plans are never deleted, so the stated reason for the lint contradicts the rule it serves.
 - **Suggested fix:** give PRISM's reason, which the T16 edit to `branch-plan.md` already states: folder files move and get renamed, so a heading citation rots.
 
 **Cleanup items (non-blocking, not findings).**
 
-- `plan/commit.mjs`:
+- `plan/commit.mjs` (fixed in 667ed2b0, each with a test that fails on the old head):
   - A failing step drops git's stdout, so a failure git reports only there ends as a bare exit 1.
   - `readPositiveInteger` turns a delay of `0` into the default.
   - The unchanged-path check discards `git status` errors.
-- The usage lines differ in case and form: `Usage: tasks.mjs …` in tasks, bundles, and commit, but `usage: node auto-approve.mjs …` in auto-approve.
-- The AC-9 test checks `argv[0] === "git"` only through its `find()` lookup, not with its own assertion.
+- The usage lines differ in case and form: `Usage: tasks.mjs …` in tasks, bundles, and commit, but `usage: node auto-approve.mjs …` in auto-approve. Fixed: auto-approve's line is `Usage: auto-approve.mjs …` (55b0b923) and commit's file header drops `node` (667ed2b0).
+- The AC-9 test checks `argv[0] === "git"` only through its `find()` lookup, not with its own assertion. Fixed in 7ce44412.
 
 ## Acceptance Criteria
 
@@ -760,13 +791,13 @@ The issue's one-line proof ("every suite passes, and a plan with two tasks on on
 
 ## PR Readiness
 
-- [ ] No critical or major issues — 2 Major open, both from the red Windows leg (see the Review section)
+- [ ] No critical or major issues — both Majors are fixed in 86e51eaa, and stay unchecked until the Windows leg runs green on it
 - [x] Types correct — `pnpm prism:check-types` passes for both tsconfigs, and the modules use JSDoc types with no `any`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — three T10 and T12 cases are missing (Minor, in the Review section)
+- [x] Tests written for new logic and edge cases — the missing T10 and T12 cases were added with the review fixes
 - [x] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run 2026-11-18: `pnpm prism:check` exits 0 on Linux with `GITHUB_HEAD_REF` set, but CI `prism-check (windows-latest)` fails 7 of 1482 tests (run 44285689295)
-- [x] PR description up to date — its "not verified: the Windows CI leg" note should now say the leg ran and failed
+- [ ] Build passes — last run 2026-11-18: `pnpm prism:check` exits 0 on Linux with `GITHUB_HEAD_REF` set after the review fixes. The earlier Windows run (44285689295) failed 7 tests, and the leg has not run on the fix yet
+- [x] PR description up to date — its Windows note says the leg ran, failed, and awaits a rerun on the fix
 - [ ] Lasting decisions promoted to architect context (if applicable) — close-time work, not yet done
 
 **Last updated:** 2026-11-18
