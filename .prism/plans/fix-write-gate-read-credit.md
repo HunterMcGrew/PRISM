@@ -93,7 +93,8 @@ The architect-doc write gate records every read it observes, follows a literal `
 ### A failed `cd` over-credits when its target ends in `..`
 
 - **Severity:** `minor`
-- **Status:** `fixed`
+- **Status:** `open`
+- **Re-review 2026-11-18 (f7db0ca):** the single-target form is fixed, but the check sees one `cd` at a time. `parseShellReadTargets("cd missing && cd .. && cat .prism/architect/_toolkit/d.md")` still returns `./missing/../.prism/architect/_toolkit/d.md` with `credit: true` (so does the `;` form), while bash fails the first `cd` and runs nothing after `&&`. Fix: end credit when a `..` step would leave a directory the command itself entered.
 - **File:** `scripts/ai-skills/hooks/hook.mjs:105`
 - **Problem:** the `checkShellReadSafe` comment says a failed `cd` can only under-credit. `parseShellReadTargets("cd missing/.. && cat .prism/architect/_toolkit/d.md")` returns the real doc with `credit: true`, yet bash fails that `cd` ("No such file or directory") and the `cat` never runs. `main` returns no target. Whether Claude Code fires `PostToolUse` after the failed command is host behavior I did not verify.
 - **Suggested fix:** return `undefined` from `resolveCdTarget` when the target holds a `..` segment, or correct the comment.
@@ -129,16 +130,16 @@ The architect-doc write gate records every read it observes, follows a literal `
 
 - [x] AC-7: Every fix has a test that fails on `main`.
   - Evidence (machine): the new tests run against `main`'s `hooks/` fail.
-- [ ] AC-8: `hook-runtime.md` matches the code, checked claim by claim.
-  - Evidence (human): self-review's source-verification pass.
+- [x] AC-8: `hook-runtime.md` matches the code, checked claim by claim.
+  - Evidence (human): self-review's source-verification pass, 2026-11-18 re-review of f7db0ca: every claim in the changed paragraphs matches `hook.mjs` and `architect-route.mjs`. The "live probe on 2026-11-18" attribution cannot be checked from the repo.
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues (3 major open, see Review Issues)
-- [ ] Tests written for new logic and edge cases (lock stale and timeout paths, and process-substitution heredoc rows, are untested)
-- [x] Build passes: `prism:check-types` and `prism:crossref-lint` clean, `prism:test` 2177 tests with 0 fail, re-run 2026-11-18. `prism:build` not re-run by self-review.
+- [x] No critical or major issues (one minor open, see Review Issues)
+- [x] Tests written for new logic and edge cases (lock stale/timeout and process-substitution rows added in f7db0ca; no row for `cd missing && cd ..`)
+- [x] Build passes: `prism:check-types` and `prism:crossref-lint` clean, `prism:test` 2182 tests with 0 fail, re-run 2026-11-18 on f7db0ca. `prism:build` not re-run by self-review.
 - [ ] PR description up to date (no PR yet)
 
 **Last updated:** 2026-11-18
