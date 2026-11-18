@@ -30,10 +30,10 @@ This flow runs on every `git push`, not once per session. A fix-up commit after 
    ```
 
 5. **Sync the body.** When step 4 returned a number and the plan's `## History` has entries past the last body write, or the new commit adds scope the body doesn't describe, rewrite the templated sections before the push and preserve every other section, per `.prism/rules/pr-description.md`, under "Keeping the PR in sync with scope". Skip it when the user opted out for the session, and when step 4 returned nothing, because step 7 writes the first body.
-6. **Push.**
+6. **Push.** Name the remote branch, because `prism-start-ticket` creates the branch from `origin/main`, which makes that its upstream. A bare `git push` then refuses on the first push, and git's hint points at the default branch. This form is safe on the first push and every later one.
 
    ```bash
-   git push -q
+   git push -q -u origin HEAD
    ```
 
 7. **Open the PR as a draft** when step 4 returned nothing. The title is `PRISM-NNNN: <imperative subject>`, and the body follows `.prism/rules/pr-description.md` on the `.github/pull_request_template.md` scaffold. The body lists every `OPEN` Decision and every scope change since the intent, so the person can still veto one.
