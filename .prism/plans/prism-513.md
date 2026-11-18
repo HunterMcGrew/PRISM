@@ -107,6 +107,16 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 - **Problem:** "Any other `PreCompact` hook that prints to stdout also becomes summary instruction" (also in the `compact-handoff.mjs` header at lines 25-26 and in the twin) is stated flat. The documented fact is per-hook stdout; combined behavior across hooks was not shown. "Prints nothing" is also loose: `runPostCompactArm` writes to stderr on a missing session id and on a failed reset (`hook.mjs:1128`, `hook.mjs:1159`). "Is the only way a second writer appears" ignores user-level and plugin `PreCompact` hooks.
 - **Suggested fix:** Say "prints nothing to stdout", mark the multi-hook claim as inferred from the per-hook behavior, and say "another `PreCompact` hook, from the consumer or a plugin" instead of "the only way".
 
+### PostCompact test title says "prints nothing" but asserts only stdout
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/compact-handoff.test.ts:235`
+- **Problem:** The test is named "the PostCompact arm prints nothing, leaving PreCompact stdout to one writer" and asserts `stdout === ""` only. `runPostCompactArm` writes to stderr on a missing session id and on a failed reset, which is the same overstatement pass 1 fixed in the docs and the module header.
+- **Suggested fix:** Rename to "the PostCompact arm prints nothing to stdout, leaving PreCompact stdout to one writer".
+
+Follow-up pass 2 (2026-11-17): both pass-1 findings confirmed closed in the canonical doc, its three mirrors, the twin, and the `compact-handoff.mjs` header; `pnpm prism:check` passed at HEAD and `compact-handoff.test.ts` passes all 12 tests.
+
 ---
 
 ## Acceptance Criteria
@@ -126,7 +136,7 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 
 ## PR Readiness
 
-- [ ] No critical or major issues — follow-up pass 1 left one Major open (twin drops the observed-once label)
+- [x] No critical or major issues — follow-up pass 2: none; one open Minor (test title)
 - [x] Tests written for new logic and edge cases
 - [x] Build passes — last run: 2026-11-17 (`pnpm prism:check` reported passing by the loop; not re-run in this pass)
 - [x] Lasting decisions promoted to architect context
