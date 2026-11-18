@@ -318,7 +318,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **Severity:** `minor`
 - **Status:** `fixed`
 - **File:** `.ai-skills/docs/compatibility.md:42`
-- **Problem:** `install-layout.md` now lists `.codex/config.toml` as committed, and it cites compatibility.md § Per-Tool Directory Ownership as the source of that contract. That section's `.codex/` bullet does not mention the file, so the source and its summary disagree. It is Minor because only the docs disagree. Behavior is unaffected.
+- **Problem:** `install-layout.md` now lists `.codex/config.toml` as committed, and it cites compatibility.md, under Per-Tool Directory Ownership as the source of that contract. That section's `.codex/` bullet does not mention the file, so the source and its summary disagree. It is Minor because only the docs disagree. Behavior is unaffected.
 - **Suggested fix:** add `config.toml` (PRISM sets only `project_doc_max_bytes`) to the tracked list in that bullet.
 - **Fixed in:** 0b142e12 — the `.codex/` bullet in compatibility.md now lists `config.toml`.
 
@@ -426,7 +426,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - **Severity:** `minor`
 - **Status:** `fixed`
 - **File:** `scripts/ai-skills/codex-project-doc.ts:104`
-- **Problem:** a regular function with a `has` prefix reads as a boolean variable (`code-standards.md` § Naming).
+- **Problem:** a regular function with a `has` prefix reads as a boolean variable (`code-standards.md`, under Naming).
 - **Suggested fix:** a verb name, or remove it with the `unplaced` kind.
 - **Fixed in:** 812f842a — the helper is removed; its any-depth scan is inline in `readProjectDocMaxBytes`.
 
