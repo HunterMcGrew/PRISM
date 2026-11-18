@@ -51,6 +51,7 @@ import {
 	toRepoRelativePath,
 } from "./architect-route.mjs";
 import { runPreCompactArm, runSessionStartArm } from "./compact-handoff.mjs";
+import { runSessionStartInstall } from "./git-hooks/install.mjs";
 import {
 	HARNESSES,
 	resolveListedToolKind,
@@ -1235,7 +1236,11 @@ async function main() {
 	if (eventName === "PreCompact") {
 		output = await runPreCompactArm(rawStdin);
 	} else if (eventName === "SessionStart") {
-		output = await runSessionStartArm(rawStdin);
+		const sessionStartTexts = [
+			await runSessionStartArm(rawStdin),
+			runSessionStartInstall(rawStdin),
+		].filter((text) => text !== null);
+		output = sessionStartTexts.length > 0 ? sessionStartTexts.join("\n") : null;
 	} else if (eventName === "PreToolUse") {
 		output = await runPreToolUseArm(tool, spec, rawStdin);
 	} else {

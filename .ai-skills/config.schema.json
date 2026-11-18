@@ -211,13 +211,63 @@
 				},
 				"pushVerification": {
 					"type": "boolean",
-					"description": "Run commands.lint and commands.format before every `git push`; a non-zero exit denies the push with the output tail. An unset command is skipped; a timeout allows the push and says so."
+					"description": "Run commands.lint and commands.format before every `git push`; a non-zero exit denies the push with the output tail. An unset command is skipped; a timeout allows the push and says so. When PRISM's git hooks are installed, the gate skips `lint` if `gitHooks.prePush.command` is set and skips `format` if `gitHooks.preCommit.command` is set, because the git hook already ran it."
 				},
 				"pushVerificationTimeoutMs": {
 					"type": "integer",
 					"minimum": 1000,
 					"default": 120000,
 					"description": "Per-command budget for pushVerification. Keep it below the host's own hook timeout (Claude Code: 600 s by default) so the script, not the host, decides the outcome."
+				}
+			}
+		},
+		"gitHooks": {
+			"type": "object",
+			"description": "The commands PRISM's git hooks (.githooks/pre-commit and .githooks/pre-push) run. The hooks read this key, and onboarding proposes it from the detected stack. A hook with no `command` or no `globs` skips with a notice, so a repo that sets nothing is never blocked.",
+			"additionalProperties": false,
+			"properties": {
+				"preCommit": {
+					"type": "object",
+					"description": "Checks the staged copy of every matching file before a commit. Nothing is written: the commit is refused when the formatter would change a file or cannot parse it.",
+					"additionalProperties": false,
+					"properties": {
+						"command": {
+							"type": "string",
+							"description": "A formatter that reads one file's content on stdin and prints the formatted content on stdout. `{path}` is replaced by the file's repo-relative path, so the formatter can pick its parser and config.",
+							"examples": ["pnpm exec prettier --stdin-filepath {path}"]
+						},
+						"globs": {
+							"type": "array",
+							"minItems": 1,
+							"items": { "type": "string" },
+							"description": "Git glob pathspecs naming the files to check. `**/` crosses directories, `*` does not, and braces are not expanded, so list each extension on its own entry.",
+							"examples": [["**/*.ts", "**/*.md"]]
+						},
+						"fix": {
+							"type": "string",
+							"description": "The command the refusal message prints, with `{files}` replaced by the failing paths.",
+							"examples": ["pnpm exec prettier --write {files}"]
+						}
+					}
+				},
+				"prePush": {
+					"type": "object",
+					"description": "Lints the files a push carries.",
+					"additionalProperties": false,
+					"properties": {
+						"command": {
+							"type": "string",
+							"description": "Run once with `{files}` replaced by the pushed files that match `globs`, or with them appended when the token is absent.",
+							"examples": ["pnpm exec eslint {files}"]
+						},
+						"globs": {
+							"type": "array",
+							"minItems": 1,
+							"items": { "type": "string" },
+							"description": "Git glob pathspecs naming the files to lint. `**/` crosses directories, `*` does not, and braces are not expanded, so list each extension on its own entry.",
+							"examples": [["**/*.ts", "**/*.tsx"]]
+						}
+					}
 				}
 			}
 		},
