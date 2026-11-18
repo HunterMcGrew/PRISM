@@ -523,3 +523,33 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-10-18 (PRISM-499 PR 8) — `closing-messages.md` said every persona's `shared.md` has a `## Next persona` section that cites it. The thinning PRs cut that section from each skill, and no rename or symbol search flagged the doc, because it names a section heading and not a skill.
 
 **How to apply:** When thinning or renaming a skill, grep the architect docs for claims about every skill's sections (for example `## Next persona`), and reword the claim in the same PR.
+
+## `git add` after the Write tool rewrites a script's mode to 100644
+
+**Why:** 2026-11-18 (PRISM-516) — the committed git hook shims were `100644` because the Write tool recreated each file, dropping the executable bit, before `git add`. Git ignores a hook that is not executable, so the hooks did not run until a test that checked the index mode caught it.
+
+**How to apply:** After writing or rewriting a file git must execute, run `chmod +x` and then `git add`, and check `git ls-files -s <path>` prints `100755`. Pin the mode in a test.
+
+## The config validator does not enforce `additionalProperties` or `minItems`
+
+**Why:** 2026-11-18 (PRISM-516) — `validateOnDiskConfig` accepts a typo under a schema block that sets `additionalProperties: false`, so `config.schema.json` alone does not reject it. A new config block's strictness has to be pinned by a test on the schema keywords.
+
+**How to apply:** When adding a config block, do not assume the schema's `additionalProperties` or `minItems` rejects bad input at write time. Pin the keywords in a test, and make the reader skip with a notice on a malformed block.
+
+## A delivery path that refreshes an executable file must restore its mode on the no-op path too
+
+**Why:** 2026-11-18 (PRISM-516) — `deliverGitHookShims` ran `chmod 0o755` only after a write, so a byte-identical shim that had lost its mode (a commit from a `core.fileMode=false` clone) was never repaired. Git skipped the hook silently while doctor and the push gate, which checked only the marker, reported it installed.
+
+**How to apply:** In any copy step that owns an executable file, set the mode on every pass, including the no-op, and make every "is it installed" check require the executable bit off Windows. The authoring-side twin is the `git add` lesson above.
+
+## Compare paths only when both sides come from the same source
+
+**Why:** 2026-11-18 (PRISM-516) — `otherWorktreeHasShim` compared Node's `realpathSync(repoRoot)` with the paths in `git worktree list --porcelain`. Windows spells the same directory differently in Node and in git, so the current worktree counted as a sibling and `removeGitHooksPath` kept the value. Linux CI passed, and Windows CI failed on the unset test.
+
+**How to apply:** Compare paths only when both sides come from one source, both from git or both from Node, and normalize both the same way. For "is this the current worktree", take self from `git rev-parse --show-toplevel`, as the list entries are, the way `classifyHooksPath` uses `resolveCommonDir`.
+
+## A safety gate that reads config through a helper returning null on a parse failure fails open
+
+**Why:** 2026-11-18 (PRISM-520) — `auto-approve.mjs` read `.ai-skills/config.json` through `readRepoConfig`, which returns null for an absent file and for one that does not parse. A trailing comma in a config that set `stopPaths.contract` resolved to the defaults, whose contract list is empty, so the plan approved. The architect doc and a comment both said an unreadable config exits 2, and only the PR review's probe showed otherwise.
+
+**How to apply:** A gate that decides from config tells "file absent" from "file present but unreadable" itself, with an `existsSync` check beside the helper, and refuses on the second. A helper written never to throw for a git hook is the wrong default for a check that allows something.

@@ -93,7 +93,13 @@ test("PreCompact on a branch with no ticket ID keeps every decision in the summa
 	try {
 		const output = await runPreCompactArm(JSON.stringify({ cwd: root }));
 
-		assert.ok(output?.includes("- Branch plan: none found by filename"));
+		assert.ok(output?.includes("- Branch plan: none found\n"));
+		assert.ok(!output?.includes("by filename"));
+		assert.ok(
+			output?.includes(
+				"No plan file was found for this branch's ticket, by name, by ticket field, or in the archive,"
+			)
+		);
 		assert.ok(output?.includes("Keep all of them."));
 	} finally {
 		rmSync(root, { recursive: true, force: true });
@@ -119,6 +125,43 @@ test("findPlanForBranch follows plan-lookup order and matches only the configure
 		assert.equal(findPlanForBranch(root, "dev/acme-70-x"), null, "acme-7 is not a prefix match for acme-70");
 		assert.equal(findPlanForBranch(root, "dev/notacme-7"), null, "the prefix needs a word boundary");
 		assert.equal(findPlanForBranch(root, "hook-pr-896bdc"), null);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("findPlanForBranch resolves a plan folder to its latest-stage file", () => {
+	const root = makeRepo("main");
+	try {
+		writePlan(root, ".prism/plans/acme-7/intent.md");
+		assert.equal(findPlanForBranch(root, "dev/acme-7-x"), ".prism/plans/acme-7/intent.md");
+
+		writePlan(root, ".prism/plans/acme-7/plan.md");
+		assert.equal(findPlanForBranch(root, "dev/acme-7-x"), ".prism/plans/acme-7/plan.md");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("findPlanForBranch finds a flat plan by its ## Ticket section", () => {
+	const root = makeRepo("main");
+	try {
+		mkdirSync(path.join(root, ".prism", "plans"), { recursive: true });
+		writeFileSync(path.join(root, ".prism", "plans", "notes.md"), "## Ticket\n\nACME-8\n");
+
+		assert.equal(findPlanForBranch(root, "dev/acme-8-x"), ".prism/plans/notes.md");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("findPlanForBranch prefers a live folder plan over an archived flat plan of the same id", () => {
+	const root = makeRepo("main");
+	try {
+		writePlan(root, ".prism/archived/plans/acme-7.md");
+		writePlan(root, ".prism/plans/acme-7/spec.md");
+
+		assert.equal(findPlanForBranch(root, "dev/acme-7-x"), ".prism/plans/acme-7/spec.md");
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
@@ -224,6 +267,11 @@ test("SessionStart on a filename miss sends the session to the full plan lookup"
 	try {
 		const note = await runSessionStartArm(JSON.stringify({ source: "compact", cwd: root }));
 
+		assert.ok(
+			note?.includes(
+				"No plan file was found for this branch's ticket, by name, by ticket field, or in the archive."
+			)
+		);
 		assert.ok(note?.includes("`.prism/rules/branch-plan.md` § Plan Lookup"));
 		assert.ok(note?.includes("do not create a plan to hold the summary"));
 		assert.ok(!note?.includes("Re-read .prism/plans/"), "a miss never names a plan path");

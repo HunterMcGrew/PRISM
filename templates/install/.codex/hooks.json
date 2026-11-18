@@ -31,6 +31,17 @@
 				]
 			}
 		],
+		"SessionStart": [
+			{
+				"matcher": "startup|resume",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/hook.mjs\" --tool=codex --event=SessionStart"
+					}
+				]
+			}
+		],
 		"PostCompact": [
 			{
 				"hooks": [

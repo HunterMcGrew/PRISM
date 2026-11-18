@@ -24,6 +24,9 @@
 		"_toolkit/spec-editing.md"
 	],
 	".prism/architect/manifest.json": "_toolkit/hook-runtime.md",
+	".githooks/**": "_toolkit/git-hooks.md",
+	".prism/templates/plan.md": "_toolkit/plan-chain-scripts.md",
+	".prism/templates/spec.md": "_toolkit/plan-chain-scripts.md",
 	".prism/references/**": [
 		"guides/writing-an-architect-doc.md",
 		"_toolkit/spec-editing.md"

@@ -19,11 +19,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+	AGENTS_MD_LEAD_RULES,
+	measureLeadSectionEnds,
+	renderTier1Block,
+} from "./agents-md-block";
+import {
 	formatDoctorReport,
 	resolvePrismSourceOrFinding,
 	runDoctor,
 	type NpmVersionFetcher,
 } from "./doctor";
+import { installGitHooks } from "./hooks/git-hooks/install.mjs";
 import { hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 
@@ -1971,6 +1977,216 @@ test("runDoctor stays silent when a repo has neither a hook runtime nor a regist
 	});
 });
 
+// --- git hooks install state ---
+
+const MARKED_SHIM = "#!/bin/sh\n# @prism-hook-runtime: PRISM git hook shim.\n";
+
+/** Writes PRISM's marked shim with the mode git needs to run it, unless `mode` says otherwise. */
+async function writeMarkedShim(root: string, name: string, mode = 0o755): Promise<void> {
+	await writeFile(root, `.githooks/${name}`, MARKED_SHIM);
+	await fs.chmod(path.join(root, ".githooks", name), mode);
+}
+
+/**
+ * Runs `body` with git config isolated from the developer's own — the doctor
+ * check reads `core.hooksPath` through `process.env`, so a machine-wide hooks
+ * path would otherwise leak into the finding under test.
+ */
+async function withIsolatedGitConfig(
+	consumerRepoRoot: string,
+	body: () => Promise<void>
+): Promise<void> {
+	const saved = { ...process.env };
+	try {
+		for (const key of Object.keys(process.env)) {
+			if (key.startsWith("GIT_")) {
+				delete process.env[key];
+			}
+		}
+		const emptyConfig = path.join(consumerRepoRoot, ".git", "empty-gitconfig");
+		await fs.writeFile(emptyConfig, "");
+		process.env.GIT_CONFIG_NOSYSTEM = "1";
+		process.env.GIT_CONFIG_GLOBAL = emptyConfig;
+
+		await body();
+	} finally {
+		for (const key of Object.keys(process.env)) {
+			delete process.env[key];
+		}
+		Object.assign(process.env, saved);
+	}
+}
+
+function gitHooksFindings(
+	findings: Array<{ check: string; severity: string; message: string }>
+): Array<{ severity: string; message: string }> {
+	return findings.filter(
+		(f) =>
+			f.check === "hook-registration" &&
+			/git hooks|core\.hooksPath/i.test(f.message)
+	);
+}
+
+async function doctorGitHooks(roots: { prismSourceRoot: string; consumerRepoRoot: string }) {
+	const report = await runDoctor({
+		consumerRepoRoot: roots.consumerRepoRoot,
+		prismSourceRoot: roots.prismSourceRoot,
+		npmVersionFetcher: NEVER_FETCH,
+	});
+
+	return { report, findings: gitHooksFindings(report.findings) };
+}
+
+function setHooksPath(consumerRepoRoot: string, value: string): void {
+	execFileSync("git", ["config", "--local", "core.hooksPath", value], {
+		cwd: consumerRepoRoot,
+		stdio: "ignore",
+	});
+}
+
+test("runDoctor reports no git hooks finding when PRISM's shim is not in .githooks", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			assert.deepEqual((await doctorGitHooks(roots)).findings, []);
+
+			await writeFile(roots.consumerRepoRoot, ".githooks/pre-commit", "#!/bin/sh\necho mine\n");
+			assert.deepEqual(
+				(await doctorGitHooks(roots)).findings,
+				[],
+				"a consumer's own .githooks/pre-commit is not PRISM's to report on"
+			);
+		});
+	});
+});
+
+test("runDoctor reports an info when the git hooks are installed", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+			setHooksPath(roots.consumerRepoRoot, ".githooks");
+
+			const { findings } = await doctorGitHooks(roots);
+
+			assert.equal(findings.length, 1);
+			assert.equal(findings[0].severity, "info");
+			assert.match(findings[0].message, /^Git hooks are installed \(core\.hooksPath → \.githooks\)\./);
+		});
+	});
+});
+
+test("runDoctor reports an info naming the value when a foreign hooks path is in force", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+			setHooksPath(roots.consumerRepoRoot, ".husky");
+
+			const { findings } = await doctorGitHooks(roots);
+
+			assert.equal(findings.length, 1);
+			assert.equal(findings[0].severity, "info");
+			assert.equal(
+				findings[0].message,
+				"PRISM's git hooks are not active: the local core.hooksPath is '.husky'. Compose them with your hooks by hand."
+			);
+		});
+	});
+});
+
+test("runDoctor reports an info, not a warning, when hooks in .git/hooks would be displaced", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+			await writeFile(roots.consumerRepoRoot, ".git/hooks/pre-commit", "#!/bin/sh\nexit 0\n");
+
+			const { findings } = await doctorGitHooks(roots);
+
+			assert.equal(findings.length, 1);
+			assert.equal(findings[0].severity, "info");
+			assert.match(
+				findings[0].message,
+				/^PRISM's git hooks are not active: \.git\/hooks holds pre-commit, which git stops running once core\.hooksPath is set\./
+			);
+		});
+	});
+});
+
+test(
+	"runDoctor warns when an installed shim has lost its executable bit",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	async () => {
+		await withTempRoots(async (roots) => {
+			await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+				await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+				await writeMarkedShim(roots.consumerRepoRoot, "pre-push", 0o644);
+				setHooksPath(roots.consumerRepoRoot, ".githooks");
+
+				const { findings } = await doctorGitHooks(roots);
+
+				assert.equal(findings.length, 1);
+				assert.equal(findings[0].severity, "warning");
+				assert.match(
+					findings[0].message,
+					/git skips a hook file without the executable bit: \.githooks\/pre-push\. Run npx @huntermcgrew\/prism update/
+				);
+
+				await fs.chmod(path.join(roots.consumerRepoRoot, ".githooks", "pre-push"), 0o755);
+				assert.match((await doctorGitHooks(roots)).findings[0].message, /^Git hooks are installed/);
+			});
+		});
+	}
+);
+
+test("runDoctor warns that delivered git hooks are not installed, then stops once the installer runs", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+
+			const before = await doctorGitHooks(roots);
+
+			assert.equal(before.findings.length, 1);
+			assert.equal(before.findings[0].severity, "warning");
+			assert.match(before.findings[0].message, /not installed in this clone/);
+			assert.match(before.findings[0].message, /npx @huntermcgrew\/prism hooks install/);
+			assert.match(before.findings[0].message, /node \.claude\/hooks\/git-hooks\/install\.mjs/);
+			assert.equal(before.report.healthy, true, "a warning leaves doctor's exit code alone");
+
+			installGitHooks(roots.consumerRepoRoot);
+
+			const after = await doctorGitHooks(roots);
+			assert.equal(
+				after.findings.some((f) => f.severity === "warning"),
+				false
+			);
+			assert.match(after.findings[0].message, /^Git hooks are installed/);
+		});
+	});
+});
+
+test("runDoctor says the gitHooks commands are unset only when both are", async () => {
+	await withTempRoots(async (roots) => {
+		await withIsolatedGitConfig(roots.consumerRepoRoot, async () => {
+			await writeMarkedShim(roots.consumerRepoRoot, "pre-commit");
+
+			const bothUnset = await doctorGitHooks(roots);
+			assert.match(
+				bothUnset.findings[0].message,
+				/gitHooks\.preCommit\.command and gitHooks\.prePush\.command are unset/
+			);
+
+			await writeFile(
+				roots.consumerRepoRoot,
+				".ai-skills/config.json",
+				JSON.stringify({
+					...CONSUMER_CONFIG_JSON,
+					gitHooks: { prePush: { command: "eslint {files}", globs: ["**/*.ts"] } },
+				})
+			);
+			const oneSet = await doctorGitHooks(roots);
+			assert.doesNotMatch(oneSet.findings[0].message, /are unset/);
+		});
+	});
+});
+
 // --- host-output check ---
 
 test("runDoctor warns when a host the config excludes still has PRISM's output on disk", async () => {
@@ -2071,6 +2287,285 @@ test("runDoctor reports no host-output finding when the config declares no hosts
 			report.findings.filter((f) => f.check === "host-output"),
 			[]
 		);
+	});
+});
+
+// --- codex-doc-limit check (PRISM-519) ---
+
+/**
+ * Runs doctor against a repo whose `AGENTS.md` is `agentsMd` (a string, or
+ * that many bytes of filler), returning the report and its `codex-doc-limit` findings. The repo has a sync
+ * manifest (has adopted) unless `adopted` is false.
+ */
+async function runCodexDocLimitDoctor(
+	roots: { prismSourceRoot: string; consumerRepoRoot: string },
+	agentsMd: number | string,
+	codexConfigToml: string | null,
+	{ adopted = true }: { adopted?: boolean } = {}
+) {
+	if (adopted) {
+		await writeConsumerManifest(path.join(roots.consumerRepoRoot, ".prism"), {});
+	}
+
+	await writeFile(
+		roots.consumerRepoRoot,
+		"AGENTS.md",
+		typeof agentsMd === "string" ? agentsMd : "a".repeat(agentsMd)
+	);
+	if (codexConfigToml !== null) {
+		await writeFile(roots.consumerRepoRoot, ".codex/config.toml", codexConfigToml);
+	}
+
+	const report = await runDoctor({
+		consumerRepoRoot: roots.consumerRepoRoot,
+		prismSourceRoot: roots.prismSourceRoot,
+		npmVersionFetcher: NEVER_FETCH,
+	});
+
+	return {
+		report,
+		findings: report.findings.filter((f) => f.check === "codex-doc-limit"),
+	};
+}
+
+test("runDoctor warns when AGENTS.md is over 32 KiB and the Codex config sets no read limit", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /AGENTS\.md is 40000 bytes/);
+		assert.match(findings[0].message, /sets no project_doc_max_bytes/);
+		assert.match(findings[0].message, /set it to 131072/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns when the Codex config's read limit is below the AGENTS.md size", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 32768\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /sets project_doc_max_bytes = 32768/);
+		assert.match(findings[0].message, /raise it to 131072/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns when the Codex config's read limit cannot be read", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 0x100000\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /0x100000, which PRISM cannot read/);
+		assert.match(findings[0].message, /Set it to 131072 or more/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports an info line, not a warning, when the Codex config's read limit covers AGENTS.md", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			"project_doc_max_bytes = 131072\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "info");
+		assert.match(findings[0].message, /enough for AGENTS\.md \(40000 bytes\)/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+/**
+ * An `AGENTS.md` with `preambleBytes` of consumer content above a generated
+ * block whose every lead rule body is `leadBodyBytes` long, plus the byte
+ * where the last lead rule ends.
+ */
+function agentsMdWithLeadRules(preambleBytes: number, leadBodyBytes: number) {
+	const agentsMd = `${"a".repeat(preambleBytes)}\n${renderTier1Block(
+		AGENTS_MD_LEAD_RULES.map((name) => ({ name, body: "x".repeat(leadBodyBytes) }))
+	)}\n`;
+	const leadRulesEnd = Math.max(
+		...measureLeadSectionEnds(agentsMd).map(({ endByte }) => endByte ?? 0)
+	);
+
+	return { agentsMd, leadRulesEnd };
+}
+
+test("runDoctor warns that the lead rules are cut when a large preamble pushes them past the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 1_500);
+		assert.ok(leadRulesEnd > 32_768);
+
+		const { findings } = await runCodexDocLimitDoctor(roots, agentsMd, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, new RegExp(`end at byte ${leadRulesEnd}`));
+	});
+});
+
+test("runDoctor warns that the lead rules are cut when the configured limit ends before them", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 1_500);
+
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			agentsMd,
+			"project_doc_max_bytes = 32768\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.match(findings[0].message, new RegExp(`end at byte ${leadRulesEnd}`));
+	});
+});
+
+test("runDoctor does not call the lead rules cut when they end inside the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(1_000, 1_000);
+		const padded = `${agentsMd}${"a".repeat(40_000)}`;
+		assert.ok(leadRulesEnd < 32_768);
+
+		const { findings } = await runCodexDocLimitDoctor(roots, padded, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.doesNotMatch(findings[0].message, /end at byte/);
+	});
+});
+
+test("runDoctor does not call the lead rules cut when the configured limit covers them but not the whole file", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 1_500);
+		const padded = `${agentsMd}${"a".repeat(40_000)}`;
+
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			padded,
+			`project_doc_max_bytes = ${leadRulesEnd + 1}\n`
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.doesNotMatch(findings[0].message, /end at byte/);
+	});
+});
+
+test("runDoctor warns when a configured limit below 32 KiB cuts an AGENTS.md that fits the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { agentsMd, leadRulesEnd } = agentsMdWithLeadRules(20_000, 500);
+		assert.ok(agentsMd.length < 32_768 && leadRulesEnd > 16_384);
+
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			agentsMd,
+			"project_doc_max_bytes = 16384\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /sets project_doc_max_bytes = 16384/);
+		assert.match(findings[0].message, new RegExp(`end at byte ${leadRulesEnd}`));
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns that the limit is unknown when the only limit line sits under a table", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(
+			roots,
+			40_000,
+			'model = "x"\n\n[profiles.x]\nproject_doc_max_bytes = 999999\n'
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /cannot place at the top level/);
+		assert.match(findings[0].message, /is unknown/);
+		assert.match(findings[0].message, /top-level project_doc_max_bytes line set to 131072 or more is needed/);
+		assert.doesNotMatch(findings[0].message, /move the line/i);
+		assert.doesNotMatch(findings[0].message, /prism update/);
+		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor warns for a hidden top-level limit that a lone-value array element masks, even when AGENTS.md fits the default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			30_000,
+			"matrix = [\n  [1, 2],\n  [3]\n]\nproject_doc_max_bytes = 16384\n"
+		);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /AGENTS\.md \(30000 bytes\)/);
+		assert.match(findings[0].message, /is unknown/);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when a configured limit below 32 KiB still covers AGENTS.md", async () => {
+	await withTempRoots(async (roots) => {
+		const { findings } = await runCodexDocLimitDoctor(
+			roots,
+			10_000,
+			"project_doc_max_bytes = 16384\n"
+		);
+
+		assert.deepEqual(findings, []);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when Codex is not among the hosts", async () => {
+	await withTempRoots(async (roots) => {
+		await writeFile(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null);
+
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding when AGENTS.md fits Codex's default window", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 30_000, null);
+
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
+	});
+});
+
+test("runDoctor reports no codex-doc-limit finding for a never-adopted repo", async () => {
+	await withTempRoots(async (roots) => {
+		const { report, findings } = await runCodexDocLimitDoctor(roots, 40_000, null, {
+			adopted: false,
+		});
+
+		assert.equal(report.syncState.manifest, null);
+		assert.deepEqual(findings, []);
+		assert.equal(report.healthy, true);
 	});
 });
 

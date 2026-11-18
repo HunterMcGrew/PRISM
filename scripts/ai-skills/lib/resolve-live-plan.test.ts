@@ -1,11 +1,12 @@
 /**
  * Regression suite for the shared live-plan resolver.
  *
- * Exercises every fallback tier — a plan folder's `<id>/plan.md`, direct
- * `<id>.md`, `epic-<id>.md`, the
- * `## Ticket` field scan, and the unfiled-plan-by-slug tier for branches with
- * no ticket-id-shaped token — plus `extractTicketId`'s branch-name parsing,
- * against temp trees built per test, following the
+ * Exercises every fallback tier — a plan folder (`<id>/` or `epic-<id>/`,
+ * resolving to its latest-stage chain file), the direct `<id>.md`,
+ * `epic-<id>.md`, the ticket-field scan (a folder's `ticket:` line or a flat
+ * plan's `## Ticket` field), and the unfiled-plan-by-slug tier for branches
+ * with no ticket-id-shaped token — plus `extractTicketId`'s branch-name
+ * parsing, against temp trees built per test, following the
  * `spec-scope-lint.test.ts` pattern of testing exported pure functions
  * against a controlled filesystem.
  */
@@ -116,7 +117,7 @@ test("resolveLivePlan: a plan folder's plan.md wins over a flat plan of the same
 	);
 });
 
-test("resolveLivePlan: a plan folder with no plan.md falls through to the flat tier", async () => {
+test("resolveLivePlan: a plan folder holding only intent.md wins over a flat plan of the same id", async () => {
 	const branchName = "someone/prism-1003-fix-thing";
 
 	await withTempTree(
@@ -127,7 +128,44 @@ test("resolveLivePlan: a plan folder with no plan.md falls through to the flat t
 		async (tempRoot) => {
 			assert.equal(
 				await resolveLivePlan(branchName, tempRoot),
-				".prism/plans/prism-1003.md"
+				".prism/plans/prism-1003/intent.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: an epic plan folder resolves to its latest-stage file", async () => {
+	const branchName = "someone/prism-1004-epic-work";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/plans/epic-prism-1004/intent.md", "# Intent\n");
+			await writeFile(tempRoot, ".prism/plans/epic-prism-1004/spec.md", "# Spec\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/epic-prism-1004/spec.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: a plan folder resolves by its chain file's ticket field", async () => {
+	const branchName = "someone/prism-1005-renamed-slug";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/some-slug/intent.md",
+				"---\nticket: PRISM-1005\n---\n"
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/some-slug/intent.md"
 			);
 		}
 	);
@@ -512,3 +550,34 @@ test("resolveLivePlan: a hyphenated username ahead of the ticket id resolves the
 		}
 	);
 });
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — unreadable plans directory
+// ---------------------------------------------------------------------------
+
+test(
+	"resolveLivePlan: a plans directory that can't be read resolves as no plan instead of throwing",
+	{
+		skip:
+			(process.platform === "win32" && "chmod does not restrict reads on Windows") ||
+			(process.getuid?.() === 0 && "root reads any directory"),
+	},
+	async () => {
+		await withTempTree(
+			async (tempRoot) => {
+				await writeFile(tempRoot, ".prism/plans/prism-1006.md", "# Plan\n");
+				await fs.chmod(path.join(tempRoot, ".prism/plans"), 0o000);
+			},
+			async (tempRoot) => {
+				try {
+					assert.equal(
+						await resolveLivePlan("dev/prism-1006-fix-thing", tempRoot),
+						null
+					);
+				} finally {
+					await fs.chmod(path.join(tempRoot, ".prism/plans"), 0o755);
+				}
+			}
+		);
+	}
+);

@@ -1,0 +1,12 @@
+#!/bin/sh
+# @prism-hook-runtime: PRISM git hook shim. prism update replaces this file.
+hook=pre-commit
+top=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+command -v node >/dev/null 2>&1 || { echo "$hook: skipped (node not on PATH)" >&2; exit 0; }
+for candidate in "$top/.claude/hooks/git-hooks/$hook.mjs" "$top/scripts/ai-skills/hooks/git-hooks/$hook.mjs"; do
+	if [ -f "$candidate" ]; then
+		exec node "$candidate" "$@"
+	fi
+done
+echo "$hook: skipped (PRISM's $hook.mjs is not in this checkout)" >&2
+exit 0

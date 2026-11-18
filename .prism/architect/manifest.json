@@ -75,6 +75,14 @@
 	],
 	"scripts/ai-skills/adopt.ts": "_toolkit/consumer-sync-flow.md",
 	"scripts/ai-skills/hooks/**": "_toolkit/hook-runtime.md",
+	"scripts/ai-skills/hooks/git-hooks/**": [
+		"_toolkit/hook-runtime.md",
+		"_toolkit/git-hooks.md"
+	],
+	".githooks/**": "_toolkit/git-hooks.md",
+	"scripts/ai-skills/hooks/plan/**": "_toolkit/plan-chain-scripts.md",
+	".prism/templates/plan.md": "_toolkit/plan-chain-scripts.md",
+	".prism/templates/spec.md": "_toolkit/plan-chain-scripts.md",
 	"scripts/ai-skills/path-guard.ts": "_toolkit/cross-reference-checks.md",
 	"scripts/ai-skills/crossref-lint.ts": "_toolkit/cross-reference-checks.md",
 	".ai-skills/definitions/**": "_toolkit/install-layout.md",

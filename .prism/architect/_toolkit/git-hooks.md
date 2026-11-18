@@ -1,0 +1,69 @@
+# Git Hooks
+
+The `pre-commit` and `pre-push` git hooks PRISM ships: the shims that git runs, the `.mjs` modules behind them, what each hook checks, and how the installer points git at them without displacing a hooks setup a team already has. The agent-side gates that ride the same runtime (the write gate, the commit cleanup pass, push verification) are in [`hook-runtime.md`](./hook-runtime.md). Where the delivered files sit in an install is [`install-layout.md`](./install-layout.md).
+
+---
+
+## Shape: a shim over a module
+
+Git runs the files in `.githooks/`. `.githooks/pre-commit` and `.githooks/pre-push` are short `sh` shims, and all the logic lives in zero-dependency `.mjs` modules (`pre-commit.mjs`, `pre-push.mjs`, `install.mjs`) that import only `node:` builtins and `hooks/lib/command.mjs`. A consumer may have no `node_modules`, so the hooks cannot assume a package tree. The shim is plain `sh` so it needs nothing beyond `node`.
+
+Each shim resolves its module from the repo toplevel and tries two candidates in order: `.claude/hooks/git-hooks/<hook>.mjs`, where `prism update` delivers the module in a consumer, then `scripts/ai-skills/hooks/git-hooks/<hook>.mjs`, where it lives in PRISM's own tree. One shim file therefore works in both places. The shim exits 0 with a notice when `node` is not on `PATH` or neither candidate exists, and it replaces itself in place on every update.
+
+Only a shim carrying the `@prism-hook-runtime` marker line is PRISM's. A `.githooks/pre-commit` or `.githooks/pre-push` without that line is the consumer's own hook, and delivery leaves it byte for byte, with a warning. `.githooks/` is the one directory where a consumer's own git hooks are likely to live, so this differs from the agent runtime under `.claude/hooks/`, where an unmarked file at a delivered path is backed up as `.bak` and replaced.
+
+Every update also sets the executable bit on PRISM's shims, including when the content is already current. Git skips a hook that is not executable and prints only an `advice.ignoredHook` hint, so a shim that lost its mode runs no checks at all. A `core.fileMode=false` clone, such as a Windows checkout, adds a new path as `100644`, so the mode is lost when the shims are first committed from one. An ordinary commit from such a clone keeps an existing `100755` entry. The installer also repairs the mode, off Windows, before it sets `core.hooksPath` or reports `already installed`, so `prism hooks install` and a fresh clone's session start never report hooks that git will skip. When the bit cannot be set on a shim, it leaves `core.hooksPath` alone and says which shim is the problem, and which shims it did make executable, since those chmods are not undone.
+
+The modules ride the agent hook runtime's delivery (`hook-runtime.md` § Hook runtime), and the shims are delivered only when `claude` or `codex` is in `hosts`. A Cursor-only consumer gets no git hooks, because routing them through a second delivery path would need its own copy step, ownership rule, and prune list for one host. Dropping both hosts removes the marked shims, and `.githooks/` itself once it is empty. Whenever `.githooks/` is gone, whether that update removed it or a pulled commit already had, a local `core.hooksPath` of `.githooks` is unset too. `core.hooksPath` is per-clone config, so each clone's own update does the unset. Left set, it would point git at a missing directory, so git would run no hooks and still skip `.git/hooks`. The local value is also shared by every worktree of the clone, so the unset is skipped while `git worktree list --porcelain` shows another worktree with a PRISM-marked shim in its `.githooks/`. Without that check, a worktree on a branch that dropped to Cursor would unset the value a sibling on a branch that still delivers the shims was running on, and the sibling's next session start would set it again. The cost of the skip is that the Cursor-only worktree keeps a value pointing at a missing directory, so it runs no git hooks, until the last worktree with shims drops them and one more update runs.
+
+## Configuration and the skip rule
+
+Both hooks read a `gitHooks` block in `.ai-skills/config.json`: `preCommit` takes `command`, `globs`, and an optional `fix`, and `prePush` takes `command` and `globs`. A hook with no block, an empty command, or no globs skips with a notice and exits 0. So does a command whose binary is not found, which the hook recognizes by exit status 127 or, under `cmd.exe`, by its "is not recognized" message. A crash inside either module also skips, with a notice. A package runner changes this: `pnpm exec <missing-bin>` exits 1, not 127, so with a command such as `pnpm exec prettier --stdin-filepath {path}`, a clone that is missing the tool fails the commit instead of skipping it. The stderr names the cause.
+
+**Why skip rather than block.** A hook that fails because of its own setup is one people learn to bypass with `--no-verify`, and a bypassed hook protects nothing. The cost is that a repo with a misconfigured command gets no check and one stderr line, which is why `prism doctor` says when both commands are unset.
+
+## Pre-commit
+
+The formatter contract is stdin to stdout, with `{path}` in the command standing for the file's repo-relative path, so a formatter can pick its parser and config from the name. For each staged file that matches the globs (added, copied, modified, or renamed), the hook feeds the **staged blob** to the formatter and compares what it prints with what went in, byte for byte. Any difference, or a non-zero exit, fails the commit and lists the files. When `fix` is set, the message prints it with `{files}` filled in.
+
+**Why compare output rather than run a `--check` flag.** Prettier's `--check` with stdin exits 0 on a parse error, so a broken file would pass. A byte comparison is correct for any formatter that can read stdin, and it never writes: no `--write`, no `git add`, no change to the index or the working tree. Materializing staged copies into a temp directory was rejected because formatter configs and ignore files resolve relative to the file's real path.
+
+**Why the staged blob.** A partially staged file is judged on what the commit will contain, not on the working copy.
+
+**`GIT_INDEX_FILE` passes through.** `git commit -a` and `git commit <paths>` run hooks against a temporary index named by `GIT_INDEX_FILE`. The hook passes its whole environment to every git call it makes, so `git diff --cached` and `git show :<path>` read the same index the commit will use.
+
+**`--all` for CI.** `node .claude/hooks/git-hooks/pre-commit.mjs --all` checks every tracked file that matches the globs, from disk rather than the index, and exits 1 if any is unformatted. A consumer's CI can run it as a format check with the same command and globs the hook uses. The pre-push hook has no `--all` mode.
+
+## Pre-push
+
+Git writes one line per ref being pushed to the hook's stdin. For each ref the hook finds the files the push adds or changes (deleted files drop out) that match the globs, takes the union across refs, and runs the lint command once, with `{files}` filled in. A non-zero exit blocks the push, and the command's own output reaches the terminal.
+
+**The base.** The diff is taken against the remote's own tip when this clone has that commit. A new branch, or a remote sha the clone does not have, falls back to `<remote>/<defaultBranch>`, where `defaultBranch` is the config's value or `main`. With neither available the ref is skipped with a notice.
+
+**Why a ref that is not the checked-out HEAD is skipped.** The linter reads the working tree. Linting while a different ref is pushed would judge files the push does not carry, so the hook says it skipped that ref instead of passing or failing it on the wrong content.
+
+**A dirty working tree has the same limit for the HEAD ref.** The linter reads uncommitted edits, so an uncommitted lint error blocks a push whose commits are clean, and an uncommitted fix lets through a push whose commits still carry the error. The hook does not detect this. Commit or stash before pushing when the difference matters.
+
+## The installer
+
+`install.mjs` is the one definition of "is git pointed at PRISM's hooks". `prism hooks install`, `prism update`, `prism adopt`, the agent session-start hook, and a consumer's own setup script (the setup-script line, below) all call it.
+
+**What it writes.** `core.hooksPath` set to the relative value `.githooks`, at local scope. Local config is shared by every worktree of a clone, and git resolves a relative hooks path per worktree, so each branch runs the hooks checked out with it. An absolute path would make every worktree run one checkout's hooks.
+
+**What it will not displace.** Git reads one hooks directory, so a `core.hooksPath` that is not PRISM's means PRISM's hooks cannot also be active. The installer reads the value at system, global, local, and worktree scope (the worktree scope only when `extensions.worktreeConfig` is on), following `include.path` and `includeIf`, and classifies each as unset, ours, or foreign. Includes are followed because a team-wide path is often set in a file a global config pulls in, and a scoped read leaves includes off by default. `.githooks` is ours, and so is an absolute path to a `.githooks` directory in the same repository, which is how a stale absolute value from an older setup is recognized and replaced. Anything else is foreign: husky's `.husky`, a `.githooks` in another repo, a team-wide global path. A foreign value at any scope means the installer changes nothing and says so. A global value would otherwise be shadowed by a local one, which is the same harm as overwriting it. A worktree-scope value that is ours is unset, because it would shadow the local one.
+
+**Hooks in `.git/hooks` count too.** With every scope unset, git runs hooks from its default directory, `.git/hooks` (the common dir's, for a linked worktree), and setting `core.hooksPath` would silently stop them. So when that directory holds any file that is not a `.sample`, which is how a hook manager that installs there leaves it, the installer changes nothing and names the files. Once any scope already holds a value of ours, git already skips that directory, so the check does not apply. The installer and `prism doctor` run the same search, `describeForeignHooks`.
+
+**Exit codes.** Every outcome exits 0, `left-alone` included, which prints to stderr. It is a report, and a non-zero exit would break `prism update` or a `prepare` script in a repo that is set up correctly in its own way. With no PRISM shims in `.githooks/` there is nothing to point git at, and it says that. `prism update --dry-run` writes no shims, so it previews the install as if the shims it would deliver were already there.
+
+**The setup-script line.** A consumer's own setup step can run the installer on every fresh clone. The form PRISM offers imports the module and calls it, so it also exits 0 when `install.mjs` is absent, as it is after `hosts` drops to Cursor only: `node -e "import('./.claude/hooks/git-hooks/install.mjs').then((m) => m.runInstallCli(), () => {})"`. A plain `node .claude/hooks/git-hooks/install.mjs` exits 1 on a missing file, which would fail every `pnpm install` through a `prepare` script.
+
+**The session-start arm.** At `startup` and `resume`, the agent runtime installs the hooks when every scope is unset and nothing in `.git/hooks` would be displaced, and reports only when it set the value. It stays silent about a foreign setup because a message at every session start is noise, and `prism doctor` carries that report instead. The Claude registration's `SessionStart` matcher is `startup|resume|compact`, and Codex's is `startup|resume`. The Codex registration is based on a read of Codex's hook documentation and has not been run in a live Codex session.
+
+## Relationship to the agent gates
+
+When git runs PRISM's own shim for a hook and the matching `gitHooks` command is set, the push gate skips the `commands` entry that git hook already ran: `commands.lint` when PRISM's `pre-push` runs and `gitHooks.prePush.command` is set, `commands.format` when PRISM's `pre-commit` runs and `gitHooks.preCommit.command` is set. Git runs PRISM's shim when the effective `core.hooksPath` is ours and the shim at that path carries the marker and, off Windows, the executable bit. Each slot is judged on its own shim, so a consumer's own unmarked `pre-push` beside PRISM's `pre-commit` leaves the gate's lint running. The gate says which slot it skipped.
+
+Two limits are worth knowing. The skip assumes the git hook ran, and an agent that passes `--no-verify` to `git commit` or `git push` skips the hook while the push gate still believes it ran. The git hooks also reach only the clones where they were installed: `prism update`, the session-start arm, and a setup script each install them, and a person who clones by hand and runs none of those has no git hooks. CI is the check that decides a merge.
+
+`prism doctor` reports the install state. It is silent when the repo has no PRISM `pre-commit` shim. It reports `info` when the hooks are installed, and when the installer would leave another setup alone: a foreign `core.hooksPath`, or hooks in `.git/hooks`. It warns when the shims are delivered but not installed in this clone, and when an installed shim has lost its executable bit. The installed and not-installed findings also say when both `gitHooks` commands are unset.
