@@ -948,6 +948,8 @@ round 3: blocking 1
 round 4: blocking 1
   - T5, T21 (blocking, major): T5 and T21 build to the AC-2 adjustment, which is still `proposed`. T5's required case "a non-clean round with an empty `Retro:` passes" fails AC-2 as written, which fails any folder plan "whose PR review is recorded". Either fix changes an acceptance criterion: accepting the adjustment, or reverting T5 to the original wording, which reopens the CI-loop flaw the final-verdict Decision fixed. The plan routes the change to Hunter "with the plan approval", but the workflow rule sends an acceptance-criterion change to `prism-architect` first and asks the person "on its own, never inside an approval". No architect verdict on it is recorded.
   - plan (non-blocking): the misses-log Decision's "Alternatives considered" bullet still says a log-only commit was rejected because no folder-plan subject fits one. Its round-3 sub-bullet and T21 now use exactly that commit, `retro: log review misses`. The first Decision's "`## Challenge` is empty" and the OPEN Decision on running rounds 1 and 2 before the ask are also stale now that three rounds are recorded.
+round 5: carried 1
+  - plan (non-blocking): the scope-change list says it holds every entry that did not come from Hunter's rulings, but it names only AC-2. The criteria fallback to `plan.md`'s `## Acceptance Criteria` (architect at round 2, ruled not intent-level) and the retro-line check's PRISM-only scope (Winston at round 1) went through the architect path the workflow rule names and are missing, so the PR body built from the list would hide them from Hunter's veto. Add them, or say why they are not scope changes.
 
 ## Decisions
 
