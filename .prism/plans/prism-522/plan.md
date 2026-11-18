@@ -867,6 +867,8 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed Eric's PR review of PR A: the architect-doc claims (`7ac8b7f2`), two stale Cursor-only comments and the `readPlanConfig` JSDoc (`6f939bf6`), and the duplicated guard edit check (`2b971c5d`). The delivery clause dropped from PR A is a new Decision, and T12 now re-adds it in PR B.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed Eric's re-review: the Token bullet and its curated twin now say a Codex `apply_patch` target is its whole patch text, so a patch naming the token file is denied (`fbfd5092`). Probed the guard on both halves of the sentence first, and added the half-rewording lesson to `.prism/lessons.md`.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Folded in two stack A review items: two token-arm guard cases (a Codex `apply_patch` naming the token file in another file's hunk denies, and a Claude `Edit` naming it only in `new_string` passes), and the `## PR Readiness` Build line, which cited `2b971c5d` as after the fourth pass fix when that SHA is older than `fbfd5092`.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T9: the `agent` role type and `preloads`, validated in `buildRoleMap` with no `build.ts` change. Persona-less roles skip the persona line, so the Codex builder needed no edit.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T10: `workflow.md` is 8,354 bytes, over its 7,000 target, and `skill-routing.md` went from 14,676 to 6,850 bytes (its seed twin is 6,476). The last lead section ends at byte 31,123, under the 31,744 line. The PR row names `shipping-flow.md` by filename because crossref-lint rejects the path until T20 creates the file, and T20 puts the path back.
 
 ## Sessions
 
