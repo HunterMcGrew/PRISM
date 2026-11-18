@@ -1367,7 +1367,8 @@ async function deliverGitHookShims(
  * `claude` nor `codex` among its hosts, and `.githooks/` itself once nothing
  * else is in it. A shim without `HOOK_RUNTIME_MARKER` is the consumer's own and
  * stays, and so does `core.hooksPath` while anything is left in `.githooks/`.
- * Once the directory is gone, a local `core.hooksPath` of `.githooks` is unset,
+ * Whenever the directory is gone, whether this pass removed it or a pulled
+ * commit already had, a local `core.hooksPath` of `.githooks` is unset,
  * because it would leave git running no hooks while still skipping
  * `.git/hooks`.
  */
@@ -1392,17 +1393,22 @@ async function removeDeliveredGitHookShims(
 		outcomes.push({ relativePath: `.githooks/${name}`, action: "removed" });
 	}
 
-	if (!(await pathExists(hooksDir))) {
-		return outcomes;
+	let hooksDirIsGone = !(await pathExists(hooksDir));
+	if (!hooksDirIsGone) {
+		const removedNames = outcomes.map((outcome) => path.posix.basename(outcome.relativePath));
+		const remaining = (await fs.readdir(hooksDir)).filter((entry) => !removedNames.includes(entry));
+		if (remaining.length === 0) {
+			if (!dryRun) {
+				await fs.rmdir(hooksDir);
+			}
+
+			hooksDirIsGone = true;
+		}
 	}
 
-	const removedNames = outcomes.map((outcome) => path.posix.basename(outcome.relativePath));
-	const remaining = (await fs.readdir(hooksDir)).filter((entry) => !removedNames.includes(entry));
-	if (remaining.length === 0) {
-		if (!dryRun) {
-			await fs.rmdir(hooksDir);
-		}
-
+	// `core.hooksPath` is per-clone config, so a clone that pulled the commit
+	// deleting `.githooks/` still holds the value and needs it unset here.
+	if (hooksDirIsGone) {
 		const unsetMessage = removeGitHooksPath(consumerRepoRoot, { dryRun });
 		if (unsetMessage !== null) {
 			console.log(unsetMessage);

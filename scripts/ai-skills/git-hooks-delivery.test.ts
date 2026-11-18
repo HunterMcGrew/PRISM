@@ -307,6 +307,37 @@ test("hosts: [cursor] delivers no shims, removes previously delivered marked one
 	});
 });
 
+test("hosts: [cursor] unsets a local core.hooksPath of .githooks in a clone that already has no .githooks/", async () => {
+	await withRoots(async (roots) => {
+		roots.git("config", "--local", "core.hooksPath", ".githooks");
+		await writeAt(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["cursor"] })
+		);
+		assert.equal(await existsAt(roots.consumerRepoRoot, ".githooks"), false);
+
+		await update(roots);
+
+		assert.equal(hooksPath(roots), "", "the value is unset even though no pass emptied the directory");
+	});
+});
+
+test("hosts: [cursor] leaves a foreign local core.hooksPath alone in a clone that has no .githooks/", async () => {
+	await withRoots(async (roots) => {
+		roots.git("config", "--local", "core.hooksPath", ".husky");
+		await writeAt(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["cursor"] })
+		);
+
+		await update(roots);
+
+		assert.equal(hooksPath(roots), ".husky");
+	});
+});
+
 test("hosts: [cursor] keeps core.hooksPath while a consumer's own file is left in .githooks", async () => {
 	await withRoots(async (roots) => {
 		await update(roots);
