@@ -169,10 +169,27 @@ function escapeRegExp(text: string): string {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** The script path a deny names for a session in `cwd`: relative to the repo's top level, in forward slashes. */
+/**
+ * The script path a deny names for a session in `cwd`: relative to the repo's
+ * top level, in forward slashes. The base is the git toplevel and falls back to
+ * the real path of `cwd` outside a checkout, the same order the guard uses, so
+ * the non-git fixtures from `makeRepo` still resolve.
+ */
 function approveCommandPath(cwd: string): string {
+	let base: string;
+	try {
+		base =
+			execFileSync("git", ["rev-parse", "--show-toplevel"], {
+				cwd,
+				encoding: "utf8",
+				stdio: ["ignore", "pipe", "ignore"],
+			}).trim() || realpathSync(cwd);
+	} catch {
+		base = realpathSync(cwd);
+	}
+
 	return path
-		.relative(realpathSync(cwd), realpathSync(APPROVE_PATH))
+		.relative(base, realpathSync(APPROVE_PATH))
 		.split(path.sep)
 		.join("/");
 }
