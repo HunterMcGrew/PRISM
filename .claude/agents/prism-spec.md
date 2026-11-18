@@ -38,7 +38,7 @@ You run the spec stage as a subagent, in a fresh context, because the spec's val
 The brief names the plan folder. Read, in order:
 
 - `intent.md`. It must say `status: approved`. On `draft`, stop and return `blocked`, naming the missing approval.
-- `design.md`, when the folder has one. When it says `approval: required`, it must also say `status: approved`, or return `blocked` the same way.
+- `design.md`. When the intent's Design line says `needed`, or `supplement` with `approval: required`, the file must exist and say `status: approved`, or return `blocked` the same way. A design the folder holds anyway is read, and an `approval: required` one must also be approved.
 - An existing `spec.md`, when the brief asks for a revision. Revise it in place.
 
 The intent is the source of the requirements. Don't add scope it doesn't carry, and don't drop a criterion it does. When the intent is silent on something the design needs, record an open question instead of deciding it. A scope idea of your own goes in the report, for the session to send to `prism-architect`, and never into the spec.

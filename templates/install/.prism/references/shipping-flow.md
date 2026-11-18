@@ -10,7 +10,7 @@ This flow runs on every `git push`, not once per session. A fix-up commit after 
 
 ## The flow
 
-1. **Verify.** On the first push, run nothing beyond the verify row: the verify stage already ran every check on the committed tree. On a later push, when a commit since `## Verification` touches a file those checks cover, rerun the verification commands on the new head first. A push that skips it ships checks that describe the tree before the fix.
+1. **Verify.** When a commit since `## Verification` touches a file those checks cover, on the first push as well as a later one, rerun the verification commands on the new head first. A push that skips it ships checks that describe the tree before the fix. With no such commit, run nothing beyond the verify row: the verify stage already ran every check on the committed tree.
 2. **Pause preference.** Read it here, because the build commits are already made:
 
    ```bash
@@ -21,7 +21,7 @@ This flow runs on every `git push`, not once per session. A fix-up commit after 
    - `pref = "false"`: continue to step 3. This is the team default.
    - `pref` empty: ask once, whether they want to pause before every commit and review pending changes in their IDE first. Save the answer with `git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit <true|false>`, say they can change it the same way, and apply it to this ship.
 
-   Matching is strict. Only an exact `true` or `false` takes its path, and anything else counts as unset and asks again. The pause fires on every commit, per the per-push invariant.
+   Matching is strict. Only an exact `true` or `false` takes its path, and anything else counts as unset and asks again. The pause fires before each push, which on a folder plan is once at the PR stage and not once per bundle commit, because a pause per bundle would put the person back in the loop.
 3. **Commit** anything still uncommitted per `.prism/rules/git-conventions.md`, with the subject form for the work, a body that explains why, and HEREDOC formatting.
 4. **Find the PR.** Check whether one exists for the branch:
 

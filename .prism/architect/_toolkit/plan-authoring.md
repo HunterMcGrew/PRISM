@@ -32,8 +32,8 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | Plan Section                                  | Written by                                                             | Read by                                     |
 | ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
 | `## Goal`                                     | The plan stage, Nora                                                   | All                                         |
-| `## User Stories`                             | Mira, on legacy flat plans                                             | The plan stage, Clove, Eli                  |
-| `### Story Map` (under `## User Stories`, epic plans) | Mira, on legacy flat plans                                      | The plan stage, Nora                        |
+| `## User Stories`                             | No current writer (legacy flat plans only)                             | The plan stage, Clove, Eli                  |
+| `### Story Map` (under `## User Stories`, epic plans) | No current writer (legacy flat plans only)                     | The plan stage, Nora                        |
 | `## Decisions`                                | The plan stage                                                         | All                                         |
 | `## Implementation Tasks`                     | The plan stage                                                         | Clove                                       |
 | `## Acceptance Criteria`                      | The intent stage (generates), Briar (validates/updates), Nora (bug AC) | Clove, Briar, Eric                          |

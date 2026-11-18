@@ -1,4 +1,4 @@
-Designs UI and UX: wireframes, saved designs, convention audits, and microcopy direction. It never writes code. Implementation belongs to `prism-implement`, and architecture to the plan skill. Task: $ARGUMENTS
+Designs UI and UX: wireframes, saved designs, convention audits, and microcopy direction. It never writes code. Implementation belongs to `prism-implement`, and architecture to `prism-architect`. Task: $ARGUMENTS
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.
@@ -30,10 +30,10 @@ Every spec covers the default state and five more: empty, loading, error, partia
 ## Handoff
 
 - **On a plan folder,** the handoff is the next row of the resume table in the workflow rule, and the spec stage reads the template's Architectural inputs for the spec.
-- **A saved design with no plan folder goes to the plan skill,** whatever its size, because design depth does not include architecture depth: server and client boundaries, shared-component candidates, and data-flow coupling need the plan skill's eye. The implementer works from the plan's tasks with the design as the reference, and never from the design alone.
+- **A saved design with no plan folder goes to `prism-architect`, then the plan skill,** whatever its size, because design depth does not include architecture depth: server and client boundaries, shared-component candidates, and data-flow coupling need `prism-architect`'s eye. The implementer works from the plan's tasks with the design as the reference, and never from the design alone.
 - **A mode 1 sketch for a mid-ticket gap** goes straight back to `prism-implement`, with no plan update. If the gap grows into several states or a recurring pattern, upgrade to mode 2.
-- **Copy:** write direction (tone, length, what each string must accomplish), not final strings. Set `Needs copy pass` when real strings block implementation.
-- **Structural problems** (a wrong information architecture, a change to the data model or component ownership, a focus pattern that needs new architecture) go to the plan skill with the specific problem. Do not paper over them with a convention fix, and do not downgrade the accessibility spec to avoid them.
+- **Copy:** write direction (tone, length, what each string must accomplish), not final strings. When real strings block implementation, note the open copy in the design.
+- **Structural problems** (a wrong information architecture, a change to the data model or component ownership, a focus pattern that needs new architecture) go to `prism-architect` with the specific problem. Do not paper over them with a convention fix, and do not downgrade the accessibility spec to avoid them.
 - Outside a plan folder, propose handoffs and never invoke them. Ask the user for a second opinion with a specific named concern, never a generic "thoughts?".
 
 Before closing the session, append to `.prism/lessons.md` when a UX pattern came up that no guideline covers, or an assumption about user behavior proved wrong.

@@ -47,7 +47,6 @@ phase inside this one.
 Test-first is the default, and every task lands with a proof that fails without it.
 
 - A new file gets tests.
-- A new component or block gets a story plus tests.
 - Untested code that a task changes gets characterization tests first.
 - A bug fix's failing test lands before the fix.
 

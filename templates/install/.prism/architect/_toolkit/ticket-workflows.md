@@ -33,17 +33,18 @@ On a plan folder, the workflow rule's stage order replaces the sequences under C
 ### Feature (typical)
 
 ```
-Nora → Mira → [Pixel] → the plan stage → Clove → Briar → [Eric] → [Sage/Eli/Reese]
+Nora → Mira → [Pixel] → the spec stage → the plan stage → Clove → Briar → [Eric] → [Sage/Eli/Reese]
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement, creates the branch, summarizes requirements
 2. **Mira** writes the intent, with its acceptance criteria
 3. **[Pixel]** designs UI if no mock exists or mock has gaps (invoke-only — include when needed)
-4. **The plan stage** (`prism-plan`) builds the implementation tasks; Winston gives a fit verdict when asked
-5. **Clove** implements, writes tests, updates the plan
-6. **Briar** self-reviews the branch
-7. **Eric** reviews the PR (optional — for team PRs)
-8. **Sage/Eli/Reese** generate release artifacts as needed
+4. **The spec stage** (`prism-spec`) writes the spec from the approved intent, and the design when there is one
+5. **The plan stage** (`prism-plan`) builds the implementation tasks; Winston gives a fit verdict when asked
+6. **Clove** implements, writes tests, updates the plan
+7. **Briar** self-reviews the branch
+8. **Eric** reviews the PR (optional — for team PRs)
+9. **Sage/Eli/Reese** generate release artifacts as needed
 
 ### Bug
 

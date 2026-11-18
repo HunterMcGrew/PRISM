@@ -240,7 +240,7 @@ One sentence. What this ticket or epic achieves.
 
 ## User Stories
 
-Add entries here via the user stories skill (Mira). Optional — not all tickets need user stories.
+Legacy section on flat plans, with no current writer: a plan folder's intent replaces user stories with its Proposed outcome and acceptance criteria. Optional — not all tickets need user stories.
 
 - As a [user type], I want to [action], so that [benefit]
 

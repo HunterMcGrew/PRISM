@@ -1,4 +1,4 @@
-Implements a feature, fix, or task on the current branch against its plan, then ships it. It does not plan architecture (the plan skill's lane), design UI (`prism-design`), or review its own work (`prism-self-review`). Task: $ARGUMENTS
+Implements a feature, fix, or task on the current branch against its plan, then ships it. It does not plan architecture (`prism-architect`'s lane), design UI (`prism-design`), or review its own work (`prism-self-review`). Task: $ARGUMENTS
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.
@@ -21,7 +21,7 @@ Populated during onboarding from the team's actual product domain.
 ## Build
 
 - **Stay in the local frame.** Refactor only what `.prism/rules/code-standards.md` § Refactor scope allows. Anything outside it goes to `## Cleanup Items`, or to a follow-up per `.prism/rules/followup-scope.md`.
-- **Route gaps out instead of improvising.** A UI gap (a missing state, no spec for an interaction) gets a recommendation to the user to bring in `prism-design`, or you make the call and record it in `## Decisions`. A change to a public API or shared type, or a build that proves the plan wrong, stops you until the user has taken it to the plan skill.
+- **Route gaps out instead of improvising.** A UI gap (a missing state, no spec for an interaction) gets a recommendation to the user to bring in `prism-design`, or you make the call and record it in `## Decisions`. A change to a public API or shared type stops you until the user has taken it to `prism-architect`, and a build that proves the plan wrong stops you until they have taken it to the plan skill.
 - **An AC that cannot be met as written** becomes `### AC Adjustment: <title>` under `## Acceptance Criteria > AC Adjustments`, with Original, Proposed, Reason, and Status `proposed`. Tell the user, and build the affected behavior only after they accept. Agents propose and humans decide, because a silently rewritten criterion moves the goalpost. Once accepted, sync the ticket's AC section and add a row to the AC Sync Log.
 
 ## Record in the plan
@@ -34,7 +34,7 @@ On a flat plan, after the code is done, update the plan in one pass:
 
 ## Verify and ship
 
-- **Pre-flight the AC** against the diff, following each criterion's Evidence sub-bullet. This is not the graded verdict. When `prism-qa-plan` runs AC verification, it renders MET or UNMET, and this skill never claims "AC-3 is MET". If an UNMET misreads the criterion, hand both readings to the plan skill, the criterion's owner. Never change code to satisfy a verdict the requirement does not back.
+- **Pre-flight the AC** against the diff, following each criterion's Evidence sub-bullet. This is not the graded verdict. When `prism-qa-plan` runs AC verification, it renders MET or UNMET, and this skill never claims "AC-3 is MET". If an UNMET misreads the criterion, hand both readings to the criterion's owner, `prism-intent` on a folder plan and the plan skill on a flat one. Never change code to satisfy a verdict the requirement does not back.
 - **Run fresh** the type check, lint, and tests from `.prism/rules/verification-commands.md`. Run the formatter in check mode first and write only when its changes fall on lines you touched, since pre-existing drift swept into the commit is a formatting-only change.
 - **Before every commit,** run the cleanup pass in `.prism/references/cleanup-pass.md`. Commit per `.prism/rules/git-conventions.md`: one commit per plan task on a multi-task plan, and review fixes as separate commits.
 - **On a flat plan, ship without asking** (authors ship). First read `git config --global --get ${PROJECT_LOWERCASE}.pauseBeforeCommit`. `true` means state the commit subject and wait for "ship it". Unset means ask once and save the answer with `git config --global`. Then push, and open a draft PR with `gh pr create --draft`. If `gh pr list --head <branch>` already finds one, the push updates it and no new PR is created.
