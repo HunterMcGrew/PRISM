@@ -173,15 +173,24 @@ async function holdsChainFile(folder: string): Promise<boolean> {
 /**
  * Lists the folder's markdown files as sorted POSIX paths inside it. Uses the
  * string form of `readdir`, because `Dirent.parentPath` needs a newer Node
- * than this package's engines floor.
+ * than this package's engines floor. That form cannot tell a file from a
+ * directory, so each match is statted: a directory named `*.md` would make
+ * the later `readFile` fail with EISDIR.
  */
 async function listMarkdownFiles(folder: string): Promise<string[]> {
 	const entries = await fs.readdir(folder, { recursive: true });
+	const files: string[] = [];
 
-	return entries
-		.filter((entry) => path.extname(entry) === ".md")
-		.map((entry) => entry.split(path.sep).join("/"))
-		.sort();
+	for (const entry of entries) {
+		if (
+			path.extname(entry) === ".md" &&
+			(await fs.stat(path.join(folder, entry))).isFile()
+		) {
+			files.push(entry.split(path.sep).join("/"));
+		}
+	}
+
+	return files.sort();
 }
 
 async function main(): Promise<void> {

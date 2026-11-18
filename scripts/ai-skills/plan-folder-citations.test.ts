@@ -195,6 +195,30 @@ test("finding and checking plan folders", async (t) => {
 		);
 	});
 
+	await t.test(
+		"a directory named like a markdown file is skipped, and its contents are still checked",
+		async () => {
+			await withTree(
+				{
+					".prism/plans/acme-5/plan.md": "# Plan\n\nClean.\n",
+					".prism/plans/acme-5/notes.md/inner.md": "Per § Steps.\n",
+				},
+				async (root) => {
+					assert.deepEqual(await runPlanFolderCheck(root, []), {
+						violations: [
+							{
+								file: ".prism/plans/acme-5/notes.md/inner.md",
+								line: 1,
+								kind: "section-citation",
+							},
+						],
+						staleAllowlist: [],
+					});
+				}
+			);
+		}
+	);
+
 	await t.test("a repo with no plans directory has no violations", async () => {
 		await withTree({ "README.md": "§\n" }, async (root) => {
 			assert.deepEqual(await runPlanFolderCheck(root, []), {
