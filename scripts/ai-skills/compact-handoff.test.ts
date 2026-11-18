@@ -267,6 +267,11 @@ test("SessionStart on a filename miss sends the session to the full plan lookup"
 	try {
 		const note = await runSessionStartArm(JSON.stringify({ source: "compact", cwd: root }));
 
+		assert.ok(
+			note?.includes(
+				"No plan file was found for this branch's ticket, by name, by ticket field, or in the archive."
+			)
+		);
 		assert.ok(note?.includes("`.prism/rules/branch-plan.md` § Plan Lookup"));
 		assert.ok(note?.includes("do not create a plan to hold the summary"));
 		assert.ok(!note?.includes("Re-read .prism/plans/"), "a miss never names a plan path");

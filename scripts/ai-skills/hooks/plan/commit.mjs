@@ -84,7 +84,11 @@ export function runPlanCommit({ cwd, subject, paths, env = process.env }) {
 		]);
 
 		if (status.status !== 0) {
-			return { exitCode: status.status, stdout: "", stderr: status.stderr };
+			return {
+				exitCode: status.status,
+				stdout: status.stdout,
+				stderr: status.stderr,
+			};
 		}
 
 		if (status.stdout.trim() === "") unchanged.push(file);

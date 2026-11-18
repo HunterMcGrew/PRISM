@@ -56,6 +56,26 @@ function runCommit(repo: string, args: string[], env: Record<string, string> = {
 	});
 }
 
+/**
+ * Returns a PATH whose `git` prints to stdout and exits 3 on the given
+ * subcommand and runs the real git otherwise. POSIX only: the stand-in is a
+ * shell script.
+ */
+function pathWithGitFailingOn(subcommand: string): string {
+	const realGit = execFileSync("sh", ["-c", "command -v git"], {
+		encoding: "utf8",
+	}).trim();
+	const shimDir = mkdtempSync(path.join(os.tmpdir(), "plan-commit-shim-"));
+	tempDirs.push(shimDir);
+	writeFileSync(
+		path.join(shimDir, "git"),
+		`#!/bin/sh\nfor arg in "$@"; do\n  if [ "$arg" = ${subcommand} ]; then echo "git said no on stdout"; exit 3; fi\ndone\nexec "${realGit}" "$@"\n`,
+		{ mode: 0o755 }
+	);
+
+	return `${shimDir}${path.delimiter}${process.env["PATH"] ?? ""}`;
+}
+
 function lastCommitFiles(repo: string): string[] {
 	return git(repo, "show", "--name-only", "--format=", "HEAD")
 		.split("\n")
@@ -175,19 +195,9 @@ describe("commit.mjs", () => {
 		() => {
 			const repo = createRepo();
 			writeFileSync(path.join(repo, "mine.txt"), "mine\n");
-			const realGit = execFileSync("sh", ["-c", "command -v git"], {
-				encoding: "utf8",
-			}).trim();
-			const shimDir = mkdtempSync(path.join(os.tmpdir(), "plan-commit-shim-"));
-			tempDirs.push(shimDir);
-			writeFileSync(
-				path.join(shimDir, "git"),
-				`#!/bin/sh\nfor arg in "$@"; do\n  if [ "$arg" = commit ]; then echo "git said no on stdout"; exit 3; fi\ndone\nexec "${realGit}" "$@"\n`,
-				{ mode: 0o755 }
-			);
 
 			const result = runCommit(repo, ["T4: Add mine", "mine.txt"], {
-				PATH: `${shimDir}${path.delimiter}${process.env["PATH"] ?? ""}`,
+				PATH: pathWithGitFailingOn("commit"),
 			});
 
 			assert.equal(result.status, 3);
@@ -206,6 +216,22 @@ describe("commit.mjs", () => {
 		assert.match(result.stderr, /not a git repository/);
 		assert.doesNotMatch(result.stderr, /no change to commit/);
 	});
+
+	test(
+		"passes through what git printed to stdout when git status fails",
+		{ skip: process.platform === "win32" && "the git stand-in is a shell script" },
+		() => {
+			const repo = createRepo();
+			writeFileSync(path.join(repo, "mine.txt"), "mine\n");
+
+			const result = runCommit(repo, ["T4: Add mine", "mine.txt"], {
+				PATH: pathWithGitFailingOn("status"),
+			});
+
+			assert.equal(result.status, 3);
+			assert.match(result.stdout, /git said no on stdout/);
+		}
+	);
 
 	test("exits 1 naming a path with no change, and commits nothing", () => {
 		const repo = createRepo();

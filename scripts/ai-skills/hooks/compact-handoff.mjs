@@ -242,7 +242,7 @@ export function buildPostCompactNote(repoRoot, state) {
 				'2. If the summary has an "Unrecorded decisions" section, write each one into that plan\'s `## Decisions`, and add a `## History` line, before other work.',
 			]
 		: [
-				"1. No plan file named for this branch's ticket was found. Run the lookup in `.prism/rules/branch-plan.md` § Plan Lookup before concluding there is none, and do not create a plan to hold the summary.",
+				"1. No plan file was found for this branch's ticket, by name, by ticket field, or in the archive. Run the lookup in `.prism/rules/branch-plan.md` § Plan Lookup before concluding there is none, and do not create a plan to hold the summary.",
 				'2. If the lookup finds a plan, re-read it in full and write the summary\'s "Unrecorded decisions" into its `## Decisions`. If it finds none, keep that section as the record and tell the user when a decision there needs a plan.',
 			];
 
