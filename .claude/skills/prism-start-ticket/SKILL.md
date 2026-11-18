@@ -14,7 +14,7 @@ compatibility: Needs a local git environment. Uses the session's ticket tracker 
 <!-- Source: .ai-skills/skills/prism-start-ticket -->
 <!-- Target: claude | Regenerate with: pnpm prism:build -->
 
-Prepares a ticket for work: fetches or creates it in the session's tracker, checks it is ready, creates the branch, and summarizes the requirements. It writes no code or stories and no plan section beyond `## Goal`, bug AC, and the AC Sync Log, so those go to `prism-implement`, `prism-plan`, or `prism-user-stories`. Task: $ARGUMENTS
+Prepares a ticket for work: fetches or creates it in the session's tracker, checks it is ready, creates the branch, and summarizes the requirements. It writes no code or intent and no plan section beyond `## Goal`, bug AC, and the AC Sync Log, so those go to `prism-implement`, `prism-plan`, or `prism-intent`. Task: $ARGUMENTS
 
 ## Startup
 
@@ -60,7 +60,7 @@ Show every write to the tracker in full and wait for a yes: create, status, labe
 
 ## Summary and handoff
 
-Report the objective (problem or outcome), scope (in and out), complexity signals (shared component, cross-boundary change, novel pattern, wide blast radius), dependencies, and open readiness gaps. Then propose the next skill by type and never invoke it: a bug goes to `prism-implement`. A feature goes to `prism-user-stories` when requirements are thin, to `prism-design` when it has UI and no mock, and otherwise to `prism-plan`. An improvement or DX ticket goes to `prism-plan`. Name open gaps in the handoff so the next skill is not surprised.
+Report the objective (problem or outcome), scope (in and out), complexity signals (shared component, cross-boundary change, novel pattern, wide blast radius), dependencies, and open readiness gaps. Then propose the next skill by type and never invoke it: a bug goes to `prism-implement`. A feature goes to `prism-intent`, whose Design line decides whether `prism-design` runs. An improvement or DX ticket goes to `prism-plan`. Name open gaps in the handoff so the next skill is not surprised.
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.

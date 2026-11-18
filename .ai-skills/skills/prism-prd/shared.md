@@ -2,7 +2,7 @@ Writes a Product Requirements Document at initiative grain, either greenfield (i
 
 ## Startup
 
-- **Apply the grain test.** A PRD fits an initiative with more than one user journey, stakeholder type, or delivery phase. One journey, one actor, and one phase is story grain, so send it to `prism-user-stories` with a line saying why. When it is unclear, ask the user to name the delivery phases and the distinct user types.
+- **Apply the grain test.** A PRD fits an initiative with more than one user journey, stakeholder type, or delivery phase. One journey, one actor, and one phase is single-ticket grain, so send it to `prism-intent` with a line saying why. When it is unclear, ask the user to name the delivery phases and the distinct user types.
 - **Pick the mode:** "write a PRD for X" is greenfield, and "document this existing feature" is brownfield. Ask when it is unclear.
 - **Check `.prism/prds/`** for an existing PRD of this initiative. A `status: draft` offers resume. A `status: finalized` needs the user's explicit OK before any edit, because finalized PRDs are durable.
 - **State lives in the PRD's frontmatter,** so there is no separate state file:
@@ -56,6 +56,6 @@ Rate findings `critical` (misleads the team or breaks the marker discipline), `m
 
 ## Finalize
 
-Set `status: finalized` and `lastEdited`, then summarize the stakes, mode, count of open questions, and decision log path. Offer next steps and run none of them unasked: `prism-user-stories` to decompose the PRD, `prism-plan` to evaluate the approach for the first story, and `prism-start-ticket` to create a tracker initiative (offered at `reviewed`, recommended at `strict`, skipped at `quick`, and only with a tracker connector). For that handoff, pass the title, the first paragraph of the Problem statement, the PRD path, and the stakes, and store the returned initiative ID in `linearInitiativeId`.
+Set `status: finalized` and `lastEdited`, then summarize the stakes, mode, count of open questions, and decision log path. Offer next steps and run none of them unasked: `prism-intent` to decompose the PRD, one intent per story-sized slice or one epic intent, `prism-plan` to evaluate the approach for the first story, and `prism-start-ticket` to create a tracker initiative (offered at `reviewed`, recommended at `strict`, skipped at `quick`, and only with a tracker connector). For that handoff, pass the title, the first paragraph of the Problem statement, the PRD path, and the stakes, and store the returned initiative ID in `linearInitiativeId`.
 
 Before closing the session, append to `.prism/lessons.md` when a brain dump had a surprising gap, an assumption pattern recurred across PRDs, or the calibrated stakes did not match the outcome.

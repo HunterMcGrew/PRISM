@@ -28,7 +28,7 @@ const canonicalSkillsRoot = path.join(repoRoot, ".ai-skills", "skills");
 const forceMode = process.argv.includes("--force");
 
 const SKILL_ID_RENAMES: ReadonlyArray<readonly [string, string]> = [
-	["thrive-architect", "prism-plan"],
+	["thrive-architect", "prism-architect"],
 	["thrive-changelog", "prism-changelog"],
 	["thrive-code-dev", "prism-implement"],
 	["thrive-code-review-pr", "prism-pr-review"],
@@ -38,7 +38,6 @@ const SKILL_ID_RENAMES: ReadonlyArray<readonly [string, string]> = [
 	["thrive-qa-test-plan", "prism-qa-plan"],
 	["thrive-standup-summary", "prism-standup"],
 	["thrive-ticket-start", "prism-start-ticket"],
-	["thrive-user-stories", "prism-user-stories"],
 ];
 
 interface SplitSkill {

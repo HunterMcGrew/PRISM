@@ -41,6 +41,7 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 - prism-design (Pixel)
 - prism-qa-plan (Reese)
 - prism-start-ticket (Nora)
-- prism-user-stories (Mira)
+- prism-intent (Mira)
+- prism-architect (Winston)
 - prism-changelog (Sage)
 - prism-standup (Lilac)

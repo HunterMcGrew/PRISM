@@ -82,11 +82,6 @@
 			"routing": "auto"
 		},
 		{
-			"id": "prism-user-stories",
-			"persona": "Mira",
-			"routing": "auto"
-		},
-		{
 			"id": "prism-audit",
 			"persona": "Zoe",
 			"routing": "named-only"
