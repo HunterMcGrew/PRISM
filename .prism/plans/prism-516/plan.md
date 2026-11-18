@@ -416,7 +416,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
   - **Implementation guidance.** The shim's second candidate path is what lets the same file work in PRISM's own tree, where agent hooks run from `scripts/ai-skills/hooks/`.
 - **The pre-commit command contract is stdin to stdout with a `{path}` hint, not a `--check` flag.** This is what lets the hook judge the staged copy with any formatter without writing anything. It is also thrive's finding: Prettier's `--check` with stdin exits 0 on a parse error. Considered: materializing staged copies into a temp directory. Rejected, because formatter configs and ignore files resolve relative to the file's real path.
 - **An unmarked `.githooks/<name>` in a consumer is left alone, not backed up and replaced.** Runtime files under `.claude/hooks/` get `.bak` and replace, but `.githooks/` is the one directory where a consumer's own git hooks are likely to live, and the intent forbids touching them.
-- **The installer treats a foreign value at any of the four scopes as "leave alone", global and system included.** Thrive checked local and worktree only. A local `.githooks` would silently shadow a team-wide global hooks path, which is the same harm as overwriting a local one.
+- **The installer treats a foreign value at any of the four scopes as "leave alone", global and system included.** Thrive checked local and worktree only. A local `.githooks` would silently shadow a team-wide global hooks path, which is the same harm as overwriting a local one. Each scoped read passes `--includes`, because a team-wide path is often set in a file that a global config pulls in through `include.path`, and a scoped read ignores includes by default.
 - **`left-alone` exits 0 everywhere.** It is a report, not a failure. A non-zero exit would break `prism update` and a consumer's `prepare` script for a repo that is set up correctly in its own way.
 - **Session start installs only when every scope is unset, and prints nothing otherwise.** A foreign value reported at every session start is noise. Doctor carries that report.
 - **Doctor reuses the `hook-registration` check id.** Adding a `git-hooks` id would widen the exported `DoctorFinding` union, a shared type, for a label nobody filters on.
@@ -436,7 +436,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
   - **Implementation guidance.** `describeForeignHooks` in `install.mjs` is the one search. The installer, doctor, and the session-start arm all go through it, so doctor no longer keeps its own copy of the scope walk.
 - **A git hook counts as active only when git will run PRISM's own shim for it.** That means the effective `core.hooksPath` is ours, and the shim at that path carries the marker and, off Windows, the executable bit. Git silently skips a hook without the bit, and judging both push-gate slots on the `pre-commit` shim let a consumer's own `pre-push` turn off the gate's lint. `readGitHooksState` reports `active` per hook, and the push gate checks the slot's own hook.
 - **Delivery sets the shims' mode on every pass, the no-op included.** A byte-identical shim can still have lost its mode through a `core.fileMode=false` commit. This matches how `HOOK_RUNTIME_ENTRY_POINTS` are chmodded on every update.
-- **Dropping both hosts unsets a local `core.hooksPath` of `.githooks` once `.githooks/` is gone.** Left set, it points git at a missing directory, so git runs no hooks and still skips `.git/hooks`. It stays set while a consumer's own file remains in `.githooks/`, because that file may rely on it.
+- **Dropping both hosts unsets a local `core.hooksPath` of `.githooks` whenever `.githooks/` is gone.** Left set, it points git at a missing directory, so git runs no hooks and still skips `.git/hooks`. It stays set while a consumer's own file remains in `.githooks/`, because that file may rely on it. The check runs on every pass, not only the one that emptied the directory, because the value is per-clone config and a teammate's clone pulls the deletion without ever running that pass.
 - **The setup-script line PRISM offers imports `install.mjs` and calls `runInstallCli`.** A plain `node .claude/hooks/git-hooks/install.mjs` exits 1 when the file is gone, which fails every `pnpm install` through `prepare` after `hosts` drops to Cursor only. Considered: `test -f ... && node ... || true`. Rejected, because `prepare` runs under `cmd.exe` on Windows, where `test` does not exist.
 - **The review's docs findings were absorbed from Eli's lane into this child.** They are short corrections to pages this PR already edits, and handing them off would cost a separate docs round for a few sentences. Two files outside T15's list were touched for them: `README.md` and `docs/adopt-prism.md`, the two command references that did not list `prism hooks install`. The curated seed `templates/install/.prism/architect/_toolkit/hook-runtime.md` was also corrected, since its "other session starts print nothing" went false once startup runs the installer.
 - **`installGitHooks` with `dryRun` prefixes its message with `would`.** `prism update --dry-run` prints what it would do and writes nothing.
@@ -446,6 +446,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Plan created: git hooks, installer, delivery, session-start install, doctor check, push-gate dedupe, ADR, and docs, as 15 tasks.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks-impl]: Implemented T1 to T15: hook modules, shims, installer, delivery, `prism hooks install`, session-start arm, push-gate dedupe, doctor check, onboarding step, ADR-0081, architect docs, and consumer docs; `pnpm prism:check` passes. Deviations are recorded under Decisions.
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed all 12 self-review findings and the orchestrator's `.git/hooks` bypass, in four commits (code, quoteForShell JSDoc, architect docs, consumer docs) separate from the review record; see the Decisions on `.git/hooks`, active hooks, and the guarded setup line.
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks]: Fixed the three re-review findings in two commits: the `core.hooksPath` unset now runs when `.githooks/` is already gone, the installer follows `include.path` on scoped reads, and its stale header is corrected. Tests for the first two failed on the previous head.
 
 ## Sessions
 
@@ -454,6 +455,7 @@ Owner: Eli. Set `last_updated` to the edit date where a page carries frontmatter
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: full self-review of PR #523 against the plan and the rules. Bounds: findings into the plan only, no source fixes, no GitHub posts, no merge. Approach: run `prism:check`, read every new module and doc, and source-verify the architect docs. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix the 3 Major and 9 Minor self-review findings plus the orchestrator's `.git/hooks` bypass. Bounds: this PR's files, with any file outside them recorded under Decisions; no new dependency, no merge, PR stays draft. Approach: tests first for each code finding, then the architect and consumer docs, then the plan and lesson. · close: scope held, with `README.md`, `docs/adopt-prism.md`, and the curated hook-runtime seed recorded under Decisions
 - 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: self-review the fix round `ce7ef2bb..5844d51e` on PR #523. Bounds: findings into `## Review` and `## PR Readiness` only, landed as a plan-only commit; no source fixes, no GitHub posts, no merge. Approach: run `prism:check`, read the code and doc diffs, and source-verify each fix and each changed architect-doc claim. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-516-git-hooks] open: Intent: fix the three open findings in the re-review of the fix round. Bounds: this PR's files only, a failing test first for each behavior fix, fix commits separate from the plan record; no new dependency, no merge, PR stays draft. Approach: reproduce each finding as a failing test on the previous head, fix it, then correct the architect and consumer docs and rebuild the mirrors. · close: scope held
 
 ## Verification
 
@@ -590,26 +592,29 @@ Self-review 2026-11-18 [huntermcgrew/prism-516-git-hooks], range `ce7ef2bb..5844
 ### The `core.hooksPath` unset is skipped when `.githooks/` is already gone, while the docs say it happens whenever the directory is gone
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/update.ts:1395`, `.prism/architect/_toolkit/git-hooks.md:17`, `docs/what-prism-writes.md:40`
 - **Problem:** This is major because the architect doc's claim diverges from source, the floor `architect-doc-verification.md` sets. The code impact alone is minor, since it needs the rare move to Cursor-only hosts. `removeDeliveredGitHookShims` returns before `removeGitHooksPath` when `.githooks/` does not exist, so the unset runs only in the pass that empties the directory. `core.hooksPath` is per-clone local config, so a teammate who pulls the commit that deleted `.githooks/` keeps `core.hooksPath=.githooks`. That holds even when they run `prism update` themselves. Their git runs no hooks and still skips `.git/hooks`, and doctor stays silent because no shim remains. That is the exact harm the Decision and the fix were meant to close. `git-hooks.md` says "Once the directory is gone, a local `core.hooksPath` of `.githooks` is unset too", and `what-prism-writes.md` makes the same promise to consumers.
 - **Suggested fix:** Run the `removeGitHooksPath` check whenever `.githooks/` is absent, not only when this pass emptied it. Add a delivery test that starts with no `.githooks/` directory and a local `core.hooksPath` of `.githooks`, `hosts: ["cursor"]`, and asserts the value is unset.
+- **Fixed in:** 0878d4e9 `removeDeliveredGitHookShims` unsets a local `.githooks` whenever the directory is gone, whether this pass emptied it or a pulled commit already had. The new delivery test starts with no `.githooks/`, a local `core.hooksPath=.githooks`, and `hosts: ["cursor"]`, and failed on the previous head (`'.githooks' !== ''`). A second test keeps a foreign `.husky` in the same setup. `git-hooks.md` and `what-prism-writes.md` now say the unset runs per clone on its own `prism update`.
 
 ### `install.mjs`'s file header still names the unguarded setup-script line and omits `.git/hooks`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/git-hooks/install.mjs:11`
 - **Problem:** This is minor because it is comment drift, not behavior. The header lists "a consumer's own setup script (`node .claude/hooks/git-hooks/install.mjs`)" as a caller. That is the plain form the fix round replaced with the guarded `node -e "import(...)..."` line, because the plain form fails `prepare` once the file is gone. The next paragraph names only a foreign `core.hooksPath` as the reason to change nothing, and leaves out hooks in `.git/hooks`.
 - **Suggested fix:** Say "a consumer's own setup script (the guarded `runInstallCli` import)" and add one clause naming hooks in `.git/hooks`, or point at `describeForeignHooks`.
+- **Fixed in:** cad5bb8f the header names the guarded `runInstallCli` import and says hooks in `.git/hooks` (`describeForeignHooks`) are a reason to change nothing.
 
 ### Scope reads skip `include.path`, so an included team-wide `core.hooksPath` reads as unset
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/git-hooks/install.mjs:117`
 - **Problem:** This is minor because it needs a hooks path set through `include.path` or `includeIf`, and the line itself predates this range. The new `describeForeignHooks` builds on it, though. `readScope` runs `git config --<scope> --get` without `--includes`. Git's documented default leaves includes off for a scoped read, so a `core.hooksPath` that a global config pulls in through an include never shows in `scopes`, although `effective` sees it. Every scope then reads as unset. The installer and the session-start arm would write a local `.githooks`, which shadows the team's path. That is the harm the four-scope Decision exists to prevent. This is deduced from git's documented `--includes` default and was not reproduced, because worktree isolation blocked a fixture repo outside the worktree.
 - **Suggested fix:** Pass `--includes` to each scoped read, or treat a non-null `effective` that classifies as foreign as foreign even when no scope shows it. Cover it with an `include.path` fixture in `git-hooks-install.test.ts`.
+- **Fixed in:** cad5bb8f `readScope` passes `--includes`. The new test has a global config that includes a file setting `core.hooksPath=/team/hooks`; on the previous head the installer returned `set` and wrote a local `.githooks`, and it now returns `left-alone`. `git-hooks.md` says includes are followed.
 
 ## Cleanup Items
 
@@ -643,12 +648,12 @@ The issue's checklist, with IDs and evidence added. The criterion text matches t
 
 ## PR Readiness
 
-- [ ] No critical or major issues: 1 major open (the `core.hooksPath` unset skipped when `.githooks/` is already gone, with the diverged `git-hooks.md` claim); 2 minor open
+- [x] No critical or major issues: the three re-review findings are fixed; a fresh self-review of the fix commits is still pending
 - [x] Types correct: `prism:check-types` passes on both tsconfigs
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases: the gap is the already-absent `.githooks/` case in the open major
+- [x] Tests written for new logic and edge cases: the already-absent `.githooks/` case and the `include.path` case are covered
 - [x] All debugged issues resolved (none recorded)
-- [x] Build passes: last run 2026-11-18 at 5844d51e, `pnpm prism:check` green (build check, 1129 tests, verify-manifest, crossref, ship-closure, verify-pack; spec-scope skipped on a detached checkout), and CI green on ubuntu-latest and windows-latest
+- [x] Build passes: last run 2026-11-18 at cad5bb8f, `pnpm prism:check` green (1132 tests, 0 failed; spec-scope skipped on a detached checkout); CI on the new head is pending
 - [x] PR description up to date: the body covers the `.git/hooks` leave-alone and the per-hook executable-shim rule
 - [ ] Lasting decisions promoted to architect context: at close
 
