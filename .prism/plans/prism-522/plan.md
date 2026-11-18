@@ -826,6 +826,8 @@ Tests:
 - **Git hook shims and the `.gitignore` lines stay gated on `claude` or `codex` when Cursor-only installs receive the runtime files (T6).** `git-hooks.md` records child 2's call that a Cursor-only consumer gets no git hooks, and the shim removal and `core.hooksPath` unset live in the same branch T6 removes. Deleting that branch whole would hand Cursor-only consumers git hooks as a side effect. T6 therefore narrows the branch to the runtime files, and `git-hooks-delivery.test.ts`'s Cursor-only cases stay unchanged as the proof. The `.gitignore` lines cover state files that only the registered entry points write, so a Cursor-only repo has nothing to ignore. This refines how T6 delivers. The call on Cursor-only delivery itself is approved in the Decision above.
 - **`plan-chain-scripts.md` keeps its Templates paragraph after the skills cite the templates.** Child 4 cited the four templates there so `ship-closure` could reach them before any skill did, and named this child as the end of that bridge. T12, T13, T14, and T18 cite them from skills, so the bridge reason ends. The paragraph stays, because what it says about the headings and frontmatter keys the scripts read by name is a contract a template editor needs, whatever cites the files.
 - **The issue's acceptance criteria were synced after Hunter approved the plan.** Writing them into issue #522 is a tracker edit, so it waited for his go-ahead, which came in chat on 2026-11-18 ("Yes, all of it"). The sync log records it.
+- **The approve guard keeps the drive-letter prefix on its allow spelling.** `CHAT_APPROVE_COMMAND` and `PLAIN_WORD` take an optional `[A-Za-z]:` so an absolute Windows path passes after a PowerShell call's backslashes become slashes. Thrive's guard has no such prefix, and T4's swaps did not list it. It stays because a Windows session spells the command with its drive letter, so without the prefix the one allowed command would be denied there. The spelling adds no new allow: the command still has to realpath-match this repo's `approve.mjs`, and a same-session token must exist, so a drive-letter command naming another file is denied on every platform.
+- **`readPlanConfig`'s error message is generic, which amends T25.** T25 asked for `readStopPathConfig`'s message unchanged, which ends "so its stop paths cannot be applied". `tasks.mjs` and `bundles.mjs` now throw it, and their runs have no stop paths, so the clause misled their users. The message ends at "is not a readable JSON object.", for all three commands. `auto-approve.mjs` still exits 2 and the text before the period is unchanged. The test that pinned the prefix now pins the whole line, and so do the `tasks.mjs` and `bundles.mjs` CLI cases.
 - **OPEN — TBD, needs a live Codex run.** Whether a Codex hook payload's `session_id` equals the `CODEX_THREAD_ID` a command sees. **Default path (used until resolved):** `approve.mjs` compares a chat token's session against `CODEX_THREAD_ID`, so a mismatch fails closed, and a Codex user approves from a terminal.
 - **Child 5 ships as a stack of two PRs.** The change is far past ten files and five hundred lines, and the approval trio alone is about 1,800 lines of source and 2,600 of tests. PR A is T1 to T8 plus T25, the approval mechanics and the chain scripts' config check, registered and delivered but called by no skill, so it ships inert and self-consistent. PR B is T9 to T24, the skills, rules, and docs that use it. The groups under `## Tasks` build PR A first, so its commits form a prefix of the branch.
   - **Whose call.** Stacking is the orchestrator's call under Hunter's 2026-11-18 ruling, so no separate approval is asked. The split above is the one chosen.
@@ -844,6 +846,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Built T7 and T8: the hook-runtime, plan-chain-scripts, and git-hooks docs with their mirrors, the curated hook-runtime twin, `parameterization.md`, and `what-prism-writes.md`. The architect docs name the token as `HOOK_RUNTIME_DIR` without `${}`, because the build substitutes tokens in the platform copies. The curated twin gained its own short Approve guard subsection, since it carries no Git gates section to follow, and `parameterization.md` gained a `${HOOK_RUNTIME_DIR}` row in its token table as that page asks for a new token.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: `docs/ai-skills/compatibility.md` still says the runtime is copied only when `hosts` includes `claude` or `codex` and that a Cursor-only repo gets no `.claude/hooks/`. It is outside PR A's task lists, so it was left for a follow-up call.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Self-reviewed PR A: 1 major (five Windows-only test failures from 8.3 temp paths and a slash regex) and 6 minor, recorded under `## Review`. The thrive port of the approval trio diffed clean apart from the listed swaps.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the self-review of PR A: the five Windows test failures (`a169e985`), three new guard cases and the ported shebang case (`8e45f6d4`), the stale `compatibility.md` and Codex session claims (`8951e24b`), and a generic config error (`b6d8920c`). Two new Decisions record the drive-letter spelling and the T25 message amendment, and the build wrote the three `hook-runtime.md` mirrors.
 
 ## Sessions
 
@@ -861,7 +864,8 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 ### Five approval tests fail on Windows from 8.3 short temp paths and a forward-slash regex
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `a169e985`: a shared `resolveFixtureRoot` helper in `scripts/ai-skills/lib/fixture-root.ts` uses `realpathSync.native` at the three fixture-root sites, and the regex reads `acme-2[\\/]intent\.md`. The Windows leg was not rerun here, and the failure does not reproduce on Linux.
 - **File:** `scripts/ai-skills/plan-chat-approval.test.ts:159`
 - **Problem:** `prism-check (windows-latest)` fails 5 tests (run 44348696721), so AC-10 is unmet. Four tests build expected paths with `realpathSync(root)`, which on Windows keeps the `RUNNER~1` short name, while `git rev-parse` and `approve.mjs`'s `realpathSync.native` return `runneradmin`. Those are `plan-chat-approval.test.ts:159` and `:246`, plus `approve-guard.test.ts:1095`, which runs once each for claude and codex. The fifth, `plan-approve.test.ts:1089`, matches `acme-2\/intent\.md` against a message that prints `\` on Windows. The product compares through `comparablePath` and is consistent, so only the tests are wrong.
 - **Suggested fix:** use `realpathSync.native` at the three fixture-root sites, and `acme-2[\\/]intent\.md` in the regex. Then rerun the Windows leg.
@@ -869,7 +873,8 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 ### The approve guard's `approved_via`-only edit has no regression test
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `8e45f6d4`: one Claude `Edit` case and one Codex `apply_patch` case. Both fail when `approved_via` is added to `approvalLines`'s keys and the approval-line pattern.
 - **File:** `scripts/ai-skills/approve-guard.test.ts:844`
 - **Problem:** T4 says an edit that changes only `approved_via` passes, as it does in thrive. A probe confirms it does, but no case pins it, so a change to `approvalLines` could start denying it unnoticed.
 - **Suggested fix:** add one Claude `Edit` case and one Codex `apply_patch` case that change only `approved_via` on an approved `intent.md` and assert no deny.
@@ -877,7 +882,8 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 ### The drive-letter allow spelling is outside the listed swaps and untested
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `8e45f6d4`: a `win32` PowerShell case allows the drive-letter spelling under a fresh token, and a case on every platform denies a drive-letter command naming another file under a fresh token. The spelling stays, per the Decision on it.
 - **File:** `scripts/ai-skills/hooks/approve-guard.mjs:302`
 - **Problem:** `CHAT_APPROVE_COMMAND` and `PLAIN_WORD` accept a `(?:[A-Za-z]:)?` prefix, a new allow spelling for an approval control. It is recorded only in `## History`, not as a Decision, and no test covers the allow side. It still requires a realpath match and a same-session token, so it does not weaken the guard.
 - **Suggested fix:** add a `win32` case that allows `node C:/…/approve.mjs <path>` under a token, plus a one-line Decision.
@@ -885,7 +891,8 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 ### Thrive's shebang-executable guard test was dropped without a plan line
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `8e45f6d4`: the case runs a chmodded copy of the guard through its shebang and skips on `win32`. The source file is mode 100644, so the test copies the hooks directory and sets the bit, the way `prism update` does on delivery.
 - **File:** `scripts/ai-skills/approve-guard.test.ts:1`
 - **Problem:** thrive's `hook.test.mjs:1334` ("the hook runs as an executable through its shebang") has no counterpart. T4 lists only the Cursor rows as dropped, and the guard keeps its shebang line.
 - **Suggested fix:** port the case behind a `win32` skip, or record why it was dropped.
@@ -893,7 +900,8 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 ### `docs/ai-skills/compatibility.md` still says a Cursor-only repo gets no `.claude/hooks/`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `8951e24b`: the two statements on `docs/ai-skills/compatibility.md` now say every install gets the runtime files and the registrations, git hook shims, and `.gitignore` lines follow `hosts`. Folded into PR A instead of PR B, because PR A changed the behavior.
 - **File:** `docs/ai-skills/compatibility.md:81`
 - **Problem:** `:73` and `:81` say the runtime is copied only when `hosts` includes `claude` or `codex`, which T6 reversed. Doctor's not-delivered message at `scripts/ai-skills/doctor.ts:1152` links readers to this page. Already named in the PR body and `## History`.
 - **Suggested fix:** fold a two-sentence fix into PR B's docs task (`prism-docs`), so the page is corrected before both PRs reach `main`.
@@ -901,7 +909,8 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 ### `hook-runtime.md` doesn't say that `approve.mjs` skips the session check with no Codex thread id
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `8951e24b`: the Hosts paragraph and its curated twin now say that a mismatch fails closed only with `CODEX_THREAD_ID` set. With only `CODEX_CI` or `CODEX_SESSION_ID`, `approve.mjs` skips its session check and the guard's same-session check stands alone.
 - **File:** `.prism/architect/_toolkit/hook-runtime.md:72`
 - **Problem:** "a mismatch fails closed, since `approve.mjs` refuses a token from another session" holds only when `CODEX_THREAD_ID` is set. A session marked only by `CODEX_CI` or `CODEX_SESSION_ID` gets a null session id, and `approve.mjs:289` then skips the check, so the guard's same-session check stands alone. The source comment at `approve.mjs:446` says this, but the doc does not.
 - **Suggested fix:** add that clause to the Hosts paragraph and its curated twin. Alternatively, refuse in `approve.mjs` when `inAgentSession` holds and no session id is available.
@@ -909,7 +918,8 @@ Self-review of PR A (#531), 2026-11-18 [huntermcgrew/prism-522-chain-skills], ra
 ### `readPlanConfig`'s error names stop paths when `tasks.mjs` or `bundles.mjs` throws it
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `b6d8920c`: the message ends at "is not a readable JSON object.", and the three CLI tests pin the whole stderr line. See the Decision on the amendment to T25.
 - **File:** `scripts/ai-skills/hooks/plan/tasks.mjs:308`
 - **Problem:** the message ends "so its stop paths cannot be applied", which misleads a `tasks.mjs` or `bundles.mjs` user, whose run has no stop paths. T25 asked for the message unchanged, so the code follows the plan.
 - **Suggested fix:** end the message at "is not a readable JSON object" and amend T25's wording to match.
