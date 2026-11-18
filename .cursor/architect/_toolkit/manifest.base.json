@@ -67,6 +67,11 @@
 	"scripts/ai-skills/path-guard.ts": "_toolkit/cross-reference-checks.md",
 	"scripts/ai-skills/crossref-lint.ts": "_toolkit/cross-reference-checks.md",
 	"scripts/ai-skills/hooks/**": "_toolkit/hook-runtime.md",
+	"scripts/ai-skills/hooks/git-hooks/**": [
+		"_toolkit/hook-runtime.md",
+		"_toolkit/git-hooks.md"
+	],
+	".githooks/**": "_toolkit/git-hooks.md",
 	".ai-skills/definitions/**": "_toolkit/install-layout.md",
 	".ai-skills/docs/**": "_toolkit/install-layout.md",
 	"docs/": [

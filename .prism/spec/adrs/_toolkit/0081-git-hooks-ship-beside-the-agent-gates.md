@@ -39,3 +39,4 @@ Alternatives, and why each lost:
 - [ADR-0076](./0076-commit-and-push-gates-are-harness-hooks.md) — the gates this ships beside, and the rejection this reverses
 - [ADR-0074](./0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md) — git hooks rejected as a read-before-write substitute; superseded by [ADR-0077](./0077-hook-enforcement-reaches-claude-code-and-codex.md) for reach, and that rejection still stands
 - `.prism/plans/prism-516/plan.md`
+- [`git-hooks.md`](../../../architect/_toolkit/git-hooks.md) — the shims, the hook contracts, and the installer predicate
