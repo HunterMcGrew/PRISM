@@ -1075,6 +1075,98 @@ Eric's re-review of PR #531 at `7390d3d8`, 2026-11-18. 1 major, now fixed.
 - **Problem:** the third-pass fix reworded the file-edit half to "whose target is the token file". `touchesToken` tests a Codex patch's whole text against the token file name, so a patch that only mentions the file in another hunk is denied. This doc and its twin both name the file, so a Codex patch to either is denied.
 - **Suggested fix:** keep the target rule for Claude and add the Codex patch-text case to both bullets.
 
+### PR B, first pass: Briar's self-review
+
+Briar's self-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2], range `origin/main...2cf5d71b`. 4 major, 7 minor, all open. `pnpm run prism:check` passes locally at `2cf5d71b` (2163 pass, 0 fail, 2 skipped), and CI run 44368244035 on `2cf5d71b` is green on both platforms. Out-of-plan files were reviewed for content only, since their scope gets a separate check.
+
+### Handoff tables send Mira's intent and Pixel's design to a plan stage that refuses without a spec
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/closing-messages.md:26`
+- **Problem:** `closing-messages.md` lines 26-27 route Mira and Pixel to the plan stage, the Feature sequence in `ticket-workflows.md` line 36 runs Mira, Pixel, then the plan stage, the Mira row in `templates/install/AGENTS.md.tmpl` routes to `prism-plan`, and the install twin `skills-ecosystem.md` line 91 still says mode 2 "always routes through Winston". `prism-plan` refuses a folder with no `spec.md`, while `skills-ecosystem.md` and `docs/personas.md` route Mira to the spec stage, so these architect docs diverge from the skills and from each other. This is major because a reader following them stalls at a refusal.
+- **Suggested fix:** route an approved intent, and a saved design on a folder plan, to the spec stage in all four places and their generated copies.
+
+### Approach and architecture calls still go to the plan skill after the planner split
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-design/shared.md:33`
+- **Problem:** after T22 moved approach judgment to `prism-architect`, these lines still send it to the plan skill: `prism-design/shared.md` lines 1, 33, and 36, `prism-implement/shared.md` lines 1, 24, and 37, `prism-docs/shared.md` lines 1 and 27, `prism-qa-plan/shared.md` lines 36-37, `prism-prd/shared.md` lines 55 and 59, and `.prism/rules/context-reuse.md` line 26, which cites a `prism-plan` "startup step 3" that no longer exists. `prism-plan` with no folder only writes a plan in chat and never judges an approach, so a structural design problem or a public-API stop lands on a skill that cannot rule on it. This is major because the routing contradicts the T22 split the plan records.
+- **Suggested fix:** send architecture and approach calls to `prism-architect`, keep "write the plan" calls on `prism-plan`, and reword `context-reuse.md` line 26 without the dead step reference.
+
+### `shipping-flow.md` says the pause fires on every commit
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/references/shipping-flow.md:24`
+- **Problem:** the line reads "The pause fires on every commit, per the per-push invariant." The plan's Decision that the pause-before-commit preference fires at the PR push on a folder plan, and ADR-0082's Consequences, both say it fires once at the push. Build stages don't read this file, so the practical effect is small, but this is major because it contradicts a recorded Decision.
+- **Suggested fix:** say the pause fires before each push, which on a folder plan is once at the PR stage.
+
+### Mira is still named as the writer of user stories and story maps
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/plan-authoring.md:35`
+- **Problem:** `plan-authoring.md` lines 35-36 name Mira as the writer of `## User Stories` and `### Story Map` on legacy flat plans, `.prism/rules/branch-plan.md` line 260 says to add stories "via the user stories skill (Mira)", and `.prism/rules/acceptance-criteria.md` line 43 traces AC to "a user story written by Mira". `prism-user-stories` is deleted and `prism-intent` writes no user stories, so the removal sweep missed these, along with their install twins and generated copies. This is major because a diverged architect-doc claim sends a reader to a skill that no longer exists.
+- **Suggested fix:** mark both sections as legacy with no current writer, and drop the Mira reference from the template line and the AC trace line.
+
+### The epic resume row waits on a `## Retro` nothing writes
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/rules/workflow.md:62`
+- **Problem:** the row resumes an epic at retro until `spec.md` holds `## Retro`, but no skill writes that section and `prism-retro` is read-only on plans, so an epic resume loops at retro.
+- **Suggested fix:** key the row on the retro report or the `Retro:` line, or name the stage that writes `## Retro`. Child 6 owns later rows and may absorb this.
+
+### Two commit subjects for a reviewer's folder-plan record
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/rules/branch-plan.md:179`
+- **Problem:** `branch-plan.md` gives the folder form as `plan: <persona> record`, while `prism-self-review/shared.md` says to commit as `plan: review`.
+- **Suggested fix:** pick one form and use it in both.
+
+### New skills carry a persona voice that ADR-0080 rejects
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-intent/shared.md:1`
+- **Problem:** `prism-intent` and `prism-architect` add `## Voice` sections and an opening greeting, while ADR-0080, which is accepted, rejects persona voice. The epic spec schedules Voice, its ADR, and the cap allowance for child 7.
+- **Suggested fix:** strip the Voice blocks until child 7, or record a Decision that brings them forward.
+
+### The spec stage checks `design.md` only when it exists
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-spec/shared.md:15`
+- **Problem:** the skill checks `design.md` approval "when the folder has one", but T13 says to refuse when the intent says `Design: needed` and no approved design exists. The resume order hides the gap today.
+- **Suggested fix:** refuse when the intent says `Design: needed` and `design.md` is missing or unapproved.
+
+### The first push skips re-verify even after review-fix commits
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/references/shipping-flow.md:13`
+- **Problem:** step 1 skips re-verification on the first push, even when review-fix commits landed after `## Verification`. The wording follows T20, and CI is the backstop.
+- **Suggested fix:** skip only when no commit landed after the verification record.
+
+### `prism-design` still sets a status whose list was removed
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-design/shared.md:35`
+- **Problem:** the Copy bullet says to set `Needs copy pass`, a Status value from a list this change removed.
+- **Suggested fix:** say to note the open copy in the design instead, or restore the status list.
+
+### `tdd` assumes a story tool in a stack-neutral reference
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/tdd/shared.md:35`
+- **Problem:** "A new component or block gets a story plus tests" assumes a component-explorer stack. T17 dropped "Where tests live" from this reference for that same reason.
+- **Suggested fix:** drop the line, or condition it on the repo having a component explorer.
+
 ## Acceptance Criteria
 
 The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
@@ -1136,6 +1228,10 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
+- [ ] PR B (#532): no critical or major issues. Briar's first pass left 4 major and 7 minor open, listed under `## Review`.
+- [x] PR B build passes: `pnpm run prism:check` passes locally on Linux at `2cf5d71b` (2026-11-18), and CI run 44368244035 on `2cf5d71b` is green on `ubuntu-latest` and `windows-latest`.
+- [x] PR B has no stray debug artifacts, and the new logic has tests: `role-preloads.test.ts`, the `agents-md-budget.test.ts` order case, and two `approve-guard.test.ts` token cases.
+- [ ] AC for PR B: AC-4, AC-5, AC-6, AC-8, and AC-10 are met, and AC-10 is met by CI run 44368244035. AC-1 and AC-9 need a live run and were not run.
 
 **Last updated:** 2026-11-18
 
