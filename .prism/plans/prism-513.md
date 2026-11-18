@@ -90,6 +90,22 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 
 Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]. The three findings above are confirmed closed; the `PreCompact` stdout claim (summary instructions, 10,000-character cap per hook) was checked against Claude Code's hooks reference.
 
+### Curated twin states the manual-compact behavior as established fact
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/_toolkit/hook-runtime.md:51`
+- **Problem:** The canonical doc, the module header, and the PR scope all label "text typed after a manual `/compact` reaches the summarizer" as observed once and not in the Claude Code docs. The twin drops that label and says it still reaches the summarizer, so consumers get an unverified observation as a documented contract. A diverged claim in an architect doc is Major under `architect-doc-verification.md`.
+- **Suggested fix:** Add the qualifier to the twin, e.g. "Text you type after a manual `/compact` appears to reach the summarizer alongside the template. That was observed in one live manual compact and is not stated in the Claude Code docs." It passes Test 2 and Test 3, since no unreachable reference is involved. Also give "A miss is a miss by filename only" an antecedent, since the twin never mentions the `## Ticket` scan it contrasts with.
+
+### Unverified "any other `PreCompact` hook" claim and an overstated "prints nothing"
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:64`
+- **Problem:** "Any other `PreCompact` hook that prints to stdout also becomes summary instruction" (also in the `compact-handoff.mjs` header at lines 25-26 and in the twin) is stated flat. The documented fact is per-hook stdout; combined behavior across hooks was not shown. "Prints nothing" is also loose: `runPostCompactArm` writes to stderr on a missing session id and on a failed reset (`hook.mjs:1128`, `hook.mjs:1159`). "Is the only way a second writer appears" ignores user-level and plugin `PreCompact` hooks.
+- **Suggested fix:** Say "prints nothing to stdout", mark the multi-hook claim as inferred from the per-hook behavior, and say "another `PreCompact` hook, from the consumer or a plugin" instead of "the only way".
+
 ---
 
 ## Acceptance Criteria
@@ -109,9 +125,9 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [ ] No critical or major issues — follow-up pass 1 left one Major open (twin drops the observed-once label)
 - [x] Tests written for new logic and edge cases
-- [x] Build passes — last run: 2026-11-17
+- [x] Build passes — last run: 2026-11-17 (`pnpm prism:check` reported passing by the loop; not re-run in this pass)
 - [x] Lasting decisions promoted to architect context
 
 **Last updated:** 2026-11-17
