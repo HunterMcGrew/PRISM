@@ -454,16 +454,8 @@ const HARNESSES = {
 		checksShellPatches: false,
 		isEditCall: (payload) => LIB.claude.editTools.includes(payload["tool_name"]),
 		editTarget: (payload) => payload["tool_input"]?.file_path,
-		deniesEdit: (payload, cwd) => {
-			const target = resolveChainFile(
-				HARNESSES["claude"].editTarget(payload),
-				cwd
-			);
-			if (!target) return false;
-
-			const before = existsSync(target) ? readFileSync(target, "utf8") : null;
-			return claudeEditChangesApproval(payload, before);
-		},
+		deniesEdit: (payload, cwd) =>
+			editChangesApproval(HARNESSES["claude"], payload, cwd),
 		cwd: (payload) => payload[LIB.claude.cwdKey],
 		emitDeny: WIRE["claude"].emitDeny,
 	},
@@ -488,14 +480,7 @@ const HARNESSES = {
 			if (payload["tool_name"] === "apply_patch")
 				return patchChangesApproval(HARNESSES["codex"].editTarget(payload), cwd);
 
-			const target = resolveChainFile(
-				HARNESSES["codex"].editTarget(payload),
-				cwd
-			);
-			if (!target) return false;
-
-			const before = existsSync(target) ? readFileSync(target, "utf8") : null;
-			return claudeEditChangesApproval(payload, before);
+			return editChangesApproval(HARNESSES["codex"], payload, cwd);
 		},
 		cwd: (payload) => payload[LIB.codex.cwdKey],
 		emitDeny: WIRE["codex"].emitDeny,
@@ -1266,6 +1251,25 @@ function resolveExistingPart(absolute) {
 		existing = path.dirname(existing);
 
 	return path.join(realpathSync(existing), path.relative(existing, absolute));
+}
+
+/**
+ * True when an `Edit`, `MultiEdit`, or `Write` call targets a chain file and
+ * changes its approval lines. Both rows call this with their own `editTarget`,
+ * because Codex's `Edit` and `Write` are assumed, unverified, to carry the
+ * shape Claude Code's do.
+ *
+ * @param {Harness} harness
+ * @param {Payload} payload
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+function editChangesApproval(harness, payload, cwd) {
+	const target = resolveChainFile(harness.editTarget(payload), cwd);
+	if (!target) return false;
+
+	const before = existsSync(target) ? readFileSync(target, "utf8") : null;
+	return claudeEditChangesApproval(payload, before);
 }
 
 /**
