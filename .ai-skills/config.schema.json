@@ -221,6 +221,31 @@
 				}
 			}
 		},
+		"stopPaths": {
+			"type": "object",
+			"description": "Paths where a plan always needs a person, in two kinds. `dependency` is manifests and lockfiles; when it is unset, a built-in list of common manifests and lockfiles applies. `contract` is shared-contract trees; it defaults to empty. A list that is set replaces its default and does not add to it. Patterns use the manifest route syntax: `**` crosses directories, `*` stays within one segment, and a `**/` prefix does not match a file at the repo root, so list root files on their own. Matching ignores case, and a directory that holds a match also matches.",
+			"additionalProperties": false,
+			"properties": {
+				"dependency": {
+					"type": "array",
+					"items": { "type": "string" },
+					"description": "Manifests and lockfiles. Replaces the built-in list when set.",
+					"examples": [["package.json", "**/package.json", "pnpm-lock.yaml"]]
+				},
+				"contract": {
+					"type": "array",
+					"items": { "type": "string" },
+					"description": "Shared-contract trees. Defaults to empty.",
+					"examples": [["src/contracts/**"]]
+				}
+			}
+		},
+		"importAliases": {
+			"type": "object",
+			"description": "Import specifier prefixes mapped to the repo-relative path prefix each stands for, as in `{ \"@/\": \"src/\" }`. The plan bundle check uses it to turn an aliased import into a dependency edge, and ignores a bare specifier that matches no key.",
+			"additionalProperties": { "type": "string" },
+			"examples": [{ "@/": "src/" }]
+		},
 		"gitHooks": {
 			"type": "object",
 			"description": "The commands PRISM's git hooks (.githooks/pre-commit and .githooks/pre-push) run. The hooks read this key, and onboarding proposes it from the detected stack. A hook with no `command` or no `globs` skips with a notice, so a repo that sets nothing is never blocked.",
