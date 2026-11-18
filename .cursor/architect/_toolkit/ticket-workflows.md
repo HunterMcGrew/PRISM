@@ -18,7 +18,7 @@ Four types drive workflow decisions. See `.prism/templates/ticket-types.md` for 
 
 - **Bug** (label: `bug`) — something is broken. Use the bug report template. Skip the intent.
 - **Feature** (label: `feature`) — a new capability. Write the intent first.
-- **Improvement** (label: `improvement`) — existing functionality made better. The intent is optional.
+- **Improvement** (label: `improvement`) — existing functionality made better. The intent starts the chain, and a small fix with known scope takes the shortcut below.
 - **DX** (label: `DX`) — work QA cannot verify. See `.prism/templates/ticket-types.md` for the full decision rule.
 
 **Detection:** check the ticket's labels first, ask the user if no label matches. Never guess.
@@ -116,9 +116,9 @@ Pixel specs the fix (mode 2). The spec stage reads the design, and the plan stag
 
 **Decision tree — no mocks / mocks have gaps:**
 
-- Ticket has UI work but no mock → invoke Pixel before the plan stage
+- Ticket has UI work but no mock → invoke Pixel before the spec stage
 - Mock exists but missing states (empty, error, loading) → invoke Pixel to fill gaps
-- Mock exists and is complete → skip Pixel, proceed to the plan stage
+- Mock exists and is complete → skip Pixel, proceed to the spec stage
 
 
 ---

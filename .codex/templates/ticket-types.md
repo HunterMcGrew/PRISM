@@ -32,7 +32,7 @@ An enhancement to existing functionality — it works, but could work better.
 - **Required fields:** current behavior, proposed change, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z."
 - **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review)
-- **Intent:** optional — depends on scope
+- **Intent:** Mira writes it before the spec stage, unless the change is a small fix with known scope, which skips the chain
 
 ## DX (Developer Experience)
 
@@ -43,7 +43,7 @@ The trap: "improves the codebase" is colloquial; Improvement as a ticket type is
 - **Label:** `DX`
 - **Required fields:** current state, what changed, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z." — matches the Improvement format. File-level change details live in the GitHub diff, not the ticket description.
-- **Typical workflow:** Nora → the plan stage (if non-trivial) → Clove (implement) → Briar (self-review)
+- **Typical workflow:** Nora → Mira (intent) → the spec stage → the plan stage → Clove (implement) → Briar (self-review), or Clove → Briar for a trivial change
 - **User stories:** not applicable
 - **Acceptance criteria:** always "None for this ticket." — DX work is verified by the developer, not QA.
 
