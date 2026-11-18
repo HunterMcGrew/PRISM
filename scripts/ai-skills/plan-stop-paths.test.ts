@@ -88,6 +88,52 @@ test("a double-star pattern alone does not match a file at the repo root", () =>
 	});
 });
 
+test("a globstar between two segments also matches zero directories", () => {
+	const stopPaths: StopPaths = {
+		dependency: [],
+		contract: ["api/**/schema.graphql", "a/**/b/**/c"],
+	};
+	for (const file of [
+		"api/schema.graphql",
+		"api/v1/schema.graphql",
+		"api/v1/v2/schema.graphql",
+	]) {
+		assert.deepEqual(
+			matchStopPath(file, stopPaths),
+			{ kind: "contract", glob: "api/**/schema.graphql" },
+			file
+		);
+	}
+	for (const file of ["a/b/c", "a/b/x/c", "a/x/b/c", "a/x/b/y/c"]) {
+		assert.deepEqual(
+			matchStopPath(file, stopPaths),
+			{ kind: "contract", glob: "a/**/b/**/c" },
+			file
+		);
+	}
+	assert.equal(matchStopPath("api/schema.graphqlx", stopPaths), null);
+	assert.equal(matchStopPath("apix/schema.graphql", stopPaths), null);
+});
+
+test("a brace pattern, an unknown key, and a non-string entry are config errors", () => {
+	assert.throws(
+		() => resolveStopPaths({ stopPaths: { contract: ["src/**/*.{ts,tsx}"] } }),
+		/stopPaths\.contract pattern "src\/\*\*\/\*\.\{ts,tsx\}" uses "\{"/
+	);
+	assert.throws(
+		() => resolveStopPaths({ stopPaths: { contracts: ["src/x/**"] } } as never),
+		/unknown key "contracts"/
+	);
+	assert.throws(
+		() => resolveStopPaths({ stopPaths: { dependency: ["a.lock", 3] } }),
+		/stopPaths\.dependency holds 3, which is not a string pattern/
+	);
+	assert.throws(
+		() => resolveStopPaths({ stopPaths: { contract: [null] } }),
+		/stopPaths\.contract holds null/
+	);
+});
+
 test("an empty contract list matches nothing under src/contracts/", () => {
 	const stopPaths = resolveStopPaths(null);
 	assert.deepEqual(stopPaths.contract, []);

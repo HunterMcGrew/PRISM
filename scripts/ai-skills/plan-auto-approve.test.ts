@@ -180,6 +180,22 @@ describe("passing plans", () => {
 		assert.equal(readPlan(folder), before);
 	});
 
+	test("--check on an approved plan exits 0 and writes nothing", () => {
+		const folder = copyFixture("clean");
+		editPlan(folder, (text) =>
+			text.replace(
+				"status: draft\n",
+				"status: approved\napproved_by: Ada\napproved_at: 2026-10-01\n"
+			)
+		);
+		const before = readFileSync(path.join(folder, "plan.md"));
+
+		const child = run(folder, "--check");
+
+		assert.equal(child.status, 0, child.stderr);
+		assert.deepEqual(readFileSync(path.join(folder, "plan.md")), before);
+	});
+
 	test("a worktree's .git file counts as the repo root", () => {
 		const folder = copyFixture("clean");
 		const dotGit = path.join(repoRootOf(folder), ".git");
@@ -266,6 +282,26 @@ describe("failing conditions print one line, exit 1, and write nothing", () => {
 		assert.equal(
 			child.stderr,
 			"auto-approve: stop paths failed: T3 lists src/contracts/shape.ts, a contract path (src/contracts/**)\n"
+		);
+		assert.equal(readPlan(folder), before);
+	});
+
+	test("the CLI reports a misspelled stopPaths key as a config error, not a stack trace", () => {
+		const folder = copyFixture("clean");
+		const configDir = path.join(repoRootOf(folder), ".ai-skills");
+		mkdirSync(configDir);
+		writeFileSync(
+			path.join(configDir, "config.json"),
+			JSON.stringify({ stopPaths: { contracts: ["src/contracts/**"] } })
+		);
+		const before = readPlan(folder);
+
+		const child = run(folder);
+
+		assert.equal(child.status, 2);
+		assert.equal(
+			child.stderr,
+			'auto-approve: stopPaths has an unknown key "contracts"; the keys are "dependency" and "contract".\n'
 		);
 		assert.equal(readPlan(folder), before);
 	});
@@ -621,7 +657,7 @@ describe("usage errors exit 2", () => {
 		assert.equal(child.status, 2);
 		assert.equal(
 			child.stderr,
-			"usage: node auto-approve.mjs <plan-folder> [--check]\n"
+			"Usage: auto-approve.mjs <plan-folder> [--check]\n"
 		);
 	});
 

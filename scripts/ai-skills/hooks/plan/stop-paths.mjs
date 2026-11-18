@@ -56,16 +56,35 @@ export const DEFAULT_DEPENDENCY_FILES = [
 	"**/Gemfile.lock",
 ];
 
+const KINDS = ["dependency", "contract"];
+
 /**
  * The two lists a repo's config sets, each falling back to its default when
  * the config leaves it unset. A list that is set replaces its default.
+ *
+ * Throws when the config misspells a key, lists something other than a
+ * string, or uses a `{` brace pattern, because the config validator accepts
+ * all three and each would otherwise turn a stop path off without a word.
  *
  * @param {{ stopPaths?: { dependency?: unknown, contract?: unknown } } | null | undefined} config
  * @returns {StopPaths}
  */
 export function resolveStopPaths(config) {
-	const dependency = config?.stopPaths?.dependency;
-	const contract = config?.stopPaths?.contract;
+	const stopPaths = config?.stopPaths;
+	for (const key of Object.keys(stopPaths ?? {})) {
+		if (!KINDS.includes(key)) {
+			throw new Error(
+				`stopPaths has an unknown key "${key}"; the keys are "dependency" and "contract".`
+			);
+		}
+	}
+
+	const dependency = stopPaths?.dependency;
+	const contract = stopPaths?.contract;
+	if (Array.isArray(dependency))
+		dependency.forEach((entry) => checkPattern("dependency", entry));
+	if (Array.isArray(contract))
+		contract.forEach((entry) => checkPattern("contract", entry));
 
 	return {
 		dependency: Array.isArray(dependency)
@@ -73,6 +92,23 @@ export function resolveStopPaths(config) {
 			: DEFAULT_DEPENDENCY_FILES,
 		contract: Array.isArray(contract) ? contract : [],
 	};
+}
+
+/**
+ * @param {string} kind
+ * @param {unknown} entry
+ */
+function checkPattern(kind, entry) {
+	if (typeof entry !== "string") {
+		throw new Error(
+			`stopPaths.${kind} holds ${JSON.stringify(entry)}, which is not a string pattern.`
+		);
+	}
+	if (entry.includes("{")) {
+		throw new Error(
+			`stopPaths.${kind} pattern "${entry}" uses "{", and braces are not supported. List each alternative as its own pattern.`
+		);
+	}
 }
 
 /**
@@ -104,7 +140,9 @@ export function matchStopPath(file, stopPaths) {
 		for (const glob of globs) {
 			const pattern = glob.toLowerCase();
 			if (
-				compileMatcher(pattern)(normalized) ||
+				expandMiddleGlobstars(pattern).some((variant) =>
+					compileMatcher(variant)(normalized)
+				) ||
 				holdsGlob(normalized, pattern)
 			)
 				return { kind, glob };
@@ -112,6 +150,25 @@ export function matchStopPath(file, stopPaths) {
 	}
 
 	return null;
+}
+
+/**
+ * Every spelling of `pattern` in which each globstar between two path
+ * segments either crosses directories or stands for none. `compileMatcher`
+ * needs at least one directory there, so the pattern `api/**` plus
+ * `/schema.graphql` would otherwise miss `api/schema.graphql`.
+ *
+ * @param {string} pattern
+ * @returns {string[]}
+ */
+function expandMiddleGlobstars(pattern) {
+	const [first = "", ...rest] = pattern.split("/**/");
+
+	return rest.reduce(
+		(variants, part) =>
+			variants.flatMap((variant) => [`${variant}/**/${part}`, `${variant}/${part}`]),
+		[first]
+	);
 }
 
 /**

@@ -56,7 +56,7 @@ const ROUND_LINE =
 	/^round (\d+): (clean|resolved \d+|carried \d+|blocking \d+)$/;
 // Rounds 1 to 3 are the fix loop, so the first confirm round is round 4.
 const FIRST_CONFIRM_ROUND = 4;
-const USAGE = "usage: node auto-approve.mjs <plan-folder> [--check]";
+const USAGE = "Usage: auto-approve.mjs <plan-folder> [--check]";
 
 /**
  * Checks every condition, then writes the approval lines unless `check` is
@@ -383,11 +383,25 @@ function runCli(args) {
 	}
 
 	const repoRoot = findRepoRoot(folder);
+	/** @type {StopPaths} */
+	let stopPaths;
+	try {
+		stopPaths = resolveStopPaths(repoRoot ? readRepoConfig(repoRoot) : null);
+	} catch (error) {
+		// A config that cannot be read approves nothing, and is not a held condition.
+		process.stderr.write(
+			`auto-approve: ${error instanceof Error ? error.message : String(error)}\n`
+		);
+		process.exitCode = 2;
+
+		return;
+	}
+
 	const result = autoApprove({
 		folder,
 		check,
 		today: formatLocalDate(new Date()),
-		stopPaths: resolveStopPaths(repoRoot ? readRepoConfig(repoRoot) : null),
+		stopPaths,
 	});
 	(result.code === 0 ? process.stdout : process.stderr).write(
 		`${result.message}\n`

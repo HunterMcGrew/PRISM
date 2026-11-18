@@ -223,7 +223,7 @@
 		},
 		"stopPaths": {
 			"type": "object",
-			"description": "Paths where a plan always needs a person, in two kinds. `dependency` is manifests and lockfiles; when it is unset, a built-in list of common manifests and lockfiles applies. `contract` is shared-contract trees; it defaults to empty. A list that is set replaces its default and does not add to it. Patterns use the manifest route syntax: `**` crosses directories, `*` stays within one segment, and a `**/` prefix does not match a file at the repo root, so list root files on their own. Matching ignores case, and a directory that holds a match also matches.",
+			"description": "Paths where a plan always needs a person, in two kinds. `dependency` is manifests and lockfiles; when it is unset, a built-in list of common manifests and lockfiles applies. `contract` is shared-contract trees; it defaults to empty. A list that is set replaces its default and does not add to it. Patterns use the manifest route syntax: `**` crosses directories, `*` stays within one segment, and a `**/` prefix does not match a file at the repo root, so list root files on their own. A `**/` between two segments also matches zero directories, so `api/**/schema.graphql` covers `api/schema.graphql`. Braces are not supported: a pattern with `{` is a config error, so list each alternative on its own. An unknown key under `stopPaths` or a non-string entry is a config error too. Matching ignores case, and a directory that holds a match also matches.",
 			"additionalProperties": false,
 			"properties": {
 				"dependency": {
