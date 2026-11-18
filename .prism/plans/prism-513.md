@@ -60,6 +60,7 @@ Ship compaction arms in the hook runtime so every consumer's compacted sessions 
 - 2026-11-17 [huntermcgrew/prism-513-compaction-handoff-hook]: Closed on the final PR branch; decisions promoted to `hook-runtime.md`.
 - 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Ported thrive#2935's plan-miss wording and recorded its observed manual-compact behavior; see Decision: A filename miss sends the session to the full Plan Lookup.
 - 2026-11-17 [huntermcgrew/prism-513-followup-plan-miss-lookup]: Fixed self-review pass 1: the twin labels the manual-compact behavior as observed, and the multi-hook and stdout claims are scoped to what was verified.
+- 2026-11-18 [huntermcgrew/prism-513-followup-precompact-cap]: Recorded from the hooks reference, read verbatim, that PreCompact stdout over 10,000 characters is cut with a marker rather than saved to a file, and that typed `/compact` text reaches the hook as `custom_instructions`.
 
 ---
 
