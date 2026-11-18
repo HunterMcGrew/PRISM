@@ -640,6 +640,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: A `stopPaths.dependency` or `stopPaths.contract` value that is set but is not an array is now a config error and `auto-approve.mjs` exits 2, instead of falling back to the default; see the Decision on `resolveStopPaths`. A CLI test and a unit test fail on the old head, and the docs, schema description, and mirrors say the same.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Closed the plan: a verdict on all 28 Decisions, 14 of them already promoted to `plan-chain-scripts.md` or `hook-runtime.md`, the ticket-grain retro run inline, and AC-1 to AC-9 ticked on CI run 44293874595. Filed #529 for the validator gap and pointed the stop-path Decision at it in place of #526, which covers `gitHooks` only. Refreshed Verification, which still said a string stop-path list approves.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed the seed's `branch-plan.md` sentence that named the citation lint, and made `listMarkdownFiles` skip a directory named like a markdown file, with a test that fails on the old head with EISDIR, in e603b45e. The PR body now carries the green run on 364262f7, the config-error behaviors, and the Readiness boxes the evidence supports.
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Corrected the stop-paths doc and the `resolveStopPaths` JSDoc, which said the config validator accepts all four errors, in 6527b878. It rejects a non-array list and a non-string entry and accepts an unknown key and a brace pattern; the plan stays closed.
 
 ## Sessions
 
@@ -865,6 +866,17 @@ Eric PR review, 2026-11-18, of 35f6ca7a..e9ad165b. Two Major findings and two Mi
 - **Problem:** the header says the suite exercises "every fallback tier" and lists a plan folder's `<id>/plan.md`, `<id>.md`, and `epic-<id>.md`. This PR added the intent-only folder, the epic folder, and the folder ticket-field cases, so the list is now incomplete.
 - **Suggested fix:** name the order in `lookup.mjs`, or drop the list and point at `lookup.mjs`.
 
+### PR review: the stop-paths validator claim
+
+#### The stop-paths docs say the config validator accepts all four errors
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** 6527b878: `plan-chain-scripts.md` under Stop paths and the `resolveStopPaths` JSDoc now say the validator, which `prism adopt`, `prism update`, and `prism doctor` run, rejects a non-array list and a non-string entry and accepts an unknown key and a brace pattern, and that `resolveStopPaths` is the approval-time check for all four. Re-probed on this head with `validateConsumerConfigAgainstSchema`. Issue #529 and the Decisions already scoped the gap to `additionalProperties`, so they needed no change.
+- **File:** `.prism/architect/_toolkit/plan-chain-scripts.md:81`
+- **Problem:** the doc and the JSDoc at `stop-paths.mjs:67` said the validator accepts all four errors, but it applies `type` and `items` under `stopPaths` and rejects two of them.
+- **Suggested fix:** say what each check covers and mirror the change in the JSDoc.
+
 ## Acceptance Criteria
 
 The issue's one-line proof ("every suite passes, and a plan with two tasks on one file is rejected"), expanded into checkable criteria.
@@ -913,8 +925,8 @@ The issue's one-line proof ("every suite passes, and a plan with two tasks on on
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — CLI tests pin exit 2 on a config that does not parse and on a stop-path list that is a string
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run 2026-11-18: CI run 44293874595 on 364262f7 is green on `ubuntu-latest` and `windows-latest`, and `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally on the close commit (1508 tests, 1507 pass, 1 skipped)
-- [ ] PR description up to date — stale: its Not-verified line still lists the PR-review fix commits on CI, which run 44293874595 has now run, and it does not say that a set `stopPaths` list that is not an array is a config error (b4fa7247)
+- [x] Build passes — last run 2026-11-18: CI run 44295626659 on e01d0db5 is the last green one, and CI is pending on the head after the validator-claim fix; `pnpm prism:check` exits 0 locally on that head, without `GITHUB_HEAD_REF`, so `spec-scope-lint` skipped
+- [x] PR description up to date — its CI line says CI is pending on the current head and cites run 44295626659 on e01d0db5 as the last green, and it states the non-array `stopPaths` config error (b4fa7247)
 - [x] Lasting decisions promoted to architect context — every Decision carries a verdict, and the 14 promotions were already in `plan-chain-scripts.md` and `hook-runtime.md` before close
 
 **Last updated:** 2026-11-18
