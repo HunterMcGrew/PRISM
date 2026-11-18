@@ -913,6 +913,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Briar's third pass (`e99722fe`): a saved design with no folder now goes to `prism-intent` in the skill and every table, and the DX tracker-sync offer is skipped in `prism-intent` and rule 9. A new Decision records the DX criteria rule.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Briar's fourth pass (`ed754b3f`): the no-folder design handoff sets the intent's Design line to `supplement` with approval required and names the mock's path, and every AC-to-tracker sync instruction now excepts a DX ticket. ADR-0034's title joined the child 9 list in the T22 entry.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Briar's fifth pass (`babcfcc9`): the design resume row in `workflow.md` now names the Design line values `needed` and `supplement`, so a supplement reaches the design stage from folder state. The `AGENTS.md` lead sections still fit the byte budget.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Fixed Eric's first PR B review (`87b536fe` to `029da976`, one commit per finding): a folder-plan review record now commits through `commit.mjs` and stays local until the PR stage pushes, and the epic claim in `ticket-workflows.md` names the intent stage. The PR stage pushes with `-u origin HEAD`, the workflow rule names the plan-add commit as the `--base` ref, and the four other minors are fixed in their files.
 
 ## Sessions
 
@@ -928,6 +929,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: apply the orchestrator's rulings on findings 6, 5, and 1's leftovers. Bounds: the files those three items name, with their twins and generated copies, and the plan record; no new dependency, no merge, draft PR only. Approach: grep every `plan: review` and every same-class route, fix them in two commits, then record both in the plan. · close: scope held; `prism-start-ticket`'s handoff line sends an improvement to `prism-plan` and was left for a call, since no item names it
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: apply the orchestrator's rulings on the leftovers of finding 1's class. Bounds: `prism-start-ticket`, the Pixel decision tree, the two optional-intent lines, and the plan record, with twins and generated copies; no merge, draft PR only. Approach: take the DX route from `ticket-types.md` where it gives one, and fix it too when it is the refused plan-stage route. · close: scope held; the DX workflow line of `ticket-types.md` named the plan stage, so it was changed with the skill
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: re-review PR B's commits `fb46a9c6..5a4069ff` and confirm the first pass's findings are closed. Bounds: the review record in this plan only; no source edits, no merge. Approach: tree-search each first-pass finding, verify the new routes against `approve.mjs` and the skills they name, run `prism:check`, and read the head's CI. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: fix Eric's nine PR B review comments on eight findings. Bounds: the files the findings name, with their seed twins and generated copies, and the plan record; no new dependency, no merge, no thread replies, draft PR only. Approach: verify the push form and the base ref in scratch repos before wording them, then one commit per finding. · close: scope held, with two things left alone: the ADR-0012 sentence about epic detection and the `prism-implement` bug-ticket bullet that writes `## Debugged Issues` on a folder plan.
 
 ## Verification
 
@@ -1291,6 +1293,82 @@ Briar's re-review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-pa
 - **Problem:** the row reads "design needed", while the intent's Design line takes the literal values `needed`, `supplement`, and `not needed`. Read as the literal `needed`, a supplement intent falls through to the "no `spec.md`" row, and the spec stage returns `blocked` for a supplement with approval required. Line 16 makes a `blocked` report a stop, not a route to the design stage, so a fresh session resuming from folder state picks the spec row again. A supplement with `not-required` never reaches the design stage, though `prism-design` line 21 writes `design.md` for any supplement. No line routes the spec stage's `blocked` return to the design stage, and `prism-design` line 33 now relies on this row for the no-folder design route. This is minor because the row's "draft with approval required" clause only makes sense if it covers a supplement, and the ruled path stops visibly at the spec stage instead of building without the design.
 - **Suggested fix:** name both values in the row, for example "Design line `needed` or `supplement`, `design.md` missing or draft with approval required", and let the generated `AGENTS.md` copy follow.
 
+### PR B, Eric's first review
+
+Eric's review of PR #532, 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2], head `442fa713`. Summary comment 6989296224 and nine inline comments (ids 4619632482 to 4619634312): two Major findings and six Minor findings, with two of the comments on the first Major. The summary's headline says 7 Minor and its list names 6. The extra item is in its PR Readiness line: the PR body gives the end of the `AGENTS.md` lead sections as byte 31,590, and it is not a repo file, so it waits for the next body sync (the lead sections now end at byte 31,917 of 32,768). Every finding is fixed in its own commit, with its twins and generated copies.
+
+### On a plan folder, the review stage pushes the branch before the PR stage
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `87b536fe`: the folder-plan record in `prism-self-review` commits through `commit.mjs "plan: self-review record" <plan.md>` and does not push, and the landing bullet is now flat-plan only. `branch-plan.md` limits the push bullet to a flat plan and says a folder-plan record stays local. On a later review round, with the PR already open, the record still stays local: the session's next push goes through `shipping-flow.md` from step 1 (its per-push invariant), so that push carries the record after re-verifying and reading the pause preference. Letting the reviewer push once a PR exists was rejected, because it would skip those two steps and break ADR-0082's one push. The "Clean, no PR yet" handoff names the resume table's PR row on a folder plan, and "Clean, PR exists" says the PR stage pushes the record first. The flat-plan landing keeps its push.
+- **File:** `.ai-skills/skills/prism-self-review/shared.md:47`, `.prism/rules/branch-plan.md:179`
+- **Problem:** the folder bullet changed only the commit subject, then fell through to "commit, then push", which put the branch on the remote before the PR stage, against ADR-0082 and the pause-preference Decision.
+- **Suggested fix:** commit through `commit.mjs` and don't push, and limit the push bullet to flat plans.
+
+### The epic claim in the workflow architect doc names a stage that does nothing
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `4e04cded`: `ticket-workflows.md` and its seed twin say that on a plan folder the intent stage proposes `standard` or `epic` and the person approves the size with the intent, which is what `prism-intent` says ("Propose `standard`, or `epic` when the work splits into several parts under one tracker parent"). An epic is an `epic-<ticket>/` folder with `intent.md` and `spec.md` and no `plan.md`, per the workflow rule. The task-count threshold and the `epic-<name>.md` filename stay as the legacy flat-plan case. ADR-0012 still says Winston detects epic candidates and was left as it is, because the findings don't name it.
+- **File:** `.prism/architect/_toolkit/ticket-workflows.md:130`
+- **Problem:** the doc said the plan stage detects epic candidates after building tasks, and no `prism-plan` step does.
+- **Suggested fix:** state the intent stage's size proposal and the epic folder shape, and keep the old threshold as the flat-plan case.
+
+### A bare `git push -q` refuses on the first push of a folder-plan branch
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `488e66fc`: step 6 now reads `git push -q -u origin HEAD`, in the doc and its seed twin. Checked in a scratch repo with a local bare remote: a branch made with `git switch -c feat origin/main` has upstream `origin/main`, a bare `git push -q` exits 128 with the hint to push `HEAD:main`, `git push -q -u origin HEAD` exits 0 and creates `refs/heads/feat` with `main` untouched, and a later plain push and a later `-u origin HEAD` push both exit 0. One form covers the first and every later push, so the step doesn't branch on whether an upstream exists.
+- **File:** `.prism/references/shipping-flow.md:36`
+- **Problem:** the first push of a branch created from `origin/main` fails under `push.default=simple`, and git's hint names the default branch first.
+- **Suggested fix:** push with `-u origin HEAD`.
+
+### `--base <base>` doesn't say which ref to pass
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `73723e7c`: the rule says `<base>` is the commit that first added `plan.md`, the last line of `git log --diff-filter=A --format=%H -- <plan.md>`, and that the default branch is the wrong base on a stacked branch. `bundles.mjs` and `plan-chain-scripts.md` define `--base <ref>` as the range `<ref>..HEAD`, so a base that holds only this plan's commits is what counts done tasks correctly. Checked in a scratch repo where a parent branch carries its own `T1:` commit: `tasks.mjs --base main` reads this plan's T1 as done, and `--base <plan-add commit>` reads it as open. Recording the build's start commit in `plan.md`, Eric's suggestion, was rejected because the plan-add commit gives the same value from git, so a fresh session needs no recorded line.
+- **File:** `.prism/rules/workflow.md:41`
+- **Problem:** neither the rule nor the plan stage says which ref, and the base decides which tasks count as done.
+- **Suggested fix:** name the ref and how to get it, so every wave passes the same value.
+
+### The design stage never commits `design.md`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `03f8964b`: on a plan folder, `prism-design` commits `design.md` through `commit.mjs "plan: write design" <path>` once it is stamped, or once it is written when no approval is required. The new line says why: the commit carrying `approved_by` is the approval record, and a resume from another checkout reads the design only from git.
+- **File:** `.ai-skills/skills/prism-design/shared.md:23`
+- **Problem:** every other chain stage commits its file, and the design stage left the approved design uncommitted until a later commit swept it up.
+- **Suggested fix:** commit it with `commit.mjs` after the stamp.
+
+### `tdd` requires a fail-first proof on every task, against the plan template
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `e0d49bab`: the line now limits the fail-first proof to a task that changes behavior. The plan template makes `proof fails on main` optional ("Add it when the proof is a test that fails before this task lands"), so a docs or config task whose proof passes before and after, such as one proven by `crossref-lint`, needs no fail-first proof. The fail-first proof is required for code that changes behavior, and the bug-fix rule below it, which carries `proof fails on main: yes`, is unchanged.
+- **File:** `.ai-skills/skills/tdd/shared.md:32`
+- **Problem:** "every task lands with a proof that fails without it" would let a challenger block a sound docs task.
+- **Suggested fix:** limit it to tasks that change behavior, or use the template's wording.
+
+### Two plan-writing steps in `prism-implement` still apply on a plan folder
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `c07f7b7e`: the folder-plan bullet now exempts creating a missing plan and the AC Adjustment bullet along with the Record and Ship steps. An AC the tasks can't meet was already `needs-replan` in the bullet below it. The Startup bullet that records a confirmed bug root cause under `## Debugged Issues` also writes the plan on a folder plan and wasn't named, so it was left as it is and goes to the orchestrator.
+- **File:** `.ai-skills/skills/prism-implement/shared.md:9`
+- **Problem:** the exemption covered only Record and Ship, so two bullets still told a dispatched agent to write the plan and wait for a user.
+- **Suggested fix:** widen the exemption to those two bullets.
+
+### A capital "The" after a semicolon in the task-detail rule
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `029da976`: lowercased in the rule, its seed twin, and the generated copies.
+- **File:** `.prism/rules/implementation-task-detail.md:19`
+- **Problem:** "of the work; The plan stage reads it" left a capital after the semicolon.
+- **Suggested fix:** lowercase it in the rule and its twin.
+
 ## Acceptance Criteria
 
 The issue's proof ("a ticket runs from a typed `approve` to committed bundles with no person starting a stage; an agent running the approval script with no token is denied"), expanded into checkable criteria.
@@ -1352,8 +1430,8 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
-- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both fixed. The fourth pass found 2 minor (the no-folder design route's claim that the spec stage reads the mock, and the DX sync exception missing from the Clove, Briar, and Nora syncs), both fixed. The fifth pass found 1 minor (the design resume row doesn't say it covers a supplement), fixed.
-- [x] PR B build passes: `pnpm run prism:check` and `ship-closure` pass locally on Linux at `babcfcc9` (2026-11-18). CI run 44378466070 on `122d4218` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
+- [x] PR B (#532): no critical or major issues. Briar's first pass found 4 major and 7 minor, listed under `## Review`. All of them are fixed except the epic resume row, which is deferred to child 6 (issue #530). The second pass found 1 major (DX criteria against the intent stage) and 1 minor (the no-folder design route), both fixed. The third pass found 2 minor (the intent's tracker sync on a DX ticket, and the no-folder design route ending at a chat plan), both fixed. The fourth pass found 2 minor (the no-folder design route's claim that the spec stage reads the mock, and the DX sync exception missing from the Clove, Briar, and Nora syncs), both fixed. The fifth pass found 1 minor (the design resume row doesn't say it covers a supplement), fixed. Eric's first review found 2 major (the review stage's push on a folder plan, and the epic claim in `ticket-workflows.md`) and 6 minor, all fixed in `87b536fe` to `029da976`, and his re-review is pending.
+- [x] PR B build passes: `pnpm run prism:check` passes locally on Linux at `029da976` (2026-11-18), including `ship-closure` at 268 files, and `spec-scope-lint` passes with the branch name set. The `AGENTS.md` lead sections end at byte 31,917 of 32,768. CI run 44379629187 on `442fa713` is the last green run on `ubuntu-latest` and `windows-latest`, and no run on a later head was checked.
 - [x] PR B has no stray debug artifacts, and the new logic has tests: `role-preloads.test.ts`, the `agents-md-budget.test.ts` order case, and two `approve-guard.test.ts` token cases.
 - [ ] AC for PR B: AC-4, AC-5, AC-6, AC-8, and AC-10 are met, and AC-10 is met by CI run 44368244035. AC-1 and AC-9 need a live run and were not run.
 
