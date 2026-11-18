@@ -117,6 +117,8 @@ Pass 2: No issues found — 2026-11-17 [huntermcgrew/prism-513-compaction-handof
 
 Follow-up pass 2 (2026-11-17): both pass-1 findings confirmed closed in the canonical doc, its three mirrors, the twin, and the `compact-handoff.mjs` header; `pnpm prism:check` passed at HEAD and `compact-handoff.test.ts` passes all 12 tests.
 
+Follow-up pass 3 (2026-11-17): No issues found [huntermcgrew/prism-513-followup-plan-miss-lookup]. The `PostCompact` test rename closes the pass-2 Minor: the test asserts exit 0 and empty stdout, which its title now says. `pnpm run prism:test` (all pass), `prism:check-types`, and `prism:crossref-lint` pass at HEAD, and the canonical doc matches its three mirrors.
+
 ---
 
 ## Acceptance Criteria
@@ -136,9 +138,9 @@ Follow-up pass 2 (2026-11-17): both pass-1 findings confirmed closed in the cano
 
 ## PR Readiness
 
-- [x] No critical or major issues — follow-up pass 2: none; one open Minor (test title)
+- [x] No critical or major issues — follow-up pass 3: none; no open findings
 - [x] Tests written for new logic and edge cases
-- [x] Build passes — last run: 2026-11-17 (`pnpm prism:check` reported passing by the loop; not re-run in this pass)
+- [x] Build passes — last run: 2026-11-17 (`pnpm prism:check` reported passing by the loop; pass 3 re-ran test, types, and crossref-lint, not the full build)
 - [x] Lasting decisions promoted to architect context
 
 **Last updated:** 2026-11-17
