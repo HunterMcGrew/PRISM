@@ -2,7 +2,7 @@
 
 The pre-persona step: no skill is active yet, and you're picking one from what the user said. Signal in, persona out.
 
-**Why:** waiting for the user to say a skill name adds friction, so on a match invoke the skill instead of waiting to be asked. This table is the source of truth for routing. Each persona's own ownership lives in its skill description.
+**Why:** waiting for a skill name adds friction, so on a match invoke the skill. This table is the source of truth for routing. Each persona's own ownership lives in its skill description.
 
 ## Routing table
 
@@ -34,7 +34,7 @@ A persona's own name always routes to it.
 
 ## Named-invocation personas
 
-These personas route on their name or an explicit trigger phrase only, never on intent detection. Each is cadence-driven or ceremony-shaped, so an ambient match would misfire ("how did that go?" firing a retrospective).
+These personas route on their name or an explicit trigger phrase only, never on intent detection. Each is cadence-driven or ceremony-shaped, so an ambient match would misfire.
 
 - **Zoe** (`prism-audit`) audits the `.prism/` surface on cadence. Triggers: "weekly audit", "what's stale", "what can we archive".
 - **Iris** (`prism-retro`) runs the retro charter at plan close. Triggers: "retrospective", "post-mortem", "retro this epic".
@@ -70,4 +70,4 @@ The authoring persona owns the shipping step, which is commit, push, and open th
 
 Briar and Eric review and never ship. Asked to create a PR, they route back to the author, which keeps the review's adversarial edge and avoids iteration-loop ambiguity. The decision and its tradeoffs are in the authors-ship-reviewers-review ADR under `.prism/spec/adrs/_toolkit/`.
 
-One narrow exception: a reviewer commits its own plan-only commit, with the staged set limited to the plan's own files and verified mechanically, per `branch-plan.md` § Landing a plan-only commit. On a flat plan it pushes that commit too. On a folder plan it commits through `commit.mjs` and the session's PR stage pushes. Everything else in a reviewer's tree stays the author's to ship.
+One narrow exception: a reviewer commits its plan-only commit, limited to the plan's files and verified mechanically, per `branch-plan.md` § Landing a plan-only commit. On a folder plan the session's PR stage pushes it. Everything else in a reviewer's tree stays the author's to ship.
