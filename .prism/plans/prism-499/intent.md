@@ -104,7 +104,7 @@ Once the intent is approved, the run is meant to finish without the person. Ques
 What does not stop the run:
 
 - **Scope ideas.** A change that follows from the approved outcome goes ahead as a Decision. Anything else a stage thinks of goes to `prism-architect` for a fit verdict, and a "proceed" goes ahead as a recorded Decision.
-- **Challenge findings.** A blocking finding is fixed. When round 3 still blocks, the plan stage fixes it and runs one confirm round. When the confirm round still blocks, its findings go to `prism-architect`. Only a finding the architect judges to change the intent or its foundation reaches the person. The rest are fixed or recorded as open Decisions, and the plan goes on.
+- **Challenge findings.** A blocking finding is fixed. When round 3 still blocks, the plan stage fixes it and runs one confirm round. When the confirm round still blocks, its findings are carried as open Decisions and the plan goes on. A major finding, one that touches an acceptance criterion, the outcome, the spec's approach, a shared type, a public API, or a dependency, goes to `prism-architect` first. Only one the architect judges to change the intent or its foundation reaches the person.
 - **Review findings.** Anything only a person can decide lands on the draft PR.
 - **Open items.** Anything non-blocking is recorded as an open Decision and listed in the PR body and the closing summary, for the person to follow up after the run.
 

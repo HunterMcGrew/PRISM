@@ -1084,7 +1084,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 ### PR 518: intent, spec, and the ported tip route findings to the architect differently
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-499/spec.md:324`, `.prism/plans/prism-499/intent.md:63`
 - **Problem:** the intent sends every finding of a still-blocking confirm round to `prism-architect`, while the spec's "Architect before person" bullet and thrive's tip at db3570975 send only a major finding there and record the rest as `OPEN` Decisions directly. The tip's Scope changes paragraph also asks the person directly about an acceptance-criterion change or a contradicted ruling, while the intent lets only `prism-architect` send a question to the person. The Decision says PRISM "ports the tip as written", so child 5 could copy wording that contradicts the approved intent. Minor because both routes end the same way: an AC change is intent-level, so the architect would send it to the person anyway.
 - **Suggested fix:** pick one routing. Either reword the intent's challenge bullet to "a major finding goes to `prism-architect`" and its stop bullet to allow an AC change straight to the person, or change the Decision to "ports the tip, with every person-question going through `prism-architect`".
@@ -1092,7 +1092,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 ### PR 518: "Child 1 is this PR" has no referent once merged
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-499/spec.md:278`
 - **Problem:** the line this PR edits still says "Child 1 is this PR". On `main` "this PR" names nothing, and child 1 now spans #512 and #518. This is the session-context leakage `writing-voice.md` warns about.
 - **Suggested fix:** "Child 1 is the epic folder's own PRs (#512, #518). It has no folder of its own."
@@ -1100,7 +1100,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 ### PR 518: `.gitattributes` missing from Affected systems
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-499/spec.md:236`
 - **Problem:** the carried-in list tells child 6 to add `merge=union` for `review-misses.jsonl` in PRISM's `.gitattributes`, but the Affected systems block has no glob covering the root `.gitattributes`. Auto-approval checks every planned file against Affected systems, so a child plan scoped from this list fails that check on the file.
 - **Suggested fix:** add `.gitattributes` to the Affected systems block.
@@ -1108,7 +1108,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 ### PR 518: second `branch-plan.md` bullet names no child
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-499/spec.md:219`
 - **Problem:** "Always-on rule edits" now has two `branch-plan.md` bullets, and the new one doesn't say which child lands it. The citation lint that rejects `see Decision:` lands in child 4, and the Children table gives "the rule edits" to child 5. Between those two merges, the always-on History guidance recommends a citation the lint fails in a plan folder.
 - **Suggested fix:** merge it into the first `branch-plan.md` bullet, and land the History-guidance change in child 4 with the lint.
