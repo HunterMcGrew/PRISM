@@ -138,6 +138,11 @@ async function findUnfiledPlanBySlug(
 /**
  * Resolves the live plan path a branch owns, or null when none resolves.
  * Returns a repo-root-relative POSIX path (e.g. `.prism/plans/prism-1234.md`).
+ *
+ * A plans directory that can't be read resolves as no plan, as it did before
+ * the lookup moved to `resolvePlan`, which throws on such an error.
+ * `spec-scope-lint` passes a branch whose plan is missing, so an unreadable
+ * directory ends that lint as a pass rather than a crash.
  */
 export async function resolveLivePlan(
 	branchName: string,
@@ -148,5 +153,9 @@ export async function resolveLivePlan(
 		return findUnfiledPlanBySlug(branchName, repoRoot);
 	}
 
-	return resolvePlan(repoRoot, ticketId)?.file ?? null;
+	try {
+		return resolvePlan(repoRoot, ticketId)?.file ?? null;
+	} catch {
+		return null;
+	}
 }

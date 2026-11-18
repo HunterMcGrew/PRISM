@@ -93,7 +93,13 @@ test("PreCompact on a branch with no ticket ID keeps every decision in the summa
 	try {
 		const output = await runPreCompactArm(JSON.stringify({ cwd: root }));
 
-		assert.ok(output?.includes("- Branch plan: none found by filename"));
+		assert.ok(output?.includes("- Branch plan: none found\n"));
+		assert.ok(!output?.includes("by filename"));
+		assert.ok(
+			output?.includes(
+				"No plan file was found for this branch's ticket, by name, by ticket field, or in the archive,"
+			)
+		);
 		assert.ok(output?.includes("Keep all of them."));
 	} finally {
 		rmSync(root, { recursive: true, force: true });

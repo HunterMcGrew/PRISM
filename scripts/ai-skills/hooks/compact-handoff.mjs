@@ -176,7 +176,7 @@ function formatStateBlock(repoRoot, state) {
 	return [
 		`- Checkout: ${repoRoot}`,
 		`- Branch: ${state.branch}`,
-		`- Branch plan: ${state.plan ?? "none found by filename"}`,
+		`- Branch plan: ${state.plan ?? "none found"}`,
 		"- Uncommitted files (git status -s):",
 		"```",
 		state.status,
@@ -192,7 +192,7 @@ function formatStateBlock(repoRoot, state) {
 export function buildSummaryTemplate(repoRoot, state) {
 	const planRule = state.plan
 		? `Decisions already written in ${state.plan} are not copied into the summary. Point at that path instead.`
-		: "No plan file named for this branch's ticket was found, so the summary may be the only record of this session's decisions. Keep all of them.";
+		: "No plan file was found for this branch's ticket, by name, by ticket field, or in the archive, so the summary may be the only record of this session's decisions. Keep all of them.";
 
 	return `Write the compaction summary with the sections below, in this order, using these headings. Use plain declarative sentences and bullets. Leave out greetings and persona voice. If the user typed their own compact instructions, those win where they conflict with these.
 

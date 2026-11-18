@@ -7,11 +7,12 @@ import { isDirectCliEntry } from "./lib/cli-entry";
 /**
  * Fails any section-sign citation or `see Decision:` citation inside a plan folder.
  *
- * Plans can be deleted at any time, so a plan names files by path and other
- * plans by ticket ID, and nothing points into a heading that may vanish. Only
- * plan folders are read: legacy flat plans predate the rule and are never
- * migrated. A folder counts as a plan folder when it holds a chain file, which
- * keeps `audits/`, `qa/`, and `retros/` out.
+ * Plans are never deleted, but the files in a plan folder move and get
+ * renamed as the plan moves through its chain, so a plan names files by path
+ * and other plans by ticket ID, and nothing points into a heading that may
+ * vanish. Only plan folders are read: legacy flat plans predate the rule and
+ * are never migrated. A folder counts as a plan folder when it holds a chain
+ * file, which keeps `audits/`, `qa/`, and `retros/` out.
  *
  * Inline code spans are removed before matching, so prose that names a marker
  * as a token stays legal. A backtick lookbehind would not do: it misreads a

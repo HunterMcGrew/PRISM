@@ -549,3 +549,34 @@ test("resolveLivePlan: a hyphenated username ahead of the ticket id resolves the
 		}
 	);
 });
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — unreadable plans directory
+// ---------------------------------------------------------------------------
+
+test(
+	"resolveLivePlan: a plans directory that can't be read resolves as no plan instead of throwing",
+	{
+		skip:
+			(process.platform === "win32" && "chmod does not restrict reads on Windows") ||
+			(process.getuid?.() === 0 && "root reads any directory"),
+	},
+	async () => {
+		await withTempTree(
+			async (tempRoot) => {
+				await writeFile(tempRoot, ".prism/plans/prism-1006.md", "# Plan\n");
+				await fs.chmod(path.join(tempRoot, ".prism/plans"), 0o000);
+			},
+			async (tempRoot) => {
+				try {
+					assert.equal(
+						await resolveLivePlan("dev/prism-1006-fix-thing", tempRoot),
+						null
+					);
+				} finally {
+					await fs.chmod(path.join(tempRoot, ".prism/plans"), 0o755);
+				}
+			}
+		);
+	}
+);

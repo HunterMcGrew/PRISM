@@ -553,6 +553,7 @@ test("a cd inside a -c string moves the directory of the commands after it", () 
 		cwd: root,
 	});
 	const commit = find(result, "git")!;
+	assert.equal(commit.argv[0], "git");
 	assert.equal(commit.via, "shell-string");
 	assert.equal(commit.cwd, path.join(root, "sub"));
 });
