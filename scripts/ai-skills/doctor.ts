@@ -884,11 +884,11 @@ async function checkGitHooks(consumerRepoRoot: string): Promise<DoctorFinding[]>
  * as they stand.
  *
  * What is decidable is the host mix. `hosts` in the consumer's config says
- * which hosts they run, and `refreshHookRuntime` delivers the runtime when
- * either `claude` or `codex` is among them — so a consumer who runs neither
- * should have no runtime and no registration, and finding either means an
- * update has not run since they changed the key. Both directions are
- * reported: the absence is informational, the leftover is a warning.
+ * which hosts they run, and `refreshHookRuntime` registers a host's hooks only
+ * for a host that is listed — so a registration for a host the consumer no
+ * longer lists means an update has not run since they changed the key. The
+ * runtime files themselves reach every install, so their presence says nothing
+ * about `hosts`.
  */
 async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");
@@ -969,9 +969,6 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 
 	const config = await readConsumerConfigSafely(consumerRepoRoot);
 	const hosts = resolveHosts(config);
-	const runtimeOnDisk = await readFileIfExists(hookRuntimePath);
-	const runtimeIsPrisms =
-		runtimeOnDisk !== null && runtimeOnDisk.includes(HOOK_RUNTIME_MARKER);
 	const claudeIsRegistered =
 		settings !== null &&
 		collectHookCommands(settings).some((command) => PRISM_HOOK_COMMAND_PATTERN.test(command));
@@ -980,20 +977,6 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		collectHookCommands(codexHooks).some((command) =>
 			PRISM_CODEX_HOOK_COMMAND_PATTERN.test(command)
 		);
-
-	// Runtime delivery gates on `claude` OR `codex` — see the plan Decision
-	// "Runtime delivery gates on claude OR codex" — so the runtime itself is
-	// stale only when the consumer's hosts name neither. This push is
-	// additive, not a short-circuit — a dropped-both-hosts consumer can also
-	// carry a stale per-host registration or an unrelated dead registration,
-	// and every one of those is a separate, real finding.
-	if (!hosts.includes("claude") && !hosts.includes("codex") && runtimeIsPrisms) {
-		findings.push({
-			check: "hook-registration",
-			severity: "warning",
-			message: `hosts does not list "claude" or "codex", but PRISM's hook runtime is still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
-		});
-	}
 
 	// Each registration gates on its own host, independent of the runtime and
 	// of the other registration — dropping one host takes only that host's

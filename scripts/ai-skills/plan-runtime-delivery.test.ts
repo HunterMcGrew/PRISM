@@ -2,7 +2,7 @@
  * Contract for delivering the plan-chain scripts and the shell parser through
  * `runUpdate`: each module reaches `.claude/hooks/` carrying the runtime
  * marker, a second update leaves them alone, they run in the consumer layout,
- * and a Cursor-only consumer gets none of them.
+ * and a Cursor-only consumer gets all of them with no registration.
  *
  * The fixture follows `update.test.ts`'s `runUpdate` shape, copied here so
  * that file stays unchanged by this feature.
@@ -256,7 +256,7 @@ test("the delivered tasks script runs in the consumer layout", async () => {
 	});
 });
 
-test("hosts: [cursor] delivers none of the plan-chain modules", async () => {
+test("hosts: [cursor] delivers every plan-chain module and writes no registration", async () => {
 	await withRoots(async (roots) => {
 		await writeAt(
 			roots.consumerRepoRoot,
@@ -267,7 +267,22 @@ test("hosts: [cursor] delivers none of the plan-chain modules", async () => {
 		await update(roots);
 
 		for (const file of PLAN_RUNTIME_FILES) {
-			assert.equal(await existsAt(roots.consumerRepoRoot, file), false, `${file} not delivered`);
+			assert.equal(await existsAt(roots.consumerRepoRoot, file), true, `${file} delivered`);
 		}
+		for (const registration of [".claude/settings.json", ".codex/hooks.json"]) {
+			assert.equal(
+				await existsAt(roots.consumerRepoRoot, registration),
+				false,
+				`${registration} not written`
+			);
+		}
+
+		const result = spawnSync(
+			process.execPath,
+			[".claude/hooks/plan/tasks.mjs", "plan.md", "--base", "HEAD"],
+			{ cwd: roots.consumerRepoRoot, encoding: "utf8" }
+		);
+
+		assert.equal(result.status, 0, result.stderr);
 	});
 });

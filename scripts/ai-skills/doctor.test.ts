@@ -1538,7 +1538,33 @@ test("runDoctor reports the prose fallback, not a problem, on a repo whose hosts
 	});
 });
 
-test("runDoctor warns when hosts exclude Claude Code but PRISM's runtime is still on disk", async () => {
+test("runDoctor reports no hook warning on a Cursor-only repo that carries the runtime files", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["cursor"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/hook.mjs",
+			"// @prism-hook-runtime\nexport const label = \"delivered\";\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(hookFindingsList.length, 1);
+		assert.equal(hookFindingsList[0].severity, "info");
+		assert.match(hookFindingsList[0].message, /not delivered on this repo's hosts/);
+	});
+});
+
+test("runDoctor warns that the runtime is inert when Codex is declared but nothing registers it", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await writeFile(
 			consumerRepoRoot,

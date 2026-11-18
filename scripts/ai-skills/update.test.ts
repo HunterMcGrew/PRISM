@@ -2626,14 +2626,22 @@ test("refreshHookRuntime: the backup of a pruned file is not itself pruned on th
 	});
 });
 
-test("refreshHookRuntime: a repo that runs neither Claude Code nor Codex receives no runtime, no registration, and no gitignore lines", async () => {
+test("refreshHookRuntime: a repo that runs neither Claude Code nor Codex receives every runtime file but no registration, git shim, or gitignore lines", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["cursor"]);
 
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.ok(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				`${relativePath} is delivered so the skills' scripts run from a terminal`
+			);
+		}
 		assert.equal(
-			await pathExists(path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs")),
+			await pathExists(path.join(consumerRepoRoot, ".githooks")),
 			false,
-			"no runtime file is delivered"
+			"no git hook shims are delivered"
 		);
 		assert.equal(
 			await pathExists(path.join(consumerRepoRoot, ".claude", "settings.json")),
@@ -2734,18 +2742,17 @@ test("refreshHookRuntime: dropping codex from hosts removes only PRISM's codex e
 	});
 });
 
-test("refreshHookRuntime: dropping both hosts removes the runtime and both registrations — the regression guard on the split host gate", async () => {
+test("refreshHookRuntime: dropping both hosts removes both registrations and leaves the runtime in place — the regression guard on the split host gate", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude", "codex"]);
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, []);
 
 		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
-			assert.equal(
+			assert.ok(
 				await pathExists(
 					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
 				),
-				false,
-				`${relativePath} is removed once neither host is declared`
+				`${relativePath} stays once neither host is declared`
 			);
 		}
 
@@ -2791,17 +2798,21 @@ test("refreshHookRuntime: a consumer's own hook on an event PRISM registered sur
 	});
 });
 
-test("refreshHookRuntime: an unmarked file at a runtime path survives the removal", async () => {
+test("refreshHookRuntime: a consumer's unmarked file at a runtime path is backed up on a repo with no hook host", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		const consumerOwnBody = "// the consumer's own hook, unrelated to PRISM\n";
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
 
-		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, []);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["cursor"]);
 
 		assert.equal(
-			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs.bak"),
 			consumerOwnBody,
-			"a file without the ownership marker is never removed"
+			"a file without the ownership marker is never lost"
+		);
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			prismRuntimeSource("hook.mjs")
 		);
 	});
 });
@@ -2823,7 +2834,7 @@ test("refreshHookRuntime: the state-file gitignore lines are left in place when 
 	});
 });
 
-test("refreshHookRuntime: dryRun previews a removal without performing it", async () => {
+test("refreshHookRuntime: dryRun with no hook host previews no runtime removal and performs nothing", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
 
@@ -2834,14 +2845,18 @@ test("refreshHookRuntime: dryRun previews a removal without performing it", asyn
 			[]
 		);
 
-		const removedPaths = outcomes
-			.filter((o) => o.action === "removed")
-			.map((o) => o.relativePath);
-		assert.ok(
-			HOOK_RUNTIME_RELATIVE_PATHS.every((relativePath) =>
-				removedPaths.includes(`.claude/hooks/${relativePath}`)
+		assert.deepEqual(
+			outcomes.filter(
+				(o) => o.action === "removed" && o.relativePath.startsWith(".claude/hooks/")
 			),
-			"the preview names every runtime path it would remove"
+			[],
+			"the runtime is never previewed for removal"
+		);
+		assert.ok(
+			JSON.stringify(await readConsumerSettings(consumerRepoRoot)).includes(
+				".claude/hooks/hook.mjs"
+			),
+			"the registration is still in place — dryRun performs nothing"
 		);
 
 		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
