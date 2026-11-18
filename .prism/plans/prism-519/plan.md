@@ -2,13 +2,16 @@
 title: Codex AGENTS.md budget — child 3 of the Kitchen Line port
 ticket: https://github.com/HunterMcGrew/PRISM/issues/519
 stage: plan
-status: draft
+status: closed
 epic: https://github.com/HunterMcGrew/PRISM/issues/499
 spec: ../prism-499/spec.md (the Children table, row 3, and the "AGENTS.md and Codex" design section)
 created: 2026-11-18
 ---
 
 # Plan: prism-519 — Codex AGENTS.md budget
+
+> Closed: 2026-11-18
+> Retro: declined — ticket grain; the lightweight charter-fidelity check ran inline during this close (AC-1, AC-2, and AC-9 re-checked on main at 8e1dabc7, the rest read from CI green on both legs, Eric's last pass left no finding standing), so a separate report would restate it.
 
 ## Ticket
 
@@ -243,33 +246,54 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
     - Reordering at each caller. Rejected, because PRISM's build and the consumer refresh would each need the same edit.
   - **Chosen approach:** one list in `agents-md-block.ts`, applied in `renderTier1Block`. Both callers inherit it with no call-site change.
   - **Implementation guidance:** keep `collectTier1RuleBodies` alphabetical, so the rest of the block and its existing test do not move.
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution (the lead-first order; the rejected second marker pair stays here)
 - **The lead list is the rule files; its order follows the intent's sentence.** The intent names "the workflow block, the resume table, routing, and the behavioral norms." Routing is `skill-routing.md`. The behavioral norms are the rules that `AGENTS.md`'s "Behavioral norms" table links, in that table's row order. The table itself already sits in the handwritten preamble inside the first 4 KiB, so listing it would prove nothing. Child 5 prepends the workflow block and resume table.
+  - → no promotion needed (the list and its JSDoc in `agents-md-block.ts` are the record; child 5 extends it)
 - **The 32 KiB budget is nearly spent, and child 5 has to reclaim space.**
   - **Measured on main at 840ee678:** the preamble ends at byte 3,125, and routing plus the ten norm rules add 27,424 bytes. The last lead section ends near byte 30,549, leaving about 2,219 bytes.
   - **Thrive's `## Workflow` block at db3570975 is 7,513 bytes.** Prepended as written, the lead set would end near byte 38,000 and the task 4 test would fail.
   - **Not child 3's to fix.** The lead set as specified fits today. Child 5's planner should budget about 5.3 KB of cuts. The obvious source is `skill-routing.md` (14,719 bytes), which child 5 rewrites anyway.
   - **Why the test fails loudly rather than warns:** a silently overflowing lead set is exactly the failure this child exists to prevent.
+  - → no promotion needed (`agents-md-budget.test.ts` enforces the budget and names the rule that overflows; the 5.3 KB figure is a measurement for child 5's planner, not a lasting rule)
 - **The value never goes down, and the edit touches one line.**
   - The value is the size rounded up to the next 64 KiB, plus one step (spec). A larger existing value is kept, because a team may have raised it for nested `AGENTS.md` files that share Codex's budget.
   - The TOML edit is line-based, with no parser. A parser would be a new dependency, and only one top-level integer key is ever read or written.
   - The edit reads only the region before the first table header. A value it cannot read is left alone with a warning, because rewriting a value it does not understand could corrupt the file.
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution (the no-parser reason stays here)
 - **PRISM's own build writes PRISM's `.codex/config.toml`.** Then the live run in task 8 can test this repo, and `prism:check` catches a stale value when a rule edit grows `AGENTS.md` past a 64 KiB step. Consumers get the write through `runUpdate`, which `prism adopt` delegates to. Onboarding regenerates through `prism update` in consumer context and `pnpm prism:build` in toolkit context (`prism-onboard`, its install-context table). So adopt, update, and onboarding are all covered with no skill edit.
+  - → promoted to `.prism/architect/_toolkit/install-layout.md`, under Direct-write tool outputs
 - **Only the repo-root `AGENTS.md` is sized.** Codex's limit covers the combined files on its root-to-working-directory walk. The one 64 KiB headroom step covers small nested files, and a team with large ones raises the value by hand, which the never-lower rule then keeps.
+  - → no promotion needed (the `computeProjectDocMaxBytes` JSDoc says the extra step is headroom for nested files on Codex's walk, and `consumer-sync-flow.md` says a larger value is never lowered)
 - **Dropping Codex from `hosts`, and `prism eject`, both leave the key.** The key is harmless without Codex. The file is the team's committed config, and the value may be one they raised themselves, so removing it could undo a choice PRISM did not make.
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **The lead rules fit the default window only while the content above the block is small.** The ordering is guaranteed, the fit is not: the lead rules run to about 27 KB, so a consumer who added the marker pair to a file with more than about 5 KB above it pushes them past 32 KiB. Only PRISM's own file is measured in CI. Doctor measures the consumer's file with `measureLeadSectionEnds` and says so when the limit in force ends before the lead rules.
   - **Alternatives considered:** a separate doctor finding for the lead rules. Rejected, because a lead rule cannot end past the end of the file, so the finding would always duplicate the existing size warning.
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **`prism update` writes no Codex config for an `AGENTS.md` inside the limit in force when no config exists.** Codex already reads the whole file, so the config would be a committed file with no effect. An existing config is still updated, because a team that has one may have lowered the value. The write condition is "over the limit in force, or a config already exists", and the docs say so.
   - **Alternatives considered:** also skipping an existing config that has no key when the file fits (the review's cleaner path). Rejected for now, because the stated contract updates any existing config, and a config with no key costs one harmless line.
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **Doctor and the sync share one "limit in force" helper, `readLimitInForce`.** It is the configured value when readable, otherwise 32,768. Doctor's early return uses `min(32768, limit in force)`, not the limit alone, because a configured limit above the default must not silence a file past 32 KiB that relies on it (AC-6's `info` row).
+  - → no promotion needed (code-level; the `min` is in `scripts/ai-skills/doctor.ts:1075` and the doctor tests pin it, and the reason stays here)
 - **The merge skips with a warning when a limit line exists that the top-level reader cannot see.** The reader has no TOML parser, so a lone-value array element (`[3]`) reads as a table header and hides a real top-level key; prepending then writes a duplicate key. Alternatives considered: enumerating more array shapes in `TABLE_HEADER` (rejected, because each fix leaves a narrower shape, which is what the last two rounds found) and adding a parser (rejected, a new dependency). The cost is that a key that really sits under a table gets the warning too, instead of a prepended top-level key that would have been valid. That is a rare config and the warning names the value to set by hand.
   - **Third round:** the condition is now a fourth `ProjectDocMaxBytesSetting` kind, `unplaced`, returned by `readProjectDocMaxBytes`, so the sync and doctor branch on one value and neither rescans. Doctor warns that the limit in force is unknown and that a top-level `project_doc_max_bytes` line is needed (a key that belongs under a table like `[profiles.x]` must not be told to move), never "run `prism update`", which skips that config. Doctor's early return exempts `unplaced`, because a hidden top-level limit below 32 KiB can cut a file inside the default window. `readLimitInForce` does not accept `unplaced`, because there is no reading to return.
+  - → promoted to `.prism/architect/_toolkit/consumer-sync-flow.md`, under Steady-state persona-skill distribution
 - **Doctor warns rather than errors, and always names the per-developer fallback.** A short read limit degrades Codex sessions without breaking the install, and `healthy` keys on `error` alone. The `~/.codex/config.toml` sentence carries the OPEN Decision's default path below.
+  - → no promotion needed (doctor's messages and tests are the record, and the fallback sentence follows the OPEN Decision, so it changes when that resolves)
 - **The docs land in this PR, written by Clove.** The two architect docs, their curated twins, and the consumer guide describe behavior this PR adds. A separate docs PR would describe code that has not merged. This is a documented absorption of the docs lane, per `branch-plan.md` (Implementation Tasks).
+  - → no promotion needed (scope record for this PR)
 - **The plan is a folder `plan.md` with the flat-plan sections.** The spec puts each child in `.prism/plans/prism-<n>/`. The folder templates and task grammar arrive in child 4, so this plan uses the `branch-plan.md` template, the only one on `main`. `resolveLivePlan` already finds `prism-519/plan.md`. The plan cites sections by name only and never points History at a Decision, so child 4's plan-folder citation lint will not need to allowlist it.
+  - → no promotion needed (a bridge until child 4's folder templates exist)
 - **One PR, though it crosses the 10-file mark.** About 10 hand-written files change. The rest are generated: `AGENTS.md`, `.codex/config.toml`, and the `.claude/`, `.codex/`, and `.cursor/` copies of two architect docs. The spec defines child 3 as one PR, and its parts share one purpose. If Hunter wants a stack, the cut goes after task 4: ordering, report, and budget test in the first PR; config write, doctor, and docs in the second.
-- **AC was not synced to issue #519 in this run.** Editing a public issue needs Hunter's go-ahead, and this run had none. Sync it when the plan is approved, or let Clove sync it when implementation starts.
+  - → no promotion needed (ticket tactic)
+- **The AC is synced to issue #519.** It was not synced when the plan was written, because editing a public issue needed Hunter's go-ahead. The issue body now carries all 10 criteria under `## Acceptance Criteria` (checked with `gh issue view 519` on 2026-11-18), so the AC Sync Log records it as synced.
+  - → no promotion needed (ticket bookkeeping; the AC Sync Log is the record)
+- **The close markers are the `>` lines, and frontmatter `status: closed` stays as a placeholder.** `branch-plan.md`, under Before Closing step 2 defines both lines, and Zoe's plan-archive lane (`audit-workflow.md`, under Plan-archive lane) keys on `> Closed:` alone, not frontmatter, so those two lines are what make this plan closed today. The frontmatter `status: closed` stays because the epic spec defines no closed value; child 4 or child 6 defines folder-plan close and settles it.
+  - **Alternatives considered:** dropping the frontmatter `status`. Rejected, because the folder-plan close that child 4 or 6 defines may read it, and removing it now would be an edit they reverse. The trailing `Retro:` line stays for the same reason.
+  - → no promotion needed (bridge until the folder-plan close lands)
 - **`compatibility.md` gains `config.toml` in its `.codex/` bullet, though it is outside this plan's files.** The file is the one `install-layout.md` cites for the committed-vs-ignored contract, and this change made its `.codex/` bullet false by committing `.codex/config.toml`. The edit is one sentence and shares the PR's purpose; a separate PR would leave the two files disagreeing until it merged.
+  - → no promotion needed (scope record; the edit itself landed in `compatibility.md`)
 - **OPEN — TBD, needs a live Codex run (Hunter).** Whether Codex honors `project_doc_max_bytes` in a repo-level `.codex/config.toml`. The Codex docs show a repo-level file and do not list this key among those it ignores there, but they do not say it is honored. **Default path (used until resolved):** child 3 writes the key, and `prism doctor` prints the per-developer `~/.codex/config.toml` setting as a fallback (task 6). Task 8 is the probe.
+  - → no promotion needed (open question — exit condition: task 8's run A and run B outputs; the epic spec carries the same OPEN)
 
 ---
 
@@ -282,6 +306,7 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the three threads from the second PR #521 review and the stale PR body; Bounds — the codex-project-doc and doctor code and tests, the write-condition sentence in three docs, this plan; Approach — one limit-in-force helper for both checks, a skip-and-warn merge guard, code and docs in one commit, plan record in another · close: scope held
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the two open PR #521 threads (`unplaced` setting kind, `hasLimitLine` rename) and the constant at the small-file skip; Bounds — the doc-limit reader, sync and doctor with tests, the consumer-sync-flow paragraph and its twin, this plan; Approach — move the any-depth scan into the reader, branch both callers on the new kind, code and docs in one commit and the plan record in another · close: scope held
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget] open: Intent — fix the two open PR #521 threads on the "until the line moves" wording; Bounds — the architect doc and its twin with mirrors, Task 7, this plan; Approach — swap the clause for doctor's current advice, search the tree for other "move the line" wording, doc fix and plan record in separate commits · close: scope held
+- 2026-11-18 [huntermcgrew/prism-519-followup-close] open: Intent — close the plan, which merged in #521 without a close; Bounds — this plan file only, on a follow-up branch off `main`, any promotion outside `.prism/plans/` or `.prism/architect/` reported rather than made, draft PR only; Approach — check the AC and CI on main, then a verdict per Decision, the closed markers, and the Retro line · close: scope held; every promotion was already in the architect docs
 
 ---
 
@@ -295,6 +320,9 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two open PR #521 threads in 812f842a: `readProjectDocMaxBytes` returns a new `unplaced` kind that doctor and the sync both branch on, `hasLimitLine` is gone, and the small-file skip uses the 32,768 constant. Amended Tasks 2, 6, and 7; see Decision on the merge skip.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two accuracy nits in 3d76c875: doctor's `unplaced` warning now says a top-level `project_doc_max_bytes` line is needed instead of "move the line", and the adoption page states that `prism update` skips a limit line that is not at the top level. `readLimitInForce` now excludes `unplaced` in its type; see Decision on the merge skip.
 - 2026-11-18 [huntermcgrew/prism-519-codex-budget]: Fixed the two open PR #521 threads in 9623504f: the architect doc, its install twin, and the platform mirrors say a top-level `project_doc_max_bytes` line is needed, matching doctor. Amended Task 7 the same way; no other doc told the user to move the line.
+- 2026-11-18 [huntermcgrew/prism-519-followup-close]: Closed the plan after #521 merged: a verdict on all 18 Decisions, 7 of them already promoted, the ticket-grain retro run inline, and AC-1 to AC-10 ticked. Task 8's live Codex run is still open as the OPEN Decision.
+- 2026-11-18 [huntermcgrew/prism-519-followup-close]: Fixed the plan-close findings: added the `> Closed:` and `> Retro:` markers under the title, corrected the `min` citation to `doctor.ts:1075`, and recorded that #519 already carries the AC.
+- 2026-11-18 [huntermcgrew/prism-519-followup-close]: Reworded the close-markers Decision, which said Zoe's plan-archive lane reads `> Retro:`; it keys on `> Closed:` alone, and `branch-plan.md` defines both lines. Folded the same fix into `.prism/plans/prism-516/plan.md`, whose Decision carried the identical claim.
 
 ---
 
@@ -463,28 +491,29 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 
 ### Behavioral
 
-- [ ] **AC-1** Given PRISM's generated agent instructions file, When a reader takes only its first 32 KiB, Then the whole skill-routing rule and every behavioral-norm rule are inside that window.
+- [x] **AC-1** Given PRISM's generated agent instructions file, When a reader takes only its first 32 KiB, Then the whole skill-routing rule and every behavioral-norm rule are inside that window.
   - Evidence (machine): `head -c 32768 AGENTS.md | grep -c 'source: .prism/rules/branch-plan.md'` → `1`, because the first rule after the lead set starts inside the window; plus `pnpm exec tsx --test scripts/ai-skills/agents-md-budget.test.ts` passes · Positive control: `git show origin/main:AGENTS.md | head -c 32768 | grep -c 'source: .prism/rules/skill-routing.md'` → `0` · UNMET looks like: `0` on the branch, or the budget test failing and naming a rule past byte 32768.
-- [ ] **AC-2** Given a repo with Codex among its hosts and an instructions file over 32 KiB, When `prism update` runs, Then the repo's Codex config sets the read limit to the file size rounded up to the next 64 KiB plus one more 64 KiB step, and every other line in that config is unchanged.
+- [x] **AC-2** Given a repo with Codex among its hosts and an instructions file over 32 KiB, When `prism update` runs, Then the repo's Codex config sets the read limit to the file size rounded up to the next 64 KiB plus one more 64 KiB step, and every other line in that config is unchanged.
   - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/update.test.ts scripts/ai-skills/codex-project-doc.test.ts` passes, including the merge test that keeps other keys byte-identical; plus in this repo `grep '^project_doc_max_bytes = ' .codex/config.toml` → `project_doc_max_bytes = 262144` while `wc -c < AGENTS.md` is 132790 · UNMET looks like: a missing key, a value that is not the next 64 KiB multiple plus 65536, or a changed line elsewhere in the fixture.
-- [ ] **AC-3** Given the repo's Codex config already sets a larger read limit, When `prism update` runs, Then that value is left as it was.
+- [x] **AC-3** Given the repo's Codex config already sets a larger read limit, When `prism update` runs, Then that value is left as it was.
   - Evidence (machine): the `syncCodexProjectDocLimit` "larger existing value" test in `codex-project-doc.test.ts` passes, asserting action `no-op` and identical file bytes · UNMET looks like: the value lowered to the computed one.
-- [ ] **AC-4** Given a repo whose hosts do not include Codex, When `prism update` runs, Then no Codex config file is created.
+- [x] **AC-4** Given a repo whose hosts do not include Codex, When `prism update` runs, Then no Codex config file is created.
   - Evidence (machine): the `hosts: ["claude"]` test in `update.test.ts` passes, asserting `.codex/config.toml` does not exist · UNMET looks like: the file exists after the run.
-- [ ] **AC-5** Given a Codex repo whose instructions file is over the configured read limit, or over 32 KiB with no limit set, When `prism doctor` runs, Then it warns, names the value to set, and names the per-developer setting as a fallback, without marking the install unhealthy.
+- [x] **AC-5** Given a Codex repo whose instructions file is over the configured read limit, or over 32 KiB with no limit set, When `prism doctor` runs, Then it warns, names the value to set, and names the per-developer setting as a fallback, without marking the install unhealthy.
   - Evidence (machine): the `absent`, `set below size`, and `unparseable` cases in `doctor.test.ts` pass, each asserting one `codex-doc-limit` finding with severity `warning`, a message containing `~/.codex/config.toml`, and `healthy === true` · UNMET looks like: no finding, an `error` severity, or a message without the fallback.
-- [ ] **AC-6** Given a Codex repo whose configured read limit covers the instructions file, When `prism doctor` runs, Then it prints an informational line naming the per-developer setting, and no warning.
+- [x] **AC-6** Given a Codex repo whose configured read limit covers the instructions file, When `prism doctor` runs, Then it prints an informational line naming the per-developer setting, and no warning.
   - Evidence (machine): the `set at or above size` case in `doctor.test.ts` passes with exactly one `info` finding · UNMET looks like: a `warning`, or no line at all.
-- [ ] **AC-7** Given any build or check run, When it finishes, Then it prints the instructions file's size, where its lead sections end, and the size of the always-on rules, and the run's exit status does not depend on those numbers.
+- [x] **AC-7** Given any build or check run, When it finishes, Then it prints the instructions file's size, where its lead sections end, and the size of the always-on rules, and the run's exit status does not depend on those numbers.
   - Evidence (machine): `pnpm exec tsx scripts/ai-skills/build.ts --check; echo "exit=$?"` → output includes a line starting `prism:check: AGENTS.md is ` and `exit=0` on a synced tree · UNMET looks like: no size line, or a non-zero exit caused by the size.
-- [ ] **AC-8** Given a trusted checkout of this repo and an authenticated Codex CLI, When Codex is asked for text that sits past byte 120,000 of the instructions file, Then it quotes the text with the repo's limit in place and cannot see it with the limit removed — or the run's absence is recorded and the fallback stands.
+- [x] **AC-8** Given a trusted checkout of this repo and an authenticated Codex CLI, When Codex is asked for text that sits past byte 120,000 of the instructions file, Then it quotes the text with the repo's limit in place and cannot see it with the limit removed — or the run's absence is recorded and the fallback stands.
   - Evidence (human): task 8's run A and run B outputs recorded in `## History` and in the OPEN Decision · UNMET looks like: no recorded result and no recorded "not run" before the close.
+  - Status at close (2026-11-18): met through its fallback clause. `## History` records that task 8 was not run, the OPEN Decision stays open on its default path, and doctor's per-developer fallback ships. The live Codex run itself is still pending.
 
 ### Non-behavioral
 
-- [ ] **AC-9** No new dependency is added.
+- [x] **AC-9** No new dependency is added.
   - Evidence (machine): `git diff origin/main --stat -- package.json pnpm-lock.yaml` → empty output · Positive control: the same command against a scratch edit to `package.json` lists it · UNMET looks like: either file listed.
-- [ ] **AC-10** The repo's full check passes with the regenerated outputs committed.
+- [x] **AC-10** The repo's full check passes with the regenerated outputs committed.
   - Evidence (machine): `pnpm prism:check` → exit 0 and `prism:check passed. Generated outputs are in sync.` · UNMET looks like: a non-zero exit, or any file listed as out of sync.
 
 ### AC Adjustments
@@ -494,6 +523,8 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC | updated | not synced — needs Hunter's go-ahead to edit #519 |
+| 2026-11-18 | Winston | Ticked AC-1 to AC-10 at close, AC-8 through its fallback clause | ticked | not synced; #519 still needs Hunter's go-ahead |
+| 2026-11-18 | Clove | Checked #519 against the plan's AC | verified | synced — the issue body carries all 10 criteria under `## Acceptance Criteria` |
 
 ---
 
@@ -510,7 +541,9 @@ Sequence: tasks 1 and 2 are independent. Task 3 needs both. Task 4 needs task 3.
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-11-18 (`pnpm prism:check` exit 0: 993 tests, 0 failed; size line reports lead sections ending at byte 30,549 of 32,768)
 - [x] PR description up to date, and it lists the OPEN Decision
-- [ ] Lasting decisions promoted to architect context (if applicable)
-- [ ] `> Retro:` line recorded at close
+- [x] Lasting decisions promoted to architect context: every Decision carries a verdict, and the 7 promotions were already in `consumer-sync-flow.md` and `install-layout.md` when #521 merged
+- [x] `Retro:` line recorded at close
 
 **Last updated:** 2026-11-18
+
+Retro: ticket-grain charter-fidelity check, run inline at close on main at 8e1dabc7, the squash of PR #521. Tasks 1 to 7 landed, and task 8, the live Codex run, did not run, as the OPEN Decision and AC-8's fallback clause allow. AC-1, AC-2, and AC-9 were re-checked on main: the lead sections end inside 32 KiB, `project_doc_max_bytes = 262144` for a 132,790-byte `AGENTS.md`, and no dependency changed. The rest are met by their suites in CI, green on both legs for head 264e93ad and on main in run 44261795227. Eric's last pass left no finding standing. No Decision was refuted, so there are no promotion cautions.
