@@ -866,6 +866,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed the second pass: `approveCommandPath` takes its base from the git toplevel (`11aa142d`), ADR-0081 carries a dated amendment note for the hook modules reaching every install (`7835ad89`), and the PR body was synced. Added the plan-citations lesson to `.prism/lessons.md` (`00ea6f97`).
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed Eric's PR review of PR A: the architect-doc claims (`7ac8b7f2`), two stale Cursor-only comments and the `readPlanConfig` JSDoc (`6f939bf6`), and the duplicated guard edit check (`2b971c5d`). The delivery clause dropped from PR A is a new Decision, and T12 now re-adds it in PR B.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills]: Fixed Eric's re-review: the Token bullet and its curated twin now say a Codex `apply_patch` target is its whole patch text, so a patch naming the token file is denied (`fbfd5092`). Probed the guard on both halves of the sentence first, and added the half-rewording lesson to `.prism/lessons.md`.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Folded in two stack A review items: two token-arm guard cases (a Codex `apply_patch` naming the token file in another file's hunk denies, and a Claude `Edit` naming it only in `new_string` passes), and the `## PR Readiness` Build line, which cited `2b971c5d` as after the fourth pass fix when that SHA is older than `fbfd5092`.
 
 ## Sessions
 
@@ -876,6 +877,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: self-review the PR A fix commits (`c5dcdaa6..42adaf81`). Bounds: the plan's `## Review`, `## PR Readiness`, `## History`, and `## Sessions` only; no source fixes, no GitHub posts, no merge. Approach: wait on CI for both legs, run `prism:check`, mutation-probe the new guard cases, and source-verify the edited Hosts claim and `compatibility.md`. · close: scope held; the frontmatter probe edit was reverted and the tree left clean
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's findings on PR A (three Major architect-doc claims, three Minor, and the PR body). Bounds: the named files and their build mirrors, the plan, and the PR body; no resolving threads, no merge, no flipping the PR ready, no CI polling. Approach: probe the guard to confirm the token-arm claim before rewording it, fix in three commits, then the plan in its own. · close: scope held; the `refreshHookRuntime` comment in `update.ts` carried the dropped clause too and was fixed with it
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills] open: Intent: fix Eric's one remaining major on PR A, the Token bullet's file-edit half. Bounds: `hook-runtime.md` and its curated twin with their mirrors, the plan's third-pass entry, one lesson, and the PR body; no other files, no merge, PR stays draft. Approach: probe the guard on both halves of the sentence before rewording, then record it in the plan after the doc commit. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2] open: Intent: build PR B (T9-T24) of this plan, plus two stack A review fold-ins. Bounds: PR B's task files and generated copies only; no new dependency, no merge, no close of the plan, draft PR only. Approach: one commit per task in the plan's group order, porting thrive's skills at db357097 onto PRISM's registry and always-on rules.
 
 ## Verification
 
@@ -1115,7 +1117,7 @@ The issue's proof ("a ticket runs from a typed `approve` to committed bundles wi
 - [x] No stray console.logs or debug artifacts in the diff.
 - [x] Tests written for new logic. The `approved_via`, drive-letter, and shebang cases are in. A mutation probe fails both `approved_via` cases.
 - [x] No `open` debugged issues.
-- [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18, after the fourth pass fix). CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
+- [x] Build passes: the full `pnpm run prism:check` passes locally on Linux at 2b971c5d (2026-11-18). The fourth pass fix, `fbfd5092`, came after that run and changed only `hook-runtime.md` and its four copies. CI run 44358792289 on 7390d3d8 is the last green run, on `ubuntu-latest` and on `windows-latest`. The run on the new head is pending.
 - [x] PR description up to date: it cites run 44358792289 on 7390d3d8 as the last green run and the new head's run as pending, and it mentions the ADR-0081 amendment, the lesson, and `compatibility.md` updated in this PR.
 - [ ] AC for PR A: AC-2, AC-3, AC-7, AC-10, and AC-11 are met, and AC-10 is met by CI run 44351936636. AC-9 and the Codex payload checks were not run live. AC-1, AC-4, AC-5, AC-6, and AC-8 are PR B's.
 
