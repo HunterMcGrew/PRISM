@@ -152,6 +152,61 @@ describe("commit.mjs", () => {
 		assert.match(result.stderr, /pathspec 'missing\.txt' did not match/);
 	});
 
+	test("honors a retry delay of 0 instead of falling back to the default wait", () => {
+		const repo = createRepo();
+		writeFileSync(path.join(repo, "mine.txt"), "mine\n");
+		writeFileSync(path.join(repo, ".git", "index.lock"), "");
+		const started = Date.now();
+
+		const result = runCommit(repo, ["T4: Add mine", "mine.txt"], {
+			PRISM_PLAN_COMMIT_RETRIES: "3",
+			PRISM_PLAN_COMMIT_RETRY_DELAY_MS: "0",
+		});
+
+		assert.equal(result.status, 1);
+		assert.match(result.stderr, /gave up after 3 attempts/);
+		// The default 500 ms wait would put two waits, a full second, before the give-up.
+		assert.ok(Date.now() - started < 900, `took ${Date.now() - started} ms`);
+	});
+
+	test(
+		"passes through what git printed to stdout when a step fails",
+		{ skip: process.platform === "win32" && "the git stand-in is a shell script" },
+		() => {
+			const repo = createRepo();
+			writeFileSync(path.join(repo, "mine.txt"), "mine\n");
+			const realGit = execFileSync("sh", ["-c", "command -v git"], {
+				encoding: "utf8",
+			}).trim();
+			const shimDir = mkdtempSync(path.join(os.tmpdir(), "plan-commit-shim-"));
+			tempDirs.push(shimDir);
+			writeFileSync(
+				path.join(shimDir, "git"),
+				`#!/bin/sh\nfor arg in "$@"; do\n  if [ "$arg" = commit ]; then echo "git said no on stdout"; exit 3; fi\ndone\nexec "${realGit}" "$@"\n`,
+				{ mode: 0o755 }
+			);
+
+			const result = runCommit(repo, ["T4: Add mine", "mine.txt"], {
+				PATH: `${shimDir}${path.delimiter}${process.env["PATH"] ?? ""}`,
+			});
+
+			assert.equal(result.status, 3);
+			assert.match(result.stdout, /git said no on stdout/);
+		}
+	);
+
+	test("reports git's own error when git status itself fails, not an unchanged path", () => {
+		const outsideRepo = mkdtempSync(path.join(os.tmpdir(), "plan-commit-norepo-"));
+		tempDirs.push(outsideRepo);
+		writeFileSync(path.join(outsideRepo, "mine.txt"), "mine\n");
+
+		const result = runCommit(outsideRepo, ["T4: Add mine", "mine.txt"]);
+
+		assert.equal(result.status, 128);
+		assert.match(result.stderr, /not a git repository/);
+		assert.doesNotMatch(result.stderr, /no change to commit/);
+	});
+
 	test("exits 1 naming a path with no change, and commits nothing", () => {
 		const repo = createRepo();
 		writeFileSync(path.join(repo, "mine.txt"), "mine\n");

@@ -6,7 +6,7 @@
  * one worktree never sweep a sibling's staged files into their commit. Paths
  * are literal, so a magic pathspec such as `:/` can't widen the commit.
  *
- * Usage: node commit.mjs "<subject>" <path>...
+ * Usage: commit.mjs "<subject>" <path>...
  *
  * Every git call is an argv array with no shell, so quoting is the same on
  * every platform. A step that fails on a held index.lock is retried, because
@@ -43,13 +43,15 @@ export function runPlanCommit({ cwd, subject, paths, env = process.env }) {
 		return { exitCode: 2, stdout: "", stderr: `${USAGE}\n` };
 	}
 
-	const retries = readPositiveInteger(
+	const retries = readInteger(
 		env["PRISM_PLAN_COMMIT_RETRIES"],
-		DEFAULT_RETRIES
+		DEFAULT_RETRIES,
+		1
 	);
-	const delayMs = readPositiveInteger(
+	const delayMs = readInteger(
 		env["PRISM_PLAN_COMMIT_RETRY_DELAY_MS"],
-		DEFAULT_RETRY_DELAY_MS
+		DEFAULT_RETRY_DELAY_MS,
+		0
 	);
 
 	/**
@@ -66,18 +68,27 @@ export function runPlanCommit({ cwd, subject, paths, env = process.env }) {
 		};
 	};
 
-	const unchanged = paths.filter(
-		(file) =>
-			existsSync(path.resolve(cwd, file)) &&
-			git([
-				"--literal-pathspecs",
-				"status",
-				"--porcelain",
-				"--untracked-files=all",
-				"--",
-				file,
-			]).stdout.trim() === ""
-	);
+	/** @type {string[]} */
+	const unchanged = [];
+
+	for (const file of paths) {
+		if (!existsSync(path.resolve(cwd, file))) continue;
+
+		const status = git([
+			"--literal-pathspecs",
+			"status",
+			"--porcelain",
+			"--untracked-files=all",
+			"--",
+			file,
+		]);
+
+		if (status.status !== 0) {
+			return { exitCode: status.status, stdout: "", stderr: status.stderr };
+		}
+
+		if (status.stdout.trim() === "") unchanged.push(file);
+	}
 
 	if (unchanged.length > 0) {
 		return {
@@ -106,7 +117,11 @@ export function runPlanCommit({ cwd, subject, paths, env = process.env }) {
 			}
 
 			if (!step.stderr.includes("index.lock")) {
-				return { exitCode: step.status, stdout, stderr: stderr + step.stderr };
+				return {
+					exitCode: step.status,
+					stdout: stdout + step.stdout,
+					stderr: stderr + step.stderr,
+				};
 			}
 
 			if (attempt >= retries) {
@@ -130,12 +145,13 @@ export function runPlanCommit({ cwd, subject, paths, env = process.env }) {
 /**
  * @param {string | undefined} value
  * @param {number} fallback
+ * @param {number} minimum
  * @returns {number}
  */
-function readPositiveInteger(value, fallback) {
+function readInteger(value, fallback, minimum) {
 	const parsed = Number.parseInt(value ?? "", 10);
 
-	return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+	return Number.isInteger(parsed) && parsed >= minimum ? parsed : fallback;
 }
 
 /** @param {number} ms */
