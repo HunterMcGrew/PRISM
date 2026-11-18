@@ -207,5 +207,12 @@ function main() {
  * module as the entry.
  */
 if (path.basename(process.argv[1] ?? "") === "pre-commit.mjs") {
-	main();
+	try {
+		main();
+	} catch (error) {
+		// A crash in the hook itself must not block a commit.
+		process.stderr.write(
+			`pre-commit: skipped (internal error: ${error instanceof Error ? error.message : String(error)})\n`
+		);
+	}
 }
