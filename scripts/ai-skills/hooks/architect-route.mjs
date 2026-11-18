@@ -345,7 +345,8 @@ const STALE_STATE_FILE_AGE_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Removes sibling `<filePrefix>*.json` and orphaned `<filePrefix>*.json.tmp`
- * files last modified more than `STALE_STATE_FILE_AGE_MS` ago. One file
+ * files, and `<filePrefix>*.json.lock` directories a killed hook left behind,
+ * last modified more than `STALE_STATE_FILE_AGE_MS` ago. One file
  * accumulates per session with nothing to remove them otherwise — the
  * `.gitignore` glob keeps them out of `git status`, so they'd otherwise grow
  * unbounded and invisibly in `.prism/`. A `.tmp` orphan is exactly the file
@@ -380,9 +381,10 @@ export async function pruneStaleRouteState(
 	}
 
 	for (const entry of entries) {
+		const isLock = entry.endsWith(".json.lock");
 		if (
 			!entry.startsWith(filePrefix) ||
-			!(entry.endsWith(".json") || entry.endsWith(".json.tmp"))
+			!(entry.endsWith(".json") || entry.endsWith(".json.tmp") || isLock)
 		) {
 			continue;
 		}
@@ -391,7 +393,7 @@ export async function pruneStaleRouteState(
 		try {
 			const stats = await fs.stat(entryPath);
 			if (now - stats.mtimeMs > STALE_STATE_FILE_AGE_MS) {
-				await fs.rm(entryPath, { force: true });
+				await (isLock ? fs.rmdir(entryPath) : fs.rm(entryPath, { force: true }));
 			}
 		} catch {
 			// Best-effort — a file removed between readdir and stat, or a
@@ -495,14 +497,24 @@ async function acquireStateLock(lockPath) {
 			}
 		}
 
-		const stats = await fs.stat(lockPath).catch(() => null);
-		if (stats !== null && Date.now() - stats.mtimeMs > STATE_LOCK_STALE_MS) {
-			await fs.rmdir(lockPath).catch(() => {});
-			continue;
-		}
-
 		if (Date.now() >= deadline) {
 			return false;
+		}
+
+		// A stale lock that will not come away, such as a file squatting the
+		// path, ends the wait. Retrying it would spin until the host kills
+		// the hook.
+		const stats = await fs.stat(lockPath).catch(() => null);
+		if (stats !== null && Date.now() - stats.mtimeMs > STATE_LOCK_STALE_MS) {
+			const removed = await fs.rmdir(lockPath).then(
+				() => true,
+				() => false
+			);
+			if (!removed) {
+				return false;
+			}
+
+			continue;
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, STATE_LOCK_RETRY_MS));

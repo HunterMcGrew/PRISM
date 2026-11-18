@@ -145,18 +145,30 @@ function checkShellProofSafe(command) {
 /** Flags `cd` accepts that change how it resolves a symlink, never where it goes. @type {Set<string>} */
 const CD_INERT_FLAGS = new Set(["-L", "-P"]);
 
+/** Words that can stand before a `cd` without changing where it goes. @type {Set<string>} */
+const CD_PREFIX_WORDS = new Set(["{", "(", "builtin", "command"]);
+
 /**
  * The directory a `cd` segment moves to, `null` when the segment is not a
  * `cd`, or `undefined` when it is one whose target the hook cannot know: a
  * bare `cd`, `cd -`, a `~` path, a flag outside `-L`/`-P`, or more than one
  * operand.
  *
+ * `pushd` counts as a `cd`, and a leading `(`, `{`, `builtin`, or `command`
+ * is looked through, because each still moves the commands after it.
+ *
  * @param {string[]} tokens
  * @returns {string | null | undefined}
  */
 function resolveCdTarget(tokens) {
-	const [name, ...args] = tokens;
-	if (name !== "cd") {
+	const words = [...tokens];
+	words[0] = words[0]?.replace(/^[({]+/, "") ?? "";
+	while (words[0] === "" || CD_PREFIX_WORDS.has(words[0])) {
+		words.shift();
+	}
+
+	const [name, ...args] = words;
+	if (name !== "cd" && name !== "pushd") {
 		return null;
 	}
 
@@ -169,6 +181,20 @@ function resolveCdTarget(tokens) {
 	return target.startsWith("~") || target.includes("$") || target.includes("`")
 		? undefined
 		: target;
+}
+
+/**
+ * True when a `cd` target enters a named directory and then leaves it with
+ * `..`, as in `missing/..`. The shell fails that `cd` when the name does not
+ * exist and runs nothing after `&&`, while `path.resolve` collapses the pair
+ * and would credit the doc a later `cat` names. Leading `..` segments are
+ * fine, because `cd ..` cannot fail on a missing name.
+ *
+ * @param {string} target
+ * @returns {boolean}
+ */
+function checkStepsBackOutOfName(target) {
+	return /(^|\/)\.\.(\/|$)/.test(target.replace(/^(\.\.(\/|$))+/, ""));
 }
 
 /**
@@ -285,7 +311,9 @@ export function parseShellReadTargets(command) {
 		const cdTarget = resolveCdTarget(tokens);
 		if (cdTarget !== null) {
 			directory =
-				cdTarget === undefined || directory === undefined
+				cdTarget === undefined ||
+				directory === undefined ||
+				checkStepsBackOutOfName(cdTarget)
 					? undefined
 					: joinShellPath(directory, cdTarget);
 			continue;
@@ -684,18 +712,35 @@ function scanPathShapedTokens(command) {
  * - It carries `$(` or a backtick. An unquoted heredoc runs those while the
  *   shell expands the body, before the reader ever sees it.
  *
+ * Every body stays when the command holds a process substitution, or when any
+ * segment's head is outside `DATA_STDIN_READERS`, the read-only commands, and
+ * `cd`. `tee <<'EOF' >(bash)` hands the body to a shell through its own
+ * command line, and `cat > x.sh <<'EOF'` followed by `sh x.sh` runs it a line
+ * later. Neither shows in the reader or the pipe.
+ *
  * Paths on the command line itself are never cut, so `tee <path> <<'EOF'` and
- * `cat > <path> <<'EOF'` still gate on `<path>`. A body written to a script
- * and run later in the same command is not followed. That is the same gap as
- * any script file, whose contents the gate never reads.
+ * `cat > <path> <<'EOF'` still gate on `<path>`.
  *
  * @param {string} command
  * @returns {string}
  */
 function removeDataHeredocBodies(command) {
+	if (/[<>]\(/.test(command)) {
+		return command;
+	}
+
 	/** @type {import("./lib/shell.mjs").HeredocBody[]} */
 	const heredocs = [];
-	splitShellSegments(command, heredocs);
+	const segments = splitShellSegments(command, heredocs);
+	const runsOnlyKnownHeads = segments.every(
+		([head]) =>
+			head === "cd" ||
+			DATA_STDIN_READERS.has(unquote(head)) ||
+			SHELL_INSPECTION_COMMANDS.has(unquote(head))
+	);
+	if (!runsOnlyKnownHeads) {
+		return command;
+	}
 
 	let kept = "";
 	let cursor = 0;

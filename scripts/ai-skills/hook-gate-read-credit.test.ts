@@ -15,7 +15,9 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { loadRouteState } from "./hooks/architect-route.mjs";
+import * as architectRoute from "./hooks/architect-route.mjs";
+
+const { loadRouteState, saveRouteState } = architectRoute;
 import { runPostToolUseArm, runPreToolUseArm } from "./hooks/hook.mjs";
 import { HARNESSES } from "./hooks/harnesses.mjs";
 
@@ -96,6 +98,55 @@ test("reads a tool batch runs at once are all credited", async () => {
 	});
 });
 
+test("a stale lock that cannot be removed ends the wait instead of spinning", { timeout: 5000 }, async () => {
+	await withGateRepo(async (repoRoot) => {
+		const lockPath = path.join(repoRoot, ".prism", "architect-route-state.session-1.json.lock");
+		await fs.writeFile(lockPath, "");
+		const anHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+		await fs.utimes(lockPath, anHourAgo, anHourAgo);
+
+		const started = Date.now();
+		const result = await architectRoute.withRouteStateLock(repoRoot, "session-1", async () => "ran");
+		assert.equal(result, "ran", "the update runs unlocked");
+		assert.ok(Date.now() - started < 1000, "it returns without waiting out the deadline");
+	});
+});
+
+test("a stale lock directory is taken over, and a held one is waited out", async () => {
+	await withGateRepo(async (repoRoot) => {
+		const lockPath = path.join(repoRoot, ".prism", "architect-route-state.session-1.json.lock");
+		await fs.mkdir(lockPath);
+		const anHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+		await fs.utimes(lockPath, anHourAgo, anHourAgo);
+
+		await architectRoute.withRouteStateLock(repoRoot, "session-1", async () => {
+			await assert.doesNotReject(fs.stat(lockPath), "the update holds a fresh lock");
+		});
+		await assert.rejects(fs.stat(lockPath), "the lock is released afterwards");
+
+		await fs.mkdir(lockPath);
+		const started = Date.now();
+		assert.equal(
+			await architectRoute.withRouteStateLock(repoRoot, "session-1", async () => "ran"),
+			"ran"
+		);
+		assert.ok(Date.now() - started >= 1500, "a live lock is waited on before running unlocked");
+	});
+});
+
+test("a lock directory left by a killed hook is pruned with the old state files", async () => {
+	await withGateRepo(async (repoRoot) => {
+		const orphan = path.join(repoRoot, ".prism", "architect-route-state.old.json.lock");
+		await fs.mkdir(orphan);
+		const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+		await fs.utimes(orphan, twoDaysAgo, twoDaysAgo);
+
+		await saveRouteState(repoRoot, "session-1", { read: [], announced: [] });
+
+		await assert.rejects(fs.stat(orphan));
+	});
+});
+
 // --- A literal cd ---
 
 test("a cat behind a cd credits the doc it reads from the new directory", async () => {
@@ -122,8 +173,34 @@ test("a cd whose target the hook cannot know credits nothing after it", async ()
 			`cd - && cat .prism/architect/${GATE_DOC}`,
 			`cd && cat .prism/architect/${GATE_DOC}`,
 			`cd ~/repo && cat .prism/architect/${GATE_DOC}`,
+			`cd missing/.. && cat .prism/architect/${GATE_DOC}`,
 		]) {
 			assert.deepEqual(await runRead(repoRoot, command), [], command);
+		}
+	});
+});
+
+test("a cd up to a parent credits the doc it reads from there", async () => {
+	await withGateRepo(async (repoRoot) => {
+		const read = await runRead(
+			repoRoot,
+			`cd .. && cat .prism/architect/${GATE_DOC}`,
+			path.join(repoRoot, "src")
+		);
+		assert.deepEqual(read, [GATE_DOC]);
+	});
+});
+
+test("a cd behind a subshell, a brace group, pushd, builtin, or command still moves the write", async () => {
+	await withGateRepo(async (repoRoot) => {
+		for (const command of [
+			"(cd src && tee index.ts)",
+			"{ cd src && tee index.ts; }",
+			"pushd src && tee index.ts",
+			"builtin cd src && tee index.ts",
+			"command cd src && tee index.ts",
+		]) {
+			assert.match((await runGate(repoRoot, command)) ?? "", /src\/index\.ts/, command);
 		}
 	});
 });
@@ -180,6 +257,10 @@ test("heredoc text something runs, or pipes on to something that runs it, is sti
 			"cat <<'EOF' | sh\nrm src/index.ts\nEOF",
 			"cat <<EOF\n$(rm src/index.ts)\nEOF",
 			"<<'EOF' cat\nsrc/index.ts\nEOF",
+			"tee <<'EOF' >(bash)\nrm src/index.ts\nEOF",
+			"cat <<'EOF' > >(sh)\nrm src/index.ts\nEOF",
+			"tee >(sh) <<'EOF'\nrm src/index.ts\nEOF",
+			"cat > /tmp/x.sh <<'EOF'\nrm src/index.ts\nEOF\nsh /tmp/x.sh",
 		]) {
 			assert.match((await runGate(repoRoot, command)) ?? "", /src\/index\.ts/, command);
 		}
