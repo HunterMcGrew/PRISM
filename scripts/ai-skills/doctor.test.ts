@@ -2287,7 +2287,8 @@ test("runDoctor warns that the limit is unknown when the only limit line sits un
 		assert.equal(findings[0].severity, "warning");
 		assert.match(findings[0].message, /cannot place at the top level/);
 		assert.match(findings[0].message, /is unknown/);
-		assert.match(findings[0].message, /set it to 131072/i);
+		assert.match(findings[0].message, /top-level project_doc_max_bytes line set to 131072 or more is needed/);
+		assert.doesNotMatch(findings[0].message, /move the line/i);
 		assert.doesNotMatch(findings[0].message, /prism update/);
 		assert.match(findings[0].message, /~\/\.codex\/config\.toml/);
 		assert.equal(report.healthy, true);

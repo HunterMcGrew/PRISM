@@ -1113,7 +1113,7 @@ async function checkCodexDocLimit(consumerRepoRoot: string): Promise<DoctorFindi
 			{
 				check: "codex-doc-limit",
 				severity: "warning",
-				message: `${CODEX_CONFIG_RELATIVE_PATH} has a project_doc_max_bytes line PRISM cannot place at the top level (under a table, or after a multi-line value), so the limit Codex reads from AGENTS.md (${size} bytes) is unknown. Move the line to the top level and set it to ${computed} or more. ${fallback}`,
+				message: `${CODEX_CONFIG_RELATIVE_PATH} has a project_doc_max_bytes line PRISM cannot place at the top level (under a table, or after a multi-line value), so the limit Codex reads from AGENTS.md (${size} bytes) is unknown. A top-level project_doc_max_bytes line set to ${computed} or more is needed. ${fallback}`,
 			},
 		];
 	}

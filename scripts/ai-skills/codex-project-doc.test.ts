@@ -276,7 +276,6 @@ test("readLimitInForce is the configured integer when set and Codex's default ot
 	assert.equal(readLimitInForce({ kind: "set", value: 16_384 }), 16_384);
 	assert.equal(readLimitInForce({ kind: "absent" }), 32_768);
 	assert.equal(readLimitInForce({ kind: "unparseable", raw: "0x1" }), 32_768);
-	assert.equal(readLimitInForce({ kind: "unplaced" }), 32_768);
 });
 
 test("syncCodexProjectDocLimit with dryRun reports the outcome and writes nothing", async () => {

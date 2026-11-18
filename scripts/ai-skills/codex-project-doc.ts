@@ -48,10 +48,12 @@ export function computeProjectDocMaxBytes(agentsMdBytes: number): number {
 /**
  * The number of bytes Codex reads from `AGENTS.md`: the configured
  * `project_doc_max_bytes` when `setting` is a readable integer, otherwise
- * Codex's default. For `unplaced` the default is a guess, not a reading: the
- * limit in force is unknown there, and callers branch on the kind first.
+ * Codex's default. An `unplaced` setting is excluded because the limit in force
+ * is unknown there.
  */
-export function readLimitInForce(setting: ProjectDocMaxBytesSetting): number {
+export function readLimitInForce(
+	setting: Exclude<ProjectDocMaxBytesSetting, { kind: "unplaced" }>
+): number {
 	return setting.kind === "set" ? setting.value : CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES;
 }
 
