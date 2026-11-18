@@ -2,12 +2,15 @@
 title: Port the chain scripts, plan-folder templates, and shell parser
 ticket: https://github.com/HunterMcGrew/PRISM/issues/520
 stage: plan
-status: draft
+status: closed
 ---
 
 Child 4 of the Kitchen Line epic (#499). The design comes from the epic spec on `huntermcgrew/prism-499-approve-once` (PR #518), at `.prism/plans/prism-499/spec.md`: the Children table row 4, the "Plan folder" and "Scripts" parts of its Design, and the "Agent hooks" paragraph that assigns the shell parser port to this child. The thrive reference is TracTru/thrive at `db3570975431fa1d6114cc5f4170c126f6be7e97`, which contains every script tip from #2853, #2854, and #2859.
 
 **Goal:** PRISM ships the plan-chain scripts that later children call: the four chain templates, frontmatter helpers, folder-aware plan lookup with a separate archive search, the task parser, the bundle check, the commit script, auto-approval, stop paths, the citation lint, and thrive's shell parser. Each is inert until child 5 uses it, and each is proved by its own suite.
+
+> Closed: 2026-11-18
+> Retro: declined — ticket grain; the lightweight charter-fidelity check ran inline during this close (all 18 tasks landed, AC-1 to AC-9 met by their suites in CI run 44293874595 green on both legs at 364262f7, every self-review and PR-review finding fixed, Eric's re-review of the fix commits not yet run), so a separate report would restate it.
 
 ## Tasks
 
@@ -553,25 +556,37 @@ Owner: Eli. Set `last_updated` to the edit date.
 ## Decisions
 
 - **The plan uses the folder shape and the chain task shape before the chain tooling exists.** The spec gives every child a folder at `.prism/plans/prism-<n>/`, and this child's own task parser would reject the flat persona-heading shape. Tasks carry only the parser's fields, and each names its owning persona in its first prose line. No challenge rounds were run and `status` stays `draft`, because the round grammar's runner lands in child 5. Commits use `PRISM-520: <summary> (T<n>)`, because the `T<n>:` subject rule lands in child 5 with `git-conventions.md`.
+  - → no promotion needed (a bridge until child 5 (#522) lands the challenge-round runner, approval, and the `T<n>:` subject rule; the epic spec owns the folder shape, and at close `status` moved from `draft` straight to `closed`, since this plan was never approved through the chain)
 - **Children 4 and 5 stay separate.** The spec allows merging them. Child 4 is code with tests and no behavior change for anyone, while child 5 rewrites skills and adds approval, which reviewers read differently. Merged, the PR would roughly double in size and mix two kinds of review. Child 5 needs only what child 4 lands, and the merge order already sequences them.
+  - → no promotion needed (a ticket-specific cut; the epic spec's Children section already allows either)
 - **The chain modules live in the hook runtime tree and ride its delivery.**
   - **Root cause.** The spec asks for one copy of each parser, reachable from both a hook and a skill, in zero-dependency `.mjs` a consumer can run without `node_modules`.
   - **Alternatives considered.** A `prism plan` subcommand bundled into `dist/cli.js`, which adds public CLI surface, needs `npx` for every call, and would need the bundle-safe entry guard. A separate host-neutral delivery directory, which needs a second copy path, ownership rule, and prune list.
   - **Chosen approach.** Modules sit in `scripts/ai-skills/hooks/plan/`, with the parser in `hooks/lib/`. They join `HOOK_RUNTIME_FILES` and reach `.claude/hooks/plan/`. A consumer runs `node .claude/hooks/plan/<name>.mjs`, and PRISM's own tree runs `node scripts/ai-skills/hooks/plan/<name>.mjs`.
   - **Implementation guidance.** A Cursor-only consumer receives no hook runtime, so it does not get these modules from this child. Nothing calls them until child 5, so no merged step breaks. Child 5 writes the first caller and the approval script, which the intent says a Cursor user runs from a terminal, so child 5 decides how Cursor-only installs reach them and how skill bodies spell the path.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Invocation and Hosts, and `.prism/architect/_toolkit/hook-runtime.md`, under Hook runtime (the rejected subcommand and separate-directory alternatives stay here; how a Cursor-only install reaches the modules is child 5's, and #522's acceptance criteria cover it)
 - **Plan lookup exists once, in `lookup.mjs`.**
   - **Root cause.** `resolveLivePlan` is TypeScript importing `../utils`, which a delivered hook cannot load. `compact-handoff.mjs` keeps its own four-path lookup that misses plan folders entirely, so a folder-plan branch would lose its plan path in every compaction summary.
   - **Alternatives considered.** Extending each copy in place. Rejected, because the spec requires one copy and the two already disagree on the ticket scan.
   - **Chosen approach.** `lookup.mjs` holds the order. `resolveLivePlan` (T8) and `findPlanForBranch` (T9) delegate to it and keep their own ticket-id extraction: the generic token for the build-time lint, and `ticketPrefix` for the hook.
   - **Implementation guidance.** A folder resolves to its latest-stage chain file, because every caller reads one file's text. A folder holding only `intent.md` now beats a flat plan of the same id. That reverses a phase-1 test that was an implementation choice, not a recorded Decision, and T8 carries the behavior change. The live lookup and `findArchivedPlan` stay separate functions, so no gate can mistake a frozen record for a live plan.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Lookup, and `.prism/architect/_toolkit/hook-runtime.md`, under Compaction arms (the shipped doc leaves out `resolveLivePlan`, which is PRISM-internal; `resolve-live-plan.ts`'s file header names the shared lookup it delegates to)
 - **Every glob goes through PRISM's `compileMatcher`.** `path.matchesGlob` needs Node 20.17 and was experimental there, while the engines floor is `>=20.10.0` and CI pins Node 20. Thrive's matcher is a third dialect. Using the manifest's own matcher means Affected systems, stop paths, and routes read one syntax. The cost is that `**/x` does not match a root `x`, so the default stop paths list root files on their own and the spec template says so.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Globs
 - **The bundle check reads PRISM's flat manifest and takes aliases from config.** Thrive's check imported its 2,120-line architect hook for three helpers and read a two-section manifest PRISM does not have. `findRepoRoot` and `matchDocsForPath` already exist in `architect-route.mjs`, and `extractImportSpecifiers` is copied into `bundles.mjs`, its only caller. Thrive's hard-coded `@frontend/` alias becomes the `importAliases` key, per the spec. Reading `tsconfig` `paths` was considered and rejected, because it covers only TypeScript and needs a JSONC parser.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Bundle check (the manifest walk and the `importAliases` key; the rejected `tsconfig` `paths` reading stays here)
 - **Config is read through child 2's `readRepoConfig`, so child 2 must merge first.** A second reader would make three copies, counting `compact-handoff.mjs`'s private one. The merge order already puts child 2 before child 4. If child 2 slips, the build halts as blocked instead of forking the helper.
+  - → no promotion needed (a merge-order call, satisfied when #516 merged as 7ded6ecb; the shared reader is visible in each module's imports)
 - **The shell parser is ported now and wired to nothing.** The spec assigns it here because child 5's approve guard needs it before the agent-hooks child moves the existing gates onto it. Wiring it into `hook.mjs` belongs to those children.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Shell parser (no gate calls it yet; child 5 (#522) puts the approve guard on it, and child 8 of #499 moves the existing gates onto it)
 - **`commit.sh` becomes `commit.mjs` with an argv array and no shell.** The runtime is tested on Windows, which rules out bash. Spawning git without a shell keeps quoting identical on every platform. The retry knobs are renamed `PRISM_PLAN_COMMIT_RETRIES` and `PRISM_PLAN_COMMIT_RETRY_DELAY_MS` (milliseconds, where thrive used seconds), per the spec's `prism` naming swap.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Commit script
 - **The citation lint is its own `prism:check` step, and its allowlist can only shrink.** Thrive enforced it through a repo-wide test case. A named script gives a readable failure line in CI and runs alone. An allowlisted file that comes clean fails the run until its entry is removed, so the spec's "can only shrink" is mechanical rather than a promise. A violation in another plan folder is reworded rather than allowlisted, because the list starts with the phase-1 plan alone.
+  - → no promotion needed (`plan-folder-citations.ts`'s header states the shrink-only allowlist and why plan folders avoid heading citations, `branch-plan.md` names the lint, and `prism:check` runs it as its own step)
 - **The ticket subject form is built from `ticketPrefix`.** Thrive hard-coded `THR[PN]?-`. With no prefix configured, no subject reads as a ticket subject, which changes nothing, because only task subjects count toward done.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Tasks and subjects
 - **The issue's acceptance criteria are synced.** Issue #520 carries all nine criteria under its Acceptance Criteria heading, worded as the plan's criteria without the ID prefix and Evidence lines, so nothing needed writing to the tracker.
+  - → no promotion needed (tracker bookkeeping)
 - **Child 4 ships as one PR.** The shell parser (T1, T2) could have been stacked under the chain scripts, but the epic is already cut at child grain and each part is inert alone. Hunter ruled on 2026-11-18 that standard PRs have no size limit, and whether to stack is the orchestrator's call, which chose one PR.
   - → no promotion needed (a ticket-specific shipping call)
 - **The install seed's routing stub reaches `plan-chain-scripts.md` through the plan and spec templates, not through `.claude/hooks/plan/**`.** `templates/install/.prism/architect/manifest.stub.json` routes `.prism/templates/plan.md` and `.prism/templates/spec.md` to `_toolkit/plan-chain-scripts.md`, the way the base manifest does, because `verify-manifest` rejects a shipped doc that no stub route names and `hook-runtime.md` says the consumer's `.claude/hooks/` files stay unrouted. The orchestrator approved a stub edit after T17, since no task listed the stub.
@@ -580,24 +595,38 @@ Owner: Eli. Set `last_updated` to the edit date.
   - **Implementation guidance.** A Bash call to the delivered scripts is not denied under the new stub, which the gate probe confirms. Do not route `.claude/hooks/**` from the stub.
   - → no promotion needed (`hook-runtime.md`, under Write gate, already states that `.claude/hooks/` stays unrouted, and the stub now mirrors the base manifest's template routes)
 - **`prism-516/plan.md` and `prism-519/plan.md` citations were reworded in T14.** The new lint reported 18 section-sign citations in the merged `prism-516/plan.md` and two in `prism-519/plan.md`, where T14 named only the second file. T14 says to fix every violation the script reports by spelling it as words, so the build reworded each as `<file>, under <heading>`, and the meaning is unchanged. The alternative, allowlisting `prism-516/plan.md`, was rejected because the allowlist is meant to hold the phase-1 plan alone.
+  - → no promotion needed (scope record for this branch)
 - **`plan-chain-scripts.md` cites the four chain templates by path.** `pnpm prism:ship-closure` fails when a shipped template is reachable from nothing, and no skill cites them until child 5. The architect doc is routed from the base manifest, and it genuinely depends on the templates' headings, so it names them in a short Templates paragraph.
+  - → no promotion needed (the Templates paragraph is already in `plan-chain-scripts.md`; citing the templates there for `ship-closure` is a bridge until child 5's (#522) skills cite them)
 - **The `plan.md` template's Retro comment allows "declined".** Thrive's comment said the retro always runs, which contradicts the plan rule's declinable retro line. The comment now reads "the retro report's path, or `declined — <reason>`". The `Retro:` line and every heading stay as thrive has them.
+  - → no promotion needed (the comment matches `branch-plan.md` as it stands; child 6 of #499 makes the retro fixed with no declined form for folder plans, and the template comment changes with it)
 - **Two T4 schema cases are pinned on the schema document, not the validator.** The config validator does not enforce `additionalProperties`, so an unknown `stopPaths` key and a non-string `importAliases` value pass it. The test asserts the schema declares both rules.
+  - → no promotion needed (a limit of this child; making the validator enforce the `stopPaths` and `importAliases` rules is tracked in #529)
 - **A container's directories resolve as POSIX paths, and `~` and a bare `cd` inside one read as unknown.** The orchestrator decided the cwd uses `path.posix` with no `toHostPath`, after the Windows leg of PR #528 failed on four docker segment tests.
   - **Root cause.** `unwrapDocker` and a `cd` inside a container went through the host's `resolveDir`, so a Windows host turned `/workspace` into `\workspace` and `-w /w` into `W:\`.
   - **Chosen approach.** `resolveContainerDir` in `segments.mjs`, used for a `docker -w`, for any wrapper that runs after a docker one, and for every `cd` in a segment whose container is set. `~` and a bare `cd` are null, because the host's home directory is wrong inside a container, and null is the walk's existing "unknown" value.
   - **Implementation guidance.** A test sets `process.platform` to `win32` on Linux, since `path.win32` can't be injected into the module. Expected host paths in the segment tests use `path.normalize`, not `path.resolve`, because `resolveDir` normalizes and `path.resolve` would add a drive letter it never produces. The Windows leg itself has not run on this fix, so the next CI run is its proof.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Shell parser (the faked-`win32` test approach stays here)
 - **`WRAPPERS` is read behind `Object.hasOwn`.** A prototype name such as `toString` or `constructor` is a plain command word, not a wrapper, and never throws. A null-prototype map was the other option, but the own-property check keeps the table a literal.
+  - → no promotion needed (implementation tactic, visible in `segments.mjs` and pinned by its test)
 - **Stop-path globs are fixed in `stop-paths.mjs` only, and the shared `compileMatcher` is untouched.** Architect routing depends on that matcher, and changing a shared utility needs its own approval.
   - **Chosen approach.** `expandMiddleGlobstars` tries every combination of crossing or skipping each mid-path `**/`, and a pattern holding `{` is a config error, because the matcher reads braces literally and a brace pattern would never match. A leading `**/` is unchanged, so root files are still listed on their own.
   - **Implementation guidance.** The schema description, `plan-chain-scripts.md`, and `docs/parameterization.md` state both rules. The affected-systems globs in `spec.md` still go through the unexpanded matcher, so a mid-path `**/` there needs a directory, which fails closed to a person.
-- **`resolveStopPaths` rejects an unknown `stopPaths` key, a non-string entry, and a list that is set but is not an array, and `auto-approve.mjs` exits 2 with the message.** The config validator does not enforce `additionalProperties`, so a misspelled `contracts` key turned contract protection off with no output. The shared validator is left alone, and issue #526 tracks it. Only an absent key takes its default. A set `dependency` or `contract` that is not an array, such as `"contract": "src/contracts/**"` or `null`, is a config error, because the fallback for `contract` is empty and approving past the paths the config named fails open. An earlier version fell back and a test pinned it; the PR review's re-review found the hole, and the orchestrator ruled it an error. A config file that exists but does not parse also exits 2, through `readStopPathConfig` in `auto-approve.mjs`, because the shared `readRepoConfig` returns null for an absent file and for an unreadable one and stays unchanged for the git hooks.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Globs and Stop paths
+- **`resolveStopPaths` rejects an unknown `stopPaths` key, a non-string entry, and a list that is set but is not an array, and `auto-approve.mjs` exits 2 with the message.** The config validator does not enforce `additionalProperties`, so a misspelled `contracts` key turned contract protection off with no output. The shared validator is left alone, and issue #529 tracks it. Only an absent key takes its default. A set `dependency` or `contract` that is not an array, such as `"contract": "src/contracts/**"` or `null`, is a config error, because the fallback for `contract` is empty and approving past the paths the config named fails open. An earlier version fell back and a test pinned it; the PR review's cross-cutting notes found the hole, and the orchestrator ruled it an error. A config file that exists but does not parse also exits 2, through `readStopPathConfig` in `auto-approve.mjs`, because the shared `readRepoConfig` returns null for an absent file and for an unreadable one and stays unchanged for the git hooks.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Stop paths (the validator gap is tracked in #529)
 - **`parseFiles` rejects a backslash.** This closes the stop-path and outside-the-repo bypass at the parse, in one place, instead of normalizing in each check.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Tasks and subjects
 - **The alias swap joins the value with `path.posix.join` instead of stripping `./` and a trailing slash at read time.** It accepts the same spellings the orchestrator named (`./src/`, `src`) and a few more, and it needs no second copy of the normalization.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Bundle check
 - **The bundle check's `{}` manifest fallback is removed, not made reachable.** `findRepoRoot` finds the root by the manifest, so a repo with none could never reach the fallback. Making it reachable would need a second root finder keyed on `.git`, for a state no install is in, because every install ships the stub manifest. A plan with no manifest above it exits 1 naming the path, and a test pins that.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Bundle check
 - **`resolveLivePlan` swallows lookup errors again.** T8's behavior-change field names only the folder precedence, and `spec-scope-lint` passes a branch whose plan is missing, so restoring the old null keeps both true. Recording a new throw would have meant a lint that crashes on a permissions error it never crashed on before. `resolvePlan` still throws, because the hook callers want to know.
+  - → no promotion needed (the invariant is in `resolveLivePlan`'s JSDoc and pinned by its `chmod` test, and `resolvePlan`'s throw is visible in `lookup.mjs`)
 - **`commit.mjs` returns git's stdout on failure, reports a failed `git status`, and honors a delay of `0`.** A failed status used to read as an unchanged path, and a hook or git message on stdout used to vanish.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`, under Commit script
 - **The seed copy of `branch-plan.md` now mentions the plan-folder citation lint.** T16 says to apply both edits to the twin. That lint exists only in PRISM's own tree, so a consumer reads a sentence about a check it does not have. Child 5 or a later pass can soften it.
+  - → no promotion needed (a one-sentence wording fix in a seed this PR already edits; reported for a fold-in before merge, and child 5 (#522), which rewrites `branch-plan.md` for folder plans, is its home if it ships as is)
 
 ## History
 
@@ -609,6 +638,7 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed the second-pass Major and both Minors in 5f506cb0, with a test that fails on the old source for the first two. CI on e9705bfc is green on both legs, and the new commits have not run there yet.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Fixed both PR-review Majors and both Minors in e8547f90, afde75fd, and 518a5eae, with a CLI test that fails on the old head for the config one; the Decision on the install seed's routing stub records the route change. CI on e9ad165b is green on both legs, and the new commits have not run there yet.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: A `stopPaths.dependency` or `stopPaths.contract` value that is set but is not an array is now a config error and `auto-approve.mjs` exits 2, instead of falling back to the default; see the Decision on `resolveStopPaths`. A CLI test and a unit test fail on the old head, and the docs, schema description, and mirrors say the same.
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts]: Closed the plan: a verdict on all 28 Decisions, 14 of them already promoted to `plan-chain-scripts.md` or `hook-runtime.md`, the ticket-grain retro run inline, and AC-1 to AC-9 ticked on CI run 44293874595. Filed #529 for the validator gap and pointed the stop-path Decision at it in place of #526, which covers `gitHooks` only. Refreshed Verification, which still said a string stop-path list approves.
 
 ## Sessions
 
@@ -620,15 +650,16 @@ Owner: Eli. Set `last_updated` to the edit date.
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: self-review the review-fix commits 2c4f7de6..e9705bfc on PR #528. Bounds: plan Review and PR Readiness only, no source fix, no GitHub post, no merge. Approach: run `prism:check`, read both CI legs on the head, check each fix against its finding, and verify the changed architect-doc claims against source. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix the three open second-pass findings on PR #528. Bounds: those findings, the plan's Verification and Review records, and the PR body's Windows line; no merge, no ready flip. Approach: one fix commit with tests shown red on the old source, a separate plan commit, then `prism:check`. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: fix the four PR-review findings on PR #528, then the PR body and a lesson. Bounds: those findings and the plan's Decision, Review, History, and Verification records; no change to `lib/command.mjs` exports or `lib/match.mjs`, no thread resolution, no merge, no ready flip. Approach: a CLI test shown red on the old head, one fix commit per concern, a separate lessons commit and plan commit, then `prism:check`. · close: scope held
+- 2026-11-18 [huntermcgrew/prism-520-chain-scripts] open: Intent: close the plan on the final PR branch. Bounds: this plan file only, as a plan-only commit; any promotion outside `.prism/plans/` or `.prism/architect/` is reported, not made; follow-ups with no home filed as issues; no merge, PR stays draft. Approach: check the tasks, AC, CI, and review against the diff, then a verdict per Decision, the closed markers, and the Retro line. · close: scope held; every promotion was already in `plan-chain-scripts.md` or `hook-runtime.md`, so no architect doc changed, and #529 was filed
 
 ## Verification
 
 - `pnpm exec tsc --noEmit` passes for both `scripts/ai-skills/tsconfig.json` and `tsconfig.hooks.json`.
-- `pnpm run prism:test` reports 1505 passing, 0 failing, and 1 skipped, after the PR-review fixes. The skip is the existing `.agents` round-trip case, which waits on `prism:build`. Each behavior fix has a test that fails on the head before it.
+- `pnpm run prism:test` reports 1508 tests, 1507 passing, 0 failing, and 1 skipped, on 364262f7. The skip is the existing `.agents` round-trip case, which waits on `prism:build`. Each behavior fix has a test that fails on the head before it.
 - `prism:crossref-lint`, `prism:plan-citations`, `prism:spec-scope-lint`, `prism:ship-closure`, `prism:verify-manifest`, and `prism:verify-pack` pass, and `pnpm prism:check` run as one command with `GITHUB_HEAD_REF=huntermcgrew/prism-520-chain-scripts` exits 0.
-- CI run 44290931324 on e9ad165b is green on `ubuntu-latest` and `windows-latest`, so the second-pass fixes have run on the Windows leg. The leg that had failed 7 tests passes with the container-path and test-literal fixes.
-- The consumer gate probe denies a Bash call to `node .claude/hooks/plan/tasks.mjs` or `commit.mjs` with the old stub as the manifest and allows both with the new stub. The auto-approve probe exits 2 on a trailing-comma config, 1 on the same config without the comma, and 0 on a config that sets a string where a list belongs, which the stop-path Decision keeps.
-- Not verified: the PR-review fix commits on CI, and the delivered scripts under a real Claude Code session.
+- CI run 44293874595 on 364262f7, the head after every review fix, is green on `ubuntu-latest` and `windows-latest`. The leg that had failed 7 tests passes with the container-path and test-literal fixes.
+- The consumer gate probe denies a Bash call to `node .claude/hooks/plan/tasks.mjs` or `commit.mjs` with the old stub as the manifest and allows both with the new stub. The auto-approve probe exits 2 on a trailing-comma config and 1 on the same config without the comma. A config that sets a string where a list belongs exits 2 as well, which `plan-auto-approve.test.ts` and `plan-stop-paths.test.ts` pin.
+- Not verified: the delivered scripts under a real Claude Code session, which child 5 (#522) is the first to run, and Eric's re-review of the fix commits, which has not run.
 
 ## Review
 
@@ -837,33 +868,33 @@ Eric PR review, 2026-11-18, of 35f6ca7a..e9ad165b. Two Major findings and two Mi
 
 The issue's one-line proof ("every suite passes, and a plan with two tasks on one file is rejected"), expanded into checkable criteria.
 
-- [ ] **AC-1** Every suite this child adds passes on both CI platforms.
+- [x] **AC-1** Every suite this child adds passes on both CI platforms.
   - Evidence (machine): the PR's `prism-check` CI is green on `ubuntu-latest` and `windows-latest`. Locally, `pnpm prism:test` reports 0 failures and its output includes tests from `hook-tokenize`, `hook-segments`, `plan-frontmatter`, `plan-config-schema`, `plan-stop-paths`, `plan-tasks`, `plan-lookup`, `plan-bundles`, `plan-commit`, `plan-auto-approve`, `plan-templates`, `plan-folder-citations`, and `plan-runtime-delivery` · UNMET looks like: either leg red, or a listed suite missing from the run.
-- [ ] **AC-2** A plan with two open tasks listing the same file, neither depending on the other, is rejected by the bundle check.
+- [x] **AC-2** A plan with two open tasks listing the same file, neither depending on the other, is rejected by the bundle check.
   - Evidence (machine): in `plan-bundles.test.ts`, the CLI on that fixture exits 1 with `Duplicate claim: src/a.ts is listed by T1 and T2`. The positive control is the same plan with `depends on: T1` on T2, which exits 0 · UNMET looks like: exit 0 on the duplicate, or exit 1 on the control.
-- [ ] **AC-3** A plan meeting every condition auto-approves, and a plan failing any one is held with nothing written.
+- [x] **AC-3** A plan meeting every condition auto-approves, and a plan failing any one is held with nothing written.
   - Evidence (machine): in `plan-auto-approve.test.ts`:
     - `clean` and `thirteen-tasks` end with `status: approved` and `approved_by: auto`.
     - `one-round`, `round-2-blocking`, `outside-affected-systems`, `dependency-file`, and `contract-path` each exit 1 with the plan byte-identical.
     - UNMET looks like: any held fixture written to, or any approving fixture left at `draft`.
-- [ ] **AC-4** A confirm round may carry findings, and an earlier round may not.
+- [x] **AC-4** A confirm round may carry findings, and an earlier round may not.
   - Evidence (machine): in `plan-auto-approve.test.ts`, `round 4: carried 2` as the highest round approves, and `round 3: carried 1` as the highest round exits 1 · UNMET looks like: the round-3 carry approves, or the round-4 carry is held.
-- [ ] **AC-5** A plan folder resolves ahead of a flat plan, legacy flat plans resolve as before, and an archived plan is found only by the archive search.
+- [x] **AC-5** A plan folder resolves ahead of a flat plan, legacy flat plans resolve as before, and an archived plan is found only by the archive search.
   - Evidence (machine):
     - `plan-lookup.test.ts`: a folder holding only `intent.md` beats a flat plan of the same id, and `resolvePlan` returns null when only `.prism/archived/plans/` holds the plan, while `findArchivedPlan` returns it.
     - `resolve-live-plan.test.ts` passes with only the one renamed assertion changed.
     - UNMET looks like: an archived path returned by `resolvePlan`, or a flat-plan assertion edited beyond the renamed one.
-- [ ] **AC-6** The commit script commits only the named paths and refuses an unchanged one.
+- [x] **AC-6** The commit script commits only the named paths and refuses an unchanged one.
   - Evidence (machine): in `plan-commit.test.ts`:
     - A sibling's staged file is still staged and absent from the new commit.
     - Naming an unchanged path exits 1 with nothing staged.
     - `:/` is treated as a missing path.
     - UNMET looks like: the sibling file in the commit, or anything staged after the refusal.
-- [ ] **AC-7** A plan folder holding a section-sign citation fails `pnpm prism:check`, and the allowlisted phase-1 plan does not.
+- [x] **AC-7** A plan folder holding a section-sign citation fails `pnpm prism:check`, and the allowlisted phase-1 plan does not.
   - Evidence (machine): `plan-folder-citations.test.ts` reports `<file>:<line> section-citation` for a fixture folder. In this repo, `pnpm run prism:plan-citations` exits 0, and `prism:check` in `package.json` contains `prism:plan-citations` · UNMET looks like: the fixture passes, the repo run fails on `prism-499/plan.md`, or the step is missing from `prism:check`.
-- [ ] **AC-8** A consumer's delivered copy of the chain scripts runs.
+- [x] **AC-8** A consumer's delivered copy of the chain scripts runs.
   - Evidence (machine): in `plan-runtime-delivery.test.ts`, after `runUpdate`, `node .claude/hooks/plan/tasks.mjs <plan> --base HEAD` exits 0 in the consumer fixture, and `hosts: ["cursor"]` delivers none of the files · UNMET looks like: a module-not-found error from the delivered copy.
-- [ ] **AC-9** The shell parser follows a directory change inside a shell string.
+- [x] **AC-9** The shell parser follows a directory change inside a shell string.
   - Evidence (machine): in `hook-segments.test.ts`, `bash -c 'cd sub && git commit -m x'` yields a `git` segment with `via: "shell-string"` and `cwd` ending in `sub` · UNMET looks like: no `git` segment, or `cwd` left at the root.
 
 ### AC Sync Log
@@ -872,18 +903,19 @@ The issue's one-line proof ("every suite passes, and a plan with two tasks on on
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-18 | Winston | Generated AC from the issue's proof line | written | not synced (awaiting go-ahead) |
 | 2026-11-18 | Clove | Checked issue #520's Acceptance Criteria against the plan's nine criteria | none needed | synced |
+| 2026-11-18 | Winston | Ticked AC-1 to AC-9 at close | ticked | not synced; the issue's checkboxes are left for a person |
 
 ## PR Readiness
 
-- [x] No critical or major issues — both self-review passes' and the PR review's findings are fixed; the PR review's re-review has not run
+- [x] No critical or major issues — both self-review passes' and the PR review's findings are fixed, each behavior fix with a test that fails on the head before it; Eric's re-review of the fix commits has not run
 - [x] Types correct — `pnpm prism:check-types` passes for both tsconfigs, and the modules use JSDoc types with no `any`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — a CLI test pins exit 2 on a config that does not parse
+- [x] Tests written for new logic and edge cases — CLI tests pin exit 2 on a config that does not parse and on a stop-path list that is a string
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run 2026-11-18: `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally on the PR-review fix commits (1505 pass, 1 skipped). CI on those commits has not run; run 44290931324 on e9ad165b is green on `ubuntu-latest` and `windows-latest`
-- [x] PR description up to date — its Not-verified line names the PR-review fix commits, and Notes name the `prism-519/plan.md` rewordings
-- [ ] Lasting decisions promoted to architect context (if applicable) — close-time work, not yet done
+- [x] Build passes — last run 2026-11-18: CI run 44293874595 on 364262f7 is green on `ubuntu-latest` and `windows-latest`, and `pnpm prism:check` with `GITHUB_HEAD_REF` set exits 0 locally on the close commit (1508 tests, 1507 pass, 1 skipped)
+- [ ] PR description up to date — stale: its Not-verified line still lists the PR-review fix commits on CI, which run 44293874595 has now run, and it does not say that a set `stopPaths` list that is not an array is a config error (b4fa7247)
+- [x] Lasting decisions promoted to architect context — every Decision carries a verdict, and the 14 promotions were already in `plan-chain-scripts.md` and `hook-runtime.md` before close
 
 **Last updated:** 2026-11-18
 
-Retro:
+Retro: ticket-grain charter-fidelity check, run inline at close on 364262f7. All 18 tasks landed, one commit each; the only changed files outside the task lists are this plan, `prism-516/plan.md`, and the install stub, the last two recorded in Decisions, plus a lesson. AC-1 to AC-9 are met by their named suites, and CI run 44293874595 on 364262f7 is green on `ubuntu-latest` and `windows-latest`. Both self-review passes and Eric's PR review are fixed, each behavior fix with a test that fails on the head before it, and Eric's re-review of the fix commits has not run. Review reversed two calls, the stub route and the non-array stop-path fallback, and both Decisions were rewritten to match before close, so there are no promotion cautions.
