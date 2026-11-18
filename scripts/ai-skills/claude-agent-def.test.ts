@@ -4,7 +4,7 @@
  *   - per-skill model defaults (opus for the architect, sonnet otherwise)
  *   - the generated SKILL.md body riding after the frontmatter
  *   - token substitution applied to the description
- *   - the emitter loop skips utility skills (one agent def per persona, none per utility)
+ *   - the emitter loop skips utility skills (one agent def per non-utility role, none per utility)
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -88,7 +88,7 @@ test("description is collapsed to one line and token-substituted", () => {
 	assert.match(output, /description: "Line one continued onto line two\."/);
 });
 
-test("the emitter skips utilities — one agent def per persona, none per utility", async () => {
+test("the emitter skips utilities — one agent def per non-utility role, none per utility", async () => {
 	const roleDefinitions = await loadRoleDefinitions();
 	const roleMap = buildRoleMap(roleDefinitions);
 	const agentsRoot = path.join(repoRoot, ".claude", "agents");
@@ -112,7 +112,7 @@ test("the emitter skips utilities — one agent def per persona, none per utilit
 			assert.equal(
 				emitted,
 				true,
-				`persona ${skillId} must get a .claude/agents def`
+				`${role.type ?? "persona"} ${skillId} must get a .claude/agents def`
 			);
 		}
 	}

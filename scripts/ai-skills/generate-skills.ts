@@ -40,8 +40,15 @@ import {
 export interface RoleDefinition {
 	id: string;
 	persona?: string;
-	type?: "persona" | "utility";
+	/**
+	 * `persona` has a name and an agent def, `utility` has neither an agent def
+	 * nor a name, and `agent` has an agent def but no name, because a stage
+	 * dispatches it as a subagent.
+	 */
+	type?: "persona" | "utility" | "agent";
 	routing?: "auto" | "named-only";
+	/** Skill ids whose content a Claude agent def injects at start. */
+	preloads?: string[];
 }
 
 export interface RolesDefinitions {
@@ -80,6 +87,7 @@ interface BuildClaudeAgentMarkdownArgs {
 	anchorContent?: Record<string, string>;
 	claudeSkillMarkdown: string;
 	description: string;
+	preloads?: string[];
 	skillId: string;
 	tokenMap: Map<string, string>;
 }
@@ -208,6 +216,7 @@ export function buildClaudeAgentMarkdown({
 	anchorContent,
 	claudeSkillMarkdown,
 	description,
+	preloads,
 	skillId,
 	tokenMap,
 }: BuildClaudeAgentMarkdownArgs): string {
@@ -230,6 +239,9 @@ export function buildClaudeAgentMarkdown({
 		`name: ${skillId}`,
 		`description: ${JSON.stringify(substitutedDescription)}`,
 		`model: ${model}`,
+		...(preloads?.length
+			? ["skills:", ...preloads.map((id) => `  - ${id}`)]
+			: []),
 		"---",
 	].join("\n");
 
@@ -440,8 +452,8 @@ export async function removeDeletedManagedAgentFiles(
 /**
  * Validates role entries and indexes them by skill ID.
  *
- * Persona entries require a persona name; utility entries (type: "utility")
- * validate with id alone — they have no persona to require.
+ * Persona entries require a persona name; utility and agent entries validate
+ * with id alone — they have no persona to require.
  */
 export function buildRoleMap(
 	roleDefinitions: RolesDefinitions
@@ -454,20 +466,22 @@ export function buildRoleMap(
 		if (
 			role.type !== undefined &&
 			role.type !== "persona" &&
-			role.type !== "utility"
+			role.type !== "utility" &&
+			role.type !== "agent"
 		) {
 			throw new Error(
-				`Role '${role.id}' in .ai-skills/definitions/roles.json has unrecognized type '${role.type}' — use "persona", "utility", or omit type.`
+				`Role '${role.id}' in .ai-skills/definitions/roles.json has unrecognized type '${role.type}' — use "persona", "utility", "agent", or omit type.`
 			);
 		}
-		if (!role.id || (role.type !== "utility" && !role.persona)) {
+		const isPersonaLess = role.type === "utility" || role.type === "agent";
+		if (!role.id || (!isPersonaLess && !role.persona)) {
 			throw new Error(
-				'Each role in .ai-skills/definitions/roles.json must include id, plus persona unless type is "utility".'
+				'Each role in .ai-skills/definitions/roles.json must include id, plus persona unless type is "utility" or "agent".'
 			);
 		}
-		if (role.type === "utility" && role.persona) {
+		if (isPersonaLess && role.persona) {
 			throw new Error(
-				`Utility role '${role.id}' must not carry a persona — a persona on a utility entry is contradictory and would sit inert in the registry.`
+				`${role.type === "agent" ? "Agent" : "Utility"} role '${role.id}' must not carry a persona — a persona on a ${role.type} entry is contradictory and would sit inert in the registry.`
 			);
 		}
 		if (role.routing !== "auto" && role.routing !== "named-only") {
@@ -476,6 +490,27 @@ export function buildRoleMap(
 			);
 		}
 		roleMap.set(role.id, role);
+	}
+
+	// A preload can name a role listed after the one that carries it, so the
+	// check waits until the map is complete.
+	for (const role of roleMap.values()) {
+		const seen = new Set<string>();
+		for (const preload of role.preloads ?? []) {
+			const reason = !roleMap.has(preload)
+				? "names no role in .ai-skills/definitions/roles.json"
+				: preload === role.id
+					? "is the role itself"
+					: seen.has(preload)
+						? "is listed twice"
+						: undefined;
+			if (reason) {
+				throw new Error(
+					`Role '${role.id}' preloads '${preload}', which ${reason}.`
+				);
+			}
+			seen.add(preload);
+		}
 	}
 
 	return roleMap;
@@ -668,6 +703,7 @@ export async function generatePlatformSkills(
 				anchorContent,
 				claudeSkillMarkdown: claudeMarkdown,
 				description,
+				preloads: roleDefinition.preloads,
 				skillId,
 				tokenMap,
 			});
