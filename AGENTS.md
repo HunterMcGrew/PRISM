@@ -78,7 +78,7 @@ history: <one `## History` line>
 <one paragraph>
 ```
 
-- `done`: rerun `node scripts/ai-skills/hooks/plan/bundles.mjs <plan.md> --base <base>`, dispatch the next bundles, and after each wave append the reports' History lines to `plan.md` and commit `plan: <summary>`.
+- `done`: rerun `node scripts/ai-skills/hooks/plan/bundles.mjs <plan.md> --base <base>`, dispatch the next bundles, and after each wave append the reports' History lines to `plan.md` and commit `plan: <summary>`. `<base>` is the commit that first added `plan.md`, the last line of `git log --diff-filter=A --format=%H -- <plan.md>`. Every wave passes it, so the range holds only this plan's commits. The default branch is the wrong base on a stacked branch, where the parent's `T<n>:` commits would read as done.
 - `blocked`: fix the environment and re-dispatch, at most 2 times. A chain script's exit 2, or a `commit.mjs` failure other than an unchanged path, is `blocked`.
 - `needs-replan`: the plan stage's re-plan, where a second one on the same task asks the person. An unlisted file, or an acceptance criterion the tasks cannot meet, is `needs-replan`.
 
