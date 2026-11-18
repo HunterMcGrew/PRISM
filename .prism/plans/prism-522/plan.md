@@ -875,6 +875,7 @@ Tests:
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T14: `prism-plan` rewritten as the plan stage at 116 loaded lines (51 body, 1 claude.md, 64 template), the three `references/plan/` files deleted with their twins and platform copies, and the `prism-plan` allowlist entry removed. The plan-mode citation in `triple-gated-adr-criterion.md` and its twin now reads "the plan stage's decision promotion at close".
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T15: `prism-challenge` is an `agent` role with the plan-round grammar (60 lines, no citations), and the routing rule names it on the dispatched-stages line beside its trigger phrases. The AGENTS.md lead sections now end at byte 31,645 of the 31,744 working limit, so T19's routing edit has to shrink the rule.
 - 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T16: `prism-implement` and `prism-docs` commit their bundle and return the build report on a plan folder, and keep the ship steps for a flat plan. Measured loaded lines are 69 for `prism-implement` and 117 for `prism-docs`, which dropped its "Describe observable behavior" bullet to fit. `prism-implement` now preloads `tdd`, and its Claude agent file lists it under `skills:`.
+- 2026-11-18 [huntermcgrew/prism-522-chain-skills-part-2]: Built T17: `tdd` gained the test-first rules, the rule for changing an existing test, and a mutation check for every new test. It no longer asks the user to confirm a seam, because on a plan the task's `proof` names it.
 
 ## Sessions
 

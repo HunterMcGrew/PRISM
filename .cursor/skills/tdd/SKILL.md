@@ -31,17 +31,52 @@ result. A test that reaches into internal state or asserts on implementation
 details breaks the moment the implementation changes shape, even when the
 behavior it's supposed to guard didn't move.
 
-**Test only at pre-agreed seams.** Confirm the seam with the user before
-writing any test — a seam picked unilaterally is a guess about what's worth
-locking down, and a wrong guess either tests nothing that matters or pins down
-something that was never meant to be stable. When no user is available to
-confirm, pick the defensible default, name the seam chosen and the alternative
-rejected in your closing message, and proceed.
+**Test only at agreed seams.** A seam picked carelessly is a guess about
+what's worth locking down, and a wrong guess either tests nothing that matters
+or pins down something that was never meant to be stable. On a plan, the task's
+`proof` names the seam. With no plan, pick the defensible seam, name it and the
+alternative you rejected in your closing message, and proceed.
 
 Refactoring is **not** part of this loop. Red-green is about making a new
 behavior exist and proving it; changing the shape of already-passing code
 without changing its behavior is a separate act with its own discipline, not a
 phase inside this one.
+
+## Test-first rules
+
+Test-first is the default, and every task lands with a proof that fails without it.
+
+- A new file gets tests.
+- A new component or block gets a story plus tests.
+- Untested code that a task changes gets characterization tests first.
+- A bug fix's failing test lands before the fix.
+
+A characterization test pins what the code does today, right or wrong. Commit it
+passing before the task's own edit, so the change shows up as a behavior diff in
+that test instead of as a surprise somewhere else.
+
+For a bug fix, the failing test is its own earlier task, and that task carries
+`proof fails on main: yes`. The marker records that the proof is expected to
+fail until the fix lands.
+
+## Changing an existing test
+
+Add tests freely. Change or delete a line of a test file that already exists
+only when the task's `files:` names that file and the task carries
+`behavior change:` saying what changed and why.
+
+Never edit a test to make it pass. A test that goes red after your change is
+reporting either a regression or a behavior change, and only the plan can say
+which. When the task doesn't permit the edit, stop and return `needs-replan`
+naming the test.
+
+## Test efficacy
+
+A test that can't fail proves nothing, and it reads exactly like one that
+holds. Before you report a new test as a proof, run a mutation check: back up
+the file the test covers, break what the test pins, confirm the test goes red,
+then restore the file. Run `git diff` after both steps, once to confirm the
+mutation landed and once to confirm the restore left no change.
 
 ## Three anti-patterns, each with its tell
 
