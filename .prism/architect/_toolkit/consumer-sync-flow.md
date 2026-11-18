@@ -66,6 +66,8 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 **The hook runtime rides the same update.** See [`hook-runtime.md`](./hook-runtime.md) for what it delivers, to which hosts, and how a consumer turns it off.
 
+**Codex's AGENTS.md limit rides the same update.** Codex reads only the first 32 KiB of `AGENTS.md` by default, so when Codex is in `hosts` and `AGENTS.md` exists, `runUpdate` sets `project_doc_max_bytes` in the repo's `.codex/config.toml` through `syncCodexProjectDocLimit` (`scripts/ai-skills/codex-project-doc.ts`). The value is the file size rounded up to the next 64 KiB, plus one 64 KiB step. The edit touches only that top-level key, never lowers a larger value, and leaves a value it cannot parse alone with a warning. Dropping Codex from `hosts`, or ejecting, leaves the key in place. The generated block also renders `AGENTS_MD_LEAD_RULES` (`scripts/ai-skills/agents-md-block.ts`) first, so routing and the behavioral norms fit in that default window even where the limit is never raised.
+
 **Idempotency.** `generatePlatformSkills` uses `writeFileIfChanged` for every output: if the rendered content matches the file already on disk, no write occurs. A `prism:update` run on a repo already at the current PRISM version is a no-op across the roster.
 
 The decision record for this feature is ADR-0062 ("Consumer skill distribution via prism:update").

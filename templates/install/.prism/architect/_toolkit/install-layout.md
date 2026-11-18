@@ -61,6 +61,7 @@ The committed-vs-ignored split inside each tool namespace is the consumer instal
 
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
+- `.codex/config.toml` is **committed** — the repo's own Codex project config. PRISM sets only `project_doc_max_bytes` in it, through `prism update` when Codex is among the hosts, and leaves every other key alone.
 - `.agents/skills/` is **populated directly, not auto-gitignored** — every `prism adopt`/`prism update` renders the persona roster there directly (see [`consumer-sync-flow.md`](./consumer-sync-flow.md) § Steady-state persona-skill distribution), the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It belongs in your `.gitignore` as machine-local output, not because population is unshipped. PRISM writes nothing into your `.gitignore` except the two hook state-file globs described in [`hook-runtime.md`](./hook-runtime.md), and the render regenerates on every `prism update`.
 - Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
 
