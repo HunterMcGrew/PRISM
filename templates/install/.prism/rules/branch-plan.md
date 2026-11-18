@@ -222,7 +222,7 @@ Before promoting decisions and marking the plan closed (steps 1–2 above), ever
 
 # Plan File Template
 
-When creating a new plan, use the following structure.
+When creating a new plan, use the following structure. A folder plan uses the four templates in `.prism/templates/`, and this flat template stays for legacy plans.
 
 ---
 
