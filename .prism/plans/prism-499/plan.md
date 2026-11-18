@@ -614,6 +614,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Amended the intent to thrive's Kitchen Line stack at its 2026-11-17 branch tips and added `spec.md`, which cuts the remaining work into nine children. The amended intent is a draft until Hunter approves it.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter approved the amended intent in chat. The stamp was written by hand because the approval script arrives with the chain-scripts child.
 - 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Fixed the first PR review's findings. Children get their own issues and `prism-<n>/` folders, the approval script moved beside its guard in child 5, the shell parser port moved to child 4, and child 3 tests only the sections that exist when it lands. The spec now records the ADRs the amendment reverses in part and which child writes each successor.
+- 2026-11-17 [huntermcgrew/prism-499-kitchen-line-intent]: Hunter re-approved the intent in chat at `7c37fe08`, after the review fixes edited it. The edits were a `stage` field, the Eric wording, four restated bullets under what the amendment changes, a Cursor sentence, and one heading name.
 
 ---
 
