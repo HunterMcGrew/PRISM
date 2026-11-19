@@ -19,6 +19,7 @@
 		".prism/architect/",
 		".prism/spec/",
 		".prism/references/",
+		".prism/review/",
 		".prism/templates/",
 		".prism/SPEC.md",
 		".prism/.sync-manifest.json",

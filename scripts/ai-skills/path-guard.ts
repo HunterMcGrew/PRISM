@@ -28,6 +28,7 @@ export const PATH_GUARD_COPIED_AREAS = [
 	"spec",
 	"templates",
 	"references",
+	"review",
 ] as const;
 export const PATH_GUARD_LOOSE_FILES = ["SPEC.md"] as const;
 

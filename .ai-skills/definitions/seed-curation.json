@@ -6,6 +6,7 @@
 		"architect/_toolkit/rule-generation.md",
 		"architect/_toolkit/stack-detection.md",
 		"architect/onboarding.md",
+		"review/stack/**",
 		"rules/skill-authoring.md",
 		"spec/adrs/_toolkit/0001-plan-is-source-of-truth.md",
 		"spec/adrs/_toolkit/0002-skill-auto-routing.md",

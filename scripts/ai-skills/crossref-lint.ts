@@ -120,12 +120,12 @@ interface ScanRoot {
 export const CROSSREF_SCAN_ROOTS: ScanRoot[] = [
 	{
 		contentRoot: ".prism",
-		areas: ["rules", "architect", "spec", "references", "templates", "skills"],
+		areas: ["rules", "architect", "spec", "references", "review", "templates", "skills"],
 		looseFiles: ["SPEC.md"],
 	},
 	{
 		contentRoot: "templates/install/.prism",
-		areas: ["rules", "architect", "spec", "references", "templates", "skills"],
+		areas: ["rules", "architect", "spec", "references", "review", "templates", "skills"],
 		looseFiles: ["SPEC.md.tmpl"],
 	},
 	{
@@ -303,6 +303,15 @@ export function isLazyOrHistoricalTarget(cleaned: string): boolean {
 	}
 
 	if (cleaned.startsWith(".prism/plans/")) {
+		return true;
+	}
+
+	// The misses log appears with its first appended row, and a stack check
+	// with a consumer's onboarding, so neither exists in this repo's tree.
+	if (
+		cleaned === ".prism/metrics/review-misses.jsonl" ||
+		cleaned.startsWith(".prism/review/stack/")
+	) {
 		return true;
 	}
 

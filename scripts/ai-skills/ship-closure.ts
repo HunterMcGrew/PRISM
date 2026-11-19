@@ -35,7 +35,7 @@ import { checkIsPrismSkillId } from "./ownership";
 import { pathExists, readFileIfExists } from "./utils";
 
 /** Content areas `build.ts` mirrors into the install seed, relative to `.prism/`. */
-const SEED_CONTENT_AREAS = ["rules", "architect", "spec", "templates", "references"] as const;
+const SEED_CONTENT_AREAS = ["rules", "architect", "spec", "templates", "references", "review"] as const;
 
 /** Loose files `build.ts` mirrors into the install seed, relative to `.prism/`. */
 const SEED_LOOSE_FILES = ["SPEC.md"] as const;
