@@ -1077,6 +1077,7 @@ round 5: carried 1
   - **Chosen approach.** The first commit on stack B's branch, `0cf3195e`, has the subject `T1-T12: Record stack A as shipped in #535` and holds only a `## History` line. The subject marks T1 to T12 done for `tasks.mjs`, `bundles.mjs`, and the resume table. The commit does not implement those tasks; PR #535 did, as `2cbd8716` on `main`. It is a task-subject commit that touches only the plan, unlike the usual `plan:` form, and this entry is why.
   - **Implementation guidance.** Run `bundles.mjs` with `--base 2cbd8716` as the workflow rule says; the range includes the record commit. The first wave is T14, T15, and T16.
   - → no promotion needed (the same gap affects every stacked ticket, and the follow-up PR to the workflow rule carries the lasting fix)
+- T22 also updates `.ai-skills/definitions/seed-curation.json`, adding ADR 0083 to `excluded`. Every numbered ADR is excluded from the seed, so a new one left off that list is written into `templates/install/.prism/spec/adrs/_toolkit/`, where the install ADR gate and the relative-link gate fail on its ADR references. T22 also leaves the curated twin of the ADR README alone, because that twin's index holds no rows: no numbered ADR ships, so a row would link to a file a consumer never receives.
 
 ## History
 
@@ -1106,6 +1107,7 @@ round 5: carried 1
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T19, so `spec-scope-lint.ts` keys on the root rulebook and `.prism/review/*.md` with `stack/` excluded, and treats `## Review` and `## Verification` as ledger sections. `followup-scope.md` and its twins name the rulebook and drop the review-loop bullet, and the lint's 51 tests pass.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T20, which removes `prism-review-loop` and renames the branch literal in `resolve-live-plan.test.ts`, and T13, which adds `prism-verify` at 72 loaded lines. `measureLeadSectionEnds` puts the `AGENTS.md` lead section at 31,742 before, 31,576 after T20, and 31,638 after T13, under the 31,744 limit. `CONTEXT.md` still names `prism-review-loop` and sits outside the spec's Affected systems, so it is for child 9.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T21, wiring `watch-ci.mjs`, the `REVIEW.md` pause triggers, the confirm pass, and the five resume rows into the workflow rule and the PR stage. `measureLeadSectionEnds` puts the `AGENTS.md` lead section at 31,739 with `workflow.md` at 8,659 bytes. The first build landed at 31,777, so the watch-ci sentence and the pause sentence were shortened, and no row or cap was cut.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T22 and T23. ADR 0083 makes the retro a fixed last stage on folder plans, and it needed one unlisted file, `seed-curation.json`, to exclude it from the seed, recorded as a Decision. The roster in `skills-ecosystem.md` now matches the merged self-review, PR-review, QA, retro, audit, and verify skills.
 
 ## Sessions
 
