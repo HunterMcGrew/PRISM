@@ -1093,6 +1093,7 @@ round 5: carried 1
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T12, the new `review-runtime.md` and its routes in `manifest.json`, `manifest.base.json`, and the install `manifest.stub.json`, with the `plan-chain-scripts.md`, `hook-runtime.md`, `install-layout.md`, and `token-substitution.md` edits and their copies and seed twins. The `plan-chain-scripts.md` Invocation paragraph was also corrected to list `watch-ci` as a command with its exit codes 8 and 3 and its config-parse behavior, because it was false once `watch-ci` shipped. `pnpm run prism:check` is green at this head, `prism:ship-closure` included.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed Briar's round 1 on stack A, one `T<n> fix:` commit each for T10, T4, T2, T11, and T3, and marked the five Minors and the bookkeeping Minor fixed under `## Review`. The two nits, a two-cell row in `check-report.mjs` and `readOption` in `watch-ci.mjs`, stay open.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed the two-cell row nit in `T4 fix` 79abb962, so `check-report.mjs` drops a table row with fewer than three cells as thrive does. The `readOption` nit was declined earlier.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed Eric's PR-review round 1 on stack A, one `T<n> fix:` commit each for T5, T8, T12, T10, T7, and T9, after `prism-architect` ruled on the stack marker, the in-place `REVIEW.md` replacement, and doctor's info severity. The three rulings are recorded as Decisions, and the cleaner path on the correctness stack check is not taken in this PR.
 
 ## Sessions
 
@@ -1103,6 +1104,7 @@ round 5: carried 1
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: dispose of challenge round 3, fixing the blocking crossref-lint finding in T7 and acting on the four non-blocking ones. Bounds: `plan.md` only, never `## Challenge`, T25's intent wording unchanged, and `plan:` kept folder-only. Approach: verify the lint's scan roots and thrive's exit rule, fix in the owning tasks, and record the log-carrier call as a Decision. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: apply the architect's round-4 AC-2 verdict and clear the stale Decisions. Bounds: `plan.md` only, never `## Challenge`, the issue sync left to the main session. Approach: swap in the accepted AC-2 text, record the verdict where the plan reads it, and start the scope-change list. · close: scope held
 - 2026-11-19 [huntermcgrew/prism-530-review-verify] open: Intent: self-review stack A (T1 to T12) at `6d16a76f` against this plan and the repo's rules. Bounds: record in `plan.md` only, no fixes, no GitHub posts, stack B out of scope. Approach: run `prism:check`, read every source and doc change, and check the four ported scripts against thrive at `db35709` with one subagent. · close: scope held
+- 2026-11-19 [huntermcgrew/prism-530-review-verify] open: Intent: fix Eric's PR-review round 1 on stack A under `prism-architect`'s rulings. Bounds: the files named per `T<n> fix:`, their generated copies and seed twins, and `plan.md` Decisions and Review only, no `## Tasks` edit. Approach: record the Decisions first, then one fix commit per task, then mark each finding fixed. close: scope held
 
 ## Verification
 
@@ -1132,7 +1134,8 @@ round 5: carried 1
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed c81a746a`
+- **Fixed in:** `c81a746a` makes `plan-retro-line.ts` skip a last PR-review line marked `(part <k> of <m>)` with `<k>` below `<m>`, with three new tests, `1e99ca3e` adds the marker to `REVIEW.md`'s record lines, and `4dc0ab84` documents it in `review-runtime.md`. The Decisions entry on stacked tickets records the rule.
 - **File:** `scripts/ai-skills/plan-retro-line.ts:44`
 - **Problem:** One folder plan serves every PR in its stack, so the first `clean` or `confirm` PR-review line on #535 makes `findEmptyRetroLines` fail this plan while stack B is still unreviewed. `prism:check` then goes red on #535 and on `main`, and so does the live-tree test at `plan-retro-line.test.ts:145`. The Decisions "Stack: two PRs, cut after T12" and "PR-review verdict means the final one" don't account for each other. Class: a completion check keyed on a per-PR event over a per-ticket record. Sweep: `git grep -n 'pr-review' 95089dcc -- scripts .prism/review REVIEW.md`. This lint is the only code reader today, and T21's resume row will need the same fix.
 - **Suggested fix:** make the retro due only when the review of the PR that lands the last task is final. Either also require every task done using `tasks.mjs`'s done set, or carry the PR number in the record line. This changes T5 and a Decision, so `prism-architect` should rule first.
@@ -1140,7 +1143,8 @@ round 5: carried 1
 ### PR review: the marker test never reads the shipped REVIEW.md
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed ad1fb936`
+- **Fixed in:** `ad1fb936` reads the shipped root `REVIEW.md` and asserts its first line starts with `REVIEW_MD_MARKER_PREFIX`.
 - **File:** `scripts/ai-skills/review-md-delivery.test.ts:118`
 - **Problem:** The prefix is asserted against the test's own `SEED_CONTENT` literal, so a root `REVIEW.md` that loses its marker line passes every test and ships unowned to every consumer. Class: a guard test that reads a fixture instead of the artifact it guards. Sweep: `git grep -n -E 'REVIEW_MD_MARKER_PREFIX|prism:review' 95089dcc -- 'scripts/ai-skills/*.test.ts'`. The doctor and eject tests also use literals.
 - **Suggested fix:** assert `startsWith(REVIEW_MD_MARKER_PREFIX)` on the real root `REVIEW.md`.
@@ -1148,7 +1152,8 @@ round 5: carried 1
 ### PR review: the crossref lint never reads REVIEW.md
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed ad602c2e`
+- **Fixed in:** `ad602c2e` adds both paths to the repo-root scan entry, which already resolved its loose files against the repo root, and a config test. A broken backticked citation added to `REVIEW.md` failed the lint before it was reverted.
 - **File:** `scripts/ai-skills/crossref-lint.ts:123`
 - **Problem:** Root `REVIEW.md` and `templates/install/REVIEW.md` are missing from the repo-root `looseFiles`, so a later rename of a path the rulebook cites ships broken with `prism:check` green, and T8's crossref proof checks nothing about the rulebook. Every citation resolves today. Class: a new shipped carrier file left out of the lint's scan list. Sweep: read `CROSSREF_SCAN_ROOTS` at `95089dcc`.
 - **Suggested fix:** add both paths to the third scan root's `looseFiles`.
@@ -1156,7 +1161,8 @@ round 5: carried 1
 ### PR review: a marked REVIEW.md gets a backup on every rulebook refresh
 
 - **Severity:** `minor` (design call for Hunter, since T10 prescribes the backup)
-- **Status:** `open`
+- **Status:** `fixed ad1fb936`
+- **Fixed in:** `ad1fb936` drops the backup in `syncReviewMd` and reports a plain replacement, with a test that no `REVIEW.md.bak` exists, and `4dc0ab84` updates `review-runtime.md`.
 - **File:** `scripts/ai-skills/update.ts:1803`
 - **Problem:** With no hash, `syncReviewMd` can't tell a team's edit from an older PRISM copy. So every release that changes the rulebook leaves `REVIEW.md.bak`, then `.bak.1`, untracked in the consumer's root. The hook runtime overwrites its marked files in place instead. Class: an ownership marker that still triggers a divergence backup. Sweep: `git grep -n 'backupConsumerFile(' 95089dcc -- scripts/ai-skills/update.ts`. Every other call is gated on a hash or a marker.
 - **Suggested fix:** overwrite a marked file in place, as `deliverHookRuntimeFile` does. The recommendation is this one over adding a sync-manifest hash.
@@ -1222,9 +1228,13 @@ round 5: carried 1
   - Fixed in 79abb962: `parseTableRow` now drops a row with fewer than three cells, as thrive's does, and two tests cover a two-cell fail row and a section of only two-cell rows.
 - `scripts/ai-skills/hooks/plan/watch-ci.mjs:205`: `readOption` takes the next token blindly. A trailing `--required` quietly falls back to config, and `--required --timeout-min 5` waits on a check named `--timeout-min`. Thrive has the same behavior.
   - Declined 2026-11-19 by the main session: T2 ports thrive's watcher, and its argument parsing matches thrive's. Changing it would be a behavior change the port doesn't call for.
-- PR review, open: `scripts/ai-skills/doctor.ts:1558` warns on every run about an unmarked `REVIEW.md`, though deleting the marker line is the documented opt-out. `info` fits better.
-- PR review, open: `REVIEW.md:27` maps from "review-changes output", a skill PRISM doesn't ship and nothing else names.
-- PR review, open: `.prism/review/intent-scope.md:48` cites the branch-plan heading without its number. The heading is `3. Preserve Intentional Logic`.
+- `scripts/ai-skills/doctor.ts:1558` warns on every run about an unmarked `REVIEW.md`, though deleting the marker line is the documented opt-out. `info` fits better.
+  - Fixed in ad1fb936: doctor reports it as info, and `4dc0ab84` updates `review-runtime.md` to match.
+- `REVIEW.md:27` maps from "review-changes output", a skill PRISM doesn't ship and nothing else names.
+  - Fixed in 1e99ca3e: the paragraph is deleted from `REVIEW.md` and its seed twin.
+- `.prism/review/intent-scope.md:48` cites the branch-plan heading without its number. The heading is `3. Preserve Intentional Logic`.
+  - Fixed in 878b37e5: the citation now carries the number, and the generated copies follow.
+- PR review, cleaner path, not taken in this PR: `scripts/ai-skills/lib/rule-generators/review-stack.ts:123` writes one correctness bullet per detected language, and every bullet repeats the same `commands.*` evidence. One bullet naming the commands would say the same in a line.
 
 ## Acceptance Criteria
 
