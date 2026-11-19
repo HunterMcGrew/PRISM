@@ -684,11 +684,18 @@ head: 22e246b9b0525b34fdc180ee9012546eec6d08ff
   - Sweep: `git grep -n "identity, tone" -- ':!.prism/plans'` finds only the fixed lines and their generated copies. `pnpm prism:build` leaves the tree clean, and the `.claude`, `.codex`, `.cursor`, and install-template copies match. `skill-loaded-lines.test.ts` and `persona-voice.test.ts` pass, 12 of 12, and `prism:crossref-lint` passes.
   - Criteria: unchanged from round 1. The fix commits touch no criterion's evidence, and AC-2 and AC-8 still hold at 1ffa2bf8.
 - pr-review round 1 at 2a6aa063 (part 1 of 2): 0 critical, 0 major, 1 minor, 0 nit
-  - **Minor, bug: the Voice allowance reaches `claude.md`, but the shape checks read only `shared.md`.** `scripts/ai-skills/persona-voice.test.ts:35` reads only `shared.md`, while `stripVoice` runs over both body files (`scripts/ai-skills/lib/skill-loaded-lines.ts:18`). A `## Voice` in any skill's `claude.md`, a utility's or an agent's included, gets 16 uncharged lines and no test fails.
+  - **Minor, bug: the Voice allowance reaches `claude.md`, but the shape checks read only `shared.md`.** fixed 33050911. `scripts/ai-skills/persona-voice.test.ts:35` reads only `shared.md`, while `stripVoice` runs over both body files (`scripts/ai-skills/lib/skill-loaded-lines.ts:18`). A `## Voice` in any skill's `claude.md`, a utility's or an agent's included, gets 16 uncharged lines and no test fails.
     - Class: a measurement exemption that applies to more files than the check guarding it reads.
     - Sweep: `git grep -c '^## Voice' 2a6aa063 -- '.ai-skills/skills/*/claude.md' '.ai-skills/skills/*/references/*'` found none.
     - Fix: have `readSkillLines` read every body file that exists. The persona case asserts `claude.md` has no `## Voice` line, and the utility and agent case checks both files.
   - Every pass swept or n/a, and CI is green on both legs at 2a6aa063. AC-1 and AC-4 human evidence are still open and posted on the PR. This run's own comments carry no greeting or signature line, which can serve as AC-4's scratch-PR evidence.
+- pr-review round 2 at 49ee05ef (part 1 of 2): 0 critical, 0 major, 0 minor, 1 nit
+  - Range `1c02dec8..49ee05ef`. Round 1's Minor is fixed in 33050911: a temporary `## Voice` in the `claude.md` of `prism-plan`, `prism-verify`, and `prism-architect` failed both test cases, and the test passes 3 of 3 once reverted. The thread is resolved.
+  - **nit, bug: the new `claude.md` guards match `## Voice` exactly, but `stripVoice` matches it after `trimEnd()`.** `scripts/ai-skills/persona-voice.test.ts:100` and line 114 use `Array.includes("## Voice")`, while `scripts/ai-skills/lib/skill-loaded-lines.ts:150` exempts `line.trimEnd() === "## Voice"`. A `## Voice ` heading with a trailing space in a `claude.md`, or in a utility or agent `shared.md`, gets the allowance and the test still passes 3 of 3.
+    - Class: an exemption check that normalizes its input more loosely than the guard enforcing it.
+    - Sweep: `grep -n '"## Voice"' scripts/ai-skills/persona-voice.test.ts` finds lines 50, 61, 66, 100, and 114. Lines 50 to 66 sit behind the persona shape check, which fails on a non-exact heading, so only 100 and 114 let one through.
+    - Fix: compare trimmed lines at both sites, or decline with a one-line reason.
+  - Every pass swept or n/a. CI was pending on both legs at 49ee05ef. AC-1 and AC-4 human evidence are still open, unchanged from round 1. Labels now `effort:deep` and `confidence:needs-judgment`.
 
 ## Acceptance Criteria
 
