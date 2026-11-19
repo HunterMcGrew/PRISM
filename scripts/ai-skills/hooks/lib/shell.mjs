@@ -4,6 +4,15 @@
 /**
  * Shell command segmentation shared by the architect write gate and the git
  * gates. Zero-dependency `.mjs` — see `hook.mjs` for why.
+ *
+ * @typedef {Object} HeredocReader
+ * @property {string | undefined} head The command word reading the heredoc, or undefined when the introducer opened its segment.
+ * @property {boolean} piped True when that command's segment ends in `|`, so the body flows on to another command.
+ *
+ * @typedef {Object} HeredocBody
+ * @property {number} start Index of the first body character.
+ * @property {number} end Index just past the last body character, delimiter line included.
+ * @property {HeredocReader[]} readers One entry per heredoc whose body is in this span.
  */
 
 /**
@@ -66,14 +75,23 @@ export function unquote(token) {
  *   quote, which is to treat the rest of the line as one quoted word rather
  *   than as further commands.
  *
+ * A caller that passes `heredocs` also gets each line's heredoc bodies back:
+ * the span of the command they occupy, and for each heredoc the head of the
+ * command reading it and whether that command pipes its output onward.
+ *
  * @param {string} command
+ * @param {HeredocBody[]} [heredocs]
  * @returns {string[][]}
  */
-export function splitShellSegments(command) {
+export function splitShellSegments(command, heredocs) {
 	/** @type {string[][]} */
 	const segments = [];
 	/** @type {string[]} */
 	const pendingHeredocs = [];
+	/** @type {HeredocReader[]} */
+	let pendingReaders = [];
+	/** @type {HeredocReader[]} */
+	let segmentReaders = [];
 	/** @type {string[]} */
 	let tokens = [];
 	let token = "";
@@ -91,6 +109,7 @@ export function splitShellSegments(command) {
 
 	const endSegment = () => {
 		endToken();
+		segmentReaders = [];
 		if (tokens.length > 0) {
 			segments.push(tokens);
 			tokens = [];
@@ -114,7 +133,10 @@ export function splitShellSegments(command) {
 		if (char === "\n" || char === "\r") {
 			endSegment();
 			if (pendingHeredocs.length > 0) {
+				const start = index + 1;
 				index = skipHeredocBodies(command, index, pendingHeredocs);
+				heredocs?.push({ start, end: index + 1, readers: pendingReaders });
+				pendingReaders = [];
 			}
 			continue;
 		}
@@ -127,14 +149,46 @@ export function splitShellSegments(command) {
 		if (char === ";" || char === "&" || char === "|") {
 			if (char !== ";" && command[index + 1] === char) {
 				index++;
+			} else if (char === "|") {
+				for (const reader of segmentReaders) {
+					reader.piped = true;
+				}
 			}
 			endSegment();
 			continue;
 		}
 
-		if (char === "<" && command[index + 1] === "<" && command[index + 2] !== "<") {
+		// A here-string's `<<<` is consumed whole, so its last two characters
+		// never read as a heredoc introducer that would turn every later line
+		// into body text.
+		if (char === "<" && command[index + 1] === "<" && command[index + 2] === "<") {
 			endToken();
+			index += 2;
+			continue;
+		}
+
+		// A `#` that starts a word comments out the rest of the line, so a
+		// `<<EOF` inside the comment opens nothing.
+		if (char === "#" && !started) {
+			while (
+				index + 1 < command.length &&
+				command[index + 1] !== "\n" &&
+				command[index + 1] !== "\r"
+			) {
+				index++;
+			}
+			continue;
+		}
+
+		if (char === "<" && command[index + 1] === "<") {
+			endToken();
+			const queued = pendingHeredocs.length;
 			index = readHeredocDelimiter(command, index, pendingHeredocs);
+			if (pendingHeredocs.length > queued) {
+				const reader = { head: tokens[0], piped: false };
+				pendingReaders.push(reader);
+				segmentReaders.push(reader);
+			}
 			continue;
 		}
 

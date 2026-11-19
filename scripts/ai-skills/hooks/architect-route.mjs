@@ -345,7 +345,8 @@ const STALE_STATE_FILE_AGE_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Removes sibling `<filePrefix>*.json` and orphaned `<filePrefix>*.json.tmp`
- * files last modified more than `STALE_STATE_FILE_AGE_MS` ago. One file
+ * files, and `<filePrefix>*.json.lock` directories a killed hook left behind,
+ * last modified more than `STALE_STATE_FILE_AGE_MS` ago. One file
  * accumulates per session with nothing to remove them otherwise — the
  * `.gitignore` glob keeps them out of `git status`, so they'd otherwise grow
  * unbounded and invisibly in `.prism/`. A `.tmp` orphan is exactly the file
@@ -380,9 +381,10 @@ export async function pruneStaleRouteState(
 	}
 
 	for (const entry of entries) {
+		const isLock = entry.endsWith(".json.lock");
 		if (
 			!entry.startsWith(filePrefix) ||
-			!(entry.endsWith(".json") || entry.endsWith(".json.tmp"))
+			!(entry.endsWith(".json") || entry.endsWith(".json.tmp") || isLock)
 		) {
 			continue;
 		}
@@ -391,7 +393,7 @@ export async function pruneStaleRouteState(
 		try {
 			const stats = await fs.stat(entryPath);
 			if (now - stats.mtimeMs > STALE_STATE_FILE_AGE_MS) {
-				await fs.rm(entryPath, { force: true });
+				await (isLock ? fs.rmdir(entryPath) : fs.rm(entryPath, { force: true }));
 			}
 		} catch {
 			// Best-effort — a file removed between readdir and stat, or a
@@ -427,6 +429,96 @@ export async function saveRouteState(repoRoot, scopeId, state) {
 	}
 
 	await pruneStaleRouteState(repoRoot);
+}
+
+/** A lock older than this was left by a killed process, and the next taker removes it. */
+const STATE_LOCK_STALE_MS = 10_000;
+
+/** How long a hook waits for the lock before updating unlocked, so a stuck lock never stalls a tool call. */
+const STATE_LOCK_WAIT_MS = 2_000;
+
+const STATE_LOCK_RETRY_MS = 10;
+
+/**
+ * Runs `update` while holding the scope's state lock, so its load and its save
+ * are one step that no other hook process can interleave with.
+ *
+ * Every hook call is its own process, and a tool batch spawns them at once.
+ * Without the lock, each loads the same state, adds its own doc, and saves, so
+ * every save but the last drops the docs the others added. The deny arm reads
+ * that same `read` array, so a lost credit is a doc the gate demands again
+ * right after it was read. Eight concurrent reads credited four before this
+ * lock existed.
+ *
+ * The lock is a directory, because `mkdir` either creates it or fails on every
+ * platform the runtime runs on, with no dependency. A lock the hook cannot take
+ * within `STATE_LOCK_WAIT_MS` is skipped and the update runs unlocked. That
+ * brings back the lost-update risk for that one call, which is cheaper than a
+ * hook that stalls the tool call it observes. Removing a stale lock races with
+ * a second taker that saw it stale too, which costs the same.
+ *
+ * @template T
+ * @param {string} repoRoot
+ * @param {string} scopeId
+ * @param {() => Promise<T>} update
+ * @returns {Promise<T>}
+ */
+export async function withRouteStateLock(repoRoot, scopeId, update) {
+	const lockPath = `${buildStateFilePath(repoRoot, scopeId)}.lock`;
+	await fs.mkdir(path.dirname(lockPath), { recursive: true });
+
+	const held = await acquireStateLock(lockPath);
+	try {
+		return await update();
+	} finally {
+		if (held) {
+			await fs.rmdir(lockPath).catch(() => {});
+		}
+	}
+}
+
+/**
+ * Takes the lock at `lockPath`, returning `false` when it could not within
+ * `STATE_LOCK_WAIT_MS`.
+ *
+ * @param {string} lockPath
+ * @returns {Promise<boolean>}
+ */
+async function acquireStateLock(lockPath) {
+	const deadline = Date.now() + STATE_LOCK_WAIT_MS;
+
+	while (true) {
+		try {
+			await fs.mkdir(lockPath);
+			return true;
+		} catch (error) {
+			if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EEXIST") {
+				return false;
+			}
+		}
+
+		if (Date.now() >= deadline) {
+			return false;
+		}
+
+		// A stale lock that will not come away, such as a file squatting the
+		// path, ends the wait. Retrying it would spin until the host kills
+		// the hook.
+		const stats = await fs.stat(lockPath).catch(() => null);
+		if (stats !== null && Date.now() - stats.mtimeMs > STATE_LOCK_STALE_MS) {
+			const removed = await fs.rmdir(lockPath).then(
+				() => true,
+				() => false
+			);
+			if (!removed) {
+				return false;
+			}
+
+			continue;
+		}
+
+		await new Promise((resolve) => setTimeout(resolve, STATE_LOCK_RETRY_MS));
+	}
 }
 
 /**
@@ -537,6 +629,10 @@ export async function filterRoutedPaths(repoRoot, filePaths) {
  *    would silence the dropped tail for the session without ever naming it,
  *    which is exactly the honesty the truncation exists to keep.
  *
+ * Both steps run under the scope's state lock (`withRouteStateLock`), because
+ * a tool batch spawns one hook process per call and the deny arm reads the
+ * same `read` array this writes.
+ *
  * @param {string} repoRoot
  * @param {string} filePath
  * @param {string} scopeId
@@ -549,24 +645,30 @@ export async function resolveArchitectNag(
 	scopeId,
 	options = {}
 ) {
-	const credit = options.credit === true;
-
 	const relativePath = toRepoRelativePath(repoRoot, filePath);
 	if (relativePath === null) {
 		return null;
 	}
 
+	return withRouteStateLock(repoRoot, scopeId, () =>
+		creditAndAnnounce(repoRoot, relativePath, scopeId, options.credit === true)
+	);
+}
+
+/**
+ * The body of `resolveArchitectNag`, run while its caller holds the lock.
+ *
+ * @param {string} repoRoot
+ * @param {string} relativePath
+ * @param {string} scopeId
+ * @param {boolean} credit
+ * @returns {Promise<string | null>}
+ */
+async function creditAndAnnounce(repoRoot, relativePath, scopeId, credit) {
 	const state = await loadRouteState(repoRoot, scopeId);
 	const readSet = new Set(state.read);
 	const announcedSet = new Set(state.announced);
 
-	// Two `Read` calls in the same tool-call batch spawn concurrent hook
-	// processes with no lock between this read and the `saveRouteState` below —
-	// if both read state before either writes, the later write can drop the
-	// earlier one's addition and the same doc gets re-nagged after it was
-	// already read. The failure mode is a harmless extra nag line, not data
-	// loss or a crash, so this is accepted as a known best-effort signal
-	// rather than serialized.
 	const docJustRead = credit ? extractArchitectDocPath(relativePath) : null;
 	if (docJustRead !== null && !readSet.has(docJustRead)) {
 		readSet.add(docJustRead);
@@ -790,12 +892,19 @@ export async function resolveUmbrellaSpeedBump(repoRoot, scopeId, edits) {
 		}
 
 		try {
-			await saveRouteState(repoRoot, scopeId, {
-				...state,
-				umbrellaAcks: [
-					...state.umbrellaAcks,
-					...unacked.map((heading) => `${relativePath}\n${heading}`),
-				],
+			// Reloaded under the lock, so a credit another hook process saved
+			// since `state` was read survives this save.
+			await withRouteStateLock(repoRoot, scopeId, async () => {
+				const latest = await loadRouteState(repoRoot, scopeId);
+				await saveRouteState(repoRoot, scopeId, {
+					...latest,
+					umbrellaAcks: [
+						...new Set([
+							...latest.umbrellaAcks,
+							...unacked.map((heading) => `${relativePath}\n${heading}`),
+						]),
+					],
+				});
 			});
 		} catch (error) {
 			process.stderr.write(
