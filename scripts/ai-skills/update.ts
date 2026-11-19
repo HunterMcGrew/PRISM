@@ -560,6 +560,8 @@ export async function runUpdate(
 		hosts
 	);
 
+	await appendReviewMissesAttribute(consumerRepoRoot, dryRun);
+
 	if (hosts.includes("claude") || hosts.includes("codex")) {
 		const gitHooksInstall = installGitHooks(consumerRepoRoot, {
 			dryRun,
@@ -1132,6 +1134,9 @@ const HOOK_RUNTIME_FILES = [
 	"plan/stop-paths.mjs",
 	"plan/approve.mjs",
 	"plan/chat-approval.mjs",
+	"plan/watch-ci.mjs",
+	"review/reconcile.mjs",
+	"verify/check-report.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */
@@ -1396,6 +1401,9 @@ const HOOK_STATE_GITIGNORE_LINES = [
 	".prism/git-gates-state.*.json",
 	".prism/git-gates-state.*.json.tmp",
 ];
+
+/** The `.gitattributes` line `appendReviewMissesAttribute` adds, so two branches that each append rows to the append-only misses log merge by keeping both sides' rows. */
+const REVIEW_MISSES_GITATTRIBUTES_LINE = ".prism/metrics/review-misses.jsonl merge=union";
 
 /**
  * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`
@@ -1729,6 +1737,34 @@ export async function appendHookStateGitignoreLines(
 
 	if (!dryRun) {
 		await fs.writeFile(gitignorePath, next, "utf8");
+	}
+}
+
+/**
+ * Appends `REVIEW_MISSES_GITATTRIBUTES_LINE` to the consumer's
+ * `.gitattributes`, creating the file if absent. Append-only and idempotent,
+ * like `appendHookStateGitignoreLines`: a line already present, compared
+ * trimmed, is never duplicated, and no other line is touched. It runs on every
+ * host mix because the misses log exists for every consumer, not only those
+ * with hooks.
+ */
+export async function appendReviewMissesAttribute(
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const attributesPath = path.join(consumerRepoRoot, ".gitattributes");
+	const current = (await readFileIfExists(attributesPath)) ?? "";
+	const existingLines = new Set(current.split("\n").map((line) => line.trim()));
+
+	if (existingLines.has(REVIEW_MISSES_GITATTRIBUTES_LINE)) {
+		return;
+	}
+
+	const separator = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+	const next = `${current}${separator}${REVIEW_MISSES_GITATTRIBUTES_LINE}\n`;
+
+	if (!dryRun) {
+		await fs.writeFile(attributesPath, next, "utf8");
 	}
 }
 
