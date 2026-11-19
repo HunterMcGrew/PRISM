@@ -85,6 +85,7 @@
 		"spec/adrs/_toolkit/0081-git-hooks-ship-beside-the-agent-gates.md",
 		"spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md",
 		"spec/adrs/_toolkit/0083-retro-is-a-fixed-stage-on-folder-plans.md",
+		"spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md",
 		"architect/_toolkit/npm-packaging.md",
 		"architect/_toolkit/token-substitution.md"
 	],

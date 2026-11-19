@@ -8,6 +8,9 @@
  * skill that comes in under the cap fails until its entry is removed, and one
  * whose size moves either way fails until its `max` is updated, so a cut is
  * recorded in the same diff and cannot quietly grow back.
+ *
+ * The first 16 lines of each `## Voice` section in a skill body are not
+ * counted, per ADR-0084.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -165,5 +168,37 @@ test("measureSkillLoad follows citations transitively and counts templates and o
 			".prism/templates/report.md",
 		]);
 		assert.equal(load.totalLines, 2 + 5 + 1 + 2 + 1);
+	});
+});
+
+async function writeVoiceSkill(root: string, voiceHeading: string, voiceLines: number): Promise<void> {
+	await writeRepoFile(
+		root,
+		".ai-skills/skills/prism-x/shared.md",
+		`Job.\n${voiceHeading}\n${"line\n".repeat(voiceLines)}## Run\n${"line\n".repeat(5)}`
+	);
+}
+
+test("measureSkillLoad charges nothing for a Voice block of 16 lines or fewer", async () => {
+	await withTempRepo(async (root) => {
+		await writeVoiceSkill(root, "## Voice", 10);
+
+		assert.equal(measureSkillLoad(root, "prism-x").bodyLines, 1 + 1 + 5);
+	});
+});
+
+test("measureSkillLoad charges each Voice line past the sixteenth", async () => {
+	await withTempRepo(async (root) => {
+		await writeVoiceSkill(root, "## Voice", 19);
+
+		assert.equal(measureSkillLoad(root, "prism-x").bodyLines, 1 + 4 + 1 + 5);
+	});
+});
+
+test("measureSkillLoad skips only a heading that is exactly ## Voice", async () => {
+	await withTempRepo(async (root) => {
+		await writeVoiceSkill(root, "## Persona", 10);
+
+		assert.equal(measureSkillLoad(root, "prism-x").bodyLines, 18);
 	});
 });

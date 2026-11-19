@@ -35,7 +35,7 @@ The same artifact as a [plan](#plan). The term "branch plan" is the historical n
 
 ## Persona
 
-A name a skill answers to — Winston the architect, Clove the implementer, Eric the PR reviewer. A persona is a name and a defined lane of ownership. The skill speaks in the session's own voice, and the name survives as a trigger word in the skill's description (ADR-0080). Most skills are personas; the roster lives in `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster. Personas split on two orthogonal axes: **ticket-flow** (invoked for a specific ticket, read/write a plan, hand off along the lifecycle) and **cadence-driven** (invoked on a schedule or on demand, operate over the whole `.prism/` surface, write to a dedicated state file) — see ADR-0037.
+A name a skill answers to — Winston the architect, Clove the implementer, Eric the PR reviewer. A persona is a name and a defined lane of ownership. The skill speaks in its persona's short Voice block, and the name is also its trigger word (ADR-0080, ADR-0084). Most skills are personas; the roster lives in `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster. Personas split on two orthogonal axes: **ticket-flow** (invoked for a specific ticket, read/write a plan, hand off along the lifecycle) and **cadence-driven** (invoked on a schedule or on demand, operate over the whole `.prism/` surface, write to a dedicated state file) — see ADR-0037.
 
 - **Avoid:** "agent", "bot", "assistant", "role" as a synonym. "Agent" is the runtime (the model running a skill); "role" is the ownership lane, not the character. A persona is the name a skill answers to.
 - **Relationships:**
@@ -47,7 +47,7 @@ A name a skill answers to — Winston the architect, Clove the implementer, Eric
 
 An invokable capability in the ecosystem — `prism-plan`, `prism-implement`, `prism-handoff`. A skill is authored once in canonical form and built into per-runtime adapters (Claude, Codex, Cursor). Two kinds exist, set by the `type` discriminator in `roles.json` (ADR-0046):
 
-- **Persona skill** (the default) — carries a [persona](#persona), a name and lane with no voice or lens of its own; the build generates a Codex agent adapter.
+- **Persona skill** (the default) — carries a [persona](#persona), a name, a lane, and a short Voice block, with no reasoning lens; the build generates a Codex agent adapter.
 - **Utility skill** — `type: "utility"`; an action any persona can run (`prism-handoff`, `prism-review-loop`). No persona, no voice of its own, no agent adapter — it runs in the invoking persona's voice.
 
 Owned by `.prism/rules/skill-authoring.md` and the Tier 4 definition in `.prism/SPEC.md`.

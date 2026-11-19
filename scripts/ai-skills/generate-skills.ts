@@ -453,12 +453,15 @@ export async function removeDeletedManagedAgentFiles(
  * Validates role entries and indexes them by skill ID.
  *
  * Persona entries require a persona name; utility and agent entries validate
- * with id alone — they have no persona to require.
+ * with id alone — they have no persona to require. Two roles may not share a
+ * persona name, compared without case, because the name is the skill's trigger
+ * word.
  */
 export function buildRoleMap(
 	roleDefinitions: RolesDefinitions
 ): Map<string, RoleDefinition> {
 	const roleMap = new Map<string, RoleDefinition>();
+	const personaClaimants = new Map<string, string>();
 	for (const role of roleDefinitions.skills ?? []) {
 		// The registry arrives through an unchecked JSON cast, so the
 		// discriminator is validated here — an unrecognized value would
@@ -488,6 +491,16 @@ export function buildRoleMap(
 			throw new Error(
 				`Role '${role.id}' in .ai-skills/definitions/roles.json has missing or unrecognized routing '${role.routing}' — use "auto" or "named-only".`
 			);
+		}
+		if (role.persona) {
+			const personaKey = role.persona.toLowerCase();
+			const firstClaimant = personaClaimants.get(personaKey);
+			if (firstClaimant !== undefined) {
+				throw new Error(
+					`Persona '${personaKey}' is claimed by both '${firstClaimant}' and '${role.id}' in .ai-skills/definitions/roles.json — a persona name is its skill's trigger word, so each must be unique.`
+				);
+			}
+			personaClaimants.set(personaKey, role.id);
 		}
 		roleMap.set(role.id, role);
 	}

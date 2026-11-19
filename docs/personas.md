@@ -117,7 +117,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Reese — QA test plans (`prism-qa-plan`)
 
-**What she does:** Writes QA test plans for releases, sprints, PRs, or hotfixes. Produces checklists that a tester can execute against the running app, and nothing else. Grading acceptance criteria belongs to the review stages.
+**What he does:** Writes QA test plans for releases, sprints, PRs, or hotfixes. Produces checklists that a tester can execute against the running app, and nothing else. Grading acceptance criteria belongs to the review stages.
 
 **When to call:** "QA plan for PR #123." or "Release checklist for v1.2.0."
 
@@ -185,9 +185,9 @@ These stages carry no persona and no voice. A person approves the intent and the
 
 ### Sage — changelog (`prism-changelog`)
 
-**What he does:** Generates changelogs and release notes between git tags. Ships changelog PRs.
+**What she does:** Generates changelogs and release notes between git tags. Ships changelog PRs.
 
-**When to call:** "Sage, generate the changelog for v1.2.0." or give him two version tags.
+**When to call:** "Sage, generate the changelog for v1.2.0." or give her two version tags.
 
 **Skill:** [`.ai-skills/skills/prism-changelog/`](../.ai-skills/skills/prism-changelog/)
 
@@ -267,7 +267,7 @@ The business layer wraps the engineering pipeline at two seams: business persona
 
 ### Ellis — finance (`prism-finance`)
 
-**What she does:** Produces unit economics models, pricing analysis, runway projections, and budget summaries. Writes to the finance section of `strategy.md`. Orchestrates over the `xlsx` host capability when available.
+**What he does:** Produces unit economics models, pricing analysis, runway projections, and budget summaries. Writes to the finance section of `strategy.md`. Orchestrates over the `xlsx` host capability when available.
 
 **When to call:** "Ellis, model our unit economics." or describe a pricing, runway, or budget question.
 
@@ -291,7 +291,7 @@ The business layer wraps the engineering pipeline at two seams: business persona
 
 ### Quinn — sales (`prism-sales`)
 
-**What she does:** Produces ICP-to-pipeline qualification, proposals, outreach sequences, and objection-handling playbooks. Writes to `strategy.md § Sales`. Uses the `brand-voice` host capability for on-brand outreach. Reads Charlie's `§ Marketing` section so outreach inherits one voice.
+**What they do:** Produces ICP-to-pipeline qualification, proposals, outreach sequences, and objection-handling playbooks. Writes to `strategy.md § Sales`. Uses the `brand-voice` host capability for on-brand outreach. Reads Charlie's `§ Marketing` section so outreach inherits one voice.
 
 **When to call:** "Quinn, write an outreach sequence." or describe a proposal, ICP, or objection-handling need.
 
@@ -315,7 +315,7 @@ The business layer wraps the engineering pipeline at two seams: business persona
 
 ### Remy — customer success (`prism-customer-success`)
 
-**What she does:** Produces support playbooks, FAQs, onboarding guides, and escalation runbooks. Writes to `strategy.md § Customer Success`. Orchestrates over the `brand-voice` host capability. She reads Eli's feature docs and writes how the customer succeeds with the feature — not a second copy of the feature mechanics.
+**What they do:** Produces support playbooks, FAQs, onboarding guides, and escalation runbooks. Writes to `strategy.md § Customer Success`. Orchestrates over the `brand-voice` host capability. They read Eli's feature docs and write how the customer succeeds with the feature — not a second copy of the feature mechanics.
 
 **When to call:** "Remy, support playbook for this feature." or describe an onboarding, FAQ, or escalation need.
 
@@ -337,7 +337,7 @@ The business layer wraps the engineering pipeline at two seams: business persona
 
 ### Lex — legal and compliance (`prism-legal`)
 
-**What she does:** Drafts terms of service, reviews privacy policies, and assists with contract review. Writes to `strategy.md § Legal & Compliance`. Every output carries a "not legal advice" disclaimer; she recommends licensed counsel when jurisdiction or product context is missing.
+**What they do:** Drafts terms of service, reviews privacy policies, and assists with contract review. Writes to `strategy.md § Legal & Compliance`. Every output carries a "not legal advice" disclaimer; they recommend licensed counsel when jurisdiction or product context is missing.
 
 **When to call:** "Lex, draft a ToS." or describe a privacy policy, compliance, or contract-review need.
 
@@ -359,4 +359,4 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 
 ## Going deeper
 
-The full skill behavior for each persona lives in its skill file. The routing table — which intent maps to which persona — is in [AGENTS.md](../AGENTS.md) § Skill Auto-Routing. The skill authoring model (what a skill is, and the tests that keep it function-shaped) is documented in [ADR-0080](../.prism/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md).
+The full skill behavior for each persona lives in its skill file. The routing table — which intent maps to which persona — is in [AGENTS.md](../AGENTS.md) § Skill Auto-Routing. The skill authoring model (what a skill is, and the tests that keep it function-shaped) is documented in [ADR-0080](../.prism/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md), as amended by [ADR-0084](../.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md).
