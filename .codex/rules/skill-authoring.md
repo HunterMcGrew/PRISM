@@ -10,7 +10,7 @@ Every line of a skill passes all four, or it is cut:
 
 - **Policy.** It encodes something the model would not do unprompted: a PRISM format, gate, lane boundary, or owner. Voice, generic method ("write tests," "read before you edit"), and restatements of an always-on rule fail.
 - **Trigger.** The `description` fires the skill on the requests it serves and not on others.
-- **Length.** The body plus every file it tells a run to read aims for 120 lines. The cap is a soft cap, and a reasoned overage takes an allowlist entry with a one-line reason. The count covers references, step files, the skill's own `lib/` files, other skill sources, cited templates and architect docs, and `load: skill` rules. `scripts/ai-skills/skill-loaded-lines.test.ts` measures it.
+- **Length.** The body plus every file it tells a run to read aims for 120 lines. The cap is a soft cap, and a reasoned overage takes an allowlist entry with a one-line reason. The count covers references, step files, the skill's own `lib/` files, other skill sources, cited templates and architect docs, and `load: skill` rules. It leaves out the root `REVIEW.md` and the pass files in `.prism/review/`, because they are the shared rulebook each review pass reads, not skill text moved out of a body. `scripts/ai-skills/skill-loaded-lines.test.ts` measures it.
 - **Enforcement.** Anything that must always hold is a hook or a check. Prose that says "always" or "never" without one behind it is a request, not a guarantee.
 
 **How to apply:** cut content that fails a test. Do not move it into a reference or a step file, since the cap counts those too. When a cut removes a judgment the model would genuinely miss, keep it as one plain policy line, not as a lens or a persona.

@@ -29,7 +29,8 @@ This context loads for edits under:
 - `.prism/spec/adrs/**`
 - `.prism/architect/**`
 - `.prism/references/**`
-- `.prism/plans/**` — durable sections only; in-progress `## History`, `## Debugged Issues`, and `## Review Issues` are working notes
+- `REVIEW.md` and `.prism/review/**` — the review rulebook and its pass files, which every review stage reads as spec
+- `.prism/plans/**` — durable sections only; in-progress `## History`, `## Debugged Issues`, and `## Review Issues` are working notes, and so are a plan folder's `## Review` and `## Verification`
 
 Out of scope: `.prism/lessons.md`, `.claude/docs/`, `.prism/design/mocks/` — working notes and design artifacts, not durable spec.
 
