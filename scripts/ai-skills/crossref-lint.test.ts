@@ -340,6 +340,13 @@ test("CROSSREF_SCAN_ROOTS: .prism root covers every canonical prose area", () =>
 	);
 });
 
+test("CROSSREF_SCAN_ROOTS: the repo-root entry scans the review rulebook and its seed twin", () => {
+	const repoRoot = CROSSREF_SCAN_ROOTS.find((root) => root.contentRoot === null);
+	assert.ok(repoRoot, "repo-root scan root must be registered");
+	assert.ok(repoRoot.looseFiles.includes("REVIEW.md"));
+	assert.ok(repoRoot.looseFiles.includes("templates/install/REVIEW.md"));
+});
+
 // ---------------------------------------------------------------------------
 // scanLines — relative and non-verifiable-surface refs are skipped (REQ-10)
 // ---------------------------------------------------------------------------

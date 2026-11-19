@@ -135,6 +135,8 @@ export const CROSSREF_SCAN_ROOTS: ScanRoot[] = [
 		looseFiles: [
 			"AGENTS.md",
 			"templates/install/AGENTS.md.tmpl",
+			"REVIEW.md",
+			"templates/install/REVIEW.md",
 		],
 	},
 ];
