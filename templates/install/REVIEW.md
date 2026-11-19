@@ -24,8 +24,6 @@ Two things are not cosmetic. A claim whose accuracy changes what a reader does s
 
 **Why:** a formatting finding buys a full round trip for no behavioral gain, and the formatter's fix mode already resolves most of it.
 
-**Mapping from review-changes output.** Blocking maps to Critical or Major. Should fix maps to Minor. Optional maps to nit.
-
 ## Finding kinds
 
 Every finding carries one kind. Pick the most specific that fits.
@@ -112,11 +110,13 @@ A declined nit carries its reason on one line.
 - **Subagents.** The parent splits files and passes across subagents within the limits in the workflow rule, `.prism/rules/workflow.md`. It removes duplicate findings, and it confirms every subagent finding against the file before reporting it.
 - **Subagent briefs don't steer.** Each brief carries a one-line TL;DR, such as "review PR #N" or "review the commits since `<sha>`", plus the pinned range, the subagent's files or passes, and hard limits. It never says which angles to check, what to conclude, or what to skip. Grouping files or passes per subagent is fine, because the grouping is the brief. **Why:** a subagent handed a hypothesis tends to return it confirmed, and one told what to skip never reports what sits there.
 - **Record.** Each review stage writes one line per round under `## Review` in `plan.md`. When a later run confirms a fix, it marks that finding `fixed <sha>`. A legacy flat plan records under `## Review Issues` instead.
-  - `- self-review round <n> at <short sha>: <verdict>`
-  - `- pr-review round <n> at <short sha>: <verdict>`
-  - `- pr-review confirm at <short sha>: <verdict>`, for the one confirm pass past the 3-round cap
+  - `- self-review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>`
+  - `- pr-review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>`
+  - `- pr-review confirm at <short sha>[ (part <k> of <m>)]: <verdict>`, for the one confirm pass past the 3-round cap
 
   `<verdict>` is `clean`, or the open counts as `<c> critical, <m> major, <n> minor, <k> nit`.
+
+  On a stacked ticket, every PR shares one plan folder, so a line written on a PR that is not the last carries ` (part <k> of <m>)` after the sha, where `<k>` is that PR's place in the stack and `<m>` is the stack's size, and a line whose `<k>` is less than `<m>` is never a final verdict.
 
 **When a round is `clean`.** A round's verdict is `clean` exactly when the exit rule holds at the end of that round, with the bookkeeping exemption above. So decision items, nits fixed or declined with a reason, and Minors whose every cited line is bookkeeping content per `.prism/rules/followup-scope.md` leave it `clean`. Any other open Critical, Major, or Minor, a nit neither fixed nor declined, or a pass reading `not reached` or a bare `swept` makes the verdict the open counts, which count only those blocking items.
 
