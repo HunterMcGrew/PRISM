@@ -2708,3 +2708,90 @@ test("formatDoctorReport renders findings and a trailing health line", async () 
 		{ gitInit: false }
 	);
 });
+
+// --- review-md check ---
+
+const REVIEW_MD_MARKER_LINE =
+	"<!-- prism:review — prism update refreshes this file while this line is here. Delete the line to keep your own version. -->";
+
+/**
+ * Runs doctor against a repo whose PRISM source ships `seed` as its `REVIEW.md`
+ * copy and whose consumer holds `consumerReviewMd` (null leaves it absent),
+ * returning the `review-md` findings. The repo has a sync manifest (has
+ * adopted) unless `adopted` is false.
+ */
+async function runReviewMdDoctor(
+	roots: { prismSourceRoot: string; consumerRepoRoot: string },
+	consumerReviewMd: string | null,
+	{ adopted = true }: { adopted?: boolean } = {}
+) {
+	if (adopted) {
+		await writeConsumerManifest(path.join(roots.consumerRepoRoot, ".prism"), {});
+	}
+
+	await writeFile(
+		roots.prismSourceRoot,
+		"templates/install/REVIEW.md",
+		`${REVIEW_MD_MARKER_LINE}\n# Review\n`
+	);
+	if (consumerReviewMd !== null) {
+		await writeFile(roots.consumerRepoRoot, "REVIEW.md", consumerReviewMd);
+	}
+
+	const report = await runDoctor({
+		consumerRepoRoot: roots.consumerRepoRoot,
+		prismSourceRoot: roots.prismSourceRoot,
+		npmVersionFetcher: NEVER_FETCH,
+	});
+
+	return report.findings.filter((f) => f.check === "review-md");
+}
+
+test("runDoctor warns when an adopted repo has no REVIEW.md and prescribes prism update", async () => {
+	await withTempRoots(async (roots) => {
+		const findings = await runReviewMdDoctor(roots, null);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /REVIEW\.md is missing/);
+		assert.match(findings[0].message, /prism update/);
+	});
+});
+
+test("runDoctor reports a marked REVIEW.md that matches PRISM's copy as current", async () => {
+	await withTempRoots(async (roots) => {
+		const findings = await runReviewMdDoctor(roots, `${REVIEW_MD_MARKER_LINE}\n# Review\n`);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "info");
+		assert.match(findings[0].message, /current/);
+	});
+});
+
+test("runDoctor warns that a marked REVIEW.md behind PRISM's copy needs an update", async () => {
+	await withTempRoots(async (roots) => {
+		const findings = await runReviewMdDoctor(roots, `${REVIEW_MD_MARKER_LINE}\n# Old review\n`);
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "warning");
+		assert.match(findings[0].message, /differs from PRISM's current copy/);
+	});
+});
+
+test("runDoctor reports a REVIEW.md with no marker line as info, because the team opted out", async () => {
+	await withTempRoots(async (roots) => {
+		const findings = await runReviewMdDoctor(roots, "# Our own review rules\n");
+
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0].severity, "info");
+		assert.match(findings[0].message, /without PRISM's marker line, so it was left alone/);
+	});
+});
+
+test("runDoctor does not check REVIEW.md before the repo has adopted", async () => {
+	await withTempRoots(async (roots) => {
+		const findings = await runReviewMdDoctor(roots, null, { adopted: false });
+
+		assert.deepEqual(findings, []);
+	});
+});

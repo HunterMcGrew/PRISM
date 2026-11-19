@@ -483,12 +483,13 @@ test("REASONS exports are stable string literals", () => {
 // runRuleGenerators orchestrator
 // ---------------------------------------------------------------------------
 
-test("RULE_GENERATORS declares code-standards → security → framework-guidelines order", () => {
+test("RULE_GENERATORS declares code-standards → security → framework-guidelines → review-stack order", () => {
 	const names = RULE_GENERATORS.map((g) => g.name);
 	assert.deepEqual(names, [
 		"code-standards",
 		"security",
 		"framework-guidelines",
+		"review-stack",
 	]);
 });
 
@@ -515,11 +516,18 @@ test("runRuleGenerators emits every generator's output and groups by written/ski
 		"security.md",
 		"react-guidelines.md",
 		"wordpress-guidelines.md",
+	].map((name) => `.prism/rules/${name}`);
+	const expectedStackChecks = [
+		".prism/review/stack/architecture.md",
+		".prism/review/stack/security.md",
 	];
-	const writtenNames = summary.written.map((e) => path.basename(e.result.path)).sort();
-	assert.deepEqual(writtenNames, [...expectedFiles].sort());
+	const writtenPaths = summary.written
+		.map((e) => path.relative(repoRoot, e.result.path).split(path.sep).join("/"))
+		.sort();
+	const expectedPaths = [...expectedFiles, ...expectedStackChecks].sort();
+	assert.deepEqual(writtenPaths, expectedPaths);
 	assert.equal(summary.skipped.length, 0);
-	assert.equal(summary.entries.length, expectedFiles.length);
+	assert.equal(summary.entries.length, expectedPaths.length);
 });
 
 test("runRuleGenerators reports skip-if-exists entries in the skipped bucket", async (t) => {

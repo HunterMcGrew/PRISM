@@ -31,6 +31,7 @@ import {
 	CODEX_DEFAULT_PROJECT_DOC_MAX_BYTES,
 	syncCodexProjectDocLimit,
 } from "./codex-project-doc";
+import { compileMatcher } from "./hooks/lib/match.mjs";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { runBomGuard } from "./bom-guard";
@@ -133,8 +134,21 @@ export const COPIED_CONTENT_AREAS = [
 	"spec",
 	"templates",
 	"references",
+	"review",
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
+
+/**
+ * Builds the lookup for `seed-curation.json`'s `excluded` list. An entry is an
+ * exact path, or a glob when it holds a `*`, so a whole consumer-owned folder
+ * such as `review/stack/**` is excluded without listing each file.
+ */
+export function buildExcludedMatcher(excluded: readonly string[]): (relPath: string) => boolean {
+	const exact = new Set(excluded.filter((entry) => !entry.includes("*")));
+	const globs = excluded.filter((entry) => entry.includes("*")).map((entry) => compileMatcher(entry));
+
+	return (relPath) => exact.has(relPath) || globs.some((matches) => matches(relPath));
+}
 
 /** The `COPIED_CONTENT_AREAS` entry whose files carry `load:` frontmatter semantics. */
 const RULES_AREA_NAME = "rules";
@@ -633,7 +647,7 @@ export async function checkSeedDrift(
 		return;
 	}
 
-	const excludedSet = new Set(curation.excluded);
+	const isExcluded = buildExcludedMatcher(curation.excluded);
 	const curatedSet = new Set(curation.curated);
 	const mirroredSet = new Set(curation.mirrored ?? []);
 	const seedOnlySet = new Set(curation.seedOnly);
@@ -654,7 +668,7 @@ export async function checkSeedDrift(
 
 			const relPath = path.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
 
-			if (excludedSet.has(relPath)) {
+			if (isExcluded(relPath)) {
 				const seedPath = path.join(seedRoot, relPath);
 				if (await pathExists(seedPath)) {
 					changedPathsArg.push(`seed contains excluded file: ${relPath}`);
@@ -733,7 +747,7 @@ export async function checkSeedDrift(
 			continue;
 		}
 
-		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
+		if (isExcluded(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
 			continue;
 		}
 
@@ -811,7 +825,7 @@ export async function writeSeedMirror(
 	changedPathsArg: string[],
 	unclassifiedMirrored: string[]
 ): Promise<void> {
-	const excludedSet = new Set(curation.excluded);
+	const isExcluded = buildExcludedMatcher(curation.excluded);
 	const curatedSet = new Set(curation.curated);
 	const mirroredSet = new Set(curation.mirrored ?? []);
 	const renames = curation.renames;
@@ -830,7 +844,7 @@ export async function writeSeedMirror(
 
 			const relPath = path.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
 
-			if (excludedSet.has(relPath)) {
+			if (isExcluded(relPath)) {
 				continue;
 			}
 
@@ -885,7 +899,7 @@ export async function writeSeedMirror(
 			continue;
 		}
 
-		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
+		if (isExcluded(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
 			continue;
 		}
 
@@ -908,6 +922,37 @@ export async function writeSeedMirror(
 }
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Mirrors the root `REVIEW.md` byte for byte into `templates/install/REVIEW.md`,
+ * the copy `prism adopt` and `prism update` deliver to a consumer. A root file
+ * sits outside the `.prism/` content root, so the seed mirror never reaches it.
+ * In check mode a difference is reported naming both paths, and nothing is
+ * written. A repo with no root `REVIEW.md` has nothing to mirror.
+ */
+export async function syncReviewMdSeed(
+	repoRootArg: string,
+	installRoot: string,
+	checkMode: boolean,
+	changedPaths: string[]
+): Promise<void> {
+	const source = await readFileIfExists(path.join(repoRootArg, "REVIEW.md"));
+	if (source === null) {
+		return;
+	}
+
+	const seedPath = path.join(installRoot, "REVIEW.md");
+	if (checkMode) {
+		if ((await readFileIfExists(seedPath)) !== source) {
+			changedPaths.push(
+				`REVIEW.md differs from ${path.relative(repoRootArg, seedPath).split(path.sep).join("/")}`
+			);
+		}
+		return;
+	}
+
+	await writeFileIfChanged(seedPath, source, false, changedPaths);
+}
 
 /**
  * Reads the `version` field from the repo-root `package.json`, falling back to
@@ -1111,6 +1156,8 @@ async function main(): Promise<void> {
 			unclassifiedMirrored
 		);
 	}
+
+	await syncReviewMdSeed(repoRoot, path.dirname(templatesContentRoot), checkMode, changedPaths);
 
 	if (await pathExists(templatesContentRoot)) {
 		const seedViolations = await runConsumerSeedLiteralGuard(

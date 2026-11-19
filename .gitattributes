@@ -4,3 +4,6 @@
 # generated seed mirror and the committed source, so checkout line endings must
 # match what the generator emits (LF) regardless of the runner OS.
 * text=auto eol=lf
+
+# The review-misses log is append-only, so union merge keeps both sides' rows.
+.prism/metrics/review-misses.jsonl merge=union

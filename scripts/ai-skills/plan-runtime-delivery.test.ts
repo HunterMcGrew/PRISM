@@ -55,6 +55,9 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/plan/stop-paths.mjs",
 	".claude/hooks/plan/approve.mjs",
 	".claude/hooks/plan/chat-approval.mjs",
+	".claude/hooks/plan/watch-ci.mjs",
+	".claude/hooks/review/reconcile.mjs",
+	".claude/hooks/verify/check-report.mjs",
 	".claude/hooks/approve-guard.mjs",
 ];
 
@@ -253,6 +256,38 @@ test("the delivered tasks script runs in the consumer layout", async () => {
 
 		assert.equal(result.status, 0, result.stderr);
 		assert.match(result.stdout, /T1/);
+	});
+});
+
+test("the delivered reconcile script lists classes in the consumer layout with no log", async () => {
+	await withRoots(async (roots) => {
+		await update(roots);
+
+		const result = spawnSync(
+			process.execPath,
+			[".claude/hooks/review/reconcile.mjs", "--classes"],
+			{ cwd: roots.consumerRepoRoot, encoding: "utf8" }
+		);
+
+		assert.equal(result.status, 0, result.stderr);
+		assert.equal(result.stdout.trim(), "No open class has 3 or more rows.");
+	});
+});
+
+test("an update adds the misses-log union line once, whatever hosts holds", async () => {
+	await withRoots(async (roots) => {
+		await writeAt(
+			roots.consumerRepoRoot,
+			".ai-skills/config.json",
+			JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["cursor"] })
+		);
+
+		await update(roots);
+		const first = await readAt(roots.consumerRepoRoot, ".gitattributes");
+		await update(roots);
+
+		assert.equal(first, ".prism/metrics/review-misses.jsonl merge=union\n");
+		assert.equal(await readAt(roots.consumerRepoRoot, ".gitattributes"), first);
 	});
 });
 

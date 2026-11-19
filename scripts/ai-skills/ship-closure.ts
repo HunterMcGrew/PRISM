@@ -23,6 +23,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { buildExcludedMatcher } from "./build";
 import {
 	extractRefs,
 	isExternalOrToken,
@@ -35,7 +36,7 @@ import { checkIsPrismSkillId } from "./ownership";
 import { pathExists, readFileIfExists } from "./utils";
 
 /** Content areas `build.ts` mirrors into the install seed, relative to `.prism/`. */
-const SEED_CONTENT_AREAS = ["rules", "architect", "spec", "templates", "references"] as const;
+const SEED_CONTENT_AREAS = ["rules", "architect", "spec", "templates", "references", "review"] as const;
 
 /** Loose files `build.ts` mirrors into the install seed, relative to `.prism/`. */
 const SEED_LOOSE_FILES = ["SPEC.md"] as const;
@@ -424,7 +425,7 @@ export async function computeShipClosure(options: ShipClosureOptions): Promise<S
 	} = options;
 	const roots = options.roots ?? (await resolveDefaultRoots(repoRoot));
 	const absoluteContentRoot = path.resolve(repoRoot, contentRoot);
-	const excluded = new Set(curation.excluded);
+	const isExcludedSeedPath = buildExcludedMatcher(curation.excluded);
 	const toSeedPath = (absolute: string): string =>
 		path.relative(absoluteContentRoot, absolute).split(path.sep).join("/");
 
@@ -432,7 +433,7 @@ export async function computeShipClosure(options: ShipClosureOptions): Promise<S
 		repoRoot,
 		roots,
 		createSeedAwareReader(repoRoot, absoluteContentRoot, curation),
-		(absolute) => excluded.has(toSeedPath(absolute))
+		(absolute) => isExcludedSeedPath(toSeedPath(absolute))
 	);
 
 	const universe: string[] = [];
@@ -452,7 +453,7 @@ export async function computeShipClosure(options: ShipClosureOptions): Promise<S
 
 	for (const absolute of universe) {
 		const seedPath = toSeedPath(absolute);
-		const isExcluded = excluded.has(seedPath);
+		const isExcluded = isExcludedSeedPath(seedPath);
 
 		if (reached.has(absolute) && isExcluded) {
 			if (trackedDanglingRefs.has(seedPath)) {

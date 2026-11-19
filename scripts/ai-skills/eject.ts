@@ -58,6 +58,7 @@ import {
 } from "./sync-manifest";
 import {
 	applyDeletedFile,
+	REVIEW_MD_MARKER_PREFIX,
 	resolveConsumerSkillTargetRoots,
 	resolveSelfPrismSource,
 } from "./update";
@@ -515,6 +516,36 @@ async function removeSeededAgentsMd(
 }
 
 /**
+ * Removes a root `REVIEW.md` whose first line starts with
+ * `REVIEW_MD_MARKER_PREFIX`, the marker `prism update` refreshes the file
+ * under. A `REVIEW.md` without it is the consumer's own, or had the marker line
+ * deleted on purpose, and is never removed. Returns the notice describing what
+ * happened, or null when there is no marked file to act on.
+ */
+async function removeMarkedReviewMd(
+	consumerRepoRoot: string,
+	previewOnly: boolean
+): Promise<{ removed: boolean; notice: string } | null> {
+	const reviewMdPath = path.join(consumerRepoRoot, "REVIEW.md");
+	const content = await readFileIfExists(reviewMdPath);
+
+	if (content === null || !content.startsWith(REVIEW_MD_MARKER_PREFIX)) {
+		return null;
+	}
+
+	if (!previewOnly) {
+		await fs.rm(reviewMdPath);
+	}
+
+	return {
+		removed: true,
+		notice: previewOnly
+			? "Would remove PRISM-delivered REVIEW.md (its first line carries the prism:review marker)."
+			: "Removed PRISM-delivered REVIEW.md (its first line carried the prism:review marker).",
+	};
+}
+
+/**
  * Reports PRISM's contribution to AGENTS.md (the injected Tier-1 block, if
  * present) and notes a present CLAUDE.md, without modifying either file.
  */
@@ -611,6 +642,12 @@ export async function runEject(options: RunEjectOptions): Promise<EjectReport> {
 
 	if (seededAgentsMdResult !== null) {
 		rootFileNotices.unshift(seededAgentsMdResult.notice);
+	}
+
+	const reviewMdResult = await removeMarkedReviewMd(consumerRepoRoot, previewOnly);
+
+	if (reviewMdResult !== null) {
+		rootFileNotices.unshift(reviewMdResult.notice);
 	}
 
 	return {

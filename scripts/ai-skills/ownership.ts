@@ -29,6 +29,7 @@ export const PRISM_OWNED_GLOBS = [
   "rules/**",
   "templates/**",
   "references/**",
+  "review/**",
   "spec/**",
   "SPEC.md",
 ] as const;
@@ -61,6 +62,7 @@ export const CONSUMER_OWNED_GLOBS = [
   "architect/manifest.json",
   "custom/**",
   "plans/**",
+  "review/stack/**",
   "lessons.md",
 ] as const;
 

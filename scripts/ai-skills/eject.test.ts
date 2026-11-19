@@ -666,6 +666,69 @@ test("runEject preview leaves a PRISM-seeded AGENTS.md in place and reports it w
 	});
 });
 
+// --- REVIEW.md ---
+
+const REVIEW_MD_MARKER_LINE =
+	"<!-- prism:review — prism update refreshes this file while this line is here. Delete the line to keep your own version. -->";
+
+test("runEject removes a REVIEW.md that carries the prism:review marker and names it in the report", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(consumerRepoRoot, "REVIEW.md", `${REVIEW_MD_MARKER_LINE}\n# Review\n`);
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(await fileExists(path.join(consumerRepoRoot, "REVIEW.md")), false);
+		assert.ok(
+			report.preservedNotices.some((n) => n.startsWith("Removed PRISM-delivered REVIEW.md"))
+		);
+	});
+});
+
+test("runEject keeps a REVIEW.md whose marker line was deleted", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(consumerRepoRoot, "REVIEW.md", "# Our own review rules\n");
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(await fileExists(path.join(consumerRepoRoot, "REVIEW.md")), true);
+		assert.ok(!report.preservedNotices.some((n) => n.includes("REVIEW.md")));
+	});
+});
+
+test("runEject preview leaves a marked REVIEW.md in place and reports it would be removed", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(consumerRepoRoot, "REVIEW.md", `${REVIEW_MD_MARKER_LINE}\n# Review\n`);
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: false,
+			dryRun: false,
+		});
+
+		assert.equal(await fileExists(path.join(consumerRepoRoot, "REVIEW.md")), true);
+		assert.ok(
+			report.preservedNotices.some((n) => n.startsWith("Would remove PRISM-delivered REVIEW.md"))
+		);
+	});
+});
+
 // --- empty dir cleanup ---
 
 test("runEject prunes now-empty directories but keeps directories still holding preserved content", async () => {

@@ -336,8 +336,15 @@ test("CROSSREF_SCAN_ROOTS: .prism root covers every canonical prose area", () =>
 	assert.ok(prismRoot, ".prism scan root must be registered");
 	assert.deepEqual(
 		[...prismRoot.areas].sort(),
-		["architect", "references", "rules", "skills", "spec", "templates"]
+		["architect", "references", "review", "rules", "skills", "spec", "templates"]
 	);
+});
+
+test("CROSSREF_SCAN_ROOTS: the repo-root entry scans the review rulebook and its seed twin", () => {
+	const repoRoot = CROSSREF_SCAN_ROOTS.find((root) => root.contentRoot === null);
+	assert.ok(repoRoot, "repo-root scan root must be registered");
+	assert.ok(repoRoot.looseFiles.includes("REVIEW.md"));
+	assert.ok(repoRoot.looseFiles.includes("templates/install/REVIEW.md"));
 });
 
 // ---------------------------------------------------------------------------
@@ -467,6 +474,13 @@ test("isLazyOrHistoricalTarget: lessons-archive matches", () => {
 		isLazyOrHistoricalTarget(".prism/archived/lessons-archive.md"),
 		true
 	);
+});
+
+test("isLazyOrHistoricalTarget: the misses log and consumer stack checks match, other review and metrics paths do not", () => {
+	assert.equal(isLazyOrHistoricalTarget(".prism/metrics/review-misses.jsonl"), true);
+	assert.equal(isLazyOrHistoricalTarget(".prism/review/stack/correctness.md"), true);
+	assert.equal(isLazyOrHistoricalTarget(".prism/review/correctness.md"), false);
+	assert.equal(isLazyOrHistoricalTarget(".prism/metrics/other.jsonl"), false);
 });
 
 test("isLazyOrHistoricalTarget: the consumer doc-conventions doc matches, other flat architect docs do not", () => {

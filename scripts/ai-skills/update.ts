@@ -560,6 +560,14 @@ export async function runUpdate(
 		hosts
 	);
 
+	await appendReviewMissesAttribute(consumerRepoRoot, dryRun);
+
+	const reviewMd = await syncReviewMd(consumerRepoRoot, prismRepoRoot, dryRun);
+
+	if (reviewMd.warning !== undefined) {
+		console.warn(`prism:update: ${reviewMd.warning}`);
+	}
+
 	if (hosts.includes("claude") || hosts.includes("codex")) {
 		const gitHooksInstall = installGitHooks(consumerRepoRoot, {
 			dryRun,
@@ -618,19 +626,22 @@ export async function runUpdate(
 		console.warn(`prism:update: ${codexDocLimit.warning}`);
 	}
 
-	// The hook runtime and the Codex limit land outside the content root the file
+	// The hook runtime, the root REVIEW.md, and the Codex limit land outside the content root the file
 	// pass walks, so their outcomes are folded in here rather than returned by
 	// `applyFilePass`. Without this the seam would write into a consumer's tree
 	// without appearing in the run summary or the `--dry-run` preview at all.
-	const externalOutcomes =
-		codexDocLimit === null ? hookOutcomes : [...hookOutcomes, codexDocLimit.outcome];
+	const externalOutcomes = [
+		...hookOutcomes,
+		...(reviewMd.outcome === null ? [] : [reviewMd.outcome]),
+		...(codexDocLimit === null ? [] : [codexDocLimit.outcome]),
+	];
 
 	return {
 		...summary,
 		outcomes: [...summary.outcomes, ...externalOutcomes],
 		backups: [
 			...summary.backups,
-			...hookOutcomes
+			...externalOutcomes
 				.filter((outcome) => outcome.backupPath !== undefined)
 				.map((outcome) => outcome.backupPath as string),
 		],
@@ -1132,6 +1143,9 @@ const HOOK_RUNTIME_FILES = [
 	"plan/stop-paths.mjs",
 	"plan/approve.mjs",
 	"plan/chat-approval.mjs",
+	"plan/watch-ci.mjs",
+	"review/reconcile.mjs",
+	"verify/check-report.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */
@@ -1396,6 +1410,23 @@ const HOOK_STATE_GITIGNORE_LINES = [
 	".prism/git-gates-state.*.json",
 	".prism/git-gates-state.*.json.tmp",
 ];
+
+/**
+ * The opening of the root `REVIEW.md`'s first line — the HTML comment opener
+ * and the `prism:review` tag. A root file sits outside the content root, so it
+ * has no sync-manifest hash, and ownership is content-keyed like the hook
+ * runtime's: while the first line starts with this, `prism update` refreshes
+ * the file, and deleting the line hands the file to the consumer. `doctor.ts`
+ * and `eject.ts` import it so the three agree on what "marked" means.
+ */
+export const REVIEW_MD_MARKER_PREFIX = "<!-- prism:review";
+
+/** Said when `syncReviewMd` leaves a consumer's own `REVIEW.md` alone. */
+export const REVIEW_MD_UNMARKED_WARNING =
+	"REVIEW.md exists without PRISM's marker line, so it was left alone. The review stages read it as the rulebook.";
+
+/** The `.gitattributes` line `appendReviewMissesAttribute` adds, so two branches that each append rows to the append-only misses log merge by keeping both sides' rows. */
+const REVIEW_MISSES_GITATTRIBUTES_LINE = ".prism/metrics/review-misses.jsonl merge=union";
 
 /**
  * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`
@@ -1729,6 +1760,78 @@ export async function appendHookStateGitignoreLines(
 
 	if (!dryRun) {
 		await fs.writeFile(gitignorePath, next, "utf8");
+	}
+}
+
+/**
+ * Delivers the root `REVIEW.md` rulebook from the install seed. The file is
+ * written when the consumer has none. It is replaced in place, with no
+ * backup, while its first line carries the marker, the way the hook runtime
+ * replaces its own marked files. A backup would fire on every release that
+ * changes the rulebook, because with no hash a team's edit cannot be told from
+ * an older PRISM copy. Without the marker the file is the consumer's own and
+ * is left alone with a warning, so a team that rewrote the rulebook keeps it.
+ * A PRISM source with no seed copy has nothing to deliver.
+ */
+export async function syncReviewMd(
+	consumerRepoRoot: string,
+	prismSourceRoot: string,
+	dryRun: boolean
+): Promise<{ outcome: FileOutcome | null; warning?: string }> {
+	const seedPath = path.join(prismSourceRoot, "templates", "install", "REVIEW.md");
+	const targetPath = path.join(consumerRepoRoot, "REVIEW.md");
+	const seed = await readFileIfExists(seedPath);
+
+	if (seed === null) {
+		return { outcome: null };
+	}
+
+	const existing = await readFileIfExists(targetPath);
+
+	if (existing === null) {
+		await writeIncoming(seedPath, targetPath, dryRun);
+
+		return { outcome: { relativePath: "REVIEW.md", action: "written" } };
+	}
+
+	if (!existing.startsWith(REVIEW_MD_MARKER_PREFIX)) {
+		return { outcome: null, warning: REVIEW_MD_UNMARKED_WARNING };
+	}
+
+	if (existing === seed) {
+		return { outcome: { relativePath: "REVIEW.md", action: "no-op" } };
+	}
+
+	await writeIncoming(seedPath, targetPath, dryRun);
+
+	return { outcome: { relativePath: "REVIEW.md", action: "overwritten" } };
+}
+
+/**
+ * Appends `REVIEW_MISSES_GITATTRIBUTES_LINE` to the consumer's
+ * `.gitattributes`, creating the file if absent. Append-only and idempotent,
+ * like `appendHookStateGitignoreLines`: a line already present, compared
+ * trimmed, is never duplicated, and no other line is touched. It runs on every
+ * host mix because the misses log exists for every consumer, not only those
+ * with hooks.
+ */
+export async function appendReviewMissesAttribute(
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const attributesPath = path.join(consumerRepoRoot, ".gitattributes");
+	const current = (await readFileIfExists(attributesPath)) ?? "";
+	const existingLines = new Set(current.split("\n").map((line) => line.trim()));
+
+	if (existingLines.has(REVIEW_MISSES_GITATTRIBUTES_LINE)) {
+		return;
+	}
+
+	const separator = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+	const next = `${current}${separator}${REVIEW_MISSES_GITATTRIBUTES_LINE}\n`;
+
+	if (!dryRun) {
+		await fs.writeFile(attributesPath, next, "utf8");
 	}
 }
 

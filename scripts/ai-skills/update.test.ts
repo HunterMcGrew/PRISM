@@ -2318,6 +2318,9 @@ const HOOK_RUNTIME_RELATIVE_PATHS = [
 	"approve-guard.mjs",
 	"plan/approve.mjs",
 	"plan/chat-approval.mjs",
+	"plan/watch-ci.mjs",
+	"review/reconcile.mjs",
+	"verify/check-report.mjs",
 ];
 
 /** The state-file globs `refreshHookRuntime` appends — one pair per hook entry point. */
