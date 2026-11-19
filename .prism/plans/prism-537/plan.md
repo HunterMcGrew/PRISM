@@ -594,7 +594,7 @@ round 4: resolved 1
   - Each part has value on its own, and together they pass 10 files and 500 lines by a wide margin, mostly generated copies. The cut puts the cap and voice mechanics in front of one reviewer and the new skill and routing in front of the next.
   - Part 2's branch starts from part 1's. When part 1 squash-merges first, part 2 opens with one plan-only commit, `T1-T9: Record part 1 as shipped`, so the task parser reads those tasks as done.
   - Every review record line on part 1's PR carries ` (part 1 of 2)` after its sha, per `REVIEW.md`, so only part 2's final verdicts end their stages.
-- **The Voice block is the first `## ` section of the skill, below the atlas anchor when there is one.** The spec says it sits right after the job statement. `measureSkillLoad` ends a Voice section at the next `## ` line, so a `<!-- atlas:domain-context -->` anchor placed after the block would be counted inside it, and its rendered domain text would grow the block in a consumer's copy. The anchor stays where it is, between the job line and the block. That keeps the block right after the opening text, and it gives T6 a rule a test can check. Winston's fit verdict: proceed, a faithful reading. In `prism-start-ticket` and `prism-onboard` the anchor sits mid-body, so there the block lands directly after the job line.
+- **The Voice block is the first `## ` section of the skill, below the atlas anchor when there is one.** The spec says it sits right after the job statement. `measureSkillLoad` ends a Voice section at the next `## ` line, so a `<!-- atlas:domain-context -->` anchor placed after the block would be counted inside it, and its rendered domain text would grow the block in a consumer's copy. The anchor stays where it is, between the job line and the block. That keeps the block right after the opening text, and it gives T6 a rule a test can check. Winston's fit verdict: proceed, a faithful reading. In `prism-start-ticket` the anchor sits mid-body, and `prism-onboard` has none, so in both the block lands directly after the job line.
 - **Thrive's Voice blocks are ported verbatim, and the 11 PRISM-only personas get blocks written in thrive's shape from their pre-PRISM-499 skill text.** Port, don't redesign, applies to the 13 personas thrive has. For the business personas and Parker, the identity and tone come from the skill's own last voice before PRISM-499 removed it. Atlas never had one. The full text is in T5, so two builds produce the same blocks. Inventing tone from scratch was rejected, because the earlier text is the persona the team already knew.
 - **Pronouns follow each persona's own Voice source, and `docs/personas.md` is corrected to match.** Thrive's blocks give Reese he/him and Sage she/her. The pre-PRISM-499 skill text gives Ellis he/him and Quinn, Remy, and Lex they/them. The doc has all six the other way. A Voice block that disagrees with the roster doc gives one persona two identities. T9 fixes the doc rather than the blocks, because the block's source is the persona's own record. Challenge round 1 found Reese and Sage, and the planning session checked every other entry against thrive and the old text.
 - **`persona-voice.test.ts` checks the block's shape, which thrive leaves to reviewers.** PRISM's Enforcement test asks that anything that must hold be a check where one is cheap. The test checks the parts a parser can see: one heading, first section, identity, tone, signature count, one subagent-skip greeting, and Eric's chat-only tone line. The 12-line target and the no-rule line stay a reviewer's, as ADR-0084 says. Winston's fit verdict: proceed. He ran the checks on all 14 thrive blocks and each passes.
@@ -653,6 +653,30 @@ Part 1 of 2: tasks T1 to T9 only. Checks that depend on T10 to T13 are out of ra
 - none
 
 ## Review
+
+- self-review round 1 at a2d2de63 (part 1 of 2): 0 critical, 1 major, 0 minor, 2 nit
+  - **Major, standards violation: ADR-0084 states the Voice block's placement more broadly than the code.** `.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md:18` says the block sits "below the job statement and any `<!-- atlas:... -->` anchor". In `prism-start-ticket` the anchor is at lines 61 to 63, below the block at line 3. A reader trusting the ADR would move that anchor above the block, or flag the skill as breaking the ADR. The architect-doc-verification rule, under its diverged-claims heading, sets a diverged claim in an ADR at Major or above.
+    - Class: a placement rule in a decision record stated without the qualifier its source plan Decision carries.
+    - Sweep: `grep -n 'atlas:\|^## Voice' .ai-skills/skills/*/shared.md` over all persona skills, plus `git grep -n "atlas:"` in `skill-authoring.md`, `writing-a-skill.md`, the ADR README, and `CONTEXT.md`. Only `prism-start-ticket` has an anchor below its block, and no other doc repeats the claim.
+    - Fix: change the clause to "below the job statement and any `<!-- atlas:... -->` anchor that comes before the first `## ` heading", then run `pnpm prism:build` so the three platform copies follow.
+  - **nit: the rule and guide summaries leave out the signature lines.** `.prism/rules/skill-authoring.md:18` and `.prism/architect/guides/writing-a-skill.md:22` describe the block as "identity, tone, and a greeting". ADR-0084 and `persona-voice.test.ts` also require three or four signature lines. Both texts follow T8's dictated wording, and the shape test catches an author who leaves them out.
+    - Class: a short summary of a shape that drops one of the parts the full definition requires.
+    - Sweep: `grep -n "identity, tone" .prism/rules .prism/architect CONTEXT.md -r` found only these two lines.
+    - Fix: change both to "identity, tone, signature lines, and a greeting". The guide must stay one line, because `prism-forge-skill` loads 119 lines.
+  - **nit: ADR-0084's Neutral line leaves out a second ADR-0080 claim that no longer holds.** `.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md:54` lists only ADR-0080's "session's own voice" note. ADR-0080 line 45 also says persona and utility skills differ "only in routing and in agent-adapter generation", and ADR-0080's new banner says "the rest of this decision stands".
+    - Class: a superseding ADR that lists only some of the superseded claims.
+    - Sweep: read ADR-0080's Context, Decision, and Consequences in full. The banner's first clause covers its line 42, and line 45 is the only other one.
+    - Fix: add to the Neutral line that the Voice block is now a third difference between persona and utility skills.
+  - Criteria (part 1 range, T1 to T9):
+    - AC-1: met (machine). `persona-voice.test.ts` passes, and a diff against the source repo at the pinned sha shows the 13 ported blocks byte-identical apart from the two listed swaps. The 11 written blocks match T5's text. Human evidence pending.
+    - AC-2: met. All three `skill-loaded-lines.test.ts` cases pass at a2d2de63.
+    - AC-3: met. The case-folding `discovery-metadata.test.ts` case passes, and `build.ts` calls `buildRoleMap`.
+    - AC-4: met (machine). The tone-line case passes. Human evidence pending until a scratch-PR run.
+    - AC-5, AC-6: out of range for part 1 (T10).
+    - AC-7: half met. ADR-0084 is accepted, ADR-0080 carries its banner, and `prism:crossref-lint` passes. The ADR-0085 half is part 2.
+    - AC-8: met for part 1. Every skill T3 to T5 touched measures at or under 120 with no allowlist entry, matching `## History`. `prism-debug` is part 2.
+    - AC-9: met for part 1. No lead rule changed, and `agents-md-budget.test.ts` passes in the verify run.
+    - AC-10: pending, because no PR or CI run exists yet.
 
 ## Acceptance Criteria
 
