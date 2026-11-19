@@ -6,6 +6,8 @@ Date: 2026-10-17
 Supersedes: 0041, 0042
 ---
 
+> Partly superseded by [ADR-0085](./0085-the-debugger-returns-as-prism-debug.md): Sasha returns as `prism-debug`, which diagnoses and changes no source, and the broken-behavior routing phrases move to her. Theo and Ren stay retired, and the rest of this decision stands.
+
 ## Context
 
 Three personas each owned one analysis workflow that sat outside the ticket flow's core path:
