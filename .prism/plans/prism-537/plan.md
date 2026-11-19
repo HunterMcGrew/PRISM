@@ -625,12 +625,32 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T6: Added `persona-voice.test.ts` with the shape, no-Voice-on-utility-or-agent, and Eric's tone-line cases. Run against `main`'s skill sources, the shape and tone-line cases fail and the utility case passes.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T7: Wrote ADR-0084 (0084 was free), marked ADR-0080 partly superseded, added the README rows, and listed 0084 as excluded from the seed; `prism:crossref-lint` passes and the seed has no 0084 twin.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T9: Matched `docs/personas.md` to the Voice blocks for Reese, Sage, Ellis, Quinn, Remy, and Lex, and linked ADR-0084 beside ADR-0080 in the closing paragraph. `last_updated` already read 2026-11-19.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: Verify (part 1 of 2) at `aad413bf`: typecheck, lint, test, build, and the spec check all pass, and format is not configured. The build left the tree clean, and `spec-scope-lint` skipped itself because HEAD was detached.
 
 ## Sessions
 
 - 2026-11-19 [huntermcgrew/prism-537-personas] open: Intent: plan child 7 (personas) to the detail bar from the epic spec and thrive at db3570975. Bounds: the plan file only, nothing outside the spec's Affected systems, no new dependency, and intent-level or shared-type questions reported to Hunter. Approach: port thrive's Voice blocks, allowance, unique-name check, and debugger with the spec's swaps, write the 11 missing blocks from the pre-PRISM-499 skill text, and pay the routing bytes inside `skill-routing.md`. · close: drifted — added edits the spec did not name to `autonomous-bug-fixing.md`, `AGENTS.md`'s norms row, `CONTEXT.md`, and Nora's three bug-route texts, each one a doc the change makes false, recorded as a Decision with Winston's fit verdict; challenge ran four rounds (clean, blocking 1, blocking 1, resolved 1); auto-approve --check exits 1 on the missing spec.md, so Hunter approves.
 
 ## Verification
+
+verdict: done
+base: 8cb24c49cc5f956c8f86a8c74b2e0cb3712a346f
+head: aad413bffe8f79f54f9ceed1385a6e6f644d787c
+
+Part 1 of 2: tasks T1 to T9 only. Checks that depend on T10 to T13 are out of range for this record.
+
+| check | result | evidence |
+| --- | --- | --- |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/typecheck.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/lint.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/test.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/build.log |
+| format | n/a: not configured | none |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/spec.log |
+
+### Failures
+
+- none
 
 ## Review
 
