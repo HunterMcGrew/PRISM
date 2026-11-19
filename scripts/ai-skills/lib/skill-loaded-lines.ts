@@ -17,6 +17,9 @@ import path from "node:path";
 
 const BODY_FILES = ["shared.md", "claude.md"];
 
+// Lines of each `## Voice` section in a body file that the cap does not charge, per ADR-0084.
+const VOICE_LINE_ALLOWANCE = 16;
+
 // A cited file in one of these areas is procedure the run follows, so the
 // files it cites in turn are read too.
 const FOLLOWED_AREAS = [".prism/references/", ".prism/skills/", ".ai-skills/skills/"];
@@ -97,14 +100,18 @@ export function listCitedFiles(
  * Citations are followed through references, step files, and skill sources,
  * because a skill that cites one step file which cites the next would
  * otherwise count only the first. Templates, architect docs, and rules are
- * counted where cited and not followed further.
+ * counted where cited and not followed further. The first 16 lines of each
+ * `## Voice` section in a body file are not counted.
  */
 export function measureSkillLoad(repoRoot: string, skillId: string): SkillLoad {
 	const skillDir = `.ai-skills/skills/${skillId}`;
 	const bodyFiles = BODY_FILES.map((file) => `${skillDir}/${file}`).filter((file) =>
 		existsSync(path.join(repoRoot, file))
 	);
-	const bodyLines = bodyFiles.reduce((sum, file) => sum + countFileLines(repoRoot, file), 0);
+	const bodyLines = bodyFiles.reduce((sum, file) => {
+		const text = readFileSync(path.join(repoRoot, file), "utf8");
+		return sum + countLines(stripVoice(text));
+	}, 0);
 
 	const counted = new Set<string>();
 	const queue = [...bodyFiles];
@@ -127,6 +134,31 @@ export function measureSkillLoad(repoRoot: string, skillId: string): SkillLoad {
 	const citedLines = files.reduce((sum, file) => sum + countFileLines(repoRoot, file), 0);
 
 	return { id: skillId, bodyLines, files, totalLines: bodyLines + citedLines };
+}
+
+/**
+ * Drops the first 16 lines of each `## Voice` section, per ADR-0084, so a
+ * section that grows past the allowance counts again.
+ */
+function stripVoice(text: string): string {
+	let voiceLine = -1;
+
+	return text
+		.split("\n")
+		.filter((line) => {
+			if (line.startsWith("## ")) {
+				voiceLine = line.trimEnd() === "## Voice" ? 0 : -1;
+			}
+
+			if (voiceLine < 0) {
+				return true;
+			}
+
+			voiceLine += 1;
+
+			return voiceLine > VOICE_LINE_ALLOWANCE;
+		})
+		.join("\n");
 }
 
 /** Resolves one citation per `listCitedFiles`'s order, or `null` when nothing on disk matches. */
