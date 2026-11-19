@@ -21,8 +21,14 @@
  * ways: right after a push the head has no checks yet, and `gh` exits with
  * "no checks reported"; and the main build can register minutes after quicker
  * checks, so a watch can see nothing pending and report green before the build
- * starts. So it waits until the required check exists on the head and nothing
- * is pending, then reads the head again before it answers.
+ * starts. So it waits until the head has a check and nothing is pending, and
+ * until the required check exists when one is named, then reads the head again
+ * before it answers.
+ *
+ * Only a named required check closes the second gap. With none set, a check
+ * that registers after the others settle can be missed, and the watcher can
+ * exit 0 before it runs. Set `ci.requiredCheck`, or pass `--required`, to
+ * close it.
  */
 import { spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";

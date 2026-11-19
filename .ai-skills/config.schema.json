@@ -248,13 +248,13 @@
 		},
 		"ci": {
 			"type": "object",
-			"description": "How the PR stage waits on CI. Absent means the watcher waits until every check on the head has settled.",
+			"description": "How the PR stage waits on CI. Absent means the watcher waits until the head has a check and none is pending, so a check that registers after the others settle can be missed. Setting `requiredCheck` closes that gap.",
 			"additionalProperties": false,
 			"properties": {
 				"requiredCheck": {
 					"type": "string",
 					"minLength": 1,
-					"description": "The name of the CI check the PR stage waits for, as `gh pr checks` prints it. When absent, the watcher waits until every check on the head has settled.",
+					"description": "The name of the CI check the PR stage waits for, as `gh pr checks` prints it. When absent, the watcher waits until the head has a check and none is pending, so a check that registers after the others settle can be missed. Setting this closes that gap.",
 					"examples": ["build"]
 				}
 			}
