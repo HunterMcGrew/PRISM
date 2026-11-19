@@ -2,7 +2,8 @@
  * Holds every persona skill to the Voice shape in ADR-0084: one `## Voice`
  * block as the first `## ` section of `shared.md`, holding an identity line, a
  * tone line, three or four signature lines, and a greeting that a subagent
- * skips. Run via `pnpm prism:test`.
+ * skips. No `claude.md` and no utility or agent skill file carries a Voice
+ * section. Run via `pnpm prism:test`.
  *
  * The check sees only the shape. The 12-line target and the rule that a block
  * holds no rule from the skill's body stay a reviewer's to hold.
@@ -30,12 +31,18 @@ async function loadRoles(): Promise<RoleEntry[]> {
 	return (JSON.parse(raw) as { skills: RoleEntry[] }).skills;
 }
 
-async function readSkillLines(id: string): Promise<string[]> {
-	const text = await fs.readFile(
-		path.join(repoRoot, ".ai-skills", "skills", id, "shared.md"),
-		"utf8"
-	);
-	return text.split("\n");
+/** Returns the lines of one of a skill's body files, or an empty list when the file does not exist. */
+async function readSkillLines(id: string, file = "shared.md"): Promise<string[]> {
+	try {
+		const text = await fs.readFile(path.join(repoRoot, ".ai-skills", "skills", id, file), "utf8");
+		return text.split("\n");
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			return [];
+		}
+
+		throw error;
+	}
 }
 
 /** Returns the lines from the `## Voice` heading up to the next `## ` line, or the end of the file. */
@@ -89,6 +96,10 @@ test("every persona skill opens with one Voice block in the ADR-0084 shape", asy
 		for (const reason of findVoiceShapeFailures(role.persona as string, lines)) {
 			failures.push(`${role.id}: ${reason}`);
 		}
+
+		if ((await readSkillLines(role.id, "claude.md")).includes("## Voice")) {
+			failures.push(`${role.id}: claude.md has a "## Voice" line`);
+		}
 	}
 
 	assert.deepEqual(failures, []);
@@ -99,8 +110,10 @@ test("no utility or agent skill carries a Voice block", async () => {
 	for (const role of (await loadRoles()).filter(
 		(entry) => entry.type === "utility" || entry.type === "agent"
 	)) {
-		if ((await readSkillLines(role.id)).includes("## Voice")) {
-			carriers.push(role.id);
+		for (const file of ["shared.md", "claude.md"]) {
+			if ((await readSkillLines(role.id, file)).includes("## Voice")) {
+				carriers.push(`${role.id}/${file}`);
+			}
 		}
 	}
 
