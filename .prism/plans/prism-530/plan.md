@@ -1207,6 +1207,10 @@ head: 87a06c449506741084e48bffd36f18c2dc35f328
     - Fixed in 642e6c8c: a folder counts as closed only with a dated `> Closed: YYYY-MM-DD` line, and a `closed` stage or status without one is not yet eligible.
   - Cleanup: none. No debug output or stray files.
   - Out of scope: the PR body says this part's record lines carry no marker, while this line carries `(part 2 of 2)`. Both read as final.
+- self-review round 2 at c92b0558 (part 2 of 2): clean
+  - Range `ba6b8839..c92b0558`. All five Minors and the nit from round 1 are closed, each checked against its source: `prism-retro`'s evidence and lessons-exits steps, `prism-pr-review`'s three states, `intent-scope.md`'s fix-in-place part, and `check-report.mjs`'s `parseTableRow`. A tree grep finds no remaining "review loop" in the rules, architect docs, references, schema, or `REVIEW.md`, and no script reads `modelTiers`.
+  - Checks: `pnpm prism:check` exits 0, and `spec-scope-lint` with `GITHUB_HEAD_REF` set to this branch passes.
+  - Observation, no finding: the new verdict-gate sentence in `branch-plan.md` and its seed twin names `pnpm prism:retro-line`, a maintainer-only command. The same rule already named it before this range, in its retro-gate paragraph, so the repair adds no new class. That class is tracked in GitHub issue #444.
 
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
 
