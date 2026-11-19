@@ -39,6 +39,8 @@ const APPROVED_INTENT = "---\nstage: intent\nstatus: approved\n---\n";
 const DRAFT_INTENT = "---\nstage: intent\nstatus: draft\n---\n";
 const APPROVED_EPIC = "---\nstage: intent\nstatus: approved\nsize: epic\n---\n";
 const DRAFT_EPIC = "---\nstage: intent\nstatus: draft\nsize: epic\n---\n";
+const EPIC_SPEC =
+	"---\nstage: spec\n---\n\n## Children\n\n| # | Name | What lands | Proves |\n| --- | --- | --- | --- |\n| `C1` | One | x | y |\n";
 
 /**
  * Copies a fixture into a temp repo with a fake `.git`, so nothing writes into
@@ -59,12 +61,14 @@ function copyFixture(name: string): string {
 /**
  * Turns a copied fixture into an epic child: its intent is removed, its spec
  * gains `epic:` and `child:` lines, and, when `epicIntent` is given, a sibling
- * `epic-folder/intent.md` holds that text.
+ * `epic-folder/intent.md` holds that text and `epic-folder/spec.md` holds
+ * `epicSpec`, unless it is null.
  */
 function makeChild(
 	folder: string,
 	epic: string,
-	epicIntent: string | null
+	epicIntent: string | null,
+	epicSpec: string | null = EPIC_SPEC
 ): void {
 	rmSync(path.join(folder, "intent.md"));
 	const specPath = path.join(folder, "spec.md");
@@ -80,6 +84,9 @@ function makeChild(
 		const epicFolder = path.join(path.dirname(folder), "epic-folder");
 		mkdirSync(epicFolder);
 		writeFileSync(path.join(epicFolder, "intent.md"), epicIntent);
+		if (epicSpec !== null) {
+			writeFileSync(path.join(epicFolder, "spec.md"), epicSpec);
+		}
 	}
 }
 
@@ -621,6 +628,28 @@ describe("the intent behind the plan", () => {
 			autoApprove({ folder, check: true, today: TODAY }).message,
 			/^auto-approve: intent failed: \S+spec\.md names epic "epic-folder", and \S+intent\.md does not exist$/
 		);
+	});
+
+	test("an epic child the epic's ## Children table doesn't list fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(
+			folder,
+			"epic-folder",
+			APPROVED_EPIC,
+			EPIC_SPEC.replace("`C1`", "C2")
+		);
+
+		assert.match(
+			autoApprove({ folder, check: true, today: TODAY }).message,
+			/^auto-approve: intent failed: \S+spec\.md names child "C1", which no row of ## Children in \S+spec\.md names in its first column$/
+		);
+	});
+
+	test("an epic child whose epic has no spec.md fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(folder, "epic-folder", APPROVED_EPIC, null);
+
+		assert.equal(autoApprove({ folder, check: true, today: TODAY }).code, 1);
 	});
 
 	for (const value of ["../epic-folder", "plans/epic-folder", "a\\b", ".."]) {

@@ -53,7 +53,7 @@ Two findings that would change the plan beat ten that would not. A page of hedge
 
 ## Plan round
 
-The plan stage dispatches a round with a plan folder and a round number `<n>`. The brief says whether it is a confirm round and whether `prism-architect` ruled on a finding. Read `intent.md`, `spec.md`, `plan.md`, and `design.md` when present, cold and in full, plus the code the tasks name. Run the four passes on the plan against the spec, and recheck the whole plan every round, because a revision can break a task that passed. The spec stage owned the design, so don't reopen it.
+The plan stage dispatches a round with a plan folder and a round number `<n>`. The brief says whether it is a confirm round and whether `prism-architect` ruled on a finding. Read `intent.md` (the epic's on an epic child), `spec.md`, `plan.md`, and `design.md` when present, cold and in full, plus the code the tasks name. Run the four passes on the plan against the spec, and recheck the whole plan every round, because a revision can break a task that passed. The spec stage owned the design, so don't reopen it.
 
 A finding is **blocking** when the plan cannot be built or graded as written:
 

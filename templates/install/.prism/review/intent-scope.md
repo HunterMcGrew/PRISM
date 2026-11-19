@@ -1,6 +1,6 @@
 # Intent conformance and scope
 
-Does the diff deliver what the intent asked for, and nothing it didn't? Trigger: always. It reads structural `not reached` when no `intent.md` and no `## Acceptance Criteria` in `plan.md` exist.
+Does the diff deliver what the intent asked for, and nothing it didn't? Trigger: always. It reads structural `not reached` when no `intent.md` and no `## Acceptance Criteria` in `plan.md` exist. On an epic child, whose folder holds no `intent.md`, the intent in this pass and every other pass file is the epic's `intent.md`, in the folder its `spec.md`'s `epic:` line names.
 
 Its enumeration unit, severity, finding shape, and coverage line are in `REVIEW.md`.
 

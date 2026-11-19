@@ -162,7 +162,9 @@ function fail(failures) {
 /**
  * Passes when the folder's `intent.md` is approved, or when there is none and
  * `spec.md`'s `epic:` line names a sibling folder whose `intent.md` is, and
- * reads `size: epic`, so a child can't borrow an unrelated ticket's approval.
+ * reads `size: epic`, and whose `spec.md` lists the `child:` value as the
+ * first cell of a `## Children` row, so a child can't borrow another ticket's
+ * approval.
  * The value must be a bare folder name, so it can't point outside `plans/`.
  *
  * @param {string} folder
@@ -173,9 +175,10 @@ function checkIntent(folder) {
 	if (existsSync(intentPath)) return checkApproved(intentPath);
 
 	const specPath = path.join(folder, "spec.md");
-	const epic = existsSync(specPath)
-		? readFrontmatter(readFileSync(specPath, "utf8"))?.fields["epic"]
+	const fields = existsSync(specPath)
+		? readFrontmatter(readFileSync(specPath, "utf8"))?.fields
 		: undefined;
+	const epic = fields?.["epic"];
 	if (!epic) {
 		return [
 			[
@@ -218,7 +221,39 @@ function checkIntent(folder) {
 		];
 	}
 
+	const child = fields?.["child"];
+	const epicSpec = path.join(path.dirname(epicIntent), "spec.md");
+	const children = existsSync(epicSpec)
+		? sectionBody(readFileSync(epicSpec, "utf8"), "Children")
+		: null;
+	if (!child || !listsChild(children ?? "", child)) {
+		return [
+			[
+				"intent",
+				`${specPath} names child "${child ?? ""}", which no row of ## Children in ${epicSpec} names in its first column`,
+			],
+		];
+	}
+
 	return checkApproved(epicIntent);
+}
+
+/**
+ * True when a table row in `children` has `child` as its first cell, with
+ * backticks ignored.
+ *
+ * @param {string} children
+ * @param {string} child
+ * @returns {boolean}
+ */
+function listsChild(children, child) {
+	return children.split("\n").some((line) => {
+		const cells = line.trim().split("|");
+		return (
+			line.trim().startsWith("|") &&
+			(cells[1] ?? "").replaceAll("`", "").trim() === child.trim()
+		);
+	});
 }
 
 /**

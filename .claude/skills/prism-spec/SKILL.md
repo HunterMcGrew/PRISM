@@ -52,7 +52,7 @@ For an epic intent, write `epic-<ticket>/spec.md` and keep the template's epic s
 - `## Children`, one row per child ticket and what it delivers. A child with no ticket yet gets a short slug, for `prism-start-ticket` to file.
 - `## Merge order`, saying which children merge first and which wait on another.
 - `## Decisions`, one line per epic-wide decision, leading with a bold title and then the reason.
-- No `plan.md`. Each child runs the standard workflow in its own folder.
+- No `plan.md`. Each child gets its own folder and runs the standard stages from its spec on.
 
 For an epic child, the brief names the epic folder, one `## Children` row, and the child's folder instead of an intent. The epic's approved intent covers its children, so a child folder holds no `intent.md`. Read the epic's `intent.md`, which must say `status: approved`, the epic's `spec.md`, and that row. A draft intent or a missing row returns `blocked`. Write `.prism/plans/<child>/spec.md` scoped to the row, with `epic:` set to the epic folder's name and `child:` to the row's first-column value, and take `title` and `ticket` from the row. A system the row needs that the epic spec's `## Affected systems` doesn't cover goes in the report as a scope change, not into the spec.
 

@@ -55,6 +55,16 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
 - **A child's `epic:` must name an intent that reads `size: epic`.** Self-review found any approved sibling intent satisfied the check, so an agent-written spec could borrow an unrelated ticket's approval. The size line is already in every intent, so the check costs one read.
 - **`wanted` is not a hedge, and `'d` is.** "it's what I wanted, approved" reports a past fact and approves, and "I'd approve this one" is a condition, the same as "I would".
 - **The hedge check scans the whole sentence before the match, not three words.** "if there is an epic like this, i approve the epic" puts the condition seven words back. A false negative costs the person one more message, and a false approval stamps a file.
+- **The guard compares paths through `realpathSync.native`.**
+  - **Root cause:** `[Deduced]` from CI run 44587940829. The Windows temp dir is `C:\Users\RUNNER~1`, an 8.3 short name that JS `realpathSync` keeps, so the delegated copy's long `APPROVE_SCRIPT` never equals the payload's short spelling. The prompt arm passed and the execution arm failed, which fits a path-spelling mismatch.
+  - **Chosen approach:** `.native` in `isChatApproveCommand`, `findSessionCopy`, and `findCheckout`, which expands short names. Not reproduced locally; the Windows leg passed at 830991fc (run 44589622597).
+- **The guard delegates only to a checkout of the same repository.** Eric found delegation reached any checkout holding a guard copy. Both checkouts must share `git rev-parse --git-common-dir`, and the tests use a real `git worktree add` pair plus a negative case for an unrelated repo.
+- **The `workflow.md` hedge clause lands in part 2, not part 1.** Eric asked for it on #539, but part 1 had about 7 bytes of `AGENTS.md` lead-section headroom and part 2 rewrites the same paragraph.
+- **Part 1 is merged into part 2, not rebased,** because part 2 was already pushed and `git-conventions.md` forbids rebasing a shared branch.
+- **A child must be listed in its epic's `## Children`.** Eric found `checkIntent` proved the named folder was an approved epic but never read `child:`. `auto-approve.mjs` now requires a `## Children` row in the epic's `spec.md` whose first cell, backticks aside, equals `child:`, so an agent-written spec can't claim an unrelated approved epic.
+- **On an epic child, "the intent" every review reader names is the epic's `intent.md`.** One sentence in `.prism/review/intent-scope.md` covers every pass file, and `prism-self-review` and `prism-challenge` name the epic route where they read the intent.
+- **A child's acceptance criteria are agent-written in `plan.md` with no person-approved source.** Eric's decision item, accepted as shipped: Hunter's 2026-11-19 ruling says approving the epic approves its children, and every PRISM-499 child already worked this way.
+- **Trailing hedges still approve** ("approve it if the tests pass"). Eric's observation, left as is: the reported messages put the hedge first, and a condition after the verb is arguably an approval. A follow-up PR off `main` if it bites.
 
 ---
 
@@ -62,6 +72,7 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
 
 - 2026-11-19 [huntermcgrew/prism-538-epic-children-approve-guard]: Filed #538 and fixed both approve-guard bugs (part B tasks 1–4).
 - 2026-11-19 [huntermcgrew/prism-538-epic-children-approve-guard]: Part A tasks 5–13: epic child folders, the intent condition in `auto-approve.mjs`, and the `spec.md` anchor in `tasks.mjs`; see Decision: An epic child is a folder with `spec.md` and `plan.md` and no intent.
+- 2026-11-19 [huntermcgrew/prism-538-epic-children]: Fixed PR-review round 1 on both parts: Windows path spelling and same-repo delegation (part 1), `## Children` membership, epic intent routes in review readers, and the hedge clause in `workflow.md` (part 2).
 
 ---
 
@@ -143,10 +154,79 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 - **Sweep:** `git grep -n "Acceptance Criteria" -- .prism/architect/_toolkit/plan-authoring.md .prism/review/intent-scope.md` (lines 39, 40 and line 17 of the review file).
 - **Suggested fix:** one clause in each: "the plan stage, for an epic child".
 
+- pr-review round 1 at 1c8d51b (part 1 of 2): 0 critical, 1 major, 2 minor, 0 nit
+- pr-review round 1 at 580af0da (part 2 of 2): 0 critical, 1 major, 3 minor, 0 nit
+
+### Execution arm fails on Windows (#539, #540)
+
+- **Severity:** `major`
+- **Status:** `fixed` in 830991fc (Windows leg green, run 44589622597)
+- **File:** `scripts/ai-skills/hooks/approve-guard.mjs:596`
+- **Problem:** the "another checkout" execution-arm test denies on `windows-latest`.
+- **Suggested fix:** `realpathSync.native`; see Decision: The guard compares paths through `realpathSync.native`.
+
+### Delegation reaches unrelated checkouts (#539)
+
+- **Severity:** `minor`
+- **Status:** `fixed` in 830991fc
+- **File:** `scripts/ai-skills/hooks/approve-guard.mjs:572`
+- **Problem:** any git checkout holding the guard file got the event.
+- **Suggested fix:** require a shared `--git-common-dir`.
+
+### `workflow.md` states the old approval predicate (#539)
+
+- **Severity:** `minor`
+- **Status:** `fixed` in part 2
+- **File:** `.prism/rules/workflow.md:14`
+- **Problem:** the Approval paragraph didn't name the hedge exclusion.
+- **Suggested fix:** add the hedge clause at source and rebuild.
+
+### `checkIntent` never reads `child:` (#540)
+
+- **Severity:** `minor`
+- **Status:** `fixed` in part 2
+- **File:** `scripts/ai-skills/hooks/plan/auto-approve.mjs:212`
+- **Problem:** a spec could name any approved epic it isn't a child of.
+- **Suggested fix:** require a matching `## Children` row.
+
+### Review readers point a child at its own `intent.md` (#540)
+
+- **Severity:** `minor`
+- **Status:** `fixed` in part 2
+- **File:** `.prism/review/intent-scope.md:28`
+- **Problem:** five readers of "the intent" had no epic route.
+- **Suggested fix:** one sentence in `intent-scope.md`, plus the route in `prism-self-review` and `prism-challenge`.
+
+### No line says a child runs the standard stages (#540)
+
+- **Severity:** `minor`
+- **Status:** `fixed` in part 2
+- **File:** `.prism/rules/workflow.md:10`
+- **Problem:** the resume table's `standard,` rows depend on it.
+- **Suggested fix:** one sentence on the epic bullet, and reword `prism-spec`'s child line.
+
 ### Still open (decision items)
 
 - **An `epic:` line names any approved intent.** `checkIntent` accepts any sibling folder whose `intent.md` reads `status: approved`, so a spec written by the agent can point at an unrelated approved ticket. It is still tighter than main, which checked no intent. Recommend adding one condition: the named intent reads `size: epic`.
 - **The hedge scan blocks real approvals.** `I read the epic and it's what I wanted, approved <file>.md`, `looks good and should be fine, approved <file>.md`, and `it will cost one more night, but approved` all return no approval, because the scan covers the whole sentence. Recommend keeping the Decision as written, and dropping `wanted` from `HEDGES` since it reports a past fact.
+
+## Debugged Issues
+
+### Delegated guard denies its own approve command on Windows
+
+- **Status:** `fixed` (Windows leg green at 830991fc, run 44589622597)
+- **Severity:** Major
+- **Confidence:** `Medium`
+- **Environment:** GitHub Actions `windows-latest`, run 44587940829
+- **File:** `scripts/ai-skills/hooks/approve-guard.mjs:596`
+- **Root cause:** `[Deduced]` JS `realpathSync` keeps the 8.3 short name `RUNNER~1`, so the session copy's path never equals the payload-spelled path.
+- **Steps to Reproduce:**
+  1. Run `approve-guard.test.ts` on Windows.
+- **Expected behavior:** the execution arm passes the session checkout's `approve.mjs`.
+- **Actual behavior:** it denies; the prompt arm in the same setup passes.
+- **Recommended fix:** `realpathSync.native`.
+- **Suggested tests:** the existing "another checkout" tests on the Windows leg.
+- **Ticket:** `N/A`
 
 ## Cleanup Items
 
