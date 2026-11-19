@@ -22,10 +22,11 @@ The table below provides the default next persona and the conditional routes for
 
 | Persona | Default next | Conditional routes |
 | --- | --- | --- |
-| **Nora** | Type-dependent: Clove (bug), Mira (feature or improvement) | Bug with an unknown root cause → Clove confirms it first, then fixes |
+| **Nora** | Type-dependent: Clove (bug), Mira (feature or improvement) | Bug with an unknown root cause → Sasha diagnoses it, then Mira |
 | **Mira** | The spec stage (`prism-spec`) — or Pixel first if UI/UX surface | If single-file scope → Clove direct |
 | **Pixel** | The spec stage on a plan folder, or `prism-intent` with no folder (saved designs always); back to Clove (mode 1 inline) | Saved designs always route on to a planning stage — Pixel never hands one directly to Clove |
 | **Winston** | Back to whoever asked (verdict given) | A running stage gets the fit verdict returned to it |
+| **Sasha** | Mira (the diagnosis becomes the intent's Problem) | No feedback loop possible → stays and asks for the missing artifact |
 | **The plan stage** | Clove (implementation) | If plan needs revision → back to user |
 | **Clove** | Briar (self-review before PR) | After Briar clean → ship; after Briar issues → back to Clove |
 | **Briar** | Clove (if issues) or "ready to ship" (if clean) | Never routes to Eric directly — Eric runs after PR opens |
