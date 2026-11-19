@@ -616,6 +616,9 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: Fixed challenge round 2's blocking finding: T7 now depends on T6, because ADR-0084 cites the test file T6 creates. Also named Nora's handoff sentence instead of its line number, made the debugger's deletions exact, and reworded the `business-layer.md` edit.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: Fixed challenge round 3's blocking finding: ADR-0085's text spelled the source repo `Thrive`, which the build's literal guard rejects, so a convention now fixes the spelling. Also gave ADR-0084's exact thrive citation, made T9's proof check the link directly, and made T10's proof check the seed twin's routing rows.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: Folded in confirm round 4's two non-blocking T10 findings. `AGENTS.md`'s norms-table row now drops "just fix" too, and the budget fallback is replaced by a `needs-replan` stop, because the fallback would fail T10's own proof.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T1: `measureSkillLoad` now skips the first 16 lines of each `## Voice` section in a body file, with three new cases; the two charge cases fail on the old code.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T2: `buildRoleMap` throws when two roles share a persona name, compared without case; the new case fails on the old code and the build passes on today's roles.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T8: Wrote the Voice exception into `skill-authoring.md`, the `writing-a-skill.md` guide, `business-layer.md`, and `CONTEXT.md` lines 38 and 50; the build wrote the platform copies and both seed twins. `prism-forge-skill` still loads 119 lines.
 
 ## Sessions
 
