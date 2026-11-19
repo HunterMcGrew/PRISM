@@ -617,7 +617,7 @@ round 4: resolved 1
 
 ## Sessions
 
-- 2026-11-19 [huntermcgrew/prism-537-personas] open: Intent: plan child 7 (personas) to the detail bar from the epic spec and thrive at db3570975. Bounds: the plan file only, nothing outside the spec's Affected systems, no new dependency, and intent-level or shared-type questions reported to Hunter. Approach: port thrive's Voice blocks, allowance, unique-name check, and debugger with the spec's swaps, write the 11 missing blocks from the pre-PRISM-499 skill text, and pay the routing bytes inside `skill-routing.md`.
+- 2026-11-19 [huntermcgrew/prism-537-personas] open: Intent: plan child 7 (personas) to the detail bar from the epic spec and thrive at db3570975. Bounds: the plan file only, nothing outside the spec's Affected systems, no new dependency, and intent-level or shared-type questions reported to Hunter. Approach: port thrive's Voice blocks, allowance, unique-name check, and debugger with the spec's swaps, write the 11 missing blocks from the pre-PRISM-499 skill text, and pay the routing bytes inside `skill-routing.md`. · close: drifted — added edits the spec did not name to `autonomous-bug-fixing.md`, `AGENTS.md`'s norms row, `CONTEXT.md`, and Nora's three bug-route texts, each one a doc the change makes false, recorded as a Decision with Winston's fit verdict; challenge ran four rounds (clean, blocking 1, blocking 1, resolved 1); auto-approve --check exits 1 on the missing spec.md, so Hunter approves.
 
 ## Verification
 
