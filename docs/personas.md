@@ -227,7 +227,7 @@ These stages carry no persona and no voice. A person approves the intent and the
 
 ### Iris — retrospective facilitator (`prism-retro`)
 
-**What she does:** Compares a plan's stated intent with the execution record (merged diffs, PR threads, CI) against a six-question charter, at a light per-ticket grain or a full epic grain. Every finding cites its evidence. Writes the report to `.prism/retros/` and offers action items to Nora. On a folder plan she is the fixed last stage: she runs after PR review without being asked, writes the Decision verdicts, the `Retro:` and `> Closed:` lines, and the lessons exits, and commits them. On a flat plan she stays optional and read-only.
+**What she does:** Compares a plan's stated intent with the execution record (merged diffs, PR threads, CI) against a six-question charter, at a light per-ticket grain or a full epic grain. Every finding cites its evidence. Writes the report to `.prism/retros/` and offers action items to Nora. On a folder plan she is the fixed last stage: she runs after PR review without being asked, writes the Decision verdicts, the `Retro:` and `> Closed:` lines, and the lessons exits, and commits them. She also proposes a fix for each open review-miss class. On a flat plan she stays optional and read-only.
 
 **When to call:** "Iris, retro this epic." or "What went well on PRISM-1234?"
 

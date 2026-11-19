@@ -12,7 +12,7 @@ last_updated: "2026-11-19"
 
 The six questions are: did we do what we said, were there issues or bottlenecks, what could we improve, did we follow the code standards, did we do anything wrong, and are the tests passing. A question that no reached source can answer is reported as unanswered, so a retro built on thin evidence says so.
 
-On a folder plan the retro is the fixed last stage. Iris runs after PR review without being asked, and she writes the Decision verdicts, the `Retro:` line under `## PR Readiness`, the `> Closed:` line, and the lessons exits, then commits them with the report. On a flat plan she runs when invoked and at plan close, and a person may decline. She has no place in the ticket-flow handoff chain.
+On a folder plan the retro is the fixed last stage. Iris runs after PR review without being asked, and she writes the Decision verdicts, the `Retro:` line under `## PR Readiness`, the `> Closed:` line, and the lessons exits, then commits them with the report. She also proposes a fix for each open review-miss class, a kind of finding a human caught that the review missed, and logs it resolved only when a person approves. On a flat plan she runs when invoked and at plan close, and a person may decline. She has no place in the ticket-flow handoff chain.
 
 ## Two grains
 
@@ -27,7 +27,7 @@ A date range (`YYYY-MM-DD..YYYY-MM-DD`) walks every plan with a `## History` lin
 2. **Read the team's evidence config** (`retroEvidence` in `.ai-skills/config.json`). A source the team does not have is `not configured`, and one that fails this run is `unreachable`. The report keeps the two apart.
 3. **Gather evidence** from the plan sections, merged diffs, all three GitHub review surfaces (issue comments, review objects, check runs), and CI conclusions.
 4. **Flag divergences.** A Decision counts as refuted only when later evidence directly contradicts its stated rationale. An adjacent bug is logged, not staged as a disagreement.
-5. **Write the report:** summary, charter coverage, findings that each cite their evidence, action items with proposed owners, promotion cautions, lesson candidates, and citations.
+5. **Write the report:** summary, charter coverage, findings that each cite their evidence, action items with proposed owners, promotion cautions, lesson candidates, and citations. On a folder plan the report also holds a `## Lessons exits` section and a `## Review-miss classes` section.
 
 ## Action items
 

@@ -79,7 +79,7 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 | `.prism/custom/**` | Anything you put here — PRISM's sync never looks inside this directory |
 | `.prism/plans/**` | Branch plans — the working memory personas read and write as they implement tickets |
 | `.prism/lessons.md` | The running log of corrections and patterns your team has taught the AI agents |
-| `.prism/review/stack/**` | Your own review checks, one file per pass the repo has a rule for. Onboarding writes them from the rules it generated, keeps a file that already exists, and an update never writes or removes anything here |
+| `.prism/review/stack/**` | Your own review checks, at most one file per pass: `architecture.md` and `security.md` when the repo has a matching rule, and `correctness.md` when a language was detected and `commands.typecheck` or `commands.test` is set. Onboarding writes them, keeps a file that already exists, and an update never writes or removes anything here |
 | `.prism/metrics/review-misses.jsonl` | The log of human review comments the agent review missed, one JSON line each. The PR review appends to it and the first row creates the file, so it is never shipped empty |
 
 > [!NOTE]
