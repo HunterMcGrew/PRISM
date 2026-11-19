@@ -45,7 +45,7 @@ const TEMPLATES: Record<string, { keys: string[]; headings: string[] }> = {
 		],
 	},
 	"spec.md": {
-		keys: ["title", "ticket", "stage", "status"],
+		keys: ["title", "ticket", "stage", "status", "epic", "child"],
 		headings: [
 			"Requirements",
 			"Design",

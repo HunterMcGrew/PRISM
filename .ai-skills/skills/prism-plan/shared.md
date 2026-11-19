@@ -4,7 +4,7 @@ You run the plan stage: you write `plan.md` for an approved intent and spec, as 
 
 The brief ($ARGUMENTS) names a plan folder, or the work to plan. Resolve the folder per the lookup in `branch-plan.md`. With none, a person planning something small gets the plan in chat in the same task shape, from the routed architect docs and the code. Write no file, run no challenge, and say a plan in chat can't be built from until it goes through the chain. A branch with a legacy flat plan keeps that plan's own shape, including its close. In a folder, read in full:
 
-- `intent.md`. It must say `status: approved`, or stop and say the intent needs approval first.
+- `intent.md`. It must say `status: approved`, or stop and say the intent needs approval first. An epic child's folder holds none: its spec's `epic:` line names the epic folder, and the epic's `intent.md` is the one that must be approved.
 - `design.md`, when present. When it says `approval: required`, it must also be approved.
 - `spec.md`. When it is missing, stop and say the spec stage runs first. Its Affected systems globs bound every file a task may list.
 - An existing `plan.md`. Its `## Decisions` entries are do-not-undo, as far as any Zoe verdict on them allows.
@@ -16,6 +16,7 @@ Match each Affected systems path against `.prism/architect/manifest.json` and re
 Start from `.prism/templates/plan.md`, at `status: draft`. You own `## Tasks` and `## Decisions`. `## Challenge` belongs to the challenger, so never edit it.
 
 - Each task meets the bar in `.prism/rules/implementation-task-detail.md`, and every acceptance criterion in the intent is covered by at least one task's proof.
+- For an epic child, write `## Acceptance Criteria` in `plan.md`, derived from its `## Children` row and its spec, each with an ID and an Evidence line, as an intent's criteria carry them. The review reads them there, and the coverage check above reads these in place of the intent's.
 - Write proofs test-first, per `tdd`. A bug's failing test is its own earlier task.
 - Each `files` entry is one repo path with forward slashes, because the parser rejects a backslash, a glob character, a space, and a trailing slash. Each sits inside an Affected systems glob and belongs to one task.
 - Docs are their own task when the plan changes user-facing behavior, a public contract, or an architect-owned area.

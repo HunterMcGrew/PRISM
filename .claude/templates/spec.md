@@ -3,12 +3,15 @@ title:
 ticket:
 stage: spec
 status: draft
+epic:
+child:
 ---
 
 <!--
 Copy this file to .prism/plans/<ticket>/spec.md as is, then fill each section. Only a script changes status.
 
 The spec needs no approval. Leave status at draft.
+epic and child are for an epic child only, whose folder holds no intent.md. epic names the epic's plan folder, such as epic-123, whose approved intent covers this child, and child is the first-column value of its row in the epic spec's ## Children. Delete both lines for any other spec.
 -->
 
 ## Requirements

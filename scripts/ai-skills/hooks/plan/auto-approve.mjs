@@ -6,14 +6,18 @@
  * `node auto-approve.mjs <plan-folder> [--check]`.
  *
  * The conditions are checked by script so approval is never the planner's
- * self-assessment: at least one task, every task listing at least one file
- * inside the repo, every listed file inside the spec's Affected systems
+ * self-assessment: an approved intent behind the plan, at least one task,
+ * every task listing at least one file inside the repo, every listed file inside the spec's Affected systems
  * globs, challenge rounds 1 and 2 with the highest-numbered one not blocking,
  * and no listed file on a stop path from `stop-paths.mjs`.
  *
  * A `carried` line approves, because it means the confirm round's leftover
  * findings change neither the intent nor the foundation and go to the PR as
  * open items. Only a confirm round may write one.
+ *
+ * The intent is the folder's own `intent.md`, or for an epic child, which
+ * holds no intent, the epic's: its `spec.md` names the epic folder on an
+ * `epic:` line, because approving an epic approves its children.
  *
  * Task count has no upper limit, because a cap sends a sound plan to a person
  * for its size alone and pushes the planner to fold tasks together to fit.
@@ -38,6 +42,7 @@ import { compileMatcher } from "../lib/match.mjs";
 import {
 	approvalLines,
 	formatLocalDate,
+	readFrontmatter,
 	sectionBody,
 	stampApproval,
 } from "./frontmatter.mjs";
@@ -94,6 +99,7 @@ export function autoApprove({
 	}
 
 	const failures = [
+		...checkIntent(folder),
 		...checkTaskCount(tasks),
 		...checkTaskFiles(tasks, findRepoRoot(folder)),
 		...checkAffectedSystems(tasks, path.join(folder, "spec.md")),
@@ -151,6 +157,73 @@ function fail(failures) {
 			)
 			.join("\n"),
 	};
+}
+
+/**
+ * Passes when the folder's `intent.md` is approved, or when there is none and
+ * `spec.md`'s `epic:` line names a sibling folder whose `intent.md` is. The
+ * value must be a bare folder name, so it can't point outside `plans/`.
+ *
+ * @param {string} folder
+ * @returns {Failures}
+ */
+function checkIntent(folder) {
+	const intentPath = path.join(folder, "intent.md");
+	if (existsSync(intentPath)) return checkApproved(intentPath);
+
+	const specPath = path.join(folder, "spec.md");
+	const epic = existsSync(specPath)
+		? readFrontmatter(readFileSync(specPath, "utf8"))?.fields["epic"]
+		: undefined;
+	if (!epic) {
+		return [
+			[
+				"intent",
+				`${folder} holds no intent.md, and ${specPath} has no epic: line`,
+			],
+		];
+	}
+
+	if (/[/\\]|\.\./.test(epic)) {
+		return [
+			[
+				"intent",
+				`${specPath} names epic "${epic}", which is not a plan folder name`,
+			],
+		];
+	}
+
+	const epicIntent = path.join(
+		path.dirname(path.resolve(folder)),
+		epic,
+		"intent.md"
+	);
+	if (!existsSync(epicIntent)) {
+		return [
+			[
+				"intent",
+				`${specPath} names epic "${epic}", and ${epicIntent} does not exist`,
+			],
+		];
+	}
+
+	return checkApproved(epicIntent);
+}
+
+/**
+ * @param {string} intentPath
+ * @returns {Failures}
+ */
+function checkApproved(intentPath) {
+	const { status } = approvalLines(readFileSync(intentPath, "utf8"));
+	if (status === "approved") return [];
+
+	return [
+		[
+			"intent",
+			`${intentPath} reads ${status === null ? "no status" : `status: ${status}`}, not status: approved`,
+		],
+	];
 }
 
 /**

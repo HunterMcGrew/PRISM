@@ -12,7 +12,7 @@ This is the shared plan resolution logic used by all skills that need to find th
 
 4. **If still not found by name**, scan all `.md` files in `<repo-root>/.prism/plans/` for a `## Ticket` heading whose content matches the ticket ID, and each plan folder's chain files for a `ticket:` frontmatter line that matches it. Some plans may have been created with a different name convention. A folder resolves to its latest-stage file (`plan.md`, else `spec.md`, `design.md`, `intent.md`), and `.prism/archived/` never resolves as a live plan.
 
-5. **If a plan exists**: read it. The plan is the authoritative source for intent, decisions, and constraints on this branch. Treat `## Decisions` entries as intentional — do not second-guess or override them without explicit user approval.
+5. **If a plan exists**: read it. The plan is the authoritative source for intent, decisions, and constraints on this branch. Treat `## Decisions` entries as intentional — do not second-guess or override them without explicit user approval. An epic child's folder holds `spec.md` and `plan.md` and no `intent.md`: its spec's `epic:` line names the epic's plan folder, whose approved intent covers the child, so read that intent as the child's.
 
 6. **If no plan exists**: ask the user which ticket this work is for, then create one using the template defined in the plan rule. If the skill's role is read-only on the branch (e.g., reviewing someone else's PR), do NOT create a plan — note "no plan found" and proceed.
 
