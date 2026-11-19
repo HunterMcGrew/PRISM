@@ -3,7 +3,9 @@
  *
  * `runRuleGenerators` invokes the per-team rule generators in the order
  * Atlas's shared.md § Interactive flow declares — code-standards first,
- * then security, then framework-guidelines. The orchestrator collates the
+ * then security, then framework-guidelines, then review-stack. The
+ * review-stack generator runs last because it reads the rule files the
+ * others wrote. The orchestrator collates the
  * per-generator `GeneratedRuleResult` arrays into a single summary structure
  * the closing-summary renderer can consume without knowing which generator
  * produced which file.
@@ -14,8 +16,9 @@
  * orchestration in its own module means new generators slot in here without
  * touching the config-writing seam.
  *
- * Ordering matters for reporting only. Generators are independent of each
- * other — code-standards does not consume security's output — so a generator
+ * Ordering matters for reporting, except that review-stack reads the other
+ * generators' files from disk. The rest are independent of each other —
+ * code-standards does not consume security's output — so a generator
  * that throws does not poison sibling generators. Errors propagate to the
  * caller, which decides whether to abort the session or surface and
  * continue.
@@ -23,6 +26,7 @@
 import { generate as generateCodeStandards } from "./rule-generators/code-standards";
 import { generate as generateSecurity } from "./rule-generators/security";
 import { generate as generateFrameworkGuidelines } from "./rule-generators/framework-guidelines";
+import { generate as generateReviewStack } from "./rule-generators/review-stack";
 import type {
 	GenerateOptions,
 	GeneratedRuleResult,
@@ -37,12 +41,13 @@ import type { OnboardingConfig } from "./onboarding-types";
  * summary can attribute every file to its source generator.
  */
 export const RULE_GENERATORS: ReadonlyArray<{
-	name: "code-standards" | "security" | "framework-guidelines";
+	name: "code-standards" | "security" | "framework-guidelines" | "review-stack";
 	run: RuleGenerator;
 }> = [
 	{ name: "code-standards", run: generateCodeStandards },
 	{ name: "security", run: generateSecurity },
 	{ name: "framework-guidelines", run: generateFrameworkGuidelines },
+	{ name: "review-stack", run: generateReviewStack },
 ];
 
 /**
@@ -53,7 +58,7 @@ export const RULE_GENERATORS: ReadonlyArray<{
  * re-walking the source data.
  */
 export interface RuleGenerationEntry {
-	generator: "code-standards" | "security" | "framework-guidelines";
+	generator: "code-standards" | "security" | "framework-guidelines" | "review-stack";
 	result: GeneratedRuleResult;
 }
 
