@@ -13,7 +13,7 @@ A pass that labels at all applies exactly two: one effort label, and one confide
 | `effort:deep` | `D93F0B` | More than 3 files with logic changes, several concerns, or cross-cutting. The default when unclear |
 | `confidence:high` | `0E8A16` | Both checks ran clean and no Minor stands |
 | `confidence:needs-judgment` | `E4E669` | A judgment call remains, or the only Minors left are bookkeeping-only |
-| `confidence:standards-only` | `BFD4F2` | The Spec check was skipped for lack of a spec. A transparency label, not a finding |
+| `confidence:standards-only` | `BFD4F2` | The intent-conformance pass read a structural `not reached` for lack of criteria. A transparency label, not a finding |
 | `review:has-minors` | `FBCA04` | A Minor stands that is not addressed, acknowledged, or bookkeeping-only. Takes the confidence slot |
 
 Strip and apply through REST. `gh pr edit` goes through GraphQL, which fails on repos still tied to Projects Classic, and the bulk PUT endpoint strips non-review labels such as `bug`.
@@ -29,7 +29,7 @@ EOF
 
 ## Threads
 
-List with `reviewThreads(first: 50) { nodes { id isResolved comments(first: 1) { nodes { databaseId body path } } } }`. Reply with a short confirmation to a thread whose fix you verified, then resolve it:
+List with `reviewThreads(first: 50) { nodes { id isResolved comments(first: 1) { nodes { databaseId body path } } } }`. Reply with a short confirmation to a thread whose fix you verified, then resolve it. The reply starts with `<!-- prism-agent -->`, like every comment this skill posts:
 
 ```
 gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<id>"}) { thread { isResolved } } }'
@@ -39,6 +39,8 @@ A failed mutation (stale id, missing `write:discussion` scope) is not retried. L
 
 ## Inline comments
 
+The body starts with `<!-- prism-agent -->` on its own line. The marker is what separates an agent's comment from a person's when `reconcile.mjs` reads the PR, since agents post under the developer's own login.
+
 ```
 gh api repos/<owner>/<repo>/pulls/<pr>/comments -f body="<text>" -f commit_id="<headRefOid>" -f path="<file>" -F line=<n> -f side="RIGHT"
 ```
@@ -47,7 +49,17 @@ gh api repos/<owner>/<repo>/pulls/<pr>/comments -f body="<text>" -f commit_id="<
 
 ## Summary comment
 
-There is one per PR. Its body opens with the literal line `<!-- code-review-pr-summary -->`, then `## Summary`, with nothing above them. Re-runs find the existing comment by that marker and PATCH it, and a missing marker posts a duplicate. The marker keeps its pre-rename spelling so comments already on open PRs still match.
+There is one per PR. Its body opens with three fixed lines, in this order, then `## Summary`:
+
+```
+<!-- code-review-pr-summary -->
+<!-- prism-agent -->
+<!-- prism-verdict: state=<1|2|3> effort=<glance|quick|deep|-> confidence=<high|needs-judgment|standards-only|has-minors|-> -->
+```
+
+Re-runs find the existing comment by the first line and PATCH it, and a missing marker posts a duplicate. That marker keeps its pre-rename spelling so comments already on open PRs still match. The verdict line records the gate state and the labels applied, so `reconcile.mjs` can correct the labels from the PR number alone. `state` is the skill's state number, `effort` and `confidence` are the label suffixes, and `has-minors` stands for `review:has-minors`. State 1 applies no review labels, so it writes `effort=- confidence=-`.
+
+The body carries a `### Pass coverage` section, one line per pass in the `REVIEW.md` coverage-line tokens. It is always emitted, because a pass nobody ran and a pass that found nothing look the same when both are absent.
 
 ```
 gh api repos/<owner>/<repo>/issues/<pr>/comments --jq '.[] | select(.body | contains("<!-- code-review-pr-summary -->")) | .id'

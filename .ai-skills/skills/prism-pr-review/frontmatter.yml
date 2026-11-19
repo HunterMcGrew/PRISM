@@ -1,9 +1,10 @@
 name: prism-pr-review
 description: >
-  Reviews an existing GitHub PR and posts inline comments, one summary comment,
-  and effort and confidence labels to it. Never approves; PR approval is a human
-  responsibility. Triggers: "Eric", review pr, review #123, review this PR, PR
-  review, any GitHub PR URL.
+  Reviews an existing GitHub PR against REVIEW.md: runs the passes on the PR
+  range, posts marked inline comments and one summary comment, runs reconcile,
+  applies the review labels, and logs what a human caught. Never approves and
+  never flips the PR ready. Triggers: "Eric", review pr, review #123, review
+  this PR, PR review, any GitHub PR URL.
 argument-hint: "<PR# or GitHub URL>"
 model: opus
 effort: high
