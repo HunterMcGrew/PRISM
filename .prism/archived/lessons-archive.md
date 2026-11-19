@@ -11,3 +11,499 @@ Lessons that were once active in `.prism/lessons.md` and have been archived by Z
 **How to apply:** When passing files between the Write tool and a Windows-native CLI tool (`gh`, native git, etc.) on this dogfood install, use absolute Windows-style paths (`D:/...` or `C:/Users/.../Temp/...`) explicitly rather than relying on `/tmp/`. Or write the temp file inside the project tree (gitignored) so the path is unambiguous across tools.
 
 **Archived:** 2026-06-05 — Zoe audit; 33 days unreferenced, dogfood now runs on darwin, Windows machine barely used (Hunter confirmed).
+
+## When updating cross-cutting docs, verify behavioral claims against current ADRs, not prior doc text
+
+**Why:** 2026-05-23 — README update for #32 preserved the line "`.prism/rules/` for cross-cutting standards loaded into every conversation" because the prior README said it. That phrasing predated ADR-0035 (2026-05-22, three-tier rule loading) and was no longer accurate — only Tier 1 rules load unconditionally; Tier 2 is path-scoped via `paths:` frontmatter and Tier 3 is skill-internal. Hunter caught it on the merged PR, forcing a follow-up (#33).
+
+**How to apply:** When updating user-facing docs (README, top-level guides) that describe runtime behavior of the system — loading model, persona routing, file resolution, etc. — re-verify each claim against the current ADRs in `.prism/spec/adrs/` before publishing. Don't trust the prior doc's wording on behavioral claims, even if you're "just updating" adjacent content. ADRs are the source of truth; docs paraphrasing them rot when an ADR lands but the doc doesn't follow.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## `gh pr edit --add-label` fails silently due to GitHub Projects Classic deprecation
+
+**Why:** 2026-05-23 (Phase 1.5f, every PR) — `gh pr edit <num> --add-label "X"` returned exit 1 with `GraphQL: Projects (classic) is being deprecated...` for every label-apply attempt on PRISM. The deprecation hit a code path that prevents the label from being added entirely. Cost one round trip per PR to detect; fixed by switching to REST.
+
+**How to apply:** Fixed in issue #39 — Eric's batch D template now uses the REST labels endpoint (`POST .../labels` for apply, per-label `DELETE .../labels/<name>` for strip) instead of `gh pr edit --add-label` / `--remove-label`. Entry retained as a record of the upstream `gh` CLI / Projects Classic deprecation in case the same symptom surfaces in other contexts (other repos, other tooling, other `gh` subcommands that route through the affected GraphQL path).
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Don't `replace_all` on text where the old value also appears as evidence
+
+**Why:** 2026-05-23 (Wave 2 PR 2 Briar review followup) — Clove ran `Edit replace_all: true` to change `2026-05-24` → `2026-05-23` in a plan, intending to fix a History date drift. The replace swept the right places (History entry, PR Readiness "Last updated") but also swept the documentation of the bug itself — the prior Review Issue's `Problem:` and `Suggested fix:` lines that quoted `2026-05-24` AS EVIDENCE of the original drift, plus the new History line recording the fix that referenced both dates. After the replace those lines read tautologically ("dated `2026-05-23` but commit timestamped `2026-05-23`"; "drift (`2026-05-23` vs actual session date `2026-05-23`)"). The audit trail anchor was erased; Briar caught it on re-review.
+
+**How to apply:** When a value appears in a document in two roles — (a) the value-in-use that needs correcting and (b) the value-as-evidence that documents the original error — `replace_all` will destroy role (b). Use targeted `Edit` calls with enough surrounding context to distinguish the two. The general test before any `replace_all`: grep for the target string and read the surrounding context for each match. If any match describes the value rather than uses it (Review Issue Problem/Suggested-fix lines, History entries documenting a fix, commit messages quoting prior wording), `replace_all` is the wrong tool. Targeted edits are slightly more work; preserving the audit trail is worth it.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Self-restructure introduces step-number collisions
+
+**Why:** 2026-05-24 (Wave 2 PR 3 — Eric reviewing his own restructure) — Clove restructured Eric's `prism-code-review-pr/shared.md` Phase 3 from one step to four (6, 7, 8, 9), but left Phase 4 starting at step 7 and Phase 5 starting at step 8 from the pre-restructure numbering. After the change, step numbers 7 and 8 each appeared twice with different meanings, ambiguating every "step N" citation in the procedure. The internal citation at line 551 (originally pointing at "step 12") had no anchor at all. Eric's review of his own restructure caught it — self-applicability verified the new pattern by catching a real defect in itself.
+
+**How to apply:** Whenever a procedure gains or loses steps in any phase, renumber ALL subsequent steps in lockstep — not just the affected phase. Walk the procedure top to bottom after the edit and confirm step numbers run linearly with no duplicates. Internal citations referencing step numbers ("see step 6", "fallback to step 10") need to be re-verified against the new numbering — grep for `step <N>` after every restructure. This is the markdown equivalent of renaming a variable and forgetting to update every caller. The fix is mechanical, but easy to miss when the eye scans phase headers rather than step numbers.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## `gh api` writes error responses to stdout, not stderr
+
+**Why:** 2026-05-23 (issue #39 PR #40 review) — Eric's batch D strip loop wrapped each `gh api ... -X DELETE` call in `2>/dev/null || true`, intending to silence 404 errors when stripping labels that aren't present. The strip ran "successfully" in the sense that labels were removed when present, but every first-review run on a clean PR spammed six `{"message":"Label does not exist","status":"404"}` JSON lines to chat — the redirect caught stderr, but `gh api` writes the error body to stdout. Eric caught it during his own smoke test of the batch D fix.
+
+**How to apply:** When silencing `gh api` errors, use `>/dev/null 2>&1` (both streams), not `2>/dev/null` (stderr only). The `|| true` is still needed to swallow the non-zero exit code. Pattern: `gh api ... >/dev/null 2>&1 || true`. This applies to any `gh api` call where the response body shouldn't surface on failure — including DELETE calls that may 404 on missing resources. Standard `gh` CLI subcommands (e.g. `gh pr ready`, `gh pr view`) follow the normal stdout/stderr split; the inversion is specific to `gh api`.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## "Duplicated across all N skills" is usually partial — verify before extracting
+
+**Why:** 2026-05-26 (lean-skill-architecture Slice 1) — the plan task said the session-close block was "duplicated across all 18 skills" and instructed extracting the whole block (context-reuse + Lessons Check + taxonomy) to a shared reference, leaving only reflex bullets inline. Source check showed otherwise: only 13 skills carried the full block, iris had a partial one, parker/ren/theo had bespoke short close prose, and atlas had none. More importantly, the block was only *partly* shared — the context-reuse paragraph and promotion taxonomy were byte-identical, but the Lessons Check "Required if" conditions were persona-tuned (changelog: commit-parsing; standup: Slack-MCP/`gh`; pixel: UX/cognitive-science). Extracting the whole block would have erased that persona-specific lesson signal. Caught before writing by hashing the candidate-shared paragraphs across skills and dumping each skill's conditions.
+
+**How to apply:** Before any mechanical extraction driven by a "this is duplicated everywhere" claim, verify the claim against source: (a) confirm the count — grep for the markers and list which files actually carry the block; (b) hash the candidate-shared spans across files to separate byte-identical content from near-duplicates; (c) read the per-file content to find persona/instance-specific pieces hiding inside the "shared" block. Extract only the byte-identical subset; keep the instance-specific residue inline (or, if it must move, give each instance its own reference — don't genericize away the signal). This matters directly for the remaining Slice 3 per-skill refactors, which are mostly more extraction. A capture-based regex transform (preserve the variable middle, remove only the shared head/tail) extracts with zero transcription risk to the preserved content.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Adding a canonical `.prism/` artifact does NOT ship it to consumers — backport to `templates/install/`
+
+**Why:** 2026-05-26 (lean-skill-architecture PR #54, Briar self-review) — Slice 1's `.prism/references/session-close.md` (and the architect pilot's refs, `skill-authoring.md`, ADR-0045) were created in canonical `.prism/` and mirrored to `.claude/.codex/.cursor` by `pnpm prism:build`. But `prism:build` does NOT touch `templates/install/.prism/` — the hand-maintained consumer install seed. So 14 skills shipped a `session-close.md` close-trigger pointing at a file that exists in the dogfood repo but would be absent on a fresh consumer install, making the agent wing the procedure from training (the exact failure ADR-0045 warns about). The dogfood repo was fully green — `prism:build`/`test`/`check` all pass — because canonical resolves locally; only verifying against `templates/install/` exposed it. AC line 206 ("referenced paths resolve … against the shipped `templates/install/.prism/` surface, not just the dogfood repo") was written precisely to catch this and did.
+
+**How to apply:** When a change adds a canonical `.prism/` reference, rule, or ADR that a skill loads at runtime (a trigger target) or that the manifest routes, backport it to `templates/install/.prism/` byte-identically in the same PR — `prism:build` won't do it for you. Close the dependency graph: if the backported file links to another file that's also missing from `templates/install/` (e.g. `plan-mode.md` → `triple-gated-adr-criterion.md`, `skill-authoring.md` → `lazy-artifacts.md`), ship that dependency too, or the link dangles on the consumer seed. If a new rule needs to auto-load for consumers, add its route to `manifest.stub.json` (mirrors the dogfood `manifest.json` rule routes). Verify by resolving each trigger/link target from inside `templates/install/.prism/`, not just the repo root. This recurs for every Slice 3 per-skill refactor — each new `.prism/references/<skill>/` file needs the same backport.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A rules-only markdown edit is NOT "no build impact" — it regenerates 4 platform surfaces and needs a `templates/install/` backport
+
+**Why:** 2026-05-28 (skill-descriptions-rewrite #65, Clove Slice 1) — edited `.prism/rules/skill-authoring.md` and hand-mirrored to `.claude/rules/`, then committed with "markdown-only; no build impact" and skipped `pnpm prism:build`. Two things were stale after that commit: (1) `prism:build` regenerates `.codex/rules/` and `.cursor/rules/` from canonical `.prism/rules/` — a rule lives on 4 surfaces, not the 2 the plan task named — so the codex/cursor copies didn't carry the new section until the build ran during a later slice; (2) the consumer seed `templates/install/.prism/rules/skill-authoring.md` (which `prism:build` never touches, per the lesson above) was missing the section entirely. The dogfood repo looked fine because canonical + `.claude` resolve locally.
+
+**How to apply:** When you edit a rule under `.prism/rules/`, treat it as a build-affecting change: run `pnpm prism:build` to regenerate the `.codex`/`.cursor` platform copies, and backport the same content to `templates/install/.prism/rules/<rule>.md`. The install seed is often an intentional variant (it strips dogfood-specific sections — e.g. `skill-authoring.md` omits "Persona name vs. slash-command ID" and epic references), so backport the new content without reintroducing the stripped sections — verify with `diff` that only the pre-existing intentional differences remain. "Markdown-only" describes the file type, not the blast radius.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Re-fetch `origin/main` before committing a long-running port — this repo moves fast enough to invalidate a port mid-session
+
+**Why:** 2026-05-28 (thrive#2039 backport, PR #69) — Winston built the entire backport against `main` at `6488b70`, working from the premise "PRISM keeps review substance inline per-skill, so inline-adapt the lens into both reviewers" and filing follow-up #68 to extract a shared review layer later. Correct at the time. But while the port was being built and verified, the lean-skill-architecture epic (PRs #54–#67) merged to `origin/main`, which (a) created the shared review-reference layer #68 asked for — making #68 already-done — and (b) rewrote the exact skill files the port edited into lean scaffolding. The stale base only surfaced at commit time, when `git fetch origin main` during branch creation showed `6488b70..4e6dde9`. Committing without that fetch would have opened a PR with a large stale-shaped conflict against files that no longer existed in that form. The whole port had to be reset to the new `main` and rebuilt — the rebuild was actually simpler and more faithful, because the new shared layer matched the source PR's structure.
+
+**How to apply:** For any multi-step task that spans many turns — ports, backports, broad refactors, anything where the working set sits unmerged for a while — run `git fetch origin main` at the start AND again right before commit, and diff the range (`git log --oneline <base>..origin/main`, `git diff --name-only <base>..origin/main`). If main moved and touched files in or adjacent to your working set, stop and reassess the plan against the new base before committing — don't force the stale-shaped work through. A premise that was true when the plan was made ("there's no shared layer here") can expire mid-session in an actively-developed repo; the architectural decisions resting on it must be re-checked, not assumed durable. Resetting a clean branch to the new base and rebuilding is cheap when the content is reusable (the remedy menu and lens text ported verbatim); shipping against a stale base is not.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A generated platform mirror that *exists* is not a mirror that's *honored* — verify the consuming runtime's loading dialect
+
+**Why:** 2026-06-04 (Wave 4 backport planning) — the build's `platformContentCopies` step faithfully mirrors `.prism/rules/` into `.claude/`, `.codex/`, and `.cursor/`, and `prism:check` guards the copies against drift — so the repo was fully green while two of the three runtimes weren't actually loading the rules as designed. Cursor's rules dialect keys on `.mdc` files with `globs:`/`alwaysApply:` frontmatter, so our `.md` copies carrying `paths:` are untiered at best, inert at worst; Codex auto-loads only AGENTS.md and has no rules-directory mechanism at all, so `.codex/rules/` is reachable only via prose pointers. Every existing check validates that the copies *match the canonical* — none validates that the target runtime *consumes* them. The gap was invisible in a Claude-only workflow and surfaced only when the question "do Cursor and Codex honor the tiers?" was asked directly. Routed to issue #73 (dialect-emission subset of Thrive THR-1900).
+
+**How to apply:** When adding a generated artifact for another runtime (rules, skills, configs), verify the consuming runtime's actual loading mechanism against its current docs — file extension, frontmatter keys, discovery directory, auto-load vs instructed-read — before trusting that a syntactically-valid copy does anything. Byte-fidelity checks (`prism:check`) catch drift between copies; they cannot catch a dialect mismatch where the copy is faithful and ignored. When auditing cross-runtime parity, audit per-runtime *consumption*, not per-surface *existence*.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Skill frontmatter supports exactly two YAML scalar shapes — single-line and folded (`>`); plain multi-line continuation silently truncates
+
+**Why:** 2026-06-04 (Wave 4.2, `/prism-handoff`) — the plan embedded a user-approved `frontmatter.yml` draft whose `description:` used plain multi-line continuation (value starts on the key line, continuation lines indented). Valid YAML — but `parseFrontmatter` (`scripts/ai-skills/utils.ts`) is a deliberate two-shape parser: single-line values and `>` folded scalars only. A plain-continuation value parses as its first line; the continuation lines are silently dropped. Everything downstream of the frontmatter map — the description-length gate, Codex discovery metadata, the agent-adapter description field — would have seen a one-line fragment while the generated SKILL.md (which embeds the raw frontmatter text) carried the full text: a split-brain no check catches because nothing fails. Caught at write-time by reading the parser before shipping the new file — its own doc comment asks for exactly that. Shipped the `>` folded form; it renders the identical string.
+
+**How to apply:** When authoring or porting a skill `frontmatter.yml`, any multi-line value uses the folded (`>`) style — never plain continuation. More generally: PRISM's frontmatter parser is intentionally minimal, not a YAML library; before introducing any new value shape (block literals `|`, quoted multi-line, anchors), read `parseFrontmatter` in `scripts/ai-skills/utils.ts` and either extend it deliberately or reshape the value. Verbatim-ship instructions in a plan cover content, not encoding — when the encoding fights the pipeline, keep the rendered string identical and record the shape change in the plan's Decisions.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A shared branch can move mid-review — re-verify the PR head before posting or editing
+
+**Why:** 2026-06-05 (wave 4.2, PR #78 gauntlet) — the PR review ran at head `22dcade` while a concurrent session pushed three plan-only commits to the same branch; the move surfaced only when a plan Edit failed with "modified since read" during the fix pass. The delta happened to be plan-only so the code verdict survived — a code-touching push would have silently invalidated the posted review.
+
+**How to apply:** Treat "file modified since read" as a possible branch move, not just a linter touch — check `git log` and `gh pr view --json headRefOid` before re-anchoring. For reviews: re-fetch the PR head right before the GitHub-writes batch; if it moved past the reviewed commit, diff `<reviewed>..<new-head>` and sweep the delta (plan-only → verdict stands with a note; code → re-review the delta). Same class as the "re-fetch origin/main before committing" lesson, applied to a shared feature branch during review.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Project Context identifiers are claims, not facts — verify the configured tracker against reality before writing to shared state
+
+**Why:** 2026-06-05 (wave-4.2 follow-up filing) — Nora's create path takes its team and tracker from `skills-ecosystem.md § Project Context` ("use these identifiers — do not ask"), which token-substitutes from `.ai-skills/config.json`. The config declared Linear team `PRISM`; the workspace has no such team (actual teams: Thrive/THR, Space Station/SPA), and every prior follow-up in the repo (#77, #73, #64, …) is a GitHub issue. Filing on the configured identifiers would have failed outright or landed six tickets in a tracker nobody watches. Caught by two cheap pre-write reads: the Linear `get_user` team list and `gh issue list` precedent. Same exists-vs-honored family as the mirror-consumption lesson above — a config value that exists is not a config value that's true. Config fix routed to issue #79.
+
+**How to apply:** Before the first shared-state write of a session that leans on Project Context identifiers (team, repo, workspace, tracker), verify them against the live system — one read of the actual team/repo list plus a glance at where prior tickets of the same kind actually live. "Do not ask" governs asking the *user*; it doesn't forbid verifying against the *API*. If config and reality disagree, follow reality, surface the mismatch, and file the config fix rather than patching around it silently.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A first cadence audit's dominant verdict is archive-candidate-by-the-bucket — the real action is routing close-outs, not annotating harder
+
+**Why:** 2026-06-05 — Zoe's first full audit found 14 of 21 plans shipped-but-never-closed, so 119 of 138 Decision verdicts were the same `archive-candidate` with plan-level evidence. Two procedure gaps surfaced that `audit-workflow.md` doesn't cover: (a) a plan closed the *same day* with its own verdict gate (wave-4) — re-annotating it adds noise, skip it and note the skip in the report; (b) on the first run ever, every lesson is technically "on its first audit," so the new-lesson grace period would block archiving even a 33-day-old unreferenced entry — age + reference-absence is the intent, first-run literalism isn't.
+
+**How to apply:** When a plan's whole epic shipped, issue uniform per-Decision verdicts with the plan-level evidence and route the close-out to Winston rather than crafting per-Decision narratives. Skip re-annotation on plans closed within the current audit window. Read the lesson grace period as "young lessons are safe," not "nothing archives on run one."
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Meta-mentions of token syntax break the build in copied content areas
+
+**Why:** 2026-06-05 — writing "team identifiers stay in `${TOKEN}` form" into `.prism/architect/install-layout.md` (a copied content area) failed `pnpm prism:build`: the substitution layer throws on any well-formed-but-unknown `${...}` token in content it copies to platform dirs. Malformed literals pass through; well-formed unknowns are treated as config errors by design (tokens.ts).
+
+**How to apply:** When a rule/architect doc/reference needs to *talk about* the token convention rather than *use* it, phrase it without a well-formed token literal ("stay in tokenized form per ADR-0030") or use a non-matching shape. Plans and lessons are exempt (never copied). The same class applies to the Thrive-literal guard: a section explaining what the guard checks for must mention "Thrive"-flavored words, which trips the guard on the platform copies — the fix is an allowlist entry for each platform copy, same as ADR-0030's entries. Rephrasing is not always viable; use the allowlist when the name itself is the subject.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Skill frontmatter `model:` pins engage on fresh-session invocation only — in-session `Skill` calls run on the session's current model
+
+**Why:** 2026-06-09 (wave 4.2, issue #83) — the reviewer skills declare `model: sonnet` (Briar) and `model: opus` (Eric) in `frontmatter.yml`. The pin engages when the skill starts a fresh session, but an in-session `Skill` invocation doesn't switch models — it runs on whatever model the session is already on, and the pin is silently ignored. Unstated, the pins read as a guarantee the runtime delivers on only one of the two invocation paths: an author running self-review in-session believes sonnet is reviewing when it isn't. This is the third exists-vs-honored instance in the wave (after the rule-mirror dialect gap, issue #73, and the Project Context identifiers lesson) — a frontmatter declaration that exists is not one the runtime honors on every path. Surfaced both reviewer skill bodies' fresh-chat-handoff recommendation as the path where the pins actually take effect.
+
+**How to apply:** When a skill declares a `model:` pin (or any frontmatter that changes runtime behavior), state where it engages and where it doesn't — fresh-session invocation honors it, in-session `Skill` calls run on the current model. Recommend the fresh-chat-via-handoff path when the pinned model matters, which doubles as the existing context-isolation default for the reviewer boundary. More generally, this is the exists-vs-honored family: a declared value (rule-mirror frontmatter, config identifier, model pin) is honored only on the paths the consuming runtime actually reads — verify per-path consumption, don't trust that a syntactically-valid declaration takes effect everywhere.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Sol decides run-shape (fleet vs pipeline); don't reflexively ask it
+
+**Why:** 2026-06-13 — Sol's step-01 intake asks the human "one unit or fleet?" up front. On a two-issue dispatch (#107/#108) Hunter pushed back: Sol should *make* the run-shape call itself, defaulting to fleet, optionally sending Nora/Winston as discovery to recommend the path — only escalating run-shape to the human when it's genuinely ambiguous. The autonomy-policy question is still the human's; run-shape is Sol's to decide from the tasks.
+
+**How to apply:** This is a per-user preference, not a skill change — Hunter declined folding it into step-01, since the intake question staying as-is (the human decides) plus memory-as-override is the intended design. For Hunter's runs: decide run-shape from the work (independent, non-overlapping units → fleet; single unit or hard sequential dependency → pipeline), state the call and reason, ask only the autonomy-policy question; reserve a run-shape question or discovery dispatch for genuinely ambiguous cases. The standing preference lives in user memory `feedback-sol-decides-run-shape`.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Sol's review phase is the full gauntlet — never skip pr-review (Eric) on triviality grounds
+
+**Why:** 2026-06-13 — a Sol run on two trivial, green PRs ran a single Briar self-review and parked at merge, skipping Eric. Briar reports in chat only and posts nothing to the PR, so the PRs the human merges carried zero review signal. The "trivial + green + Briar-clean = park" proportionality call silently dropped a defined lifecycle phase. Hunter caught it and directed that the review-loop gauntlet be the conductor's default review phase.
+
+**How to apply:** The conductor's `self-review` / `pr-review` phases run the prism-review-loop ladder by default — loop self-review→fix to clean, then pr-review→fix to clean (`needs-fix` verdict keeps the lane in-phase). `pr-review` (Eric) is non-skippable on any lane with an open PR, regardless of diff size. Proportionality may tune review *depth*, never *whether Eric runs* on an open PR. Codified in step-04 § The review phase is the gauntlet.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Merge is Sol's only unconditional human gate — push, PR-open, and Eric are conducted, not asked
+
+**Why:** 2026-06-14 (epic #115 build) — after a clean final Briar pass, Sol stopped and asked the human "push + open PR?" via a three-option gate, treating the first outward-facing action as a human gate. Hunter corrected: Clove opens PRs and Eric reviews (after Briar, fresh dispatch) as part of the conducted `pr-review` phase; only *merge* is the unconditional human park (ADR-0011). The error was over-applying the generic "outward-facing, confirm first" reflex on top of a run the operator had already authorized to drive to the merge gate — the autonomy policy + Sol invocation already authorize push/PR-open/Eric.
+
+**How to apply:** On a conducted run, drive `implement → self-review (Briar, loop to clean) → pr-review (Clove opens/pushes the PR, Eric reviews as a fresh dispatch, loop to clean) → park at merge` autonomously. Do not insert a human gate at push or PR-open; merge is the single unconditional human gate. The generic confirm-before-outward-facing reflex is already satisfied by the operator's Sol invocation + autonomy policy — don't re-ask it per outward action. Reserve a mid-run human pause for `needs-human` dispositions, budget stops, or the merge gate itself.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Don't blanket-disposition a reviewer's writing-voice flag as "acceptable provenance" — split reference anchors from opaque inline cites
+
+**Why:** 2026-06-14 (Phase D build, epic #138) — Briar then Eric both flagged ADR Context-prose cites to opaque epic-plan labels (`(epic plan D-A9)`). Sol dispositioned them as legitimate provenance (plan preserved per ADR-0047) and told Clove to leave them — but the Review Issue stayed marked `fixed`, so the plan claimed a fix the diff didn't contain, which Eric escalated to Major (bookkeeping mismatch). Routed to Winston (ADR lane owner), who overrode Sol: provenance holds for Reference-section *anchors* (`§ Decisions D-A3`) but not for opaque *inline* cites that name a label without naming the decision — those carry no provenance a cold reader can follow. Two reviewers agreeing was the signal Sol should have weighted.
+
+**How to apply:** When two reviewers flag the same writing-voice leak, weight it as signal, not noise to disposition away. An internal-label citation is legitimate only when it resolves to a followable reference (a section anchor / named ADR); a bare inline `(label)` that names neither the decision nor a followable anchor is a leak — rephrase to name the decision. Never mark a Review Issue `fixed` when part of its stated scope was intentionally left — either fix the whole scope or narrow the issue's recorded scope, else the plan misstates branch state. Borderline writing-voice calls in another persona's lane route to that owner (here Winston) per the run's question-routing policy.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Seed twin .tmpl files are outside `pnpm prism:check`'s scan — verify them manually when canonical changes
+
+**Why:** 2026-06-15 (PR #156 Phase 1 Eric review) — canonical `.prism/SPEC.md` and root `AGENTS.md` received path updates to `_toolkit/` in Phase 1. Their consumer install seed twins (`templates/install/.prism/SPEC.md.tmpl` and `templates/install/AGENTS.md.tmpl`) were not updated. `pnpm prism:check`'s path-guard runs on `.prism/` and `templates/install/.prism/` content roots — it catches platform-dir path violations and seed drift for paired canonical↔twin files, but does NOT scan `.tmpl` files for prose accuracy or cross-reference correctness. So three broken hyperlinks and three stale prose references shipped in the tmpl files while `prism:check` stayed green.
+
+**How to apply:** When a Phase update edits a canonical file that has a `.tmpl` twin in `templates/install/`, explicitly diff the canonical vs. the tmpl before closing the PR: `diff <canonical> <tmpl>`. Any line the canonical changed that also exists in the tmpl needs the same update. This is not automatable by the existing guards — it requires a manual check or a targeted grep for the moved paths in the tmpl files. The two highest-risk files are `SPEC.md.tmpl` and `AGENTS.md.tmpl` because they carry hyperlinks to toolkit ADR and architect paths that change with namespace reorganizations.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## PRISM dogfoods on GitHub issues, not Linear — Nora's Linear-first default is the consumer path, not the internal one
+
+**Why:** 2026-06-15 — Sol dispatched Nora to file a Linear epic for internal PRISM work; she hit Linear OAuth and stalled the run. PRISM's own development tracks on GitHub issues: commits use the `#NN:` prefix (#73, #112, #150), phase-style epic issues exist (the "Sol Phase D" set #141–143), and `gh` is the authed backend on `HunterMcGrew/PRISM`. The `PRISM-NNNN` / Linear convention baked into prism-ticket-start and git-conventions.md is the *consumer-facing* default, not how PRISM tracks itself.
+
+**How to apply:** For work ON the PRISM repo itself, ticketing is GitHub issues via `gh issue` and commit subjects use `#NN: <summary>` — skip the Linear flow entirely. When Nora (or any ticket-setup) runs on PRISM-internal work, create/fetch a GitHub issue and reference `#NN`. Epic *plan* files keep descriptive names (`epic-prism-update.md`), matching existing practice (`epic-prism-conductor.md`), not an issue-number filename — just populate `## Ticket` with the GitHub issue URL.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## When sweeping cross-refs after a file move, scan the moved files' OWN bodies — and never exclude the destination dir by path in `grep -rn` output
+
+**Why:** 2026-06-15 (prism:update Phase 1, the `_toolkit/` reorg) — the cross-ref completeness sweep missed the same defect class three times: pass 1 missed `.md` seed twins + `CONTEXT.md`; pass 2 missed `.tmpl` install-template sources (sweeps were `.md`-scoped); pass 3 missed the moved ADRs' own `## References` sections. Two compounding root causes: (a) moved files reference *each other*, so the destination dir (`_toolkit/`) must be scanned, not skipped; (b) a `grep -rn ... | grep -v "_toolkit/"` filter matches the **file-path prefix** that `grep -rn` prepends to every line, silently dropping every match inside `_toolkit/` files — a false-clean.
+
+**How to apply:** A move-completeness sweep must (1) cover every ref-carrying extension — `.md`, `.tmpl`, `.mdc`, `.json`, `.toml` — not just `.md`; (2) scan the moved files' bodies (don't exclude the destination dir); (3) exclude correct refs by making the *search pattern* precise (`architect/skills-ecosystem.md` doesn't match `architect/_toolkit/skills-ecosystem.md`), never by a path-substring `grep -v` on `grep -rn` output; (4) exclude noise (frozen example blocks, historical plans) by *content* match or by choosing search roots, not by path-substring on the line prefix. This whole class is a strong candidate for a `pnpm prism:check` lint that scans prose cross-refs — filed as follow-up.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A subagent's `git add -A` can sweep an unrelated stash/dirty file into the commit — verify commit scope before merge, don't trust the self-report
+
+**Why:** 2026-06-15 (prism:update epic-close, PR #172) — a Clove dispatch fixing a seed-twin gap reported it had hit "a pre-existing merge conflict in `.prism/plans/agents-md-slim.md` (stash vs. upstream)" and "resolved it by taking the upstream version." The actual commit diff showed the opposite: it had swept the *stash's* one-line edit (belonging to a different ticket, PR #66) into the close commit via `git add -A`, polluting the epic-close PR with unrelated scope — and the self-report misdescribed which version it took. `pnpm prism:check` stayed green (the leak was a valid plan-metadata line), so only a scope check caught it.
+
+**How to apply:** After any implementer dispatch — especially one that reports an unexpected git stash/conflict — run `git diff main...HEAD --stat` and confirm the file set matches the dispatch's intended scope before merging. A pre-existing stash or dirty working-tree state from another ticket survives across dispatches on a shared checkout and gets swept in by `git add -A`. Treat a subagent's prose description of what it committed as a claim to verify, not a fact (the cross-agent-handoff-accountability rule applied here and caught it). Restore the stray file with `git checkout main -- <file>` on the branch and leave the stash intact for its owning ticket.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## De-Thrive / removal sweeps: grep the literal token, don't scan by logical section
+
+**Why:** 2026-06-16 (Epic A PR-3-eli) — a de-Thrive pass read files section-by-section and missed a hardcoded Thrive-path arch+ops section because it was structural doc-organization advice, not obviously about audience/location; Briar caught it. A `grep -n "docs/content/"` sweep would have surfaced it immediately.
+
+**How to apply:** When de-Thriving or removing a concept across files, grep the literal path/token (`docs/content/`, the old name, the removed key) across the whole target set and handle every hit, rather than reading file-by-file by logical section. The literal-token sweep catches references hiding in sections whose topic doesn't advertise that they mention the token. Same family as the removal-and-rename-completeness rule and the cross-ref-sweep lesson above — precision comes from the search pattern, not from re-reading prose.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A `.agents/` mirror `--check` failure right after checkout is usually transient — a full build reconciles it with zero git diff
+
+**Why:** 2026-06-16 (Epic A, repeatedly) — `pnpm prism:check` flagged `.agents/skills/<X>/SKILL.md` out-of-sync on fresh checkouts/worktrees, but running a full `pnpm prism:build` produced no git change and the next `prism:check` was green. Caused repeated false-alarm confusion mid-run.
+
+**How to apply:** On a `.agents/`-only `--check` failure, run `pnpm prism:build` then re-run `pnpm prism:check`; treat it as real drift only if the build produces a git diff. If the build leaves the tree clean, the original failure was a transient post-checkout artifact, not a content problem. (Candidate for a build-determinism follow-up — the `--check` step shouldn't report drift a clean build can't reproduce.)
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Subagents stash/pop the shared working tree — a persistently-dirty tracked file churns the stash and can pop an unrelated one
+
+**Why:** 2026-06-16 — Epic A subagents dispatched from worktrees stash/pop the shared checkout around their work; a long-standing dirty `.prism/plans/agents-md-slim.md` (PR #66 leftover) got swept into that churn, and a pop landed the original PR #66 stash entry. The recovered content was stale (superseded by main), so nothing valuable was lost, but it triggered a recovery scramble.
+
+**How to apply:** Clear or commit persistent dirty tracked files early in a fleet run — don't rely on a stash surviving many subagent dispatches on a shared checkout. This is the stash-*mechanism* sibling of the `git add -A` lesson above: that one is about a dirty file swept into a *commit*; this one is about the stash/pop churn itself popping an unrelated stash entry. Both root in shared-checkout state outliving the ticket that created it.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A doc reference to a gitignored/runtime-generated path passes crossref-lint locally but fails CI — the dogfood tree has the file, a fresh checkout doesn't
+
+**Why:** 2026-06-16 (Epic C Lane 3, PR #198) — `install-layout.md`'s new § first-contact section referenced `.prism/.sync-manifest.json` as a path token. `pnpm prism:check` (crossref-lint) passed locally for Clove, Briar, AND Eric — because the dogfood working tree has a `.sync-manifest.json` generated by this session's build/adopt runs. The file is gitignored (runtime-created), so CI's fresh checkout has no such file, and crossref-lint failed there on the dangling reference. Three green local runs were all false passes; only the CI run on a clean tree exposed it. The fix was the sanctioned allowlist mechanism (`CROSSREF_FILE_ALLOWLIST` in `crossref-lint.ts`), exactly as ADR-0057's identical `.sync-manifest.json` reference is already allowlisted.
+
+**How to apply:** When a doc references a gitignored or runtime-generated path (`.sync-manifest.json`, `.bak`, anything created at runtime and not committed), it must be added to `CROSSREF_FILE_ALLOWLIST` (key format `relativePath::rawRef`) — mirror the existing ADR-0057 entries. Local `pnpm prism:check` cannot catch this class because the dogfood tree carries the generated file; the same exists-vs-honored family as the seed-twin and `.agents/`-mirror lessons. To verify a crossref fix for a gitignored path before pushing, reproduce the CI condition locally: `mv` the generated file aside, run `pnpm prism:crossref-lint`, then restore it — a clean pass with the file absent is the real proof. This is a strong candidate for a build-tooling follow-up: crossref-lint could auto-skip refs matching `.gitignore` patterns, or a local check mode could hide gitignored files, so the local run stops being a false positive.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A grep-based "X is the only file" completeness claim can miss pattern variants — an empirical regression test over the real tree catches the whole defect class
+
+**Why:** 2026-06-23 (PRISM-242, consumer skill distribution) — Winston ruled the seed-content throw (`Unknown token ${TOKEN}` on `prism:adopt` content-copy) affected only ADR-0030, based on a `${TOKEN}`-literal grep sweep of `templates/install/.prism/`. The grep was scoped to the one token name that threw, so it missed `${TECH_STACK}` in seed ADR-0032 — same defect class, different literal. The regression test Winston *commissioned* (run content-copy over the real seed `spec/` tree with a real consumer tokenMap, assert no throw) empirically caught 0032 when Clove wrote it. Methodology was right; the grep pattern was narrower than the defect class.
+
+**How to apply:** When claiming a defect-class fix is complete ("this is the only file/caller/site"), prefer an empirical test that exercises the real engine over the real tree to a grep that matches one instance of the pattern. A grep proves "no more matches of *this string*"; the test proves "the engine no longer throws over *any* input." Same exists-vs-honored family as the seed-twin and crossref lessons — completeness comes from running the real path, not from a pattern that may be narrower than the bug.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A check-mode no-drift test must exclude gitignored render targets — they're absent on a fresh checkout and produce CI-only false drift
+
+**Why:** 2026-06-23 (PRISM-242, PR #243 CI) — `generate-skills.test.ts`'s "renders PRISM's own source in check mode with no drift" rendered into all six target roots with `optedIn: ALL_OPTED_IN` and asserted zero drift against committed output. Two of the six (`.agents/skills`, `.codex/codex-config.toml`) are gitignored per-user roots with no committed baseline. Local runs passed only because a prior write-mode `prism:build` had left them on disk; CI's fresh checkout has neither, so check mode rendered them and reported 63 false-drift paths. Production `build.ts main()` already handles this — its check-mode `optedIn` sets `codex: !checkMode` and `codexConfig: !checkMode` (off in check mode); the test diverged by forcing all targets on.
+
+**How to apply:** A no-drift / byte-identical check-mode test asserts only against *committed* targets — opt out gitignored render roots, mirroring `build.ts main()`'s `optedIn`. Same local-false-pass / fresh-checkout-CI-fail family as the `.agents/`-mirror and crossref-gitignored lessons above. Reproduce the CI condition before trusting a fix: `mv` the gitignored target aside, run the test, confirm it fails, apply the fix, confirm it passes with the target still absent, then restore.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A reviewer subagent's claimed label/PR-state change can silently fail — verify the live PR before treating the gauntlet as clean
+
+**Why:** 2026-06-24 (PRISM-256, PR #257) — Eric's confirmation pass reported "removed `review:has-minors`, applied `confidence:high`" after the minors were fixed, but the live PR still carried `review:has-minors` and no `confidence:high`. The label write hit the Projects Classic GraphQL deprecation (the same failure as lesson #39 / the pr-description body-edit rule) and the subagent reported success without confirming the side effect landed. Sol caught it only because it re-checked `gh pr view --json labels` before parking the PR. A reviewer's verdict (`done`/clean) is trustworthy; its claims about external side effects (labels, ready-flips, posted comments) are not, because those writes can fail silently in a subagent.
+
+**How to apply:** Before the conductor parks or merges a PR on a reviewer's clean verdict, verify the live label state against what the reviewer claimed (`gh pr view <n> --json labels`). When it diverges, correct it via the REST labels endpoint from the main loop (`DELETE .../issues/<n>/labels/<name>`, `POST .../issues/<n>/labels`) — `gh pr edit --add-label/--remove-label` routes through the deprecated GraphQL path and fails. Pairs with the line-211 lesson (conductor owns ready-flip/merge): extend the same ownership to label reconciliation, since subagent label writes are the unreliable link.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A worktree-isolated subagent can leak a checkout into the shared main working tree — verify the repo root is on main around merges
+
+**Why:** 2026-06-24 (epic-prism-consumer-boundary, Sol 11-lane fleet) — `isolation: 'worktree'` dispatches intermittently left the *shared* repo-root checkout switched onto a lane branch (HEAD drifted to a lane commit, sometimes with uncommitted WIP), repeatedly across the run. Tells: `git merge --ff-only origin/main` fails "Not possible to fast-forward," `git branch --show-current` shows a lane branch not main, or a reviewer reports a "drifted to a sibling lane's commit" false alarm. The GitHub squash-merge still landed each time — only the local checkout was wrong. One occurrence stranded a just-authored Winston plan edit as uncommitted WIP in the root tree.
+
+**How to apply:** Treat the repo-root checkout as untrusted after any worktree-isolated segment. Recover deterministically after each merge — `git fetch origin && git checkout main && git reset --hard origin/main` — instead of relying on `--ff-only`. Before resetting, capture any uncommitted plan/source WIP in the root to /tmp (it's a leak, but may hold a freshly-authored artifact). Don't pass `--delete-branch` to `gh pr merge` when a worktree may hold the branch — it aborts the cleanup mid-switch and is what knocks the root onto the branch.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Windows PowerShell `Set-Content` / `Out-File -Encoding utf8` emits a UTF-8 BOM that breaks `JSON.parse`
+
+**Why:** 2026-06-26 — a machine-written JSON file produced via PowerShell `Set-Content` carried a UTF-8 BOM, and a strict `JSON.parse` rejected it ("not valid JSON"). PowerShell 5.1's `utf8` encoding is BOM-prefixed by design; the BOM is invisible in most editors but fatal to a strict JSON parser.
+
+**How to apply:** For any machine-parsed JSON the agent writes (e.g. `.prism/conductor-state.json`), write BOM-free — use Node `fs.writeFileSync(path, JSON.stringify(...), 'utf8')` or the Write tool (both BOM-free). Never write such files with PowerShell `Set-Content` / `Out-File -Encoding utf8`. If a parser rejects a file that looks valid, suspect a leading BOM first.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A worker and its self-reviewer can confidently misread the same spec — verify a reviewer's plan-claim against the source text before applying the fix it proposes
+
+**Why:** 2026-06-24 (epic-prism-consumer-boundary, L8) — Atlas built the acceptance-criteria offer as *unconditional*, asserting "the plan says unconditional"; Briar then "confirmed" it and proposed aligning the prose to unconditional. The plan said **skip-if-exists** in two places and "unconditional" in none — both agents collapsed two distinct properties (a skip-if-exists guard vs a user-skippable offer) into one. Applying the reviewer's proposed fix would have shipped behavior the plan explicitly rejects (the offer re-firing on every reconfigure). Caught by grepping the plan for the literal claim; root cause was partly an ambiguous plan line that compressed two properties into one bullet.
+
+**How to apply:** When a finding rests on a claim about what the spec says ("the plan requires X"), verify the claim against the source text before routing the proposed fix — a grep of the plan for the asserted term is cheap. A worker and its reviewer agreeing is not verification when both read the same ambiguous line the same wrong way. Route the disagreement to the spec's author to adjudicate *and* to disambiguate the phrasing so the next reader can't repeat it. Same exists-vs-honored family as the grep/seed-twin lessons — fix against the source of truth, not a paraphrase of it.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Moving hand-authored AGENTS.md content into a Tier-1 rule subjects it to the Thrive-literal guard
+
+**Why:** 2026-06-26 (Issue #302) — extracting AGENTS.md §0 verbatim into `.prism/rules/skill-routing.md` (a no-`paths:` Tier-1 rule) carried over the example ticket ID `THR-123` in the Nora routing row. `THR-123` was never checked while it lived in AGENTS.md (a single hand-authored surface, not platform-synced), but the moment the rule syncs to `.claude/rules/`, `.codex/rules/`, `.cursor/rules/`, `prism:test`'s literal-guard scans those outputs and fails the build. A verbatim move is not literal-safe across the AGENTS.md → Tier-1-rule boundary.
+
+**How to apply:** Before moving any hand-authored content into a Tier-1 rule (or any file that syncs to platform dirs), scan it for Thrive literals (`THR-NNNN`, `Thrive`, `tractru`) and tokenize them — illustrative ticket IDs become `${TICKET_PREFIX}-NNNN` (substituted at sync time per epic-phase-1-foundation.md:422). Allowlisting the platform paths is the wrong fix for generic seed content — it ships a Thrive-ism into the consumer install. Winston: when planning a verbatim-move task, flag in-table literals as a tokenization sub-step so the implementer doesn't discover it at build time.
+
+---
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## UTF-8 BOM on canonical `.ai-skills/` sources is a recurring defect — guard it at build time
+
+**Why:** 2026-06-27 (third Eric catch) — some editors save `.md`/`.mjs`/`.json` files as "UTF-8 with BOM" by default. On `main` the canonical sources start clean, but whenever a BOM-bearing editor touches them, the BOM silently persists through the Git delta and into the next commit. On PRISM, BOMs break `<!-- atlas:specializes-in -->` anchor substitution in consumer repos. The defect was caught manually three times; `bom-guard.ts` converts it to a build-time exit-1 failure.
+
+**How to apply:** The guard is wired into `build.ts` and runs on every `pnpm prism:build` / `pnpm prism:check`. If it fires, strip the BOM with `tail -c +4 <file> > <tmp>; mv <tmp> <file>` on each affected file, then rebuild. Never suppress the guard — a BOM that "just passes" on Node (which strips it) still breaks consumer anchor substitution.
+
+**Gap:** The `bom-guard.ts` covers `.ai-skills/` canonical sources but NOT top-level docs (`README.md`, `AGENTS.md`, etc.) — Windows agent file-writes can still prepend a BOM there. Strip on touch; a BOM on top-level docs breaks the atlas anchor. Filed as a follow-up to extend the guard scope.
+
+---
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Spend-limit or 529 mid-segment leaves lanes partially processed — detect and resume heterogeneously
+
+**Why:** 2026-06-27 — a Workflow segment interrupted mid-pipeline (spend limit, 529 error) left lanes in mixed states: some had a PR open but review never ran; others hadn't started. A uniform retry re-ran completed work wastefully and duplicated side effects.
+
+**How to apply:** Detect partial lanes from null review fields or missing plan/PR artifacts. Author a heterogeneous cleanup that resumes each lane at its correct stage (open PR → skip to review; not started → full run). Use `resumeFromRunId` for transient API failures — completed agents return cached results and don't re-execute.
+
+---
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## The 500-line skill-body cap lives in `prism:test`, not `build.ts --check` — a clean build doesn't mean CI passes
+
+**Why:** 2026-06-27 — `MAX_SKILL_BODY_LINES` is enforced by `prism:test`, not by `build.ts`. A skill rewrite that exceeds the cap reports `buildClean` but fails CI at the test step. The cap is invisible to `prism:build --check`.
+
+**How to apply:** Enforce the cap during authoring, not after. When a skill body grows past ~400 lines, externalize content to `lib/` files (the conductor pattern) rather than cramming into the body. Now codified in `skill-authoring.md`. When CI fails on a skill-body check after a `prism:build` passes locally, the cap is the first suspect.
+
+---
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Docs drift after a large epic — run a read-only triage audit before fixing, not a bulk update
+
+**Why:** 2026-06-27 — after a large architecture epic landed, user-facing docs carried stale descriptions across ~11 files. Jumping straight to fixes churned current docs and introduced scope creep; an audit-first read-only triage (per-doc freshness verdict: current / stale / missing section) focused the fix pass on only what needed updating.
+
+**How to apply:** After a large epic lands, run a read-only triage first — assign a freshness verdict to each doc (current, stale, missing section) before touching any file. Fix only the stale and missing entries. This prevents churning docs that are already correct and keeps the diff reviewable.
+
+- 2026-07-06 [Sol]: Don't scout/grep/analyze a fix myself to "scope a lane" — that's dispatch-don't-do drift. Even scoping a discovered follow-up belongs to the implementer (Clove). Sol hands the pointer with the convention + the observation; the persona investigates the class.
+
+- 2026-07-06 [Sol]: Scope changes for a RUNNING worker go into the plan (source of truth) + a fresh re-dispatch — NOT via mid-flight SendMessage. A subagent cannot verify a mid-flight tool-channel message truly came from its coordinator, so a well-behaved worker correctly treats mid-flight scope expansion (esp. changing another persona's contract) as a possible prompt-injection and refuses. This is "the plan is the bus" (How Sol thinks #4) enforcing itself: Clove refused two legit-but-mis-delivered Sol messages on the retro-charter lane. Route design changes through the plan, then dispatch fresh.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A plan-body prose warning is not insurance when the same mechanical edit repeats at roster scale — add a per-lane mechanical check
+
+**Why:** 2026-07-10 (portable-improvements-backport, Iris retro) — task 5 said in its own text to "keep any persona-specific battery framing that is NOT in the generic rule," and the closing-battery framing got flattened anyway across ~22 of ~30 lanes doing the same full-battery-text→pointer swap. A prose instruction sitting in the same paragraph as the violation it's meant to prevent didn't survive ~30 near-identical repetitions — the failure mode is repetitive-edit drift, not comprehension failure. Caught in round-1 self-review, but only after it happened.
+
+**How to apply:** When a plan drives the same mechanical edit across many near-identical files, pair the prose instruction with a mechanical per-lane check (a clause/line-count diff against the pre-edit file — e.g. "the new closing-battery paragraph's distinctive-clause count must be ≥ the pre-swap paragraph's") rather than relying on each lane-executing agent to individually remember the instruction N times. Eric's round-2 byte-diff against `origin/main` was exactly this kind of check used post-hoc — promote it to a pre-review gate for roster-scale mechanical edits.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A reviewer's "not in scope, recommend a follow-up PR" on a named file is a hard stop for that PR
+
+**Why:** 2026-07-10 (portable-improvements-backport, Iris retro) — Eric flagged `prism-skill-forge` as out-of-scope in his PR #405 review and recommended a follow-up PR; the pointer-pattern conversion was folded into the same PR six minutes later (`6badda3`, `31f7453`) with no second review pass and no `## Decisions`/`## History` entry. The absorption was very likely fine (it mirrored an already-verified pattern) but landed unreviewed and unrecorded — below the bar the rest of the epic held everywhere else, and exactly what `followup-scope.md`'s "documented absorption is fine, undocumented absorption is not" already forbids.
+
+**How to apply:** When a reviewer explicitly says "not in scope, recommend a follow-up PR" on a named file, treat a later fold-in of that file as a hard stop, not a soft one — it triggers the follow-up review pass automatically, or at minimum a `## Decisions` entry citing the reviewer's comment and the reason for overriding it, before it lands. A fold-in that contradicts a reviewer's out-of-scope verdict must not land silently.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A close phase that promotes a decision into `.prism/architect/` needs a build — architect docs are generated
+
+**Why:** 2026-07-10 (portable-improvements-backport, Sol close dispatch) — Sol dispatched Winston's plan-close with "don't run `pnpm prism:build`, architect docs aren't generated." Wrong: `.prism/architect/` is a `COPIED_CONTENT_AREAS` path, so promoting a decision into an architect doc leaves three stale platform mirrors that fail CI. Winston caught it and built anyway.
+
+**How to apply:** When Sol (or any persona) dispatches a plan-close that promotes a decision into `.prism/architect/`, treat architect docs as generated content — the dispatch calls for `pnpm prism:build` + `pnpm prism:check`, same as a skill/rule edit. Only plan files, lessons, and retros under `.prism/` are genuinely build-free.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A file the CLI reads at runtime from the package must be in package.json `files`, or the published tarball omits it
+
+**Why:** 2026-07-12 (bug-adopt-missing-schema) — `.ai-skills/config.schema.json` was never in the `files` allowlist, so `npx @huntermcgrew/prism adopt`/`doctor`/`update` threw "Missing config schema" against the published package. Unit tests passed because they resolve the schema from the source tree, never from a packed tarball — the publish surface and the runtime file-read set drifted with no gate enforcing parity.
+
+**How to apply:** When wiring a runtime read of a file resolved from the package root (`prismSourceRoot`, `__dirname`-relative, etc.), add that file to package.json `files` in the same change. Verify the publish surface with `npm pack --dry-run --json`, not just green unit tests — a packaging-parity check belongs in `prepublishOnly`.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A pr-review `needs-fix` whose remedy embeds an architecture decision routes to Winston first, not straight to Clove
+
+**Why:** 2026-07-17 (PRISM-413 eval-layer, Sol conducted run) — Eric returned `needs-fix` on a dangling-reference Major (the verdict-contract taxonomy lived in the plan while shipped files pointed at it) and proposed relocating it into `report-back.md`. Sol verified the finding, then found Eric's own remedy would dangle identically — `.prism/skills/` ships to zero consumer installs (not in package.json `files` or `templates/install/`). The real fix required choosing a *shipped* authoritative home, which is an architecture decision, not a mechanical edit. Routing straight to Clove would have produced a fix that still dangled in every consumer install.
+
+**How to apply:** When a reviewer's `needs-fix` remedy assumes a fact Sol can falsify, or the fix requires choosing where a shared/shipped contract lives, route to Winston to decide + re-plan before dispatching the implementer. `needs-fix → Clove` holds for mechanical fixes; a fix carrying a design tradeoff is a `needs-replan`-flavored detour through the architect first. Sol still only routes the verdict — it doesn't decide the architecture — but it picks the owning persona for the remedy, and cross-agent-handoff-accountability means verifying the proposed remedy actually resolves the finding before dispatching it.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Sol routes framework-answered calls itself; reserve human questions for genuine gates
+
+**Why:** 2026-07-22 (Sol backlog run) — Sol asked Hunter, via a structured question, whether to fold a phase-chain-hardening fix into an existing lane vs. file a new ticket. That call was already answered by `followup-scope.md` (same root cause + same files = fold-in). Hunter's redirect: "you have the persona and skill roster, so you know who to route to and when and why." Over-asking routing decisions turns a delegated run back into a supervised one.
+
+**How to apply:** Sol decides — without asking — anything the roster + rules already determine: persona routing, fold-in vs. new-ticket (`followup-scope.md`), phase ordering, conflict-gate serialization, firewall pass/fail, whether to run the full chain. Reserve human questions for genuine human-owned gates: decisions that reverse a prior human ratification, publish/merge beyond the granted authorization, destructive actions (worktree sweeps), and product/distribution calls (e.g. does a script ship to consumers). When the framework answers it, route and state the call; don't ask.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## When classifying a file as "never bundled," check the transitive import graph, not just direct imports
+
+**Why:** 2026-07-22 (PRISM cli-multimain-dispatch fix) — the plan's tree-wide sweep for the `import.meta.url`-collapse guard bug found eight files with the vulnerable pattern and classified four as "standalone, never in `cli.ts`'s import graph" by checking whether `adopt.ts`/`doctor.ts`/`eject.ts`/`update.ts`/`init.ts` imported them directly. Two of the four — `build.ts` and `verify-manifest-coverage.ts` — were still reachable one hop further out (`update.ts` imports from `./build`; `ownership.ts`, imported by three of the four entry files, imports from `./verify-manifest-coverage`), so both were actually bundled and carried the same live bug. Found only by manually running a freshly built `dist/cli.js --help` and seeing a leaked error before trusting the plan's four-file scope as complete.
+
+**How to apply:** When determining whether a module ends up inside a bundle (or any other transitive-inclusion question — bundling, tree-shaking, circular-dep checks), walk the full import graph from the actual entry point, not just the files you already know are entry-adjacent. A grep for direct imports of the file in question is not the same check.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## `os.tmpdir()` returns a symlinked path on macOS — resolve it before comparing against `fileURLToPath(import.meta.url)`
+
+**Why:** 2026-07-22 (PRISM cli-multimain-dispatch fix) — a compiled-bundle regression test built its throwaway bundle into `os.tmpdir()` and passed even against a deliberately-reverted, still-buggy entry guard (a false negative). macOS's `/var` is a symlink to `/private/var`; `os.tmpdir()` returns the non-canonical `/var/folders/...` form while `fileURLToPath(import.meta.url)` resolves to the canonical `/private/var/folders/...` form for the same file, so any guard comparing the two literally never matches when built under an unresolved temp path — independent of whether the guard logic is correct.
+
+**How to apply:** Before building or writing test fixtures into `os.tmpdir()` that will later be compared against `import.meta.url`-derived paths (or any realpath-sensitive comparison), resolve the temp root with `fs.realpath()` first. This applies to any macOS-run test that builds-and-spawns a Node module from a temp directory.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A test for a `scripts/ai-skills/lib/*` module belongs at the top level, not inside `lib/`
+
+**Why:** 2026-07-22 (PRISM cli-multimain-dispatch fix, PR #436 review) — a reviewer suggested `lib/cli-entry.test.ts` for coverage of `lib/cli-entry.ts`. `run-tests.ts` discovers `*.test.ts` with a non-recursive `readdirSync` on `scripts/ai-skills/` only, so a test placed under `lib/` would never run under `pnpm prism:test` — silently, with no error. Every existing `lib/*` module's test (`tokens.test.ts` for `lib/tokens.ts`, `stack-detect.test.ts` for `lib/stack-detect.ts`) already lives at the top level for the same reason; caught by checking `run-tests.ts`'s discovery logic before trusting the suggested path.
+
+**How to apply:** When adding a test for any `scripts/ai-skills/lib/*.ts` module, place the `*.test.ts` file directly under `scripts/ai-skills/`, importing from `./lib/<module>`. Verify against `run-tests.ts`'s actual discovery mechanism before placing a test file anywhere non-obvious, rather than trusting a suggested path at face value.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## `grep -c` counts matching lines, not occurrences — use `grep -o 'token' file | wc -l` when counting how many times a token appears
+
+**Why:** 2026-07-22 (followup-427-428-verdict-wiring, per-PR retro) — an AC evidence command and an AC machine-note both used `grep -c 'needs-fix'` expecting an occurrence count, but two `needs-fix` mentions sat on one line, so `grep -c` read 1 where the criterion claimed ≥ 2. The trap surfaced twice in one ticket (the AC-3 note miscount and the AC-9 evidence-command miscalibration).
+
+**How to apply:** When an evidence or AC command needs to count how many *times* a token appears (not on how many *lines*), reach for `grep -o 'token' file | wc -l`, not `grep -c`. Reserve `grep -c` for "how many lines match."
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## When building an anti-drift guard, sweep the guard's own constants for the same dual-source-of-truth it forbids
+
+**Why:** 2026-07-22 (followup-427-428-verdict-wiring, Eric Round-1 Minor) — `phase-chain-parity.test.ts` — a test whose entire job is preventing a second copy of the canonical phase chain — held its own second hardcoded copy in `ARROW_LITERAL` alongside `EXPECTED_PHASES`. The anti-drift guard briefly reintroduced the exact drift it exists to forbid.
+
+**How to apply:** After writing a test that forbids a dual source of truth, re-read the test's own constants: derive the second representation from the first (`EXPECTED_PHASES.join(" → ")`), never re-hardcode it. The guard has to hold itself to its own rule.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## When a plan (or any doc) corrects an earlier claim, sweep that claim's other occurrences in the same file at correction time
+
+**Why:** 2026-07-07 (retro-charter-redesign, Iris retro) — a Task-15 Major was an uncorrected passage coexisting with an already-written correction in the same plan file; a forward-reference sweep at correction time would have caught it before self-review. 2026-07-25 (PRISM-445, Eric review passes 1–3) — the same failure species recurred on all three passes: a claim the shipping commit had already invalidated, left standing elsewhere in the plan (pass 1 a stale classification-table row, pass 2 a stale `**Reorder briar's output**` row, pass 3 the `curated` seed-twin Decision plus Task 9's matching instruction).
+
+**How to apply:** Don't just append a correction elsewhere — sweep the whole file for the same claim's other occurrences at correction time. This especially matters when a fix reverses a plan Decision: sweep both `## Decisions` and `## Implementation Tasks`, since a Decision's conclusion is often restated in the task that implements it and the two drift together if only one is corrected.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Don't recommend working around a skill's designed behavior — check the design reason first
+
+**Why:** 2026-07-25 (response-shape-contract session) — recommended twice that handoff docs be moved out of the OS temp dir into the repo so a reboot couldn't delete them. The handoff skill's own read-side contract, already in context, gave the reason for temp: "a stale handoff read as current is worse than no handoff." Ephemerality is the feature; the recommendation would have defeated it.
+
+**How to apply:** Before suggesting a workaround for something that looks like a flaw in a skill or tool, re-read that skill's stated reason for the behavior. A path, default, or constraint that seems fragile usually has its justification a few lines away — and a fallback clause in the body ("if X cannot be written") marks the behavior as deliberate, not accidental.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Two write lanes in one checkout cross-contaminate their PRs, and the squash-merge is where it detonates
+
+**Why:** 2026-08-02 (context-delivery-mechanism, Sol 2-lane run) — Sol dispatched Clove's PR-1 lane and the W2-01 worktree-setup lane concurrently with worktree isolation deliberately omitted, on the reasoning that W2-01 existed *because* a worktree cannot run `pnpm prism:check`. Both lanes committed into the same working tree, switched branches under each other, and interleaved their commits into one linear chain. Each PR's branch was therefore cut from the other's work. The damage stayed invisible until merge: squashing PR #451 carried PR #450's entire 1,957-line changeset into `main` in its pre-review-fix state, putting a known Major (an unbounded injected-payload size Eric had already flagged) live on `main` until #450 landed. CI was green throughout — the contamination is invisible to every gate.
+
+**How to apply:** Never run two write lanes in one checkout; use `isolation: 'worktree'` for each. When the thing being fixed *is* worktree usability, sequence the lanes instead of sharing a tree — serialization costs wall-clock, cross-contamination costs a merge incident. Before merging any PR in a multi-lane run, check the file list in **both** directions: not just "does my PR contain the other lane's files," but "does the other lane's PR contain mine." Checking one direction is what missed this. Recovery needs no force-push — fast-forward the victim branch to its own pushed head, cherry-pick anything stranded on the sibling, then merge `origin/main` after the sibling squashes so the shared files drop out of the diff. This is the no-isolation sibling of the leak lesson above (§ A worktree-isolated subagent can leak a checkout into the shared main working tree): that one is isolation leaking, this one is isolation absent.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A review finding that prescribes a performance fix benchmarks the fix, not just the fault
+
+**Why:** 2026-08-02 (PR #450, Eric's retroactive confirming pass, self-reported) — a Minor flagged `npx` on the hook's hot path for falling back to the registry on every invocation, and named `pnpm exec` as the remedy in the same sentence. The fixer implemented exactly that. The confirming pass measured all three forms: `npx` 0.325s, `pnpm exec` 0.413s, `node_modules/.bin/tsx` 0.153s. The prescribed remedy was slower than the thing it replaced; the alternative named alongside it was 2.7x faster. The network risk was genuinely closed, so the regression shipped looking like a closure.
+
+**How to apply:** When a finding names a specific remedy for a performance problem, measure the remedy before writing it down — otherwise the fixer inherits an unverified claim wearing a measured claim's clothes, and there is no later gate that catches it. If measuring the remedy is not practical, state the fault and leave the remedy open rather than naming one; an unmeasured prescription is worse than none, because it gets implemented.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## `pnpm --dir <worktree> exec tsx <relative-path>` resolves the path against the worktree's cwd, not the caller's
+
+**Why:** 2026-08-04 (PR #452, Eric review) — a regression run against a target test file silently ran a different worktree's copy of the same relative path, reporting 14 tests against a 15-test file; caught only because the counts didn't match, which would not have held on a coincidentally-equal file.
+
+**How to apply:** When running `pnpm --dir <path> exec <cmd> <relative-file>`, use an absolute path for the file argument, or verify the resolved path (`pnpm --dir <path> exec node -e "console.log(require.resolve('<relative-file>'))"`) before trusting the run's result.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A reviewer's prescribed fix is a hypothesis the fixer executes, not adopts
+
+**Why:** 2026-08-13 (PRISM-opus5-port, PR #449) — in one review pass, the reviewer fired both halves of the same failure: it prescribed an exclusion regex anchored on `^\./` that never matches on this repo (`grep -r` emits no `./` prefix — the fixer tested it and found it returned 47 lines while reading as verified), and it asserted that ADR-0006 ships to consumers without checking (`templates/install/.prism/spec/` holds only `TEMPLATE.md` and `README.md`), which would have relocated a dangling pointer rather than fixed it. A third prescription — "these two carve-outs are duplicates, drop one" — was adopted without testing and deleted a live carve-out, producing a Major in the next review pass.
+
+**How to apply:** when a review names a specific remedy, execute the remedy before writing it down; if it can't be executed, treat the finding as real and the remedy as unverified. This is the reviewer-side twin of the existing unmeasured-remedy lesson (§ A review finding that prescribes a performance fix benchmarks the fix, not just the fault).
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A gate that already exists for a bug class is forgotten more quietly than a gate that never existed
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460) — `verify-pack-parity.ts` exists precisely to catch "new runtime-read file missing from the tarball," cites the 0.7.1 `config.schema.json` incident in its own header, and `install-layout.md` § Packaging-parity gate repeats the instruction. A new hard runtime read (`.ai-skills/definitions/seed-curation.json`) shipped anyway without being registered, because forgetting produces no local symptom — `pnpm prism:check` stayed green through the whole branch, and Eric's PR review was the only thing between it and a broken published package.
+
+**How to apply:** Treat "does this change add a file the CLI reads from `prismSourceRoot` at runtime?" as a question the change answers, not a question a gate asks. Register the path in `RUNTIME_READ_PATHS` in the same commit as the `import`, and prove the gate now catches its deletion (remove the `files` entry, run `pnpm run prism:verify-pack`, expect exit 1) rather than trusting a green run — a green run is what the un-updated gate produces too.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A test suite where every fixture shares one simplified default is blind to whatever that default hides
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460, Briar Major) — every fixture in `doctor.test.ts` seeded `seed-curation.json` with `renames: {}`, so `checkSeedDelivery`'s loop ran zero iterations in every test — including the test whose stated contract is "a fresh repo that hasn't run `prism adopt` is still a healthy target for it." Against the real production table the check reported a never-adopted consumer as unhealthy and prescribed the wrong command. No individual test looked wrong; the suite was testing a shape of the world that does not exist.
+
+**How to apply:** When a suite's shared setup supplies a config value, at least one fixture carries the production-shaped version of it, not the empty or minimal one. The tell to watch for: a shared default that makes a loop, branch, or lookup a no-op — that default silences every test in the suite at once, and the shared setup is the last place anyone looks.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Skipping the architect pass silently skips whatever the architect would have written into the plan
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460) — Sol dispatched the lane straight to Clove. `branch-plan.md`'s template puts `## Acceptance Criteria` under Winston's authorship, so the plan shipped with none, Eric's Spec axis ran partial with nothing to grade against, and the PR carries `confidence:needs-judgment` instead of `high`. The gap surfaced five review rounds in, at close, where backfilling AC against a finished diff would have been theater.
+
+**How to apply:** When a dispatch skips a lifecycle persona, name at dispatch time what that persona would have produced and whether the lane proceeds without it — the cost of the omission is cheapest to weigh before the work starts, and invisible after it ships. If the gap is only noticed at close, record it rather than backfilling: an artifact written against an already-reviewed diff cannot fail, so it hides the gap instead of closing it.
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## A defect class enumerated against one list is tested on one axis only
+
+**Why:** 2026-08-19 (opus5-port PR 2C, PR #463) — a self-review found a stale `**Verify:**` line, then swept the plan's other verify lines by walking `seed-curation.json`'s `curated` list and concluded it was the last survivor. PR review found two more the sweep could not see: one named a superseded directory that never got created (the files were not curated at all), and one had the wrong grep scope. The list was a proxy for one axis — canonical measured while a curated twin goes unmeasured — and the real class was broader: the verify line was not re-derived when the task changed underneath it. Re-deriving against the class rather than the list turned up two further instances nobody had reported.
+
+**How to apply:** when a finding suggests a class, name the class in words before enumerating, then check each candidate against the words. If the sweep's method is "grep a list," ask what the list is a proxy for and what a defect on a different axis would look like. And run each verify command literally — a command that errors on a nonexistent path is indistinguishable from one that passes, until you run it.
+
+---
+
+**Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.

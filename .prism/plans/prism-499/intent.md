@@ -47,7 +47,7 @@ In priority order:
 
 1. **First-pass clean PRs.** The human reviewer requires zero changes after the agent review. Preference tweaks count as clean. Domain, logic, and spec misses do not.
 2. **Human touches per ticket.** Two on a routine ticket: approve the intent, read the PR. A third only for a design that needs approval, a plan that fails automatic approval, or a change that would alter the approved intent.
-3. **Skill size.** Every skill stays at 120 loaded lines or less, enforced by the existing build check. A persona skill's `## Voice` block does not count, up to 16 lines.
+3. **Skill size.** Every skill aims for 120 loaded lines or less, enforced by the existing build check as a soft cap: a skill may go over with an allowlist entry that gives a one-line reason. A persona skill's `## Voice` block does not count, up to 16 lines.
 
 Always-on size is reported by the build and is no longer a target. The phase-1 baseline stands and no new baseline is run. The eval harness is not in scope.
 
@@ -62,7 +62,7 @@ Always-on size is reported by the build and is no longer a target. The phase-1 b
 - **Consumers mid-upgrade.** A `prism update` must leave a consumer's own skills, docs, plans, and existing git-hook setup alone. A consumer who already uses husky or lefthook keeps it.
 - **Legacy flat plans.** Every existing `.prism/plans/<ticket>.md` keeps resolving and keeps working. Nothing is migrated.
 - **The existing write gate.** The architect-read gate and the umbrella speed bump keep their current behavior while the shell parser under them is replaced.
-- **Phase-1 skills.** The 120-line build check keeps passing for every skill that passes today.
+- **Phase-1 skills.** The 120-line build check keeps passing. It is a soft cap: a skill may go over 120 with an allowlist entry that gives a one-line reason, and no text is cut only to fit the number.
 - **Windows.** The hook runtime and the new scripts keep running on Windows, which rules out bash-only scripts.
 
 ## Security surface
@@ -137,7 +137,7 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 - **Deleted:** `prism-review-loop`, once `REVIEW.md` and the review rounds inside the stages replace it. Sol, Ren, and Theo stay deleted.
 - Acceptance-criteria grading moves out of `prism-qa-plan` and into the review's intent-conformance pass.
 - `prism-audit` learns to archive a plan folder whole.
-- The 120-line cap keeps counting everything a skill loads. Thrive reached its numbers partly by moving text into references its check does not count. PRISM does not copy that. Content that fails the tests is still cut, not moved.
+- The 120-line cap is a soft cap, and it keeps counting everything a skill loads. A skill may go over it with an allowlist entry and a one-line reason. Thrive reached its numbers partly by moving text into references its check does not count. PRISM does not copy that. Content that fails the tests is still cut, not moved.
 
 ### Review and verify
 

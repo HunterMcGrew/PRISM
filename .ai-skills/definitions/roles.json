@@ -21,6 +21,11 @@
 			"routing": "named-only"
 		},
 		{
+			"id": "prism-verify",
+			"type": "agent",
+			"routing": "named-only"
+		},
+		{
 			"id": "prism-onboard",
 			"persona": "Atlas",
 			"routing": "auto"
@@ -133,11 +138,6 @@
 		},
 		{
 			"id": "prism-handoff",
-			"type": "utility",
-			"routing": "named-only"
-		},
-		{
-			"id": "prism-review-loop",
 			"type": "utility",
 			"routing": "named-only"
 		},

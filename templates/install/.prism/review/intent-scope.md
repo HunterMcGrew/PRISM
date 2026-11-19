@@ -37,7 +37,7 @@ A criterion defect is a defect in the current plan, so it is not follow-up work.
 
 Every observation about the plan lands in one of two buckets, and the reviewer reports only the second. Cosmetics are neither, per `REVIEW.md` § `Severity`.
 
-**Fix in place, the default, where nearly everything lands.** A `## PR Readiness` line that no longer matches the branch, a `## Decisions` entry missing its verdict sub-bullet, a Decision whose wording describes something other than what shipped. Work out which side is stale, edit the plan, and list what you edited in the report. No severity, no round trip. The review fixes drift in place only in the sections of `plan.md` other than `## Tasks`.
+**Fix in place, the default, where nearly everything lands.** A `## PR Readiness` line that no longer matches the branch, a Decision whose wording describes something other than what shipped. A Decision with no verdict sub-bullet is not drift, because the close writes verdicts per `.prism/rules/branch-plan.md`. Work out which side is stale, edit the plan, and list what you edited in the report. No severity, no round trip. The review fixes drift in place only in the sections of `plan.md` other than `## Tasks`.
 
 **Report as a Minor, and leave as written.** Two things are never edited. A task whose stated approach the code did not take, including a task a later Decision contradicts, is reported as a Minor finding and the task stays as written, because the task list is the plan's contract and the review has no authority to rewrite it. A difference between the diff and `intent.md` is a finding too, and the review never edits `intent.md`.
 

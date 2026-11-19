@@ -114,7 +114,7 @@ A declined nit carries its reason on one line.
   - `- pr-review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>`
   - `- pr-review confirm at <short sha>[ (part <k> of <m>)]: <verdict>`, for the one confirm pass past the 3-round cap
 
-  `<verdict>` is `clean`, or the open counts as `<c> critical, <m> major, <n> minor, <k> nit`.
+  `<verdict>` is `clean`, or the open counts as `<crit> critical, <maj> major, <min> minor, <nit> nit`.
 
   On a stacked ticket, every PR shares one plan folder, so a line written on a PR that is not the last carries ` (part <k> of <m>)` after the sha, where `<k>` is that PR's place in the stack and `<m>` is the stack's size, and a line whose `<k>` is less than `<m>` is never a final verdict.
 

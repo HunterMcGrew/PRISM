@@ -3,16 +3,16 @@ title: "Iris — the retrospective skill"
 description: "How the retro skill compares a plan's stated intent with the execution record and writes an evidence-cited report."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-10-18"
+last_updated: "2026-11-19"
 ---
 
 ## What Iris does
 
-`prism-retro` (Iris) runs the retro charter on a plan: six questions answered from the plan's intent sections (`## History`, `## Decisions`, `## Acceptance Criteria`, `## Debugged Issues`, `## Review Issues`) and from the execution record (merged diffs, PR review threads, CI conclusions). It writes one report to `.prism/retros/` and never edits the plan.
+`prism-retro` (Iris) runs the retro charter on a plan: six questions answered from the plan's intent sections (`## History`, `## Decisions`, `## Acceptance Criteria`, `## Debugged Issues`, `## Review Issues`, plus `## Review` and `## Verification` on a folder plan) and from the execution record (merged diffs, PR review threads, CI conclusions). It writes one report to `.prism/retros/`. On a flat plan it never edits the plan. On a folder plan it also writes the plan's closing records, described next.
 
 The six questions are: did we do what we said, were there issues or bottlenecks, what could we improve, did we follow the code standards, did we do anything wrong, and are the tests passing. A question that no reached source can answer is reported as unanswered, so a retro built on thin evidence says so.
 
-Iris runs when invoked and at plan close. She has no place in the ticket-flow handoff chain.
+On a folder plan the retro is the fixed last stage. Iris runs after PR review without being asked, and she writes the Decision verdicts, the `Retro:` line under `## PR Readiness`, the `> Closed:` line, and the lessons exits, then commits them with the report. She also proposes a fix for each open review-miss class, a kind of finding a human caught that the review missed, and logs it resolved only when a person approves. On a flat plan she runs when invoked and at plan close, and a person may decline. She has no place in the ticket-flow handoff chain.
 
 ## Two grains
 
@@ -25,9 +25,9 @@ A date range (`YYYY-MM-DD..YYYY-MM-DD`) walks every plan with a `## History` lin
 
 1. **Resolve the target and the grain,** and confirm the target before reading.
 2. **Read the team's evidence config** (`retroEvidence` in `.ai-skills/config.json`). A source the team does not have is `not configured`, and one that fails this run is `unreachable`. The report keeps the two apart.
-3. **Gather evidence** from the plan sections, merged diffs, all three GitHub review surfaces (issue comments, review objects, check runs), CI conclusions, and an AC-verification report when the plan points at one.
+3. **Gather evidence** from the plan sections, merged diffs, all three GitHub review surfaces (issue comments, review objects, check runs), and CI conclusions.
 4. **Flag divergences.** A Decision counts as refuted only when later evidence directly contradicts its stated rationale. An adjacent bug is logged, not staged as a disagreement.
-5. **Write the report:** summary, charter coverage, findings that each cite their evidence, action items with proposed owners, promotion cautions, lesson candidates, and citations.
+5. **Write the report:** summary, charter coverage, findings that each cite their evidence, action items with proposed owners, promotion cautions, lesson candidates, and citations. On a folder plan the report also holds a `## Lessons exits` section and a `## Review-miss classes` section.
 
 ## Action items
 
@@ -35,7 +35,7 @@ Action items are proposals. Iris offers to hand them to `prism-start-ticket`, wh
 
 ## What Iris is not
 
-- **Not an editor of plans.** The plan being retro'd is read-only. The plan-close ceremony consumes the report's promotion cautions, so the reflector and the closer stay separate.
+- **Not an editor of a flat plan.** A flat plan is read-only to her, and the plan-close ceremony consumes the report's promotion cautions. A folder plan is the exception: she writes its verdicts, its `Retro:` and `> Closed:` lines, and its lessons exits as the last stage.
 - **Not a code writer.** The output is a Markdown report.
 - **Not a source of invented perspectives.** Every finding cites a plan section or an execution-record entry.
 

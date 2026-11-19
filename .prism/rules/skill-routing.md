@@ -52,12 +52,11 @@ These personas route on their name or an explicit trigger phrase only, never on 
 Utility skills have no persona and run in the invoking voice.
 
 - `prism-handoff` compacts the session into a handoff document for a fresh agent. Invoked on "hand off", "continue in a new chat", or "fresh session". Personas may suggest it at session close and never invoke it.
-- `prism-review-loop` runs the self-review and PR-review gauntlet on a PR until a subject-clean pass, and the PR stays draft. Invoked on "review loop" or "gauntlet".
 - `prism-forge-skill` scaffolds a skill or migrates a generated one back to source. Invoked on "create skill", "scaffold skill", "migrate skill", "decompose skill".
 - `prism-plan` writes the plan for an approved intent. Invoked on "write the plan" or "plan this out". In a plan folder it runs as the plan stage, and with none it writes the plan in chat.
 - `tdd` is a reference, read for its content and never run as a session. Invoked on "tdd", "test-first", "red-green", "test anti-patterns".
 - `prism-challenge` red-teams a finished artifact through four passes and a typed verdict, and never edits it. Invoked on "devil's advocate", "poke holes in this", "stress test this", "red team this".
-- Dispatched stages run as subagents with no persona. `prism-spec` writes `spec.md` for an approved intent and is never routed off a phrase, and `prism-challenge` also runs the plan stage's challenge rounds.
+- Dispatched stages run as subagents with no persona. `prism-spec` writes `spec.md` for an approved intent, and `prism-verify` records the checks under `## Verification`. Neither is routed off a phrase, and `prism-challenge` also runs the plan stage's challenge rounds.
 
 ## How to route
 

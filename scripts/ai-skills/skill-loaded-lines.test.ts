@@ -1,10 +1,10 @@
 /**
- * Holds every skill to the 120-line cap on what a run reads: the body plus
- * the reference, step, template, and `load: skill` rule files it cites,
+ * Holds every skill to a soft cap of 120 lines on what a run reads: the body
+ * plus the reference, step, template, and `load: skill` rule files it cites,
  * followed transitively.
  *
- * Skills over the cap today are listed in `OVER_CAP_ALLOWLIST` with the change
- * that thins them and their exact current size. The list ratchets: a listed
+ * An entry in `OVER_CAP_ALLOWLIST` lets a skill go over 120 for a stated
+ * reason, or until the change that thins it lands. The list ratchets: a listed
  * skill that comes in under the cap fails until its entry is removed, and one
  * whose size moves either way fails until its `max` is updated, so a cut is
  * recorded in the same diff and cannot quietly grow back.
@@ -23,12 +23,10 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 
 const LOADED_LINE_CAP = 120;
 
-const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-review-loop": {
-		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
-		max: 306,
-	},
-};
+// A reasoned overage's `thinnedBy` starts with `reasoned overage:` and gives the
+// one-line reason, so a skill that needs the lines to be correct says why
+// instead of losing text to fit the number.
+const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {};
 
 async function listSkillIds(): Promise<string[]> {
 	const entries = await fs.readdir(path.join(repoRoot, ".ai-skills", "skills"), {

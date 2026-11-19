@@ -16,7 +16,7 @@ A typical reason for off-cadence invocation: a session writes a large number of 
 
 Zoe walks four surfaces in a single audit run. Each surface produces a section in the run's output report.
 
-- **`.prism/plans/`** — every plan file in the directory. For each plan, Zoe walks the `## Decisions` section and issues one verdict per entry. She also scans for open-question Decision variants and flags any that have aged past the open-stale threshold.
+- **`.prism/plans/`** — every plan in the directory. A plan is a flat `<name>.md` file, or a folder holding `intent.md`, `design.md`, `spec.md`, or `plan.md`, the same test `scripts/ai-skills/hooks/plan/lookup.mjs` uses. A folder's Decisions live in its `plan.md`, and an epic folder's in its `spec.md`; a folder with no `## Decisions` section passes empty, and `.prism/archived/` is never read. For each plan, Zoe walks the `## Decisions` section and issues one verdict per entry. She also scans for open-question Decision variants and flags any that have aged past the open-stale threshold.
 - **`.prism/lessons.md`** — every entry in the lessons file. Zoe classifies each lesson as live (still referenced in active plans, rules, or ADRs) or archive-candidate (no recent references). Archive-candidate lessons move to `.prism/archived/lessons-archive.md` on the user's confirmation.
 - **`.prism/spec/adrs/`** — every ADR. Zoe scans the `## Context` and `## Consequences` sections for assumptions that may no longer hold (a referenced PR closed without merging, a sibling decision since superseded, a stated constraint that the codebase has since lifted). Findings surface as "ADR review candidate" entries — Zoe doesn't change ADRs, only flags them for a human to revisit.
 - **`.prism/architect/`** — every architect doc. Zoe scans for re-enumeration drift (a doc claims "the X states are A, B, C" while a sibling doc owns a different enumeration of X) and for stale source references (a path the doc cites that no longer exists). The architect-doc-verification rule (`.prism/rules/architect-doc-verification.md`) already covers in-session edits; Zoe runs the same triage on cadence across the whole `.prism/architect/` set.
@@ -41,6 +41,8 @@ The verdict sub-bullet format:
   - **Zoe verdict (YYYY-MM-DD):** `live` | `archive-candidate` | `overdue-archive` | `open-stale` — one-line reason.
 ```
 
+Zoe also checks each promotion claim, `→ promoted to <path>` or `-> promoted to <path>`. She strips backticks, opens the file, and searches it for a distinctive phrase from the Decision's bold title or the rule it states, so a section the verdict names is only a hint for where to look. A missing file, or a file without the text, is a `broken-promotion-claim-in-plan` finding, reported under its plan. A promotion claim nobody re-reads is how a Decision goes missing from the architect surface while its plan still says it was promoted.
+
 The one-line reason is the trace — what evidence Zoe used to issue the verdict. "Referenced by `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster" for `live`. "Plan closed in PR #N; constraint no longer applies" for `archive-candidate`. "Plan opened 2025-10-12, last activity 2026-02-03; work shipped" for `overdue-archive`. "Open since 2026-02-21; default-path commits in 4 PRs since" for `open-stale`.
 
 ## Archive classification
@@ -58,13 +60,13 @@ Closed plans accumulate in `.prism/plans/` after tickets ship. Plans are never d
 
 **Archive candidate criteria** — a plan qualifies when all three hold:
 
-- The plan carries a `> Closed:` marker.
+- The plan carries a `> Closed: YYYY-MM-DD` marker. A plan folder qualifies when its `plan.md`, or an epic's `spec.md`, carries that dated line, because the 90-day rule below reads its date. A `stage` or `status` of `closed` with no such line carries no date, so the folder is not yet eligible.
 - Every entry in `## Decisions` has either a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or a Zoe verdict sub-bullet (`archive-candidate` or `overdue-archive`). Plans with unresolved Decision entries are not archive-ready.
 - The close date is at least 90 days in the past — a recently-closed plan gets a grace period before becoming a candidate.
 
 **Confirmation gate** — Zoe flags archive-ready plans in the audit report (close date + Decision verdict status) and waits for explicit user go-ahead. The user's confirmation must be explicit; Zoe never infers consent from silence.
 
-**Destination** — `.prism/archived/plans/<plan-file-name>`. Zoe creates the directory on first move if it doesn't exist — per `.prism/rules/lazy-artifacts.md`, the directory is not pre-seeded.
+**Destination** — `.prism/archived/plans/<plan-file-name>`, and a plan folder moves whole to `.prism/archived/plans/<folder>/`. Zoe creates the directory on first move if it doesn't exist — per `.prism/rules/lazy-artifacts.md`, the directory is not pre-seeded.
 
 **State tracking** — each confirmed move is recorded in `archived.plans[]` in `.prism/audit-state.json`.
 

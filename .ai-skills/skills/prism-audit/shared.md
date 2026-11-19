@@ -7,6 +7,8 @@ Audits the `.prism/` surface for what has gone stale and writes a report to `.pr
 
 ## Verdicts on plan Decisions
 
+**Find the plans first.** A plan is a flat `.prism/plans/<name>.md`, or a folder under `.prism/plans/` holding `intent.md`, `design.md`, `spec.md`, or `plan.md`, the same test `scripts/ai-skills/hooks/plan/lookup.mjs` uses. A folder's Decisions live in its `plan.md`, and an epic folder's in its `spec.md`. A folder with no `## Decisions` passes empty. Skip `.prism/archived/` and any folder that holds none of those files.
+
 Give every `## Decisions` entry in every plan exactly one verdict, as a sub-bullet on the entry so every skill that reads the plan sees it:
 
 ```markdown
@@ -22,18 +24,20 @@ When several fit, the more severe wins: `open-stale` < `archive-candidate` < `ov
 
 **Evidence first.** Open the entry, follow every path, PR, or rule it cites, and state what you found in the reason (for example "referenced by `skills-ecosystem.md` § Skill Roster"). A reference that no longer resolves makes the entry an `archive-candidate`. An entry that cites nothing and cannot be judged from its text goes to the user, who holds the context.
 
+**Promotion check.** For each `→ promoted to <path>` (or `-> promoted to`), strip any backticks and open the file. Search it for a distinctive phrase from the Decision's bold title or the rule it states, where a section the verdict names is only a hint for where to look. A missing file, or a file without the text, is `broken-promotion-claim-in-plan`, reported under its plan.
+
 **Open-since date.** Use an explicit `**Open since:** YYYY-MM-DD` line, else `git log --follow --diff-filter=A -S "OPEN — TBD" --format=%ai -- <plan> | tail -1`. With no verifiable date, ask the user and never default to `open-stale`.
 
 ## Other surfaces
 
 - **Lessons** (`.prism/lessons.md`): `live` when a plan, rule, ADR, or architect doc referenced the lesson in the last 30 days, else `archive-candidate`. A lesson under 30 days old is never a candidate, since it needs time to be referenced.
-- **Closed plans:** a plan is archive-ready when it has a `> Closed:` marker, every Decision has a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or an `archive-candidate` or `overdue-archive` verdict from this audit, and it closed at least 90 days ago. Flag any `.prism/qa/ac-verification-<ticket-id>.md` for the same ticket in the same recommendation.
+- **Closed plans:** a plan is archive-ready when it has a `> Closed:` marker, every Decision has a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or an `archive-candidate` or `overdue-archive` verdict from this audit, and it closed at least 90 days ago. A folder is closed only when its `plan.md`, or an epic's `spec.md`, carries a dated `> Closed: YYYY-MM-DD` line, the date the 90-day rule reads. A `stage` or `status` of `closed` without that line is not yet eligible. A closed folder moves whole.
 - **ADRs** (not `TEMPLATE.md` or `README.md`): flag assumptions in `## Context` and `## Consequences` that may no longer hold, such as a PR closed unmerged or a superseded sibling. Never edit an ADR.
 - **Architect docs:** flag re-enumeration drift (a doc lists the states of X and a sibling doc owns a different list) and cited source paths that no longer exist.
 
 ## Gates
 
-- **Archives need explicit consent, item by item.** State "I'll move `<item>` to `<destination>` on your go-ahead" and wait for a yes, not silence. Lessons go to `.prism/archived/lessons-archive.md` with their date kept and an archive timestamp added. Plans go to `.prism/archived/plans/<name>`. Create either on the first move, with a `# Lessons Archive` header for the lessons file, and never seed them empty. The lessons archive is append-only.
+- **Archives need explicit consent, item by item.** State "I'll move `<item>` to `<destination>` on your go-ahead" and wait for a yes, not silence. Lessons go to `.prism/archived/lessons-archive.md` with their date kept and an archive timestamp added. Plans go to `.prism/archived/plans/<name>`, and a plan folder to `.prism/archived/plans/<folder>/`. Create either on the first move, with a `# Lessons Archive` header for the lessons file, and never seed them empty. The lessons archive is append-only.
 - **Verdict sub-bullets, the report, and the state file are written without asking,** because they annotate or record and delete nothing. Every archive move and removal waits for the user.
 - **Record each confirmed move** in `archived`, and each user deferral with its reason and time in `deferred`, and set `lastRun`. Never delete state entries: the file is its own audit trail.
 
@@ -49,7 +53,7 @@ Where `scripts/ai-skills/worktree-classify.ts` is absent (a consumer install), r
 
 ## Report
 
-Write `.prism/audits/<YYYY-MM-DD>-audit.md`, creating the directory on first use, and keep it out of chat unless the user asks. Sections: Summary with counts per surface and verdict, Plans (per plan, each Decision's verdict and reason), Lessons, ADRs flagged, Architect docs flagged, Worktrees (only when that lane ran), and Deferred. Put `open-stale` Decisions first, since they most need the user.
+Write `.prism/audits/<YYYY-MM-DD>-audit.md`, creating the directory on first use, and keep it out of chat unless the user asks. Sections: Summary with counts per surface and verdict, Plans (per plan, each Decision's verdict and reason, and any `broken-promotion-claim-in-plan`), Lessons, ADRs flagged, Architect docs flagged, Worktrees (only when that lane ran), and Deferred. Put `open-stale` Decisions first, since they most need the user.
 
 Close with the report path. The verdicts are the handoff: a skill that reads a plan's `## Decisions` respects a verdict sub-bullet, so this skill recommends no next step.
 

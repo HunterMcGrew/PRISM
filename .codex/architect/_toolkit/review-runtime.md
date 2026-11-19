@@ -73,6 +73,7 @@ The ten pass files live in `.prism/review/`, one per pass in `REVIEW.md`'s table
 
 - a `verdict:` line that reads `done` or `blocked`, and a `head:` line
 - a table whose rows are `| <check> | <result> | <evidence> |`, where `<result>` is `pass`, `fail`, or `n/a: <reason>`
+- a table row with fewer than three cells, such as `| lint | pass |`, is dropped and not read as a row
 - under `### Failures`, one line `- <check>: <path>[:<line>]` for each `fail` row, or `- none`
 
 **With one argument it checks the shape alone:** a verdict and a head are present, every row's result is valid, and each `fail` row has a Failures line and the reverse. A `blocked` verdict is a problem too, reported once per `blocked:` line, so a run that could not finish never passes the check.

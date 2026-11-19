@@ -1,6 +1,6 @@
 ---
 name: prism-qa-plan
-description: "Writes manual Pass/Fail QA checklists in tester-facing English for a release, a sprint or PR group, a single PR, or a bug-fix retest, and separately grades a plan's acceptance criteria against the branch diff with per-criterion verdicts and typed evidence (AC verification). Picks the shape from prompt words, input shape, and ticket labels. Triggers: \"Reese\", QA plan, release checklist, verify this fix, retest, what should QA test, verify the AC, grade the AC."
+description: "Writes manual Pass/Fail QA checklists in tester-facing English for a release, a sprint or PR group, a single PR, or a bug-fix retest. Picks the shape from prompt words, input shape, and ticket labels. Triggers: \"Reese\", QA plan, release checklist, verify this fix, retest, what should QA test."
 model: sonnet
 ---
 
@@ -12,26 +12,23 @@ model: sonnet
 name: prism-qa-plan
 description: >
   Writes manual Pass/Fail QA checklists in tester-facing English for a release,
-  a sprint or PR group, a single PR, or a bug-fix retest, and separately grades
-  a plan's acceptance criteria against the branch diff with per-criterion
-  verdicts and typed evidence (AC verification). Picks the shape from prompt
-  words, input shape, and ticket labels. Triggers: "Reese", QA plan, release
-  checklist, verify this fix, retest, what should QA test, verify the AC,
-  grade the AC.
-argument-hint: "a tag range, PR number(s), PR URL, branch name, compare URL, or a plan path to grade its AC"
+  a sprint or PR group, a single PR, or a bug-fix retest. Picks the shape from
+  prompt words, input shape, and ticket labels. Triggers: "Reese", QA plan,
+  release checklist, verify this fix, retest, what should QA test.
+argument-hint: "a tag range, PR number(s), PR URL, branch name, or compare URL"
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
 <!-- Source: .ai-skills/skills/prism-qa-plan -->
 <!-- Target: claude | Regenerate with: pnpm prism:build -->
 
-Writes manual QA checklists for a change set (release, sprint or PR group, single PR, bug-fix retest) in tester-facing English, and separately grades a plan's acceptance criteria against the branch diff. It never writes test code, applies a fix, or edits a ticket. Input: $ARGUMENTS
+Writes manual QA checklists for a change set (release, sprint or PR group, single PR, bug-fix retest) in tester-facing English. It never writes test code, applies a fix, or edits a ticket. Input: $ARGUMENTS
 
 ## Startup
 
 - **Run `git fetch --tags`,** since a tag may exist on origin and not locally.
 - **Pick the mode from three signals together:** the user's words ("release", "sprint", "retest"), the input shape (tag pair, PR number or URL, branch, commit range, plan path), and the ticket's labels when a single PR resolves to a `PRISM-NNNN` ticket. When they agree, start without asking. The user's words beat the data. When the data leans one way and the words are generic, follow the data and say which mode you chose in your first line so they can correct it in one word. When signals contradict, ask once, naturally ("this reads like a bug fix, but the ticket isn't labeled `bug`. Retest or plain feature pass?").
-- **Modes:** Release (a tag pair or compare URL). Sprint / Group (several PRs or a commit range). Feature / PR (one PR, number, URL, or branch). Bug-fix Verification (one PR on a `bug` ticket, or "verify this fix", "retest"). AC Verification (a plan path with `## Acceptance Criteria` and no open PR, or "verify the AC", "grade the AC"). A plan path with AC and no PR is AC Verification, and a PR with bug cues is Bug-fix Verification.
+- **Modes:** Release (a tag pair or compare URL). Sprint / Group (several PRs or a commit range). Feature / PR (one PR, number, URL, or branch). Bug-fix Verification (one PR on a `bug` ticket, or "verify this fix", "retest"). A PR with bug cues is Bug-fix Verification.
 - **Not built yet:** tests derived from AC before code exists, exploratory charters, and scheduled regression. Say so and offer the closest existing mode.
 
 ## Checklist modes
@@ -50,18 +47,6 @@ Writes manual QA checklists for a change set (release, sprint or PR group, singl
   - **Bug-fix Verification:** pull severity, environment, repro steps, expected and actual behavior, and root cause from the ticket. Sections: Before you start, Primary verification (each repro step becomes a Pass/Fail scenario, and the expected behavior is what good looks like now), Targeted regression, and Root-cause adjacency (scenarios checking the same class of bug is absent elsewhere).
 - **Save as Markdown** under `.claude/docs/qa/`, named `prism-<base>-<head>-manual-qa-checklist.md`, `...-prs-<first>-through-<last>-qa-checklist.md` (or the range slug), `...-pr-<number>-qa-checklist.md` (or the branch slug), or `...-bug-<ticket>-verification.md`. Suggest the docx skill for Word. Reply with the path, mode, change-set size, exclusions, and tickets with no plan.
 - **Ship it yourself** (authors ship). Run prettier on the checklist only, and re-read it cold for session-context leakage per `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage. Read `git config --global --get prism.pauseBeforeCommit` first: `true` means state the subject and wait for "ship it", and unset means ask once and save the answer with `git config --global`. Commit as `chore: Add QA checklist for <base> → <head>`, `chore: Add QA checklist for PRs #X, #Y, #Z`, `PRISM-NNNN: Add QA checklist for PR #<n>`, or `PRISM-NNNN: Add bug-fix verification plan for PR #<n>`, and use `chore:` when no ticket applies. Push and open a draft PR with `gh pr create --draft --body-file` (scaffold `.github/pull_request_template.md`), or let the push update an existing one. When a push adds scope past an existing PR's body, rewrite only the templated sections (Summary, What did you do, Why did you do it, How did you achieve it, Ticket, Type of Change, and the checklist) with `gh pr edit --body-file`, never touch Screenshots or Notes, and keep every other section verbatim, escaping a bare `#N` in backticks. The body states the reasoning the diff cannot, and never lists files. The human flips it ready, and the release PR stays with the team lead. If the checklist surfaces a bug, propose `prism-start-ticket` for it.
-
-## AC Verification
-
-This mode produces a graded verdict report, not a checklist, as an independent judge of finished work against the plan's own criteria. Verdict meanings are in `.prism/references/qa-plan/verdict-contract.md`.
-
-- **Resolve the diff** as `origin/main..<branch>`, since no PR exists yet. Evidence commands come from the repo's declared verification commands, never invented.
-- **Walk the criteria in ID order,** following each Evidence sub-bullet exactly as written. Execution is read-only: no writes to tracked files and no mutating flags (snapshot updates, migrations, seeders). Compiled output and test caches are tolerated. Run `git status` before starting and after each criterion. If a command dirties the tree, restore tracked paths with `git checkout -- <paths>` and grade that criterion UNGRADEABLE(`harness`) naming the mutation, since a dirty tree poisons the next reader's diff.
-- **A criterion with no Evidence sub-bullet** (an older plan) gets the obvious source derived from its text and labeled `(derived)`. It is UNGRADEABLE(`ac-defect`) only when none can be derived. `Evidence (human)` criteria are never graded. They go to an awaiting-human-verification checklist in the report and out of every machine count.
-- **Every UNMET becomes an open `## Review Issues` entry** carrying the ID, the criterion verbatim, the exact procedure (command and exit code, or `file:line`), the expected and observed results quoted, and the evidence type (`executed`, `inspected`, or `demonstrated`). It prescribes no fix, because root cause is the implementer's job, though a location note is fine.
-- **Save `.prism/qa/ac-verification-<ticket-id>.md`,** created on first save. The header pins `git rev-parse HEAD`, the date, and the environment. Then comes a `| ID | Verdict | Evidence type | Citation |` table, the captured output keyed by ID, and the awaiting-human section. A re-check updates the table and appends a dated log entry, never overwriting, and every verdict stamps its SHA.
-- **Re-check scope** is every previously UNMET criterion plus any MET one whose evidence touches the fix diff's files. Before the final all-clear, run every machine criterion once at a single SHA. A criterion that survives two fix cycles converts to UNGRADEABLE(`converted`) and goes to the criterion's owner (`prism-intent` on a folder plan, the plan skill on a flat one) for a rewrite instead of a third attempt.
-- **Close** by appending one `## History` line (date, report path, MET, UNMET, and UNGRADEABLE counts), since the plan is how reviewers find the report. All machine criteria MET means done. Any UNMET goes back to `prism-implement`. All UNGRADEABLE goes to the criterion's owner. No AC section means stop and say so. This mode has no commit to push.
 
 Before closing the session, append to `.prism/lessons.md` when mode detection landed wrong or a commit format or PR edge case went unhandled.
 
