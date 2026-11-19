@@ -37,6 +37,8 @@ after(() => {
 
 const APPROVED_INTENT = "---\nstage: intent\nstatus: approved\n---\n";
 const DRAFT_INTENT = "---\nstage: intent\nstatus: draft\n---\n";
+const APPROVED_EPIC = "---\nstage: intent\nstatus: approved\nsize: epic\n---\n";
+const DRAFT_EPIC = "---\nstage: intent\nstatus: draft\nsize: epic\n---\n";
 
 /**
  * Copies a fixture into a temp repo with a fake `.git`, so nothing writes into
@@ -580,15 +582,25 @@ describe("the intent behind the plan", () => {
 
 	test("an epic child under an approved epic intent approves", () => {
 		const folder = copyFixture("clean");
-		makeChild(folder, "epic-folder", APPROVED_INTENT);
+		makeChild(folder, "epic-folder", APPROVED_EPIC);
 
 		assert.equal(autoApprove({ folder, today: TODAY }).code, 0);
 		assert.equal(approvalLines(readPlan(folder)).approved_by, "auto");
 	});
 
+	test("an epic child naming an approved intent that isn't an epic fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(folder, "epic-folder", APPROVED_INTENT);
+
+		assert.match(
+			autoApprove({ folder, check: true, today: TODAY }).message,
+			/^auto-approve: intent failed: \S+spec\.md names epic "epic-folder", but \S+intent\.md reads no size, not size: epic$/
+		);
+	});
+
 	test("an epic child under a draft epic intent fails", () => {
 		const folder = copyFixture("clean");
-		makeChild(folder, "epic-folder", DRAFT_INTENT);
+		makeChild(folder, "epic-folder", DRAFT_EPIC);
 		const epicIntent = path.join(
 			path.dirname(folder),
 			"epic-folder",

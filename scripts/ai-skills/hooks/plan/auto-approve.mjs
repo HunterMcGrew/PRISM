@@ -161,8 +161,9 @@ function fail(failures) {
 
 /**
  * Passes when the folder's `intent.md` is approved, or when there is none and
- * `spec.md`'s `epic:` line names a sibling folder whose `intent.md` is. The
- * value must be a bare folder name, so it can't point outside `plans/`.
+ * `spec.md`'s `epic:` line names a sibling folder whose `intent.md` is, and
+ * reads `size: epic`, so a child can't borrow an unrelated ticket's approval.
+ * The value must be a bare folder name, so it can't point outside `plans/`.
  *
  * @param {string} folder
  * @returns {Failures}
@@ -203,6 +204,16 @@ function checkIntent(folder) {
 			[
 				"intent",
 				`${specPath} names epic "${epic}", and ${epicIntent} does not exist`,
+			],
+		];
+	}
+
+	const size = readFrontmatter(readFileSync(epicIntent, "utf8"))?.fields["size"];
+	if (size !== "epic") {
+		return [
+			[
+				"intent",
+				`${specPath} names epic "${epic}", but ${epicIntent} reads ${size ? `size: ${size}` : "no size"}, not size: epic`,
 			],
 		];
 	}

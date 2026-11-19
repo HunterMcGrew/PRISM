@@ -51,7 +51,9 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
   - **Alternatives considered:** an intent per child (the status quo the ruling rejects); a stub child `intent.md` auto-stamped from the epic, which keeps every reader unchanged but puts an approval stamp the person never gave on a file, the thing the approve guard exists to stop.
   - **Chosen approach:** Winston's design (fit verdict 2026-11-19, proceed with changes). Lookup, bundles, `approve.mjs`, and `chat-approval.mjs` already handle a folder with no intent. `auto-approve.mjs` gains the intent check, which also closes the gap where a standard folder with a draft intent auto-approved.
   - **Implementation guidance:** ADR candidate at close: it passes all three gates in `.prism/references/triple-gated-adr-criterion.md`.
-- **A child's acceptance criteria stay in `plan.md`, not in its spec.** Winston proposed a `## Acceptance criteria` section in the child spec, which would change `REVIEW.md`, `.prism/review/intent-scope.md`, and `prism-self-review`. `intent-scope.md` already reads a folder with no intent from `plan.md`'s `## Acceptance Criteria`, and every PRISM-499 child already did that, so nothing in the review rulebook changes.
+- **A child's acceptance criteria stay in `plan.md`, not in its spec.** Winston proposed a `## Acceptance criteria` section in the child spec, which would change `REVIEW.md`, `.prism/review/intent-scope.md`, and `prism-self-review`. `intent-scope.md` already reads a folder with no intent from `plan.md`'s `## Acceptance Criteria`, and every PRISM-499 child already did that. The one rulebook edit is in `intent-scope.md`'s criterion-defect route, which names `prism-plan` as the owner on an epic child's folder.
+- **A child's `epic:` must name an intent that reads `size: epic`.** Self-review found any approved sibling intent satisfied the check, so an agent-written spec could borrow an unrelated ticket's approval. The size line is already in every intent, so the check costs one read.
+- **`wanted` is not a hedge, and `'d` is.** "it's what I wanted, approved" reports a past fact and approves, and "I'd approve this one" is a condition, the same as "I would".
 - **The hedge check scans the whole sentence before the match, not three words.** "if there is an epic like this, i approve the epic" puts the condition seven words back. A false negative costs the person one more message, and a false approval stamps a file.
 
 ---
@@ -104,7 +106,7 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 ### Hedge set misses the `'d` contraction
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/plan/chat-approval.mjs:105`
 - **Problem:** `CONTRACTED_FUTURE` is `/'ll$/`, so `I'd approve this one` parses as an approval and records a token, while `I would approve this one` (in the test list) does not.
 - **Class:** hedge or modal forms the word set misses, so a sentence that talks about approving still approves.
@@ -114,7 +116,7 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 ### The delegation target is trusted by `cwd` alone, and the header's known-misses list doesn't say so
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/approve-guard.mjs:125`
 - **Problem:** with a payload `cwd` inside any git checkout that holds a file at `scripts/ai-skills/hooks/approve-guard.mjs`, the guard runs that file and passes its output through. A stub copy that prints nothing turns every deny into an allow (run: a scratch repo holding a no-op guard, `cwd` set to it, `node scripts/ai-skills/hooks/plan/approve.mjs x.md` returns the deny from the real cwd and empty output from the scratch one). The header says a new bypass shape goes on the known-miss list, and this one is not on it. `runSessionCopy` also ignores `child.error`, so a spawn failure writes no stderr line, against the header's "every error writes one stderr line".
 - **Class:** a new bypass or trust shape missing from a file's own known-misses list.
@@ -124,7 +126,7 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 ### The child-spec gate is only in step 3, so step 1 and the done-when list contradict it
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.ai-skills/skills/prism-spec/shared.md:13`
 - **Problem:** step 1 says to read `intent.md` and return `blocked` on a missing approval, and the final checklist says every intent criterion has a requirement. A child folder has no `intent.md`, and the child-mode paragraph sits in step 3 under the epic bullets. A subagent that follows the file in order blocks on every child.
 - **Class:** a mode added in a later section of a stepwise skill while the earlier gate still reads as unconditional.
@@ -134,7 +136,7 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 ### `## Acceptance Criteria` ownership still names only the intent stage
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/_toolkit/plan-authoring.md:39`
 - **Problem:** the section-ownership table says the intent stage generates a plan's acceptance criteria. For an epic child, `prism-plan` now writes them into `plan.md`, so a reader of the table looks for an intent that doesn't exist. `.prism/review/intent-scope.md` § Grading a criterion has the same owner gap: it sends a criterion defect to `prism-intent` on a plan folder.
 - **Class:** behavior change with no shared symbol, so prose that describes the old owner survives.

@@ -67,7 +67,7 @@ Done is judged over a commit range. With `--base <ref>`, the range is `<ref>..HE
 
 `auto-approve.mjs <plan-folder> [--check]` approves a plan without a person when every one of these holds, and reports every failing condition rather than the first:
 
-- the folder's `intent.md` reads `status: approved`, or, with no `intent.md`, `spec.md`'s `epic:` line names a sibling plan folder whose `intent.md` does, because approving an epic approves its children. An `epic:` value holding `/`, `\`, or `..` fails, so it can't point outside the plans directory, and so does a folder with neither an intent nor an `epic:` line;
+- the folder's `intent.md` reads `status: approved`, or, with no `intent.md`, `spec.md`'s `epic:` line names a sibling plan folder whose `intent.md` does and reads `size: epic`, because approving an epic approves its children and no other ticket's approval does. An `epic:` value holding `/`, `\`, or `..` fails, so it can't point outside the plans directory, and so does a folder with neither an intent nor an `epic:` line;
 - the plan has at least one task, and `plan.md` has a `status` line;
 - every task lists at least one file, each inside the repo and none a directory;
 - every listed file matches a glob in the first fenced block under `## Affected systems` in `spec.md`;

@@ -11,7 +11,7 @@ You run the spec stage as a subagent, in a fresh context, because the spec's val
 
 The brief names the plan folder. Read, in order:
 
-- `intent.md`. It must say `status: approved`. On `draft`, stop and return `blocked`, naming the missing approval.
+- `intent.md`. It must say `status: approved`. On `draft`, stop and return `blocked`, naming the missing approval. A brief for an epic child names no folder intent, so follow the child steps in section 3 instead.
 - `design.md`. When the intent's Design line says `needed`, or `supplement` with `approval: required`, the file must exist and say `status: approved`, or return `blocked` the same way. A design the folder holds anyway is read, and an `approval: required` one must also be approved.
 - An existing `spec.md`, when the brief asks for a revision. Revise it in place.
 
@@ -63,6 +63,6 @@ Return a report of about 10 lines, with no diff:
 ## Done when
 
 - [ ] `spec.md` follows the template, with `stage: spec` and `status: draft`.
-- [ ] Every requirement traces to the intent, and every intent criterion has a requirement.
+- [ ] Every requirement traces to the intent, and every intent criterion has a requirement. For an epic child, every requirement traces to its `## Children` row.
 - [ ] The Affected systems block holds only globs, one per line.
 - [ ] The spec is committed and the report returned.
