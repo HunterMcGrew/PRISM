@@ -35,15 +35,59 @@ after(() => {
 	for (const root of tempRoots) rmSync(root, { recursive: true, force: true });
 });
 
-/** Copies a fixture into a temp repo with a fake `.git`, so nothing writes into this one. */
+const APPROVED_INTENT = "---\nstage: intent\nstatus: approved\n---\n";
+const DRAFT_INTENT = "---\nstage: intent\nstatus: draft\n---\n";
+const APPROVED_EPIC = "---\nstage: intent\nstatus: approved\nsize: epic\n---\n";
+const DRAFT_EPIC = "---\nstage: intent\nstatus: draft\nsize: epic\n---\n";
+const EPIC_SPEC =
+	"---\nstage: spec\n---\n\n## Children\n\n| # | Name | What lands | Proves |\n| --- | --- | --- | --- |\n| `C1` | One | x | y |\n";
+
+/**
+ * Copies a fixture into a temp repo with a fake `.git`, so nothing writes into
+ * this one, and gives it an approved `intent.md` so only the condition a test
+ * is about can fail.
+ */
 function copyFixture(name: string): string {
 	const root = mkdtempSync(path.join(os.tmpdir(), "auto-approve-"));
 	tempRoots.push(root);
 	const folder = path.join(root, name);
 	mkdirSync(path.join(root, ".git"));
 	cpSync(path.join(FIXTURES, name), folder, { recursive: true });
+	writeFileSync(path.join(folder, "intent.md"), APPROVED_INTENT);
 
 	return folder;
+}
+
+/**
+ * Turns a copied fixture into an epic child: its intent is removed, its spec
+ * gains `epic:` and `child:` lines, and, when `epicIntent` is given, a sibling
+ * `epic-folder/intent.md` holds that text and `epic-folder/spec.md` holds
+ * `epicSpec`, unless it is null.
+ */
+function makeChild(
+	folder: string,
+	epic: string,
+	epicIntent: string | null,
+	epicSpec: string | null = EPIC_SPEC
+): void {
+	rmSync(path.join(folder, "intent.md"));
+	const specPath = path.join(folder, "spec.md");
+	writeFileSync(
+		specPath,
+		readFileSync(specPath, "utf8").replace(
+			"stage: spec\n",
+			`stage: spec\nepic: ${epic}\nchild: C1\n`
+		)
+	);
+
+	if (epicIntent !== null) {
+		const epicFolder = path.join(path.dirname(folder), "epic-folder");
+		mkdirSync(epicFolder);
+		writeFileSync(path.join(epicFolder, "intent.md"), epicIntent);
+		if (epicSpec !== null) {
+			writeFileSync(path.join(epicFolder, "spec.md"), epicSpec);
+		}
+	}
 }
 
 function repoRootOf(folder: string): string {
@@ -515,6 +559,123 @@ describe("failing conditions print one line, exit 1, and write nothing", () => {
 		assert.match(
 			autoApprove({ folder, check: true, today: TODAY }).message,
 			/files failed: no git checkout above the plan folder/
+		);
+	});
+});
+
+describe("the intent behind the plan", () => {
+	test("a folder whose own intent is approved passes", () => {
+		assert.equal(
+			autoApprove({ folder: copyFixture("clean"), check: true, today: TODAY })
+				.code,
+			0
+		);
+	});
+
+	test("a folder whose own intent is a draft fails and writes nothing", () => {
+		const folder = copyFixture("clean");
+		writeFileSync(path.join(folder, "intent.md"), DRAFT_INTENT);
+		const before = readPlan(folder);
+
+		const result = autoApprove({ folder, today: TODAY });
+
+		assert.equal(result.code, 1);
+		assert.equal(
+			result.message,
+			`auto-approve: intent failed: ${path.join(folder, "intent.md")} reads status: draft, not status: approved`
+		);
+		assert.equal(readPlan(folder), before);
+	});
+
+	test("an epic child under an approved epic intent approves", () => {
+		const folder = copyFixture("clean");
+		makeChild(folder, "epic-folder", APPROVED_EPIC);
+
+		assert.equal(autoApprove({ folder, today: TODAY }).code, 0);
+		assert.equal(approvalLines(readPlan(folder)).approved_by, "auto");
+	});
+
+	test("an epic child naming an approved intent that isn't an epic fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(folder, "epic-folder", APPROVED_INTENT);
+
+		assert.match(
+			autoApprove({ folder, check: true, today: TODAY }).message,
+			/^auto-approve: intent failed: \S+spec\.md names epic "epic-folder", but \S+intent\.md reads no size, not size: epic$/
+		);
+	});
+
+	test("an epic child under a draft epic intent fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(folder, "epic-folder", DRAFT_EPIC);
+		const epicIntent = path.join(
+			path.dirname(folder),
+			"epic-folder",
+			"intent.md"
+		);
+
+		assert.equal(
+			autoApprove({ folder, check: true, today: TODAY }).message,
+			`auto-approve: intent failed: ${epicIntent} reads status: draft, not status: approved`
+		);
+	});
+
+	test("an epic child naming a missing epic folder fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(folder, "epic-folder", null);
+
+		assert.match(
+			autoApprove({ folder, check: true, today: TODAY }).message,
+			/^auto-approve: intent failed: \S+spec\.md names epic "epic-folder", and \S+intent\.md does not exist$/
+		);
+	});
+
+	test("an epic child the epic's ## Children table doesn't list fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(
+			folder,
+			"epic-folder",
+			APPROVED_EPIC,
+			EPIC_SPEC.replace("`C1`", "C2")
+		);
+
+		assert.match(
+			autoApprove({ folder, check: true, today: TODAY }).message,
+			/^auto-approve: intent failed: \S+spec\.md names child "C1", which no row of ## Children in \S+spec\.md names in its first column$/
+		);
+	});
+
+	test("an epic child whose epic has no spec.md fails", () => {
+		const folder = copyFixture("clean");
+		makeChild(folder, "epic-folder", APPROVED_EPIC, null);
+
+		assert.equal(autoApprove({ folder, check: true, today: TODAY }).code, 1);
+	});
+
+	for (const value of ["../epic-folder", "plans/epic-folder", "a\\b", ".."]) {
+		test(`an epic: value ${JSON.stringify(value)} that isn't a folder name fails`, () => {
+			const folder = copyFixture("clean");
+			makeChild(folder, value, null);
+			mkdirSync(path.join(path.dirname(folder), "epic-folder"));
+			writeFileSync(
+				path.join(path.dirname(folder), "epic-folder", "intent.md"),
+				APPROVED_INTENT
+			);
+
+			const result = autoApprove({ folder, check: true, today: TODAY });
+
+			assert.equal(result.code, 1);
+			assert.match(result.message, /which is not a plan folder name$/);
+		});
+	}
+
+	test("a folder with no intent and no epic: line fails", () => {
+		const folder = copyFixture("clean");
+		rmSync(path.join(folder, "intent.md"));
+
+		assert.equal(
+			autoApprove({ folder, check: true, today: TODAY }).message,
+			`auto-approve: intent failed: ${folder} holds no intent.md, and ${path.join(folder, "spec.md")} has no epic: line`
 		);
 	});
 });

@@ -12,11 +12,12 @@
  * later `T<n>:` commits.
  *
  * Without `--base`, the range starts at the commit that first added the plan
- * folder's `intent.md`, because no task can finish before its plan existed,
- * and it follows first parents only. A branch stacked on another plan's
+ * folder's `intent.md`, or its `spec.md` for an epic child, whose folder holds
+ * no intent. No task can finish before its plan existed, and the
+ * range follows first parents only. A branch stacked on another plan's
  * branch then never counts the parent's `T<n>:` commits, including ones a
- * merge of the parent brings in. A folder whose `intent.md` isn't committed
- * yet has no task done, and a plan with no `intent.md` beside it reads from
+ * merge of the parent brings in. A folder whose anchor file isn't committed
+ * yet has no task done, and a plan with neither file beside it reads from
  * `origin/<defaultBranch>`, where `defaultBranch` comes from
  * `.ai-skills/config.json` and falls back to `main`.
  *
@@ -301,7 +302,7 @@ export class PlanConfigError extends Error {}
  * `tasks.mjs` and `bundles.mjs` read through this too, and fail closed for
  * their own reasons. A dropped `importAliases` loses the import edges that keep
  * two dependent tasks from running side by side, and a dropped `defaultBranch`
- * reads the wrong commit range for a plan with no `intent.md`, which can mark a
+ * reads the wrong commit range for a plan with no anchor file, which can mark a
  * task done that isn't.
  *
  * @param {string} repoRoot
@@ -352,9 +353,13 @@ export function loadPlanState(planPath, base) {
 	const ticketPrefix =
 		typeof config?.["ticketPrefix"] === "string" ? config["ticketPrefix"] : null;
 
+	const anchor = ["intent.md", "spec.md"].find((name) =>
+		existsSync(path.join(dir, name))
+	);
+
 	/** @type {string} */
 	let log;
-	if (base || !existsSync(path.join(dir, "intent.md"))) {
+	if (base || !anchor) {
 		log = git([
 			"log",
 			...(base ? ["--first-parent"] : []),
@@ -367,7 +372,7 @@ export function loadPlanState(planPath, base) {
 			"--diff-filter=A",
 			"--format=%H",
 			"--",
-			"intent.md",
+			anchor,
 		])
 			.trim()
 			.split("\n")

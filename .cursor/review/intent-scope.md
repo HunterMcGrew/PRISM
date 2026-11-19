@@ -1,6 +1,6 @@
 # Intent conformance and scope
 
-Does the diff deliver what the intent asked for, and nothing it didn't? Trigger: always. It reads structural `not reached` when no `intent.md` and no `## Acceptance Criteria` in `plan.md` exist.
+Does the diff deliver what the intent asked for, and nothing it didn't? Trigger: always. It reads structural `not reached` when no `intent.md` and no `## Acceptance Criteria` in `plan.md` exist. On an epic child, whose folder holds no `intent.md`, the intent in this pass and every other pass file is the epic's `intent.md`, in the folder its `spec.md`'s `epic:` line names.
 
 Its enumeration unit, severity, finding shape, and coverage line are in `REVIEW.md`.
 
@@ -25,7 +25,7 @@ Its enumeration unit, severity, finding shape, and coverage line are in `REVIEW.
   - an evidence source that names a command or path that no longer resolves is a dead reference
   - a criterion that is vague, unfalsifiable, or carries no evidence, with none derivable from its text, is a defect in the criterion
 
-A criterion defect is a defect in the current plan, so it is not follow-up work. Record it as an open finding, and the criterion's owner sharpens it: `prism-intent` on a plan folder, `prism-plan` on a flat plan. The rest of the review goes on with the gradeable criteria.
+A criterion defect is a defect in the current plan, so it is not follow-up work. Record it as an open finding, and the criterion's owner sharpens it: `prism-intent` on a plan folder, `prism-plan` on an epic child's folder or a flat plan. The rest of the review goes on with the gradeable criteria.
 
 **No confidence grades.** A per-criterion confidence dial is the partial-credit escape hatch a three-way grade exists to remove. Type the evidence instead: `executed` (re-runnable) beats `inspected` (file state), which beats `demonstrated` (self-reported). A review where every grade rests on `demonstrated` evidence is a rubber stamp.
 

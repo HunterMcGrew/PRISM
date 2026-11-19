@@ -14,7 +14,7 @@ Populated during onboarding from the team's actual product domain.
 ## The run, in order
 
 1. **Pin the range** from `git merge-base origin/${DEFAULT_BRANCH} HEAD` to `HEAD`, and confirm it holds at least one file. Every later command takes those two refs.
-2. **Read the criteria before the diff,** from the source `.prism/review/intent-scope.md` names: `intent.md` on a folder that has one, else `plan.md`'s `## Acceptance Criteria`. Read `intent.md`'s regression and security surfaces too, so the review judges the approach before the lines.
+2. **Read the criteria before the diff,** from the source `.prism/review/intent-scope.md` names: `intent.md` on a folder that has one, else `plan.md`'s `## Acceptance Criteria`. Read the intent's regression and security surfaces too, from the epic's `intent.md` on an epic child, so the review judges the approach before the lines.
 3. **Inventory the changed files** with `git diff --name-status <base> HEAD`.
 4. **Pick the passes whose triggers fire** per `REVIEW.md`, and read each pass file and its `.prism/review/stack/` file when one exists.
 5. **Dispatch one subagent per pass or pass group,** at most the workflow rule's subagent cap, with a no-steer brief per `REVIEW.md`. Give each the pinned refs, its files, its passes, and `REVIEW.md`.

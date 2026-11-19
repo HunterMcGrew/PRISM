@@ -6,7 +6,7 @@ Its enumeration unit, severity, finding shape, and coverage line are in `REVIEW.
 
 ## Checklist
 
-- **Security surface by name.** Check every item in the intent's security surface, per `.prism/templates/intent.md` § `Security surface`. Each one gets a verdict and the evidence behind it. A diff that exposes something the surface doesn't list is a finding too.
+- **Security surface by name.** Check every item in the intent's security surface (the epic's `intent.md` on an epic child), per `.prism/templates/intent.md` § `Security surface`. Each one gets a verdict and the evidence behind it. A diff that exposes something the surface doesn't list is a finding too.
 - **The repo's own security rules.** When a manifest-matched architect doc covers security, apply it to the diff and read its section on the patterns easiest to miss.
 - **Configuration.** Correct values, no secrets, and safe defaults.
 

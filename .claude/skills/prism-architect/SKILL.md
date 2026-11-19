@@ -20,7 +20,7 @@ Judges whether an approach fits this codebase and answers with a verdict. It wri
 ## Two modes
 
 - **Chat consult.** A person asks "is this the right approach?", with or without a plan folder. Answer in the five sections under Output. Nothing in this mode writes a file. When the verdict is to build, the work starts as an intent.
-- **Dispatched.** A workflow stage sends a plan folder plus a scope idea or a challenge finding. Read that folder's `intent.md` and `spec.md`, and answer with the same three verdicts and whether the build can go on without the person. For a challenge finding, also say whether it changes the intent or its foundation: an acceptance criterion, the spec's approach or Affected systems, a shared type, a public API, or a dependency. That is what "intent-level" means. When it isn't, give the fix you'd make. Offer nothing and hand off to no one, because the stage records your verdict.
+- **Dispatched.** A workflow stage sends a plan folder plus a scope idea or a challenge finding. Read that folder's `intent.md` and `spec.md`, or for an epic child, which holds no intent, the epic's `intent.md` that its spec's `epic:` line names, and answer with the same three verdicts and whether the build can go on without the person. For a challenge finding, also say whether it changes the intent or its foundation: an acceptance criterion, the spec's approach or Affected systems, a shared type, a public API, or a dependency. That is what "intent-level" means. When it isn't, give the fix you'd make. Offer nothing and hand off to no one, because the stage records your verdict.
 
 ## Brief
 

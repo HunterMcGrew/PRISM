@@ -37,7 +37,7 @@ You run the spec stage as a subagent, in a fresh context, because the spec's val
 
 The brief names the plan folder. Read, in order:
 
-- `intent.md`. It must say `status: approved`. On `draft`, stop and return `blocked`, naming the missing approval.
+- `intent.md`. It must say `status: approved`. On `draft`, stop and return `blocked`, naming the missing approval. A brief for an epic child names no folder intent, so follow the child steps in section 3 instead.
 - `design.md`. When the intent's Design line says `needed`, or `supplement` with `approval: required`, the file must exist and say `status: approved`, or return `blocked` the same way. A design the folder holds anyway is read, and an `approval: required` one must also be approved.
 - An existing `spec.md`, when the brief asks for a revision. Revise it in place.
 
@@ -62,9 +62,11 @@ For an epic intent, write `epic-<ticket>/spec.md` and keep the template's epic s
 - `## Children`, one row per child ticket and what it delivers. A child with no ticket yet gets a short slug, for `prism-start-ticket` to file.
 - `## Merge order`, saying which children merge first and which wait on another.
 - `## Decisions`, one line per epic-wide decision, leading with a bold title and then the reason.
-- No `plan.md`. Each child runs the standard workflow in its own folder.
+- No `plan.md`. Each child gets its own folder and runs the standard stages from its spec on.
 
-On a standard spec, delete the three epic-only sections. The file sits in a plan folder, so it holds no section-sign citations and no `see Decision:` citations. Name a file by its path and another plan by its ticket ID.
+For an epic child, the brief names the epic folder, one `## Children` row, and the child's folder instead of an intent. The epic's approved intent covers its children, so a child folder holds no `intent.md`. Read the epic's `intent.md`, which must say `status: approved`, the epic's `spec.md`, and that row. A draft intent or a missing row returns `blocked`. Write `.prism/plans/<child>/spec.md` scoped to the row, with `epic:` set to the epic folder's name and `child:` to the row's first-column value, and take `title` and `ticket` from the row. A system the row needs that the epic spec's `## Affected systems` doesn't cover goes in the report as a scope change, not into the spec.
+
+On a standard spec, delete the three epic-only sections, and on any spec but a child's, the `epic:` and `child:` lines. The file sits in a plan folder, so it holds no section-sign citations and no `see Decision:` citations. Name a file by its path and another plan by its ticket ID.
 
 ## 4. Commit and report
 
@@ -87,7 +89,7 @@ Return a report of about 10 lines, with no diff:
 ## Done when
 
 - [ ] `spec.md` follows the template, with `stage: spec` and `status: draft`.
-- [ ] Every requirement traces to the intent, and every intent criterion has a requirement.
+- [ ] Every requirement traces to the intent, and every intent criterion has a requirement. For an epic child, every requirement traces to its `## Children` row.
 - [ ] The Affected systems block holds only globs, one per line.
 - [ ] The spec is committed and the report returned.
 

@@ -16,7 +16,7 @@ Questions 1 and 6, and the severity call, are measured against what is coming. B
 
 Resolve the horizon in this order and stop at the first source that answers:
 
-1. **Stated.** `intent.md`'s `## Proposed outcome` (a legacy flat plan's `## Goal`), the ticket, or a horizon the dispatch passed in. A stated plan beats what the code shows, because "ten more templates next quarter" isn't visible in the repo.
+1. **Stated.** `intent.md`'s `## Proposed outcome` (the epic's on an epic child, a legacy flat plan's `## Goal`), the ticket, or a horizon the dispatch passed in. A stated plan beats what the code shows, because "ten more templates next quarter" isn't visible in the repo.
 2. **Inferred from the repo.** The diff alone can't show future plans, but the repo shows current scale and growth rate. Count the existing siblings of what the diff adds: entries in the registry, array, or union it extends, templates or types of the same kind. Read that set's git history for how fast it has grown, and check architect docs and other plans that mention it. Report an inferred horizon as inferred, with its evidence, such as "inferred: 38 entries today, 9 added in the last 6 months", so a human can correct it at a glance.
 
 **A missing horizon doesn't block the sweep.** Questions 2 to 5, 7, and 8 don't depend on one. With nothing stated or inferable, sweep anyway and record `horizon: none stated, judged at current scale` in the enumeration. The pass reads `swept`, not `not reached`.

@@ -446,6 +446,25 @@ describe("tasks.mjs CLI", () => {
 		test("an intent not committed yet leaves every task open", () => {
 			assert.deepEqual(runDefault(stackedRepo()), { T1: "open", T2: "open" });
 		});
+
+		test("an epic child with no intent counts only commits since its spec", () => {
+			const repo = mkdtempSync(path.join(os.tmpdir(), "plan-tasks-"));
+			tempDirs.push(repo);
+			git(repo, "init", "-q");
+			git(repo, "commit", "-q", "--allow-empty", "-m", "ACME-1: Base");
+			git(repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+			git(repo, "commit", "-q", "--allow-empty", "-m", "T1: sibling work");
+			mkdirSync(path.join(repo, "child"));
+			writeFileSync(path.join(repo, "child/spec.md"), "spec\n");
+			git(repo, "add", "child/spec.md");
+			git(repo, "commit", "-q", "-m", "plan: child spec");
+			writeFileSync(path.join(repo, "child/plan.md"), PLAN);
+			git(repo, "add", "child/plan.md");
+			git(repo, "commit", "-q", "-m", "plan: child plan");
+			git(repo, "commit", "-q", "--allow-empty", "-m", "T2: child work");
+
+			assert.deepEqual(runDefault(repo), { T1: "open", T2: "done" });
+		});
 	});
 
 	describe("default branch from config", () => {
