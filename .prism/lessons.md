@@ -189,3 +189,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-18 (PRISM-522, PR #532) — sending improvement and DX tickets to the intent stage was a one-word route fix. Briar's re-review found that the approval script refuses "none" criteria on a non-epic intent, and the DX docs said a DX ticket's criteria are always "None", so a ticket following both instructions would stall at approval.
 
 **How to apply:** When a change reroutes a ticket type to another stage, read that stage's entry checks (the script or refusal that gates it) and compare them with what the type carries, not only with whether the stage exists.
+
+## Reversing a retirement starts from the retiring commit's file list
+
+**Why:** 2026-11-19 (PRISM-537, PR #542): bringing Sasha back fixed PRISM's own `AGENTS.md` but missed `templates/install/AGENTS.md.tmpl`, which 020859f7 had edited when it retired her. PR review round 1 caught it.
+
+**How to apply:** Before reversing a removal, run `git show --stat <retiring commit>` and check every file it touched, beside the tree grep for the moved phrase.
+
+## Check the folder-plan template before sending a handoff to a plan section
+
+**Why:** 2026-11-19 (PRISM-537): self-review round 1 told Sasha's report to land in `## Debugged Issues`, which a folder `plan.md` does not have, so the Decision had to route around it.
+
+**How to apply:** Before a handoff names a plan section, confirm `.prism/templates/plan.md` carries it, or route the content to a section the folder plan does have.
