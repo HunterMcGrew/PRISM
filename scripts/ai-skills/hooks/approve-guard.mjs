@@ -19,10 +19,11 @@
 //
 // A session in a git worktree runs whatever copy its hook command names, which
 // resolves through the directory the session started in, usually the main
-// checkout. When the payload's `cwd` sits in another checkout that holds its
-// own copy at the same path, this copy hands the event to that one and passes
-// its output through, so the guard and the `approve.mjs` it names are always
-// the session's own. A session checkout with no copy runs this one.
+// checkout. When the payload's `cwd` sits in another worktree of the same
+// repository that holds its own copy at the same path, this copy hands the
+// event to that one and passes its output through, so the guard and the
+// `approve.mjs` it names are always the session's own. A session checkout with
+// no copy, or a checkout of a different repository, runs this one.
 //
 // Chat approval has a prompt arm, run on the harness's prompt-submit event
 // (`promptEvent` in each row, passed as `--event`). When the person approves in
