@@ -21,6 +21,11 @@
 			"routing": "named-only"
 		},
 		{
+			"id": "prism-verify",
+			"type": "agent",
+			"routing": "named-only"
+		},
+		{
 			"id": "prism-onboard",
 			"persona": "Atlas",
 			"routing": "auto"
