@@ -919,9 +919,22 @@ function main() {
 		return;
 	}
 
-	const logPath =
-		options.log ??
-		path.join(runGit(["rev-parse", "--show-toplevel"]).trim(), DEFAULT_LOG);
+	/** @type {string} */
+	let logPath;
+	if (options.log !== null && options.log !== undefined) {
+		logPath = options.log;
+	} else {
+		try {
+			logPath = path.join(runGit(["rev-parse", "--show-toplevel"]).trim(), DEFAULT_LOG);
+		} catch {
+			console.error(
+				`reconcile.mjs: not inside a git repository, so the misses log path is unknown; pass --log <path>\n${usage}`
+			);
+			process.exitCode = 2;
+
+			return;
+		}
+	}
 
 	if (options.classes) {
 		console.log(formatClasses(openClasses(readLog(logPath).rows)).join("\n"));

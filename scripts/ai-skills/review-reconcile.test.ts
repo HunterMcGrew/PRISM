@@ -779,6 +779,17 @@ describe("reconcile.mjs command line", () => {
 		assert.equal(child.stdout.trim(), "No open class has 3 or more rows.");
 	});
 
+	test("--classes outside a git repository with no --log exits 2 naming the flag", () => {
+		const child = spawnSync(process.execPath, [SCRIPT, "--classes"], {
+			encoding: "utf8",
+			env: cleanEnv(),
+			cwd: scratchDir,
+		});
+
+		assert.equal(child.status, 2, child.stderr);
+		assert.match(child.stderr, /not inside a git repository.*pass --log/);
+	});
+
 	test("a large report reaches a pipe whole before the process exits", () => {
 		const logPath = path.join(scratchDir, "large-review-misses.jsonl");
 		const classes = Array.from(
