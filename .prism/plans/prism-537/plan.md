@@ -630,6 +630,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T6 fix: PR review round 1's Minor is closed. `persona-voice.test.ts` now also reads each skill's `claude.md`, because the load counter exempts a Voice section there too; a temporary Voice line in `prism-plan`'s `claude.md` failed the utility and agent case.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T6 fix: PR review round 2's nit is closed. The `claude.md` and utility-or-agent checks now match a Voice heading by `trimEnd()` like `stripVoice`, so `## Voice ` with a trailing space fails them; a temporary one in `prism-plan` and in `prism-architect` each failed its case.
 - 2026-11-19 [huntermcgrew/prism-537-personas-part2]: Part 1 (T1 to T9) shipped as #541, squash-merged at d83ffd7a with CI green on both legs at 166a62c5. This commit records those tasks as shipped, because the squash leaves no task subjects on main.
+- 2026-11-19 [huntermcgrew/prism-537-personas-part2]: T10: Added `prism-debug` (Sasha) from thrive's debugger, routed the four broken-behavior phrases to it, listed it in both `skills-ecosystem.md` files, and changed `autonomous-bug-fixing.md` and the `AGENTS.md` norms row to "own it". `measureSkillLoad` charges `prism-debug` 107 lines with no counted file, and the `AGENTS.md` lead set ends at byte 31,708, under the 31,744 limit.
 
 ## Sessions
 
