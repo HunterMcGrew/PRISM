@@ -1117,6 +1117,7 @@ round 5: carried 1
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T22 and T23. ADR 0083 makes the retro a fixed last stage on folder plans, and it needed one unlisted file, `seed-curation.json`, to exclude it from the seed, recorded as a Decision. The roster in `skills-ecosystem.md` now matches the merged self-review, PR-review, QA, retro, audit, and verify skills.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T24, the consumer docs for review, verify, and retro, and T25, which rewords the 120-line cap as soft in the intent, `plan.md` of PRISM-499, the rule, the architect doc, and the test comment. The `soft cap` grep matches the three files AC-15 names and `hard cap` matches none.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Fixed Briar's round 1 on stack B, one `T<n> fix:` commit each for T22, T20, T18, T15, and T16, and marked the five Minors and the nit fixed under `## Review`. It also carried over PR #535's two review items, the `REVIEW.md` placeholder rename in a `T8 fix:` commit and the `review-runtime.md` short-row sentence in a `T12 fix:` commit.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Fixed Eric's round 1 on stack B, one `T<n> fix:` commit each for T22, T9, T18, T15, T21, and T24, and marked his four Minors, the nit, and the pin item fixed under `## Review`. Three Decisions record the rulings: the review writes no verdict, a folder plan closes on a dated `> Closed:` line `prism-retro` writes, and the PR-review dispatch honors `modelTiers.overrides.eric`.
 
 ## Sessions
 
@@ -1223,21 +1224,27 @@ head: 87a06c449506741084e48bffd36f18c2dc35f328
     - Class: a toolkit-only command named in a consumer-shipped copy of a rule.
     - Sweep: `grep -rn 'retro-line' templates/install/` found this line and `review-runtime.md`, which correctly says the check is not delivered.
     - Fix: end the twin's sentence at "is no reviewer finding either", and keep the clause in the source rule.
+    - Fixed in e83487ef: the twin's sentence ends at "is no reviewer finding either", and the source rule keeps the `pnpm prism:retro-line` clause.
   - Minor, standards violation: `.prism/rules/branch-plan.md:236` gives folder-plan Decision verdicts to `prism-retro` after the final PR review, and in the same sentence lets the review's intent-scope pass write a missing verdict in place. A reviewer writes verdicts before the retro reads the record, which skips its refuted-Decision check.
     - Class: a responsibility moved to a new owner while a sibling rule still hands it to the old one.
     - Sweep: `grep -n 'missing its verdict' .prism/review/intent-scope.md .prism/rules/branch-plan.md templates/install/.prism/rules/branch-plan.md` found `.prism/review/intent-scope.md:40`, the twin at line 219, and the generated copies.
     - Fix: say a folder plan's Decisions carry no verdict until the retro, so a missing one before then is not drift, and keep fix-in-place for a flat plan. Narrowing `intent-scope.md` needs a Decisions entry. This review added no verdicts here for that reason.
+    - Fixed in e83487ef and dda1ddc4: the rule and its twin say the review writes no Decision verdict and reports none missing, and `intent-scope.md` drops the missing-verdict case and says the close writes verdicts. Flat plans take the same rule, per the Decision that the review never writes a verdict sub-bullet, which replaces the suggested flat-plan fix-in-place.
   - Minor, bug: `.ai-skills/skills/prism-retro/shared.md:29`. No stage writes `> Closed: YYYY-MM-DD` on a folder plan, and fix 642e6c8c made the audit treat a folder as closed only with that dated line (`prism-audit/shared.md:34`, `audit-workflow.md:63`). So no folder plan ever becomes archive-ready. The same fix contradicts T16's "or a `stage`/`status` of `closed`" clause, and no Decision records it.
     - Class: a reader keyed on a marker that no writer in the flow produces.
     - Sweep: `grep -rn -e '> Closed' -e 'Closed:' .ai-skills/skills .prism/rules/workflow.md .prism/templates/plan.md .prism/templates/intent.md .prism/templates/spec.md` found only the audit's reader.
     - Fix: duty 4 also writes `> Closed: <date>` under the title on a folder plan, and a Decision records that a folder closes on that dated line, superseding T16's clause.
+    - Fixed in edf79004 and e83487ef: duty 4 writes `> Closed: <today>` directly after the frontmatter of `plan.md`, or of the epic's `spec.md` at full grain, and the rule and its twin name the line. The Decision that a folder plan closes on that dated line records it.
   - Minor, bug: `.ai-skills/skills/prism-pr-review/shared.md:34` names the misses-log `comment` key without its value. `reconcile.mjs:260-262` treats a comment as logged only when `comment` equals its `html_url`, so any other value leaves reconcile unclean on every rerun and duplicates rows.
     - Class: a log row's key named without the value its reader matches on.
     - Sweep: `grep -n 'comment' .ai-skills/skills/prism-pr-review/shared.md .prism/references/pr-review/github-writes.md` found no other definition.
     - Fix: add that `comment` is the human comment's `html_url`.
+    - Fixed in a773f2f7: the misses-log bullet says `comment` is the human comment's `html_url`, the value reconcile matches to mark it logged.
   - nit: `.prism/rules/branch-plan.md:200` says PRISM cannot force a retro, two lines after the folder-plan sentence that says it does. Scope it to a flat plan, here and in the twin at line 183.
+    - Fixed in e83487ef: the rule and its twin scope the sentence, and the epic-grain retro sentence above it, to a flat plan.
   - Minor, bookkeeping-only, not gated: `## Verification` records head `87a06c44`, and the eight fix commits after it touch the schema, rules, templates, and `REVIEW.md`, with no verify re-run before the push. Both CI legs passing at `2fe309fb` cover the substance. Re-dispatch `prism-verify` with the next fix push.
   - Still open, a decision item: removing `prism-review-loop` left `modelTiers.overrides` with no reader (`docs/parameterization.md:163`), so a team's `eric` pin for cross-model review silently does nothing. Recommendation: a follow-up PR that has the shipping flow's `prism-pr-review` dispatch honor it.
+    - Fixed in 3a022928 and a0a5fedc: the dispatch honors `modelTiers.overrides.eric` in this PR, and the schema and `docs/parameterization.md` name it as the reader. The Decision on the pin replaces the follow-up recommendation.
   - Out of scope: `docs/workflow.md` lines 43 and 87, and `CONTEXT.md` line 51, which the plan leaves to child 9.
 
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
