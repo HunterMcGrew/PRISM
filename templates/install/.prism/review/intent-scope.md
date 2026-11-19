@@ -45,7 +45,7 @@ Every observation about the plan lands in one of two buckets, and the reviewer r
 
 ### Reconcile against the Decision
 
-A `## Decisions` entry records intent that predates the code, so when a Decision and some other plan text disagree, the Decision is what the rest gets reconciled against. `.prism/rules/branch-plan.md` § `Preserve Intentional Logic` already makes a Decision do-not-undo for implementation. This narrows what a reviewer does about a contradiction rather than changing what a Decision means.
+A `## Decisions` entry records intent that predates the code, so when a Decision and some other plan text disagree, the Decision is what the rest gets reconciled against. `.prism/rules/branch-plan.md` § `3. Preserve Intentional Logic` already makes a Decision do-not-undo for implementation. This narrows what a reviewer does about a contradiction rather than changing what a Decision means.
 
 **Check the Decision against fact first.** A Decision is not review authority and does not override fact. When it contradicts a manifest-matched architect doc, visible repo practice, or an external system's real behavior, that contradiction is the finding, reported at its own severity and never reconciled around. Everything below governs plan-internal drift, once the Decision has passed that check.
 
