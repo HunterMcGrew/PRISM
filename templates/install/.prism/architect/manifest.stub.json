@@ -27,6 +27,14 @@
 	".githooks/**": "_toolkit/git-hooks.md",
 	".prism/templates/plan.md": "_toolkit/plan-chain-scripts.md",
 	".prism/templates/spec.md": "_toolkit/plan-chain-scripts.md",
+	"REVIEW.md": [
+		"_toolkit/spec-editing.md",
+		"_toolkit/review-runtime.md"
+	],
+	".prism/review/**": [
+		"_toolkit/spec-editing.md",
+		"_toolkit/review-runtime.md"
+	],
 	".prism/references/**": [
 		"guides/writing-an-architect-doc.md",
 		"_toolkit/spec-editing.md"

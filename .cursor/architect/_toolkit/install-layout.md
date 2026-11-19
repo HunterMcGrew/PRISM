@@ -6,7 +6,7 @@ PRISM ships into a consumer repo as a multi-platform toolkit. This file is the a
 
 Two kinds of content sit in a PRISM install:
 
-- **Platform-agnostic canonical content** — rules, ADRs, architect docs, templates, references, plans, lessons. One copy lives at `.prism/<area>/`. This is the source.
+- **Platform-agnostic canonical content** — rules, ADRs, architect docs, templates, references, review passes, plans, lessons. One copy lives at `.prism/<area>/`. This is the source.
 - **Platform-specific outputs** — Claude skills, Codex agents/skills, Cursor skills, native config files. These live under `.claude/`, `.codex/`, `.cursor/`, and `.agents/` per platform.
 
 `pnpm prism:build` copies the read-only canonical areas into each platform dir so that each platform's auto-load mechanism surfaces the rules and architect docs without the agent having to Read them at session start. Every copied area carries a managed marker (`.ai-skill-generated`) at its root. On the consumer side, `prism:update` copies the same areas into the platform dirs for the hosts the consumer's `hosts` config key declares — all three when the key is absent, and a dropped host's copies taken back out on the next update ([`consumer-sync-flow.md`](./consumer-sync-flow.md) § Steady-state persona-skill distribution).
@@ -25,7 +25,7 @@ PRISM-owned content lives under `_toolkit/` subdirs, plus the writing guides und
 - `.prism/architect/guides/**` — the writing guides for plans, rules, skills, ADRs, and architect docs.
 - `.prism/spec/adrs/_toolkit/**` — PRISM's ADRs. Flat `.prism/spec/adrs/*.md` is reserved for consumer product ADRs, which sidesteps numbering collisions between PRISM and consumer ADRs.
 
-The leading underscore keeps the recursive walker working unchanged and sorts the reserved flat dir first. `scripts/ai-skills/ownership.ts` is the single source of truth for the classification: `PRISM_OWNED_GLOBS` lists `architect/_toolkit/**`, `architect/guides/**`, `spec/adrs/_toolkit/**`, `rules/**`, `templates/**`, `references/**`, `spec/**`, and `SPEC.md`; `CONSUMER_OWNED_GLOBS` lists flat `architect/*.md`, flat `spec/adrs/*.md`, the live `architect/manifest.json`, `custom/**`, `plans/**`, and `lessons.md`. `classifyPath(relativePath)` returns `prism` | `consumer` | `unknown`, and the sync writes only `prism`-classified files.
+The leading underscore keeps the recursive walker working unchanged and sorts the reserved flat dir first. `scripts/ai-skills/ownership.ts` is the single source of truth for the classification: `PRISM_OWNED_GLOBS` lists `architect/_toolkit/**`, `architect/guides/**`, `spec/adrs/_toolkit/**`, `rules/**`, `templates/**`, `references/**`, `review/**`, `spec/**`, and `SPEC.md`; `CONSUMER_OWNED_GLOBS` lists flat `architect/*.md`, flat `spec/adrs/*.md`, the live `architect/manifest.json`, `custom/**`, `plans/**`, `review/stack/**`, and `lessons.md`. `classifyPath(relativePath)` returns `prism` | `consumer` | `unknown`, and the sync writes only `prism`-classified files.
 
 `manifest.json` is split-ownership: `.prism/architect/_toolkit/manifest.base.json` holds the toolkit routes (PRISM-owned), while the live `.prism/architect/manifest.json` is consumer-owned. The merge-at-onboard logic that would compose the live manifest from base plus per-team routes is not yet built — until it is, the live manifest is hand-maintained and `verify-manifest-coverage.ts` guards its coverage.
 
@@ -48,12 +48,15 @@ Copied areas (mirrored to every platform dir):
 - `.prism/spec/` (whole tree, including `adrs/`)
 - `.prism/templates/` (whole tree)
 - `.prism/references/` (whole tree)
+- `.prism/review/` (whole tree)
 - `.prism/SPEC.md` (loose file)
 
 Canonical-only (lives at `.prism/` and is not mirrored):
 
 - `.prism/plans/` — agent-written; mirroring would create write conflicts when an agent edits a plan and the next build overwrites the platform copy
 - `.prism/lessons.md` — same reason
+
+One delivered file lives outside `.prism/`: the root `REVIEW.md`. It has no sync-manifest hash, so a marker line on its first line decides who owns it ([`review-runtime.md`](./review-runtime.md)).
 
 Skills are never under canonical at all — they're generated platform outputs from `.ai-skills/skills/<id>/` into `.claude/skills/<id>/`, `.agents/skills/<id>/`, and `.cursor/skills/<id>/`. The skill build mechanism is older than the bifurcation and continues to work the same way.
 
@@ -75,7 +78,7 @@ The rule for future tool integrations: in-repo destinations get sync; outside-re
 
 `templates/install/.prism/` is the consumer install seed — what a consumer repo receives at install time. `pnpm prism:build` keeps it in parity automatically: after the platform-content sync, `writeSeedMirror()` in `scripts/ai-skills/build.ts` writes every **non-curated** canonical file (anything not classified `excluded`, `curated`, or `renamed` in `seed-curation.json`) plus every **`mirrored`** file to the seed as raw bytes (tokens stay literal per ADR-0030; no substitution). The author is still responsible for the **curated** seed copies — files that intentionally ship a simplified consumer-facing version (like this doc) — and for classifying any new file in `seed-curation.json` before it ships. New files that aren't classified are auto-mirrored verbatim as non-curated, and `prism:build` prints a warning listing them so a forgotten curation decision surfaces at build time.
 
-**Enforcement:** Seed drift is enforced by `checkSeedDrift()` in `scripts/ai-skills/build.ts`; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), mirrored (kept byte-identical), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`.
+**Enforcement:** Seed drift is enforced by `checkSeedDrift()` in `scripts/ai-skills/build.ts`; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), mirrored (kept byte-identical), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. An `excluded` entry is an exact path, or a glob when it holds a `*`, so a consumer-owned folder such as `review/stack/**` is excluded without listing each file. `buildExcludedMatcher` in `scripts/ai-skills/build.ts` compiles it through the same `compileMatcher` the architect routes use, and `ship-closure.ts` reads the list through it too.
 
 **`curated` ships a file; it does not keep it current.** The build skips a `curated` file on both the write path and the content compare, so editing the canonical leaves the consumer copy frozen at whatever it last was — right for a file whose seed version is a deliberately simplified stub, wrong for one the consumer is supposed to read the same words from. `mirrored` is the bucket for the second case: the build rewrites the twin on every run and `prism:check` fails on divergence. The five writing guides under `.prism/architect/guides/` are `mirrored` because the write-deny gate makes an agent read them before editing a plan, rule, architect doc, ADR, or skill — a stale consumer copy would hand people outdated instructions with nothing in CI noticing. Listing a `renames` entry in `mirrored` as well turns the same content gate on for a renamed pair; `architect/manifest.json` → `architect/manifest.stub.json` deliberately stays out of it, since the stub is meant to differ. A path belongs to exactly one bucket, and the build throws on an overlap rather than resolving it by branch order. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
 

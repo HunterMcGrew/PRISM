@@ -6,7 +6,7 @@ PRISM ships into a consumer repo as a multi-platform toolkit. This file is the e
 
 Two kinds of content sit in a PRISM install:
 
-- **Platform-agnostic canonical content** — rules, ADRs, architect docs, templates, references, plans, lessons. One copy lives at `.prism/<area>/`. This is the source.
+- **Platform-agnostic canonical content** — rules, ADRs, architect docs, templates, references, review passes, plans, lessons. One copy lives at `.prism/<area>/`. This is the source.
 - **Platform-specific outputs** — Claude skills, Codex agents/skills, Cursor skills, native config files. These live under `.claude/`, `.codex/`, `.cursor/`, and `.agents/` per platform.
 
 `pnpm prism:build` copies the read-only canonical areas into each platform dir so that each platform's auto-load mechanism surfaces the rules and architect docs without the agent having to Read them at session start. Every copied area carries a managed marker (`.ai-skill-generated`) at its root. In your own repo, `prism update` copies the same areas into the platform dirs for the hosts your `hosts` config key declares — all three when the key is absent, and a dropped host's copies taken back out on the next update ([`consumer-sync-flow.md`](./consumer-sync-flow.md) § Steady-state persona-skill distribution).
@@ -44,12 +44,15 @@ Copied areas (mirrored to every platform dir):
 - `.prism/spec/` (whole tree, including `adrs/`)
 - `.prism/templates/` (whole tree)
 - `.prism/references/` (whole tree)
+- `.prism/review/` (whole tree)
 - `.prism/SPEC.md` (loose file)
 
 Canonical-only (lives at `.prism/` and is not mirrored):
 
 - `.prism/plans/` — agent-written; mirroring would create write conflicts when an agent edits a plan and the next build overwrites the platform copy
 - `.prism/lessons.md` — same reason
+
+One delivered file lives outside `.prism/`: the root `REVIEW.md`. It has no sync-manifest hash, so a marker line on its first line decides who owns it ([`review-runtime.md`](./review-runtime.md)).
 
 Skills are never under canonical at all — they're generated platform outputs from `.ai-skills/skills/<id>/` into `.claude/skills/<id>/`, `.agents/skills/<id>/`, and `.cursor/skills/<id>/`. The skill build mechanism is older than the bifurcation and continues to work the same way.
 
@@ -71,7 +74,7 @@ The rule for future tool integrations: in-repo destinations get sync; outside-re
 
 `templates/install/.prism/` is the consumer install seed — what a consumer repo receives at install time. The PRISM build keeps it in parity automatically: non-curated canonical files (anything not classified `excluded`, `curated`, or `renamed` in `seed-curation.json`) and files classified `mirrored` are written to the seed as raw bytes at build time. Curated files — those that intentionally ship a simplified consumer-facing version — stay author-maintained, and any new file must be classified in `seed-curation.json` before it ships.
 
-**Enforcement:** Seed drift is enforced by PRISM's drift check; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), mirrored (kept byte-identical to canonical), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. A `curated` file ships but is never refreshed, so a file the consumer must read the same words from belongs in `mirrored` instead. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
+**Enforcement:** Seed drift is enforced by PRISM's drift check; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), mirrored (kept byte-identical to canonical), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. An `excluded` entry is an exact path, or a glob when it holds a `*`, so a consumer-owned folder such as `review/stack/**` is excluded without listing each file. A `curated` file ships but is never refreshed, so a file the consumer must read the same words from belongs in `mirrored` instead. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
 
 ## Drift detection
 
