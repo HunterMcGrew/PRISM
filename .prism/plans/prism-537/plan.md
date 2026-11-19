@@ -783,6 +783,14 @@ head: 8365094a2190137765aa231ea1a35445332e36be
     - AC-8: met (executed). `prism-debug` measures 107 lines with no allowlist entry.
     - AC-9: met (executed). `agents-md-budget.test.ts` passes.
     - AC-10: met (executed). `prism-check` passes on ubuntu-latest and windows-latest at 371f6f02.
+- pr-review round 2 at 6d71bb75: clean
+  - Range `8ff5e7a1..6d71bb75`, with docs and citations and regressions over the full PR. Coverage: correctness swept, regressions swept, security n/a (no executable code), architecture swept, intent-scope swept, simpler paths swept, accessibility n/a (no UI), docs and citations swept, contracts n/a (no migration, ADR, or shape change), performance n/a (no hot path).
+  - Round 1 consumer-template Minor: confirmed fixed d4da16d8. The template's routing row, "own it" line, ownership row, and handoff line match root `AGENTS.md` and restore what 020859f7 removed.
+  - Round 1 `docs/workflow.md` Minor: moved to Out of scope, because no line of that file is in the diff. Child 9 owns the file.
+  - Round 1 plan-drift Minor: acknowledged by the author in 8365094a, so it no longer counts. Its thread stays open as a judgment call.
+  - Both round 1 nits: confirmed fixed d4da16d8, and the handoff-row thread is resolved.
+  - **nit, stale PR body: the Notes list of scope changes leaves out `templates/install/AGENTS.md.tmpl`.** Class: a scope change recorded in the plan but not carried into the PR body. Sweep: `gh pr view 542 --json body --jq .body | grep -n -i 'tmpl\|template'` found nothing. Fix: the PR stage's next body sync adds the bullet. Per `REVIEW.md` under its heading on the whole PR being in scope, stale body prose never blocks.
+  - Criteria: unchanged from round 1. AC-10 at 6d71bb75: ubuntu-latest passes and windows-latest was pending at review time. Human evidence for AC-1, AC-4, AC-5, and AC-6 is pending.
 
 ## Acceptance Criteria
 
