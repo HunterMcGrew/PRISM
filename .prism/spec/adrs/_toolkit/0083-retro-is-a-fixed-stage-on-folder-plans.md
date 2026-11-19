@@ -13,7 +13,7 @@ A folder-plan run changes who is there to decline. Once the intent is approved, 
 
 ## Decision
 
-On a folder plan the retro always runs, as the last stage after PR review. It writes the Decision verdicts, the `Retro:` line under `## PR Readiness`, and the lessons exits, then commits them, and `prism:retro-line` fails a plan whose final PR-review verdict is recorded while that line is empty. There is no declined form on a folder plan.
+On a folder plan the retro always runs, as the last stage after PR review. It writes the Decision verdicts, the `Retro:` line under `## PR Readiness`, the `> Closed:` line, and the lessons exits, then commits them, and `prism:retro-line` fails a plan whose final PR-review verdict is recorded while that line is empty. There is no declined form on a folder plan.
 
 Flat plans keep ADR-0068's declinable gate unchanged, so legacy plans work as before.
 
