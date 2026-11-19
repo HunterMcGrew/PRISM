@@ -756,6 +756,31 @@ head: d2b95fc0da303e167fd4a90d11907c41912ec760
   - Range `f7502cb7..a8777ee3`. Round 2's Major, Minor, and two nits are confirmed fixed at 0ce0838f, and d2b95fc0 only trims the repeated routes from the skill's first paragraph. ADR-0085's Context now says the snapshot check makes the cleanup leave the person's edits alone, which matches the skill. Step 7 and the Definition of Done defer to the Handoff section, which names all three routes, and the first sentence, the description, and both roster rows (canonical and seed twin) name the Clove route. Coverage: correctness swept, regressions swept (verify passed at d2b95fc0, and a8777ee3 touches only the plan), security n/a (no executable change beyond a test that reads repo files), architecture swept, intent-scope swept, simpler paths swept, accessibility n/a (no UI), docs and citations swept, contracts swept (ADR-0085's snapshot sentence), performance n/a (no hot path).
   - Sweep proof: removing "it's not working" from the Sasha row of `templates/install/.prism/rules/skill-routing.md` failed `routing-coverage.test.ts` (pass 3, fail 1, naming that phrase), so the four-phrase pin covers the seed twin too. `git grep "Problem section\|intent's Problem"` outside the plans finds no handoff text left with only the intent route, apart from the ADR README row that round 2 left as is.
   - Criteria: unchanged from round 2, and AC-6's pin now matches its evidence text. AC-10 is still pending, because part 2 has no PR yet.
+- pr-review round 1 at 371f6f02: 0 critical, 0 major, 3 minor, 2 nit
+  - Range `d83ffd7a..371f6f02`, the full PR. Coverage: correctness swept, regressions swept, security swept, architecture swept, intent-scope swept, simpler paths swept, accessibility n/a (no UI), docs and citations swept, contracts swept, performance n/a (no hot path).
+  - **Minor, standards violation: the consumer `AGENTS.md` template still routes broken behavior to Clove.** `templates/install/AGENTS.md.tmpl:29` keeps the four phrases and "describes unexpected behavior" in Clove's row, line 89 still says "just fix it", and its ownership and handoff tables have no Sasha. 020859f7 edited exactly these lines when it retired Sasha.
+    - Class: a reversed routing move written into the canonical rule and its twin but not into a hand-maintained shipped template the original move edited.
+    - Sweep: `git grep -n -e '"this is broken"' -e 'just fix it' -e 'just fix the bug' -- ':!.claude' ':!.codex' ':!.cursor' ':!.prism/plans'` found only lines 29 and 89 of the template.
+    - Fix: mirror what 020859f7 removed, under a scope-change Decision, because the file is outside T10's list.
+  - **Minor, standards violation: `docs/workflow.md:37` still sends every mid-implementation bug to Clove, and its persona table has no Sasha row.**
+    - Class: a workflow change written into the persona reference doc but not into the narrative workflow doc describing the same handoff.
+    - Sweep: `grep -rn -i 'bug' docs/*.md docs/**/*.md | grep -i 'clove\|nora\|diagnos\|root cause\|retired'` found only this line and the updated `docs/personas.md` lines.
+    - Fix: name Sasha first for an unknown cause on line 37 and add a Sasha row, under the same Decision.
+  - **Minor, plan drift: T10, T11, and T13 still dictate the pre-amendment handoff strings.** The approved-ticket route amended into the Sasha workflow Decision shipped, while the task texts at lines 457, 485, 486, 504, 510, and 555 give only the intent route. The tasks stay as written, per `.prism/review/intent-scope.md` under its heading on reconciling plan drift.
+    - Class: a Decision amended mid-build without the task texts that dictate the same strings.
+    - Sweep: `grep -n "Problem section\|intent's Problem" .prism/plans/prism-537/plan.md` over the tasks found those six sites.
+    - Fix: the plan stage carries the amendment into the task texts, or the author acknowledges it on the PR thread.
+  - **nit: the Sasha row in Cross-skill Handoffs, its seed twin, and `docs/personas.md:50` leave out the route to Nora for a bug outside the ticket**, which the skill, `closing-messages.md`, and `ticket-workflows.md` carry. Fix: add the Nora route, or decline because `closing-messages.md` is the one table listing every route.
+  - **nit: `scripts/ai-skills/routing-coverage.test.ts:64` says "the five parity assertions"**, and the header at lines 4 to 14 lists only the original checks, while the function now runs the two-rows check and the four-phrase pin. Fix: drop the count and add a header bullet.
+  - Pause trigger: fixing the first two Minors edits files outside the plan, so that question goes to the person.
+  - Criteria:
+    - AC-1 to AC-4: met (executed). `persona-voice`, `skill-loaded-lines`, and `discovery-metadata` pass. Human evidence for AC-1 and AC-4 is pending.
+    - AC-5: met (executed) for its machine half. Human evidence is pending.
+    - AC-6: met (executed) for its machine half. Moving "this is broken" back to Clove's row failed `routing-coverage.test.ts`. Human evidence is pending.
+    - AC-7: met (executed). `prism:crossref-lint` passes.
+    - AC-8: met (executed). `prism-debug` measures 107 lines with no allowlist entry.
+    - AC-9: met (executed). `agents-md-budget.test.ts` passes.
+    - AC-10: met (executed). `prism-check` passes on ubuntu-latest and windows-latest at 371f6f02.
 
 ## Acceptance Criteria
 
