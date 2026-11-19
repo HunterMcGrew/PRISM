@@ -11,10 +11,10 @@ A pass that labels at all applies exactly two: one effort label, and one confide
 | `effort:glance` | `0E8A16` | Only plan files, docs, config, or copy changed |
 | `effort:quick` | `FBCA04` | One concern, 3 or fewer files with logic changes, tests for new logic |
 | `effort:deep` | `D93F0B` | More than 3 files with logic changes, several concerns, or cross-cutting. The default when unclear |
-| `confidence:high` | `0E8A16` | Both checks ran clean and no Minor stands |
+| `confidence:high` | `0E8A16` | State 3 with nothing open: every pass reads `swept` or `n/a`, and no judgment call or bookkeeping-only Minor remains |
 | `confidence:needs-judgment` | `E4E669` | A judgment call remains, or the only Minors left are bookkeeping-only |
 | `confidence:standards-only` | `BFD4F2` | The intent-conformance pass read a structural `not reached` for lack of criteria. A transparency label, not a finding |
-| `review:has-minors` | `FBCA04` | A Minor stands that is not addressed, acknowledged, or bookkeeping-only. Takes the confidence slot |
+| `review:has-minors` | `FBCA04` | A Minor stands that is not addressed, acknowledged, or bookkeeping-only, or a pass is unfinished (`not reached` for a reason of this round, or a bare `swept`). Takes the confidence slot |
 
 Strip and apply through REST. `gh pr edit` goes through GraphQL, which fails on repos still tied to Projects Classic, and the bulk PUT endpoint strips non-review labels such as `bug`.
 
