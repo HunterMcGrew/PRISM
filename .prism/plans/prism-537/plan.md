@@ -612,6 +612,8 @@ round 4: resolved 1
 - **Scope change: ADRs 0014, 0036, and 0045 name ADR-0085 in their retirement banners.** Each banner said the debugger was retired, which ADR-0085 makes false, and each banner's conclusion still holds, so it is qualified rather than removed. Winston's fit verdict: proceed with changes, a doc the change makes false. Hunter approved the out-of-plan files on 2026-11-19.
 - **Scope change: `routing-coverage.test.ts` checks that no routing phrase sits in two rows, and pins all four broken-behavior phrases to Sasha's row.** Self-review found no committed test catching the phrase move, and a mutation that put the phrase back in Clove's row passed. The general check catches the whole class of ambiguous routing, and the pin catches a revert of any one of the four phrases. Winston's fit verdict: proceed with changes. Hunter approved the out-of-plan file on 2026-11-19.
 - **Scope change: `templates/install/AGENTS.md.tmpl` gets the Sasha routing row, the "own it" wording, and Sasha's ownership and handoff entries.** The shipped consumer template still routed "this is broken" to Clove after this PR fixed PRISM's own `AGENTS.md`, and 020859f7 removed these same lines when it retired Sasha. PR review round 1 found it. Hunter approved the out-of-plan file on 2026-11-19.
+- **The run checks CI once per push instead of running `watch-ci.mjs`.** The desktop app this run drives forbids the session from polling CI, and `watch-ci.mjs` polls. Auto-merge was rejected because the repo has `allow_auto_merge` off and `main` has no branch protection, so auto-merge would not wait for CI. The merge waits on one `gh pr checks` read that shows both legs green at the final head.
+- **`prism.pauseBeforeCommit` is unset, so the run uses the team default `false`.** Nobody had set the preference, and asking would have stopped a run Hunter approved at the epic level.
 
 ## History
 
@@ -642,6 +644,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas-part2]: T10-T13 fix: Self-review round 1 batch 2 names ADR-0085 in the 0014, 0036, and 0045 banners and qualifies ADR-0085's full-chain consequence for an approved ticket. `routing-coverage.test.ts` now fails on a phrase in two rows and when "this is broken" leaves Sasha's row, and a mutation of each failed it.
 - 2026-11-19 [huntermcgrew/prism-537-personas-part2]: T10,T12 fix: Self-review round 2 rewords ADR-0085's snapshot claim to what the check delivers and names both handoff routes in `prism-debug`'s step 7, checklist, first sentence, description, and both roster rows. `routing-coverage.test.ts` now pins all four phrases to Sasha's row, and moving "it's not working" back to Clove's row failed it.
 - 2026-11-19 [huntermcgrew/prism-537-personas-part2]: T10,T13 fix: PR review round 1 gives the consumer `AGENTS.md.tmpl` the Sasha routing row, "own it" wording, and ownership and handoff entries. Sasha's Cross-skill Handoffs rows and her roster entry now name the Nora route, and `routing-coverage.test.ts` drops its assertion count and lists its two routing-table checks in the header.
+- 2026-11-19 [huntermcgrew/prism-537-personas-part2]: Recorded two run Decisions: CI is checked once per push in place of `watch-ci.mjs`, and the pause preference uses its default `false`.
 
 ## Sessions
 
