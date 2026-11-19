@@ -36,10 +36,10 @@ The report skeletons for `prism-retro`, one per grain. The skill owns the paths,
 <patterns fitting `.prism/lessons.md`, proposed and never appended>
 
 ## Lessons exits
-<each entry promoted, expired, or merged this run, with its heading and the reason, or "none">
+<folder plan only, so omit the section on a flat plan. Each entry promoted, expired, or merged this run, with its heading and the reason, or "none">
 
 ## Review-miss classes
-<the output of `node scripts/ai-skills/hooks/review/reconcile.mjs --classes`, then one line per class: proposed fix, the human's verdict, and the resolve row appended, or "no open class">
+<folder plan only, so omit the section on a flat plan. The output of `node scripts/ai-skills/hooks/review/reconcile.mjs --classes`, then one line per class: proposed fix, the human's verdict, and the resolve row appended, or "no open class">
 
 ## Citations
 ### Plan evidence
@@ -70,10 +70,10 @@ The report skeletons for `prism-retro`, one per grain. The skill owns the paths,
 <any `## Decisions` entry the execution record refuted, with citing evidence — omit the section when none>
 
 ## Lessons exits
-<each entry promoted, expired, or merged this run, with its heading and the reason, or "none">
+<folder plan only, so omit the section on a flat plan. Each entry promoted, expired, or merged this run, with its heading and the reason, or "none">
 
 ## Review-miss classes
-<the output of `node scripts/ai-skills/hooks/review/reconcile.mjs --classes`, then one line per class: proposed fix, the human's verdict, and the resolve row appended, or "no open class">
+<folder plan only, so omit the section on a flat plan. The output of `node scripts/ai-skills/hooks/review/reconcile.mjs --classes`, then one line per class: proposed fix, the human's verdict, and the resolve row appended, or "no open class">
 
 ## Citations
 ### Plan evidence
