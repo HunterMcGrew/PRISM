@@ -561,39 +561,58 @@ function main(argv, stdin) {
  * session's hook command resolves through the project directory the session
  * started in, usually the main checkout, which can be stale or missing the
  * guard. The session's copy names its own `approve.mjs`, so its deny and
- * prompt texts give a command that runs this checkout's script.
+ * prompt texts give a command that runs this checkout's script. Only another
+ * worktree of the same repository counts, so a `cwd` in an unrelated checkout
+ * can't pick which guard runs.
  *
  * @param {string} cwd
  * @returns {string | null}
  */
 function findSessionCopy(cwd) {
-	const selfRoot = findTopLevel(path.dirname(SELF));
-	const sessionRoot = findTopLevel(cwd);
-	if (!selfRoot || !sessionRoot || selfRoot === sessionRoot) return null;
+	const self = findCheckout(path.dirname(SELF));
+	const session = findCheckout(cwd);
+	if (!self || !session || self.root === session.root) return null;
+	if (self.common !== session.common) return null;
 
-	const copy = path.join(sessionRoot, path.relative(selfRoot, SELF));
 	try {
-		return realpathSync(copy) === SELF ? null : copy;
+		const selfPath = realpathSync.native(SELF);
+		const copy = path.join(session.root, path.relative(self.root, selfPath));
+
+		return realpathSync.native(copy) === selfPath ? null : copy;
 	} catch {
 		return null;
 	}
 }
 
 /**
- * Returns the real path of the checkout holding `dir`, or null outside one.
+ * Returns the real paths of the checkout holding `dir` and of the git
+ * directory its worktrees share, or null outside a checkout. The native
+ * realpath expands a Windows 8.3 short name, so two spellings of one folder
+ * compare equal.
  *
  * @param {string} dir
- * @returns {string | null}
+ * @returns {{ root: string, common: string } | null}
  */
-function findTopLevel(dir) {
+function findCheckout(dir) {
 	try {
-		const top = execFileSync("git", ["rev-parse", "--show-toplevel"], {
-			cwd: dir,
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		}).trim();
+		const [top, common] = execFileSync(
+			"git",
+			[
+				"rev-parse",
+				"--path-format=absolute",
+				"--show-toplevel",
+				"--git-common-dir",
+			],
+			{ cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+		)
+			.trim()
+			.split("\n");
+		if (!top || !common) return null;
 
-		return top ? realpathSync(top) : null;
+		return {
+			root: realpathSync.native(top.trim()),
+			common: realpathSync.native(common.trim()),
+		};
 	} catch {
 		return null;
 	}
@@ -773,9 +792,12 @@ function isChatApproveCommand(command, cwd) {
 
 	if (script === undefined) return false;
 
+	// The native call expands a Windows 8.3 short name such as `RUNNER~1`, which
+	// the JS one keeps, so the payload's spelling of a path and git's still match.
 	try {
 		return (
-			realpathSync(path.resolve(cwd, script)) === realpathSync(APPROVE_SCRIPT)
+			realpathSync.native(path.resolve(cwd, script)) ===
+			realpathSync.native(APPROVE_SCRIPT)
 		);
 	} catch {
 		return false;
