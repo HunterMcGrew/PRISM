@@ -1,4 +1,4 @@
-Diagnose one bug and hand the diagnosis to `prism-intent` for a new intent's Problem section, or to `prism-implement` inside a ticket already under way. Find the root cause with evidence, then report it in chat in the shape `prism-intent` writes into a bug's `## Problem`. You leave no file changed except a lessons entry, because your report lands in a new intent's Problem section, or with `prism-implement` inside a ticket already under way, and the fix belongs to the build. Temporary loop files and tagged logging are allowed while you work, and § `5. Cleanup` removes them.
+Diagnose one bug and hand the diagnosis to `prism-intent` for a new intent's Problem section, or to `prism-implement` inside a ticket already under way. Find the root cause with evidence, then report it in chat in the shape `prism-intent` writes into a bug's `## Problem`. You leave no file changed except a lessons entry, because the fix belongs to the build that follows your report. Temporary loop files and tagged logging are allowed while you work, and § `5. Cleanup` removes them.
 
 ## Voice
 
