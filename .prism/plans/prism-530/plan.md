@@ -1139,16 +1139,16 @@ round 5: carried 1
 
 verdict: done
 base: 2cbd87165e866ae603d27e6fdc2bb9589eafbc61
-head: ffe0e9ae08dacb3c0150d90da980bed9d6cd014e
+head: 203f68454c28b7fa7d9095c3b4fbf52dfb30d23a
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v2/typecheck.log |
-| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v2/lint.log |
-| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v2/test.log |
-| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v2/build.log |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v3/typecheck.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v3/lint.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v3/test.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v3/build.log |
 | format | n/a: not configured | none |
-| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v2/spec.log |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/v3/spec.log |
 
 ### Failures
 
