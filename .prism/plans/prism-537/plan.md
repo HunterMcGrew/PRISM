@@ -623,6 +623,8 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T4: Ported thrive's Voice blocks into `prism-changelog`, `prism-qa-plan`, `prism-retro`, `prism-standup`, `prism-audit`, and `prism-start-ticket`, and removed `prism-retro`'s session-orientation pointer. Loaded totals are unchanged from `8cb24c49`: 50, 28, 118, 94, 61, and 116.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T5: Wrote the 11 Voice blocks for the personas thrive has no skill for, from the plan's text. Loaded totals are unchanged from `8cb24c49`: `prism-onboard` 56, `prism-prd` 62, `prism-strategy` 91, `prism-market-research` 88, `prism-finance` 90, `prism-marketing` 91, `prism-sales` 92, `prism-metrics` 88, `prism-customer-success` 92, `prism-recruiting` 87, and `prism-legal` 94.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T6: Added `persona-voice.test.ts` with the shape, no-Voice-on-utility-or-agent, and Eric's tone-line cases. Run against `main`'s skill sources, the shape and tone-line cases fail and the utility case passes.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T7: Wrote ADR-0084 (0084 was free), marked ADR-0080 partly superseded, added the README rows, and listed 0084 as excluded from the seed; `prism:crossref-lint` passes and the seed has no 0084 twin.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T9: Matched `docs/personas.md` to the Voice blocks for Reese, Sage, Ellis, Quinn, Remy, and Lex, and linked ADR-0084 beside ADR-0080 in the closing paragraph. `last_updated` already read 2026-11-19.
 
 ## Sessions
 
