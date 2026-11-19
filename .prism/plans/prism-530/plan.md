@@ -1125,6 +1125,23 @@ round 5: carried 1
 
 ## Verification
 
+verdict: done
+base: 2cbd87165e866ae603d27e6fdc2bb9589eafbc61
+head: 87a06c449506741084e48bffd36f18c2dc35f328
+
+| check | result | evidence |
+| --- | --- | --- |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/typecheck.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/lint.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/test.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/build.log |
+| format | n/a: not configured | none |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-hook-prism-pr-896bdc/f7e88157-5587-417c-ae9a-2c7e608332f2/scratchpad/spec.log |
+
+### Failures
+
+- none
+
 ## Review
 
 - self-review round 1 at 6d16a76f (part 1 of 2): 0 critical, 0 major, 5 minor, 3 nit
