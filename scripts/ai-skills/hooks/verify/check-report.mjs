@@ -6,8 +6,8 @@
  *
  * Usage: node <hook-runtime>/verify/check-report.mjs <plan.md> [<expected.json>]
  *
- * The section opens with `verdict: done` or `verdict: blocked`, then `base:`
- * and `head:` lines. Its table rows are `| <check> | <result> | <evidence> |`,
+ * The section opens with `verdict: done` or `verdict: blocked` and carries a
+ * `head:` line. Its table rows are `| <check> | <result> | <evidence> |`,
  * where `<result>` is `pass`, `fail`, or `n/a: <reason>`, and each failing
  * check has a line `- <check>: <path>[:<line>]` under `### Failures`, or the
  * section says `- none`.
@@ -230,7 +230,7 @@ function parseTableRow(line) {
 	if (
 		check === undefined ||
 		result === undefined ||
-		check === "check" ||
+		check.toLowerCase() === "check" ||
 		/^:?-+:?$/.test(check)
 	) {
 		return null;

@@ -260,6 +260,14 @@ describe("checkReport shape rules", () => {
 		assert.deepEqual(checkReport(plan({ head: null, rows: PASSING })), ["no head line"]);
 	});
 
+	test("a capitalized table header is not read as a row", () => {
+		const lowercase = plan({ rows: PASSING });
+		const text = lowercase.replace("| check | result | evidence |", "| Check | Result | Evidence |");
+
+		assert.notEqual(text, lowercase);
+		assert.deepEqual(checkReport(text), []);
+	});
+
 	test("an n/a row with a reason passes", () => {
 		const text = plan({ rows: [...PASSING, ["lint", "n/a: no source changed"]] });
 
