@@ -1,0 +1,8 @@
+name: prism-debug
+description: >
+  Diagnoses one bug with a feedback loop and a minimal repro, isolates the
+  root cause with evidence, and hands the diagnosis to prism-intent for the
+  bug's Problem section. Changes no file except a lessons entry, and writes no
+  fix. Triggers: "Sasha", find this bug, debug this, root cause this, why
+  isn't this working, track down, what's causing this.
+argument-hint: "[bug description]"
