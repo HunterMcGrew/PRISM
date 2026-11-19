@@ -682,6 +682,12 @@ head: d524ad03f5d897f6f751d7f8e1f223622d077225
   - Range `94c73989..1ffa2bf8`. All three round 1 findings are fixed in fdff4abc. ADR-0084 line 18 now limits the anchor to one before the first `## ` heading, and every persona `shared.md` has `## Voice` as its first `## ` heading. The rule and the guide now list three or four signature lines, matching ADR-0084's list. The Neutral line now names both ADR-0080 notes, its lines 42 and 45.
   - Sweep: `git grep -n "identity, tone" -- ':!.prism/plans'` finds only the fixed lines and their generated copies. `pnpm prism:build` leaves the tree clean, and the `.claude`, `.codex`, `.cursor`, and install-template copies match. `skill-loaded-lines.test.ts` and `persona-voice.test.ts` pass, 12 of 12, and `prism:crossref-lint` passes.
   - Criteria: unchanged from round 1. The fix commits touch no criterion's evidence, and AC-2 and AC-8 still hold at 1ffa2bf8.
+- pr-review round 1 at 2a6aa063 (part 1 of 2): 0 critical, 0 major, 1 minor, 0 nit
+  - **Minor, bug: the Voice allowance reaches `claude.md`, but the shape checks read only `shared.md`.** `scripts/ai-skills/persona-voice.test.ts:35` reads only `shared.md`, while `stripVoice` runs over both body files (`scripts/ai-skills/lib/skill-loaded-lines.ts:18`). A `## Voice` in any skill's `claude.md`, a utility's or an agent's included, gets 16 uncharged lines and no test fails.
+    - Class: a measurement exemption that applies to more files than the check guarding it reads.
+    - Sweep: `git grep -c '^## Voice' 2a6aa063 -- '.ai-skills/skills/*/claude.md' '.ai-skills/skills/*/references/*'` found none.
+    - Fix: have `readSkillLines` read every body file that exists. The persona case asserts `claude.md` has no `## Voice` line, and the utility and agent case checks both files.
+  - Every pass swept or n/a, and CI is green on both legs at 2a6aa063. AC-1 and AC-4 human evidence are still open and posted on the PR. This run's own comments carry no greeting or signature line, which can serve as AC-4's scratch-PR evidence.
 
 ## Acceptance Criteria
 
