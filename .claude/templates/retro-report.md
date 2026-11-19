@@ -17,7 +17,10 @@ The report skeletons for `prism-retro`, one per grain. The skill owns the paths,
 <one-paragraph synthesis of the main finding>
 
 ## Charter coverage
-<the six-row table from the skill's evidence step, plus the evidence-count line>
+<a source the team lacks reads `not configured for this team` and a configured one that failed reads `unreachable this run`, never one for the other. Add "N of 6 unanswered" when more than half are, and say the final child's main-branch CI is approximated by its PR CI, since earlier children have fully merged>
+| Charter question | Answer | Sources | Gap |
+| --- | --- | --- | --- |
+| <one row per charter question> | <answer, or "unanswered"> | <the evidence that reached it> | <what no source reached, or "none"> |
 
 ## Multi-voice dialogue
 <each finding on its own line, attributed to the stage that left the evidence, opening with the per-PR fidelity synthesis>
@@ -30,7 +33,7 @@ The report skeletons for `prism-retro`, one per grain. The skill owns the paths,
 <Decisions the execution record refuted, with citing evidence>
 
 ## Lesson candidates
-<patterns fitting `.prism/lessons.md`, proposed and appended only once the user accepts>
+<patterns fitting `.prism/lessons.md`, proposed and never appended>
 
 ## Lessons exits
 <each entry promoted, expired, or merged this run, with its heading and the reason, or "none">
@@ -55,7 +58,7 @@ The report skeletons for `prism-retro`, one per grain. The skill owns the paths,
 **Graded at:** <sha of the PR head commit the evidence was read against>
 
 ## Charter coverage
-<one row per charter item: shipped-vs-said, review-clean, CI pass, fail, or pending>
+<the same table as the epic grain, one row per charter question, with a CI check still pending shown as `CI pending on <sha>`>
 
 ## Fidelity gap
 <any divergence between said and shipped, or "none — shipped as planned">
