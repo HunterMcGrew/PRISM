@@ -1093,10 +1093,70 @@ round 5: carried 1
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: dispose of challenge round 2, fixing both blocking findings and fixing or deciding each non-blocking one. Bounds: `plan.md` only, never `## Challenge`, no change to `git-conventions.md`'s `plan:` rule or AC-15, and anything touching the PRISM-499 intent or spec reported to Hunter. Approach: verify each finding on `e61ecce9`, fix in the owning task, and record the architect calls as Decisions. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: dispose of challenge round 3, fixing the blocking crossref-lint finding in T7 and acting on the four non-blocking ones. Bounds: `plan.md` only, never `## Challenge`, T25's intent wording unchanged, and `plan:` kept folder-only. Approach: verify the lint's scan roots and thrive's exit rule, fix in the owning tasks, and record the log-carrier call as a Decision. · close: scope held
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: apply the architect's round-4 AC-2 verdict and clear the stale Decisions. Bounds: `plan.md` only, never `## Challenge`, the issue sync left to the main session. Approach: swap in the accepted AC-2 text, record the verdict where the plan reads it, and start the scope-change list. · close: scope held
+- 2026-11-19 [huntermcgrew/prism-530-review-verify] open: Intent: self-review stack A (T1 to T12) at `6d16a76f` against this plan and the repo's rules. Bounds: record in `plan.md` only, no fixes, no GitHub posts, stack B out of scope. Approach: run `prism:check`, read every source and doc change, and check the four ported scripts against thrive at `db35709` with one subagent. · close: scope held
 
 ## Verification
 
 ## Review
+
+- self-review round 1 at 6d16a76f: 0 critical, 0 major, 5 minor, 3 nit
+  - Checks: `pnpm run prism:check` exits 0 at `6d16a76f`, covering build `--check`, types, the full test suite, manifest, crossref, plan citations, retro-line, ship closure, and pack parity. `spec-scope-lint` skipped on the detached checkout, so it was rerun with `GITHUB_HEAD_REF=huntermcgrew/prism-530-review-verify` and passed. A subagent diffed `reconcile.mjs`, `watch-ci.mjs`, `check-report.mjs`, their tests, and the 46 fixture files against thrive at `db35709`. It found every thrive case present with no assertion weakened and no unallowed behavior change, and the three suites ran 96 pass, 0 fail.
+  - Criteria in stack A: the machine evidence for AC-2 to AC-5, AC-7, and AC-8, plus AC-6's machine half, passes inside `prism:check`. AC-1, AC-9, AC-10, AC-12, AC-13, AC-15, AC-6's human half, and AC-11's skill totals other than `prism-onboard` belong to stack B. AC-14 waits on CI.
+  - Cleanup: none. No debug output, stray files, or dead code in the diff.
+
+### runDoctor's JSDoc now documents checkReviewMd
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/doctor.ts:1529`
+- **Problem:** `checkReviewMd` and its JSDoc were inserted between `runDoctor`'s JSDoc block and `runDoctor`. The "Runs every health check" block now sits directly above `checkReviewMd`'s own block, and `runDoctor` has no doc comment at all. Class: a new declaration inserted between an existing JSDoc and the declaration it documents. Sweep: `grep -n -B2 '^/\*\*$' scripts/ai-skills/{doctor,update,eject,build}.ts` turned up no other stacked blocks among the new functions.
+- **Suggested fix:** move `checkReviewMd` and its JSDoc above the "Runs every health check" block, for example next to `checkCodexDocLimit`.
+
+### check-report counts a capitalized table header as a row
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/verify/check-report.mjs:233`
+- **Problem:** `parseTableRow` skips a header only when its first cell is exactly `check`. A `| Check | Result | Evidence |` header therefore becomes a row, and `checkReport` reports `unknown result for Check: Result`. Thrive never validated results, so this hazard is new. Neither `REVIEW.md` nor `review-runtime.md` names the header the verify stage must write, so the T13 author has nothing that steers them away from the failing spelling. Class: a parser that accepts a narrower input than the documented shape. Sweep: `grep -n '"check"' scripts/ai-skills/hooks/verify/check-report.mjs` shows this as the only header check.
+- **Suggested fix:** compare the first cell case-insensitively, or skip the line just above the separator row. Add a test with a capitalized header.
+
+### watch-ci's header says it defends against an early green that the default does not cover
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/plan/watch-ci.mjs:19`
+- **Problem:** The header explains that a slow build can register after quicker checks and give an early green, and says the script avoids that by waiting for the required check. With no `--required` flag and no `ci.requiredCheck`, which is the default, a check that registers after the others settle is missed, and the watcher can exit 0 before the build runs. `plan-chain-scripts.md`'s "waits for every check on the head to settle" also reads as stronger than the code. Class: a guarantee stated for one configuration that the default configuration lacks. Sweep: `grep -rn 'every check' .prism/architect/_toolkit/ .ai-skills/config.schema.json` found this claim in `plan-chain-scripts.md` and in the schema description.
+- **Suggested fix:** say in the header, the doc line, and the schema description that the race is closed only when a required check is named. Add a test showing a late-registered check is missed with no required check.
+
+### The correctness stack check cannot fire on a first onboarding
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/lib/rule-generators/review-stack.ts:100`
+- **Problem:** `buildCorrectnessFile` reads `commands.typecheck` and `commands.test` from `.ai-skills/config.json` on disk. Onboarding runs the generators before `writeOnboardingConfig`, and neither `prism init` nor `writeOnboardingConfig` writes `commands`. So a normal first onboarding never produces `.prism/review/stack/correctness.md`. `rule-generation.md` says "a later run after they are set writes it", but the only later path is a forced regeneration. Class: a generator gated on state that a later step writes. Sweep: `grep -n 'commands' scripts/ai-skills/lib/onboarding-config.ts scripts/ai-skills/init.ts scripts/ai-skills/lib/onboarding-types.ts` found no writer.
+- **Suggested fix:** derive the evidence commands from the detected stack, run `review-stack` after the config write, or state in the onboarding skill that the correctness file needs a `--force` run once `commands` is set.
+
+### A thrive developer's login survives in the reconcile fixtures
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/review-reconcile.test.ts:199`
+- **Problem:** The PR-author login `lucas` comes from thrive's fixtures. The plan's literal swaps replaced thrive's other people (`hunter` and `priya`), and this one was missed. It is still at test lines 199, 273, 284, and 310, and 16 times in `review-reconcile.fixtures.json` in `user.login` and `head.ref`. Class: a third-party identifier left behind after a port's literal swap. Sweep: `grep -n lucas scripts/ai-skills/review-reconcile.*`.
+- **Suggested fix:** swap it for a neutral login such as `author-1` in the test and the fixtures.
+
+### AC-11's History record lacks prism-onboard's measured total
+
+- **Severity:** `minor` (bookkeeping only, does not gate)
+- **Status:** `open`
+- **File:** `.prism/plans/prism-530/plan.md:1083`
+- **Problem:** AC-11's evidence asks `## History` to record the measured total for `prism-onboard`, and the T11 History line does not. `measureSkillLoad` gives 56 lines at `6d16a76f`.
+- **Suggested fix:** add the 56-line total to the next plan commit.
+
+### Nits
+
+- `scripts/ai-skills/hooks/verify/check-report.mjs:9`: the JSDoc says the section opens with `base:` and `head:` lines, but only `head:` is checked. Drop `base:` from the sentence, or check it.
+- `scripts/ai-skills/hooks/verify/check-report.mjs:228`: a two-cell row such as `| lint | pass |` is accepted, so the documented evidence column is never enforced. Thrive dropped rows with fewer than 3 cells.
+- `scripts/ai-skills/hooks/plan/watch-ci.mjs:205`: `readOption` takes the next token blindly. A trailing `--required` quietly falls back to config, and `--required --timeout-min 5` waits on a check named `--timeout-min`. Thrive has the same behavior.
 
 ## Acceptance Criteria
 
