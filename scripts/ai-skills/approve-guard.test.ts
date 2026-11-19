@@ -1202,33 +1202,100 @@ test("prompt arm tells the Claude agent the exact command to run", () => {
 	);
 });
 
-/** A git checkout holding its own copy of the hook runtime, the way a worktree of this repo does. */
-function makeCheckoutWithGuard(): string {
-	const root = makeGitRepo();
+const LOCAL_APPROVE = "scripts/ai-skills/hooks/plan/approve.mjs";
+const GUARD_PATH = "scripts/ai-skills/hooks/approve-guard.mjs";
+
+function copyRuntime(root: string): void {
 	cpSync(path.dirname(HOOK), path.join(root, "scripts/ai-skills/hooks"), {
 		recursive: true,
 	});
-
-	return root;
 }
 
-const LOCAL_APPROVE = "scripts/ai-skills/hooks/plan/approve.mjs";
+/**
+ * A main checkout and a `git worktree add` worktree of it, each holding its own
+ * copy of the hook runtime, the way a worktree session of this repo sees them.
+ */
+function makeWorktreePair(): { main: string; worktree: string } {
+	const main = makeGitRepo();
+	execFileSync(
+		"git",
+		["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "init"],
+		{ cwd: main }
+	);
+	const worktree = path.join(
+		mkdtempSync(path.join(os.tmpdir(), "approve-guard-wt-")),
+		"wt"
+	);
+	TEMP_ROOTS.push(path.dirname(worktree));
+	execFileSync("git", ["worktree", "add", "-q", worktree], { cwd: main });
+	copyRuntime(main);
+	copyRuntime(worktree);
 
-test("prompt arm in another checkout names that checkout's own approve.mjs", () => {
-	const root = makeCheckoutWithGuard();
-	const child = runPromptHook("claude", prompt.claude(`approve ${INTENT}`, root));
+	return { main, worktree };
+}
+
+function worktreeTokenPath(root: string): string {
+	const gitDir = execFileSync("git", ["rev-parse", "--absolute-git-dir"], {
+		cwd: root,
+		encoding: "utf8",
+	}).trim();
+
+	return path.join(gitDir, "prism-chat-approval.json");
+}
+
+function runGuard(guard: string, event: string, payload: Payload) {
+	const child = spawnSync(process.execPath, [guard, "--tool=claude", `--event=${event}`], {
+		input: JSON.stringify(payload),
+		env: cleanEnv(),
+		encoding: "utf8",
+	});
+	assert.equal(child.status, 0, child.stderr);
+
+	return child;
+}
+
+test("prompt arm in a worktree names the worktree's own approve.mjs", () => {
+	const { main, worktree } = makeWorktreePair();
+	const child = runGuard(
+		path.join(main, GUARD_PATH),
+		"UserPromptSubmit",
+		prompt.claude(`approve ${INTENT}`, worktree)
+	);
 
 	assert.match(child.stdout, new RegExp(`run exactly \`node ${escapeRegExp(LOCAL_APPROVE)} `));
-	assert.equal(requireToken(root).session, "s1");
+	assert.equal(existsSync(worktreeTokenPath(worktree)), true);
 });
 
-test("execution arm in another checkout passes that checkout's approve.mjs and denies this one's", () => {
-	const root = makeCheckoutWithGuard();
-	placeToken(root);
+test("execution arm in a worktree passes the worktree's approve.mjs and denies the main checkout's", () => {
+	const { main, worktree } = makeWorktreePair();
+	const guard = path.join(main, GUARD_PATH);
+	writeFileSync(
+		worktreeTokenPath(worktree),
+		JSON.stringify({
+			prompted_at: new Date().toISOString(),
+			session: "s1",
+			path: null,
+			hashes: {},
+		})
+	);
 
-	assertPasses("claude", sessionShell.claude(`node ${LOCAL_APPROVE} ${INTENT}`, root));
-	const text = denyText(runHook("claude", sessionShell.claude(CHAT_COMMAND, root)).stdout);
-	assert.match(text ?? "", new RegExp(`run \`node ${escapeRegExp(LOCAL_APPROVE)} <artifact>\``));
+	const local = runGuard(guard, "PreToolUse", sessionShell.claude(`node ${LOCAL_APPROVE} ${INTENT}`, worktree));
+	assert.equal(local.stdout, "");
+
+	const mainApprove = path.join(main, LOCAL_APPROVE).split(path.sep).join("/");
+	const denied = runGuard(guard, "PreToolUse", sessionShell.claude(`node ${mainApprove} ${INTENT}`, worktree));
+	assert.match(denyText(denied.stdout) ?? "", new RegExp(`run \`node ${escapeRegExp(LOCAL_APPROVE)} <artifact>\``));
+});
+
+test("prompt arm in an unrelated checkout holding a guard copy keeps this guard", () => {
+	const root = makeGitRepo();
+	copyRuntime(root);
+	const child = runPromptHook("claude", prompt.claude(`approve ${INTENT}`, root));
+
+	assert.match(
+		child.stdout,
+		new RegExp(`run exactly \`node ${escapeRegExp(approveCommandPath(root))} `)
+	);
 });
 
 test("prompt arm writes nothing outside a git checkout and still exits 0", () => {
