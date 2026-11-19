@@ -5,8 +5,9 @@ description: >
   the execution record (merged diffs, PR threads, CI) at a light per-ticket
   grain or a full epic grain, and writes a report to `.prism/retros/`. On a
   folder plan it is the fixed last stage: it runs without being asked, writes
-  Decision verdicts, the `Retro:` line, and lessons exits, and commits them. On
-  a flat plan it stays declinable and read-only. Triggers: "Iris",
+  Decision verdicts, the `Retro:` and `> Closed:` lines, and lessons exits, and
+  commits them. On a flat plan it stays declinable and read-only. Triggers:
+  "Iris",
   retrospective, post-mortem, retro this epic, plan close, per-PR retro.
 argument-hint: "[retro <epic-slug> | retro <from>..<to> | retro <ticket-id>]"
 category: retrospective
