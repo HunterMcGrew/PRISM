@@ -12,11 +12,13 @@ The review rulebook an install carries and the scripts a review or verify run ca
 
 **How each command treats the file:**
 
-- **`prism adopt` and `prism update`** write it when it is absent, whatever `hosts` holds. When it carries the marker and differs from PRISM's copy, they save the old bytes as `REVIEW.md.bak` and replace it. A marked copy that already matches is left alone. A file without the marker is never touched, and the update prints a warning saying so.
-- **`prism doctor`** checks it once the repo has adopted, because a repo that never ran `prism adopt` is a target for adopt and not a broken install. It warns when the file is missing, warns when a marked copy differs from PRISM's, warns on an unmarked file with the same text the update prints, and reports a marked, matching copy as current.
+- **`prism adopt` and `prism update`** write it when it is absent, whatever `hosts` holds. When it carries the marker and differs from PRISM's copy, they replace it in place with no backup, the way the hook runtime replaces its own marked files. A marked copy that already matches is left alone. A file without the marker is never touched, and the update prints a warning saying so.
+- **`prism doctor`** checks it once the repo has adopted, because a repo that never ran `prism adopt` is a target for adopt and not a broken install. It warns when the file is missing, warns when a marked copy differs from PRISM's, reports an unmarked file as info with the same text the update prints, and reports a marked, matching copy as current. An unmarked file is info and not a warning because deleting the marker line is the documented way to keep your own rulebook, so a team that did it on purpose is not told it did something wrong.
 - **`prism eject`** removes a file whose first line carries the marker and keeps one without it.
 
 **Why a marker and not a sync-manifest entry:** a team that rewrote the rulebook has to keep its rewrite through every update. A hash-keyed overwrite cannot tell a hand edit from an older PRISM version, and a marker lets the team opt out by deleting one line.
+
+**Why no backup:** with no hash, an update cannot tell a team's edit from an older PRISM copy, so a backup would fire on every release that changes the rulebook and leave an untracked `REVIEW.md.bak` in the repo root. The cost is that an edit made with the marker still in place is lost on the next update. A team that edits the rulebook deletes the marker line first.
 
 ## Pass files and stack checks
 
@@ -84,6 +86,8 @@ It exits 0 when clean, 1 with one line per problem, and 2 on a usage error or an
 `plan-retro-line.ts` fails a live folder plan whose PR review has given its final verdict while the `Retro:` line under `## PR Readiness` is still empty. The retro is the fixed last stage of a folder plan, so a plan that got that far with no retro line was left unfinished.
 
 **What counts as a recorded PR review.** The last `- pr-review round <n> at <sha>: <verdict>` or `- pr-review confirm at <sha>: <verdict>` line under `## Review`. It is final when it is a `confirm` line, or a `round` line whose verdict is exactly `clean`. A round with open counts means fixes and another round are coming, so the retro is not due yet.
+
+**Stacked tickets.** Every PR in a stack shares one plan folder. A record line written on a PR that is not the last carries ` (part <k> of <m>)` after the sha, as in `- pr-review round 2 at <sha> (part 1 of 2): clean`, and the check skips a last line whose `<k>` is less than `<m>`. A line with no marker, or with `<k>` equal to `<m>`, counts as above. [`REVIEW.md`](../../../REVIEW.md) gives the `self-review` lines the same marker and says a line whose `<k>` is less than `<m>` is never a final verdict.
 
 **Why only folder plans.** It reads `.prism/plans/<name>/plan.md` and skips epic folders, flat plans, and `.prism/archived/`. The retro of an epic or a flat plan stays declinable or lives in a different file, so an empty line there is not a defect.
 
