@@ -97,7 +97,7 @@ When a business skill's work produces something worth building, it hands to `pri
 
 ### 4. Follow the skill shape, not a persona
 
-A business skill is held to the same four tests as every other skill (policy, trigger, length, enforcement): no voice or reasoning lens, and the body plus the strategy doc template it loads fits in 120 lines. The old persona name stays in the `description` as a trigger word. It keeps a `persona` field in `roles.json` (no `type: utility`) and a Codex agent adapter. Use `prism-strategy` as the structural model.
+A business skill is held to the same four tests as every other skill (policy, trigger, length, enforcement): no voice or reasoning lens, and the body plus the strategy doc template it loads aims for 120 lines. The cap is a soft cap, and a reasoned overage takes an allowlist entry with a one-line reason. The old persona name stays in the `description` as a trigger word. It keeps a `persona` field in `roles.json` (no `type: utility`) and a Codex agent adapter. Use `prism-strategy` as the structural model.
 
 ## Manifest routing
 

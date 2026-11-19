@@ -324,6 +324,7 @@ All done. Verification for the whole PR: `pnpm prism:build` and `pnpm prism:chec
 
 - **The 120-line cap is enforced by a check, not by review.** PR 5 adds a test that measures loaded lines the way § Baseline § Method defines them. It fails when any skill not on its allowlist is over. Each lane PR removes its skills from the allowlist, so the allowlist shrinks one PR at a time and cannot regrow without a visible diff. Without a check the cap is prose, and the intent's enforcement test says prose does not hold.
   - The cap gates on `measureSkillLoad`, which follows citations transitively and also counts cited templates, architect docs, and `lib/` files, so it reads higher than the baseline's Loaded column. See § Phase 1 result.
+  - Hunter ruled on 2026-11-18 that the cap is soft with reasoned overages. The ruling is recorded in the Decisions of `.prism/plans/prism-530/plan.md`, and it supersedes this Decision going forward.
 
 - **Old persona names stay in each renamed persona skill's `description` as trigger words.** "Briar" keeps routing to `prism-self-review`. Consumers' orphan cleanup removes the old directories on the next `prism update`, per `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution.
 
