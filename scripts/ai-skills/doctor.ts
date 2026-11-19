@@ -54,6 +54,8 @@ import {
 	OVERLAY_SUBPATH,
 	PRISM_CODEX_HOOK_COMMAND_PATTERN,
 	PRISM_HOOK_COMMAND_PATTERN,
+	REVIEW_MD_MARKER_PREFIX,
+	REVIEW_MD_UNMARKED_WARNING,
 	resolveConsumerSkillTargetRoots,
 	resolvePrismSource,
 	resolveSelfPrismSource,
@@ -86,7 +88,8 @@ export interface DoctorFinding {
 		| "architect-route"
 		| "hook-registration"
 		| "host-output"
-		| "codex-doc-limit";
+		| "codex-doc-limit"
+		| "review-md";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -1530,6 +1533,62 @@ export interface RunDoctorOptions {
  * problem in one pass instead of fixing them one at a time across repeated
  * runs.
  */
+/**
+ * Reports the root `REVIEW.md` rulebook's state: absent, marked and current,
+ * marked but behind PRISM's copy, or unmarked. The review stages read this file
+ * as the rulebook, so a missing or stale one changes how every review runs.
+ *
+ * An unmarked file is the consumer's own and `prism update` leaves it alone, so
+ * the finding says so with the same text update warns with.
+ *
+ * `runDoctor` only calls this once a sync manifest confirms the repo has
+ * adopted: a never-adopted repo needs `prism adopt`, which delivers the file.
+ */
+async function checkReviewMd(
+	consumerRepoRoot: string,
+	prismSourceRoot: string
+): Promise<DoctorFinding[]> {
+	const existing = await readFileIfExists(path.join(consumerRepoRoot, "REVIEW.md"));
+
+	if (existing === null) {
+		return [
+			{
+				check: "review-md",
+				severity: "warning",
+				message:
+					"REVIEW.md is missing. The review stages read it as the rulebook. Run npx @huntermcgrew/prism update to deliver it.",
+			},
+		];
+	}
+
+	if (!existing.startsWith(REVIEW_MD_MARKER_PREFIX)) {
+		return [{ check: "review-md", severity: "warning", message: REVIEW_MD_UNMARKED_WARNING }];
+	}
+
+	const seed = await readFileIfExists(
+		path.join(prismSourceRoot, "templates", "install", "REVIEW.md")
+	);
+
+	if (seed !== null && seed !== existing) {
+		return [
+			{
+				check: "review-md",
+				severity: "warning",
+				message:
+					"REVIEW.md differs from PRISM's current copy. Run npx @huntermcgrew/prism update to refresh it, or delete its first line to keep your version.",
+			},
+		];
+	}
+
+	return [
+		{
+			check: "review-md",
+			severity: "info",
+			message: "REVIEW.md carries PRISM's marker line and is current.",
+		},
+	];
+}
+
 export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport> {
 	const {
 		consumerRepoRoot,
@@ -1564,6 +1623,7 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	// the repo has adopted; a never-adopted repo needs `prism adopt` instead.
 	if (syncResult.syncState.manifest !== null) {
 		findings.push(...(await checkCodexDocLimit(consumerRepoRoot)));
+		findings.push(...(await checkReviewMd(consumerRepoRoot, prismSourceRoot)));
 	}
 
 	try {

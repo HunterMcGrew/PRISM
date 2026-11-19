@@ -924,6 +924,37 @@ export async function writeSeedMirror(
 const execFileAsync = promisify(execFile);
 
 /**
+ * Mirrors the root `REVIEW.md` byte for byte into `templates/install/REVIEW.md`,
+ * the copy `prism adopt` and `prism update` deliver to a consumer. A root file
+ * sits outside the `.prism/` content root, so the seed mirror never reaches it.
+ * In check mode a difference is reported naming both paths, and nothing is
+ * written. A repo with no root `REVIEW.md` has nothing to mirror.
+ */
+export async function syncReviewMdSeed(
+	repoRootArg: string,
+	installRoot: string,
+	checkMode: boolean,
+	changedPaths: string[]
+): Promise<void> {
+	const source = await readFileIfExists(path.join(repoRootArg, "REVIEW.md"));
+	if (source === null) {
+		return;
+	}
+
+	const seedPath = path.join(installRoot, "REVIEW.md");
+	if (checkMode) {
+		if ((await readFileIfExists(seedPath)) !== source) {
+			changedPaths.push(
+				`REVIEW.md differs from ${path.relative(repoRootArg, seedPath).split(path.sep).join("/")}`
+			);
+		}
+		return;
+	}
+
+	await writeFileIfChanged(seedPath, source, false, changedPaths);
+}
+
+/**
  * Reads the `version` field from the repo-root `package.json`, falling back to
  * `"0.0.0"` when the field is missing so manifest generation never throws on a
  * malformed package file.
@@ -1125,6 +1156,8 @@ async function main(): Promise<void> {
 			unclassifiedMirrored
 		);
 	}
+
+	await syncReviewMdSeed(repoRoot, path.dirname(templatesContentRoot), checkMode, changedPaths);
 
 	if (await pathExists(templatesContentRoot)) {
 		const seedViolations = await runConsumerSeedLiteralGuard(
