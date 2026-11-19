@@ -75,8 +75,14 @@ const MIRROR_ROOT_PREFIXES = [
 /** The canonical content root's install-seed mirror, per `paths.json#canonical.templatesContentRoot`. */
 const TEMPLATES_INSTALL_PRISM_PREFIX = "templates/install/.prism/";
 
-/** Matches `.prism/references/review-<anything>.md`. */
-const REVIEW_REFERENCE_RE = /^\.prism\/references\/review-[^/]+\.md$/;
+/** The root review rulebook every review stage reads. */
+const REVIEW_RULEBOOK_PATH = "REVIEW.md";
+
+/**
+ * Matches `.prism/review/<name>.md`. The `[^/]+` stops at a slash, so the
+ * consumer-owned `.prism/review/stack/` folder never matches.
+ */
+const REVIEW_PASS_FILE_RE = /^\.prism\/review\/[^/]+\.md$/;
 
 /** Matches a file's `---\n...\n---` frontmatter block. */
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---/;
@@ -91,7 +97,7 @@ const curatedSeedPathsCache = new Map<string, Promise<Set<string>>>();
  * Reads `.ai-skills/definitions/seed-curation.json`'s `curated` array —
  * the same source `build.ts`'s `checkSeedDrift` treats as authoritative —
  * and returns it as a set of canonical-relative paths (e.g.
- * `references/review-docs-impact.md`). Cached per repo root: this lint may
+ * `review/correctness.md`). Cached per repo root: this lint may
  * evaluate many changed paths per run and the file doesn't change mid-run.
  */
 async function loadCuratedSeedPaths(repoRootPath: string): Promise<Set<string>> {
@@ -144,10 +150,10 @@ export async function isCuratedSeedTwin(
 }
 
 /**
- * The path Condition A's pattern checks (skills root, the `review-*.md`
- * namespace) should match against. A curated seed twin lives under
- * `templates/install/.prism/`, but the patterns describe canonical shapes
- * (`.prism/references/review-*.md`) — so a curated twin is matched against
+ * The path Condition A's pattern checks (skills root, the `REVIEW.md`
+ * rulebook, the `.prism/review/` pass files) should match against. A curated
+ * seed twin lives under `templates/install/.prism/`, but the patterns describe
+ * canonical shapes (`.prism/review/<name>.md`) — so a curated twin is matched against
  * its canonical-equivalent path, not its own location on disk.
  */
 function patternPathFor(changedPath: string, isCuratedTwin: boolean): string {
@@ -191,7 +197,9 @@ async function declaresLoadAlways(
 /**
  * Condition A — is `changedPath` always-on process/spec content? True when
  * the canonical source declares `load: always` in its frontmatter, or lives
- * under `.ai-skills/skills/**`, or matches `.prism/references/review-*.md`.
+ * under `.ai-skills/skills/**`, or is the root `REVIEW.md` or a
+ * `.prism/review/<name>.md` pass file (not under `stack/`, which a consumer
+ * owns).
  * Reads the `load` field rather than hard-coding a path list, per the plan's
  * Decision.
  *
@@ -217,7 +225,7 @@ export async function isAlwaysOnSpecContent(
 		return true;
 	}
 
-	if (REVIEW_REFERENCE_RE.test(patternPath)) {
+	if (patternPath === REVIEW_RULEBOOK_PATH || REVIEW_PASS_FILE_RE.test(patternPath)) {
 		return true;
 	}
 
@@ -232,23 +240,23 @@ export async function isAlwaysOnSpecContent(
 const SKILLS_ROOT_PREFIX = ".ai-skills/skills/";
 
 /**
- * The heading text of the plan sections `.ai-skills/skills/prism-review-loop/shared.md`
- * § Review surfaces defines as Ledger — a section a persona appends findings
- * to (a fix-in note, a debugged-issue row, a cleanup item, a history append,
+ * The heading text of the plan sections that count as Ledger — a section a
+ * persona appends findings to (a fix-in note, a debugged-issue row, a cleanup item, a history append,
  * a session line, a readiness checklist rewrite), as opposed to a section an
  * author writes to declare scope (`## Implementation Tasks`, `## Decisions`,
  * `## Acceptance Criteria`).
  * Condition B strips these sections before searching (see
  * `stripLedgerSections`) so an automated bookkeeping append can't satisfy the
- * same escape hatch a deliberate `## Decisions` entry earns. This list,
+ * same escape hatch a deliberate `## Decisions` entry earns. This list and
  * `.prism/rules/followup-scope.md` § Spec content never rides an unrelated
- * ticket, and the Ledger bullet in `.ai-skills/skills/prism-review-loop/shared.md`
- * name the same set by hand and need to stay in step — classify a new
+ * ticket name the same set by hand and need to stay in step — classify a new
  * bookkeeping section by the persona-appends-vs-author-declares test above,
  * not by copying this list blind.
  */
 const LEDGER_SECTION_HEADINGS = [
 	"## Review Issues",
+	"## Review",
+	"## Verification",
 	"## History",
 	"## Sessions",
 	"## Debugged Issues",

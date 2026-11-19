@@ -88,9 +88,9 @@ test("isMirrorPath: false for canonical paths", () => {
 // isCuratedSeedTwin
 // ---------------------------------------------------------------------------
 
-const SEED_CURATION_WITH_REVIEW_DOCS_IMPACT = JSON.stringify({
+const SEED_CURATION_WITH_CORRECTNESS_PASS = JSON.stringify({
 	excluded: [],
-	curated: ["references/review-docs-impact.md"],
+	curated: ["review/correctness.md"],
 	seedOnly: [],
 	renames: {},
 });
@@ -101,14 +101,14 @@ test("isCuratedSeedTwin: true for a templates/install path listed in seed-curati
 			await writeFile(
 				tempRoot,
 				".ai-skills/definitions/seed-curation.json",
-				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+				SEED_CURATION_WITH_CORRECTNESS_PASS
 			);
 		},
 		async (tempRoot) => {
 			assert.equal(
 				await isCuratedSeedTwin(
 					tempRoot,
-					"templates/install/.prism/references/review-docs-impact.md"
+					"templates/install/.prism/review/correctness.md"
 				),
 				true
 			);
@@ -122,7 +122,7 @@ test("isCuratedSeedTwin: false for a templates/install path absent from the cura
 			await writeFile(
 				tempRoot,
 				".ai-skills/definitions/seed-curation.json",
-				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+				SEED_CURATION_WITH_CORRECTNESS_PASS
 			);
 		},
 		async (tempRoot) => {
@@ -143,12 +143,12 @@ test("isCuratedSeedTwin: false for a canonical path (no templates/install prefix
 			await writeFile(
 				tempRoot,
 				".ai-skills/definitions/seed-curation.json",
-				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+				SEED_CURATION_WITH_CORRECTNESS_PASS
 			);
 		},
 		async (tempRoot) => {
 			assert.equal(
-				await isCuratedSeedTwin(tempRoot, ".prism/references/review-docs-impact.md"),
+				await isCuratedSeedTwin(tempRoot, ".prism/review/correctness.md"),
 				false
 			);
 		}
@@ -192,22 +192,40 @@ test("isAlwaysOnSpecContent: false for .prism/lessons.md — append-only working
 	);
 });
 
-test("isAlwaysOnSpecContent: true for .prism/references/review-*.md", async () => {
+test("isAlwaysOnSpecContent: true for the root REVIEW.md rulebook", async () => {
 	await withTempTree(
 		async (tempRoot) => {
-			await writeFile(
-				tempRoot,
-				".prism/references/review-frameworks.md",
-				"Body.\n"
-			);
+			await writeFile(tempRoot, "REVIEW.md", "Body.\n");
+		},
+		async (tempRoot) => {
+			assert.equal(await isAlwaysOnSpecContent(tempRoot, "REVIEW.md"), true);
+		}
+	);
+});
+
+test("isAlwaysOnSpecContent: true for a .prism/review/<name>.md pass file", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/review/correctness.md", "Body.\n");
 		},
 		async (tempRoot) => {
 			assert.equal(
-				await isAlwaysOnSpecContent(
-					tempRoot,
-					".prism/references/review-frameworks.md"
-				),
+				await isAlwaysOnSpecContent(tempRoot, ".prism/review/correctness.md"),
 				true
+			);
+		}
+	);
+});
+
+test("isAlwaysOnSpecContent: false for a consumer-owned .prism/review/stack/ file", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/review/stack/correctness.md", "Body.\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isAlwaysOnSpecContent(tempRoot, ".prism/review/stack/correctness.md"),
+				false
 			);
 		}
 	);
@@ -273,10 +291,10 @@ test("isUnrelatedToTicket: true when the basename appears nowhere in the plan te
 
 test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a shared basename mentioned for a different skill does not clear the file", () => {
 	const planText =
-		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-review-loop/shared.md`.\n";
+		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-self-review/shared.md`.\n";
 	assert.equal(
 		isUnrelatedToTicket(
-			".ai-skills/skills/prism-review-loop/shared.md",
+			".ai-skills/skills/prism-self-review/shared.md",
 			planText
 		),
 		false
@@ -369,6 +387,25 @@ test("isUnrelatedToTicket: a discriminator mentioned only inside a Ledger sectio
 		isUnrelatedToTicket(".ai-skills/skills/prism-plan/shared.md", planText),
 		true
 	);
+});
+
+test("isUnrelatedToTicket: a discriminator mentioned only inside ## Review or ## Verification does not clear the file", () => {
+	const planText = [
+		"## Tasks",
+		"",
+		"### T1: Fix the widget renderer",
+		"",
+		"## Review",
+		"",
+		"- self-review round 1 at abc1234: 0 critical, 0 major, 1 minor, 0 nit",
+		"  - `.prism/rules/some-rule.md` quotes a stale rule.",
+		"",
+		"## Verification",
+		"",
+		"| spec | pass | `.prism/rules/some-rule.md` checked |",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
 });
 
 test("isUnrelatedToTicket: a discriminator mentioned only inside ## History or ## Sessions does not clear the file", () => {
@@ -703,17 +740,17 @@ test("skill-body basename collision: naming one skill's shared.md in the plan do
 					"",
 					"## Goal",
 					"",
-					"Update the review-loop skill's shared.md body.",
+					"Update the self-review skill's shared.md body.",
 					"",
 					"## Implementation Tasks",
 					"",
-					"1. Edit `.ai-skills/skills/prism-review-loop/shared.md`.",
+					"1. Edit `.ai-skills/skills/prism-self-review/shared.md`.",
 					"",
 				].join("\n")
 			);
 			await writeFile(
 				tempRoot,
-				".ai-skills/skills/prism-review-loop/shared.md",
+				".ai-skills/skills/prism-self-review/shared.md",
 				"Body.\n"
 			);
 			await writeFile(
@@ -726,7 +763,7 @@ test("skill-body basename collision: naming one skill's shared.md in the plan do
 			const result = await evaluateSpecScopeLint(
 				tempRoot,
 				[
-					".ai-skills/skills/prism-review-loop/shared.md",
+					".ai-skills/skills/prism-self-review/shared.md",
 					".ai-skills/skills/prism-plan/shared.md",
 				],
 				branchName
@@ -848,7 +885,7 @@ test("curated-twin fixture: editing a curated install-seed twin alone, unrelated
 			await writeFile(
 				tempRoot,
 				".ai-skills/definitions/seed-curation.json",
-				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+				SEED_CURATION_WITH_CORRECTNESS_PASS
 			);
 			await writeFile(
 				tempRoot,
@@ -863,24 +900,24 @@ test("curated-twin fixture: editing a curated install-seed twin alone, unrelated
 				].join("\n")
 			);
 			// No frontmatter — this file matches Condition A only via the
-			// `review-*.md` path pattern, which must be checked against its
+			// `.prism/review/<name>.md` path pattern, which must be checked against its
 			// canonical-equivalent path, not its templates/install location.
 			await writeFile(
 				tempRoot,
-				"templates/install/.prism/references/review-docs-impact.md",
-				"# Docs Impact Check\n\nBody text.\n"
+				"templates/install/.prism/review/correctness.md",
+				"# Correctness\n\nBody text.\n"
 			);
 		},
 		async (tempRoot) => {
 			const result = await evaluateSpecScopeLint(
 				tempRoot,
-				["templates/install/.prism/references/review-docs-impact.md"],
+				["templates/install/.prism/review/correctness.md"],
 				branchName
 			);
 			assert.equal(deriveExitCode(result.violations), 1);
 			assert.deepEqual(result.violations, [
 				{
-					path: "templates/install/.prism/references/review-docs-impact.md",
+					path: "templates/install/.prism/review/correctness.md",
 					planPath: ".prism/plans/prism-9004.md",
 				},
 			]);
@@ -896,7 +933,7 @@ test("curated-twin fixture: a non-curated templates/install twin still inherits 
 			await writeFile(
 				tempRoot,
 				".ai-skills/definitions/seed-curation.json",
-				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+				SEED_CURATION_WITH_CORRECTNESS_PASS
 			);
 			await writeFile(
 				tempRoot,
@@ -1019,27 +1056,27 @@ test("describeNoLivePlan: reports plain no-match when a ticket id is present but
 });
 
 test("describeNoLivePlan: names the colliding candidates when several unfiled plans match the branch slug", async () => {
-	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+	const branchName = "huntermcgrew/prism-plan-lookup-self-audit";
 
 	await withTempTree(
 		async (tempRoot) => {
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self-audit.md",
-				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+				".prism/plans/plan-lookup-self-audit.md",
+				["# Plan: plan-lookup-self-audit", "", "## Ticket", "", "None yet.", ""].join(
 					"\n"
 				)
 			);
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self.md",
-				["# Plan: review-loop-self", "", "## Ticket", "", "TBD", ""].join("\n")
+				".prism/plans/plan-lookup-self.md",
+				["# Plan: plan-lookup-self", "", "## Ticket", "", "TBD", ""].join("\n")
 			);
 		},
 		async (tempRoot) => {
 			assert.equal(
 				await describeNoLivePlan(branchName, tempRoot),
-				"spec-scope-lint: 2 unfiled plans match this branch slug (.prism/plans/review-loop-self-audit.md, .prism/plans/review-loop-self.md) — refusing to guess. Skipping."
+				"spec-scope-lint: 2 unfiled plans match this branch slug (.prism/plans/plan-lookup-self-audit.md, .prism/plans/plan-lookup-self.md) — refusing to guess. Skipping."
 			);
 		}
 	);
