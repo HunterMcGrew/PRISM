@@ -1094,6 +1094,7 @@ round 5: carried 1
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed Briar's round 1 on stack A, one `T<n> fix:` commit each for T10, T4, T2, T11, and T3, and marked the five Minors and the bookkeeping Minor fixed under `## Review`. The two nits, a two-cell row in `check-report.mjs` and `readOption` in `watch-ci.mjs`, stay open.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed the two-cell row nit in `T4 fix` 79abb962, so `check-report.mjs` drops a table row with fewer than three cells as thrive does. The `readOption` nit was declined earlier.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed Eric's PR-review round 1 on stack A, one `T<n> fix:` commit each for T5, T8, T12, T10, T7, and T9, after `prism-architect` ruled on the stack marker, the in-place `REVIEW.md` replacement, and doctor's info severity. The three rulings are recorded as Decisions, and the cleaner path on the correctness stack check is not taken in this PR.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Recorded T1 to T12 as shipped in #535 (`2cbd8716`), so `tasks.mjs` reads stack B's range correctly. The Decision on the stack B record commit explains why.
 
 ## Sessions
 
