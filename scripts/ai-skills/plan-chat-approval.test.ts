@@ -94,6 +94,7 @@ const APPROVALS: [string, string | null][] = [
 	["it’s approved", null],
 	["that's approved", null],
 	["consider it approved", null],
+	["it's what I wanted, approved", null],
 ];
 
 for (const [prompt, expected] of APPROVALS) {
@@ -142,6 +143,7 @@ const NOT_APPROVALS: string[] = [
 	"you need to approve the plan first",
 	"maybe approve the intent",
 	"I would approve this one",
+	"I'd approve this one",
 ];
 
 for (const prompt of NOT_APPROVALS) {

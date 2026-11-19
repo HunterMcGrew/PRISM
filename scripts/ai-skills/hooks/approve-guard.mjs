@@ -133,7 +133,9 @@
 // `rg --pre`); frontmatter written through a shell command (`sed -i`, `>`,
 // `mv`); zsh-only syntax, since the tokenizer follows bash; a Cursor terminal,
 // which carries no agent marker and may give approve.mjs a terminal; edits to
-// this guard or to the harness settings files that register it. approve.mjs
+// this guard or to the harness settings files that register it, including the
+// copy in the checkout the payload's `cwd` points into, which this guard hands
+// the event to. approve.mjs
 // refuses without a terminal and inside an agent session unless it holds a
 // token, which catches accidental runs only.
 //
@@ -610,6 +612,10 @@ function runSessionCopy(copy, argv, stdin) {
 		input: stdin,
 		encoding: "utf8",
 	});
+	if (child.error)
+		process.stderr.write(
+			`approve-guard hook: could not run ${copy}: ${child.error.message}\n`
+		);
 	if (child.stderr) process.stderr.write(child.stderr);
 	if (child.stdout) writeStdout(child.stdout);
 }

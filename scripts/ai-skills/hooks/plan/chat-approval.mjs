@@ -96,13 +96,12 @@ const HEDGES = new Set([
 	"gonna",
 	"want",
 	"wants",
-	"wanted",
 	"wanna",
 	"hope",
 	"hoping",
 ]);
-// `I'll approve` is a future too.
-const CONTRACTED_FUTURE = /'ll$/;
+// `I'll approve` is a future, and `I'd approve` a condition.
+const CONTRACTED_FUTURE = /'(?:ll|d)$/;
 
 /**
  * Reads a prompt as a chat approval. Returns `{ path }` when a sentence the
