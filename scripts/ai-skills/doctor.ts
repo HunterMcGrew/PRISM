@@ -1532,7 +1532,9 @@ export interface RunDoctorOptions {
  * as the rulebook, so a missing or stale one changes how every review runs.
  *
  * An unmarked file is the consumer's own and `prism update` leaves it alone, so
- * the finding says so with the same text update warns with.
+ * the finding says so with the same text update warns with. It is info and not
+ * a warning, because deleting the marker line is the documented way to keep
+ * your own rulebook.
  *
  * `runDoctor` only calls this once a sync manifest confirms the repo has
  * adopted: a never-adopted repo needs `prism adopt`, which delivers the file.
@@ -1555,7 +1557,7 @@ async function checkReviewMd(
 	}
 
 	if (!existing.startsWith(REVIEW_MD_MARKER_PREFIX)) {
-		return [{ check: "review-md", severity: "warning", message: REVIEW_MD_UNMARKED_WARNING }];
+		return [{ check: "review-md", severity: "info", message: REVIEW_MD_UNMARKED_WARNING }];
 	}
 
 	const seed = await readFileIfExists(

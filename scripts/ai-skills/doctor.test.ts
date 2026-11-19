@@ -2778,12 +2778,12 @@ test("runDoctor warns that a marked REVIEW.md behind PRISM's copy needs an updat
 	});
 });
 
-test("runDoctor warns that a REVIEW.md with no marker line was left alone", async () => {
+test("runDoctor reports a REVIEW.md with no marker line as info, because the team opted out", async () => {
 	await withTempRoots(async (roots) => {
 		const findings = await runReviewMdDoctor(roots, "# Our own review rules\n");
 
 		assert.equal(findings.length, 1);
-		assert.equal(findings[0].severity, "warning");
+		assert.equal(findings[0].severity, "info");
 		assert.match(findings[0].message, /without PRISM's marker line, so it was left alone/);
 	});
 });

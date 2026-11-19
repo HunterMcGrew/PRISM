@@ -53,18 +53,15 @@ test("syncReviewMd writes the seed copy when the consumer has no REVIEW.md", asy
 	});
 });
 
-test("syncReviewMd replaces a marked stale REVIEW.md and keeps the old bytes in REVIEW.md.bak", async () => {
+test("syncReviewMd replaces a marked stale REVIEW.md in place and leaves no backup", async () => {
 	await withRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await fs.writeFile(path.join(consumerRepoRoot, "REVIEW.md"), STALE_MARKED_CONTENT, "utf8");
 
 		const result = await syncReviewMd(consumerRepoRoot, prismSourceRoot, false);
 
-		assert.equal(result.outcome?.action, "backed-up");
+		assert.equal(result.outcome?.action, "overwritten");
 		assert.equal(await readIfExists(path.join(consumerRepoRoot, "REVIEW.md")), SEED_CONTENT);
-		assert.equal(
-			await readIfExists(path.join(consumerRepoRoot, "REVIEW.md.bak")),
-			STALE_MARKED_CONTENT
-		);
+		assert.equal(await readIfExists(path.join(consumerRepoRoot, "REVIEW.md.bak")), null);
 	});
 });
 
@@ -114,8 +111,10 @@ test("syncReviewMd has nothing to deliver when the PRISM source ships no seed co
 	});
 });
 
-test("the marker prefix opens PRISM's own marker line", () => {
-	assert.ok(SEED_CONTENT.startsWith(REVIEW_MD_MARKER_PREFIX));
+test("the shipped root REVIEW.md opens with the marker prefix", async () => {
+	const root = await fs.readFile(path.join(process.cwd(), "REVIEW.md"), "utf8");
+
+	assert.ok(root.startsWith(REVIEW_MD_MARKER_PREFIX));
 });
 
 test("syncReviewMdSeed in check mode names both paths when the seed copy differs", async () => {

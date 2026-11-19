@@ -1765,11 +1765,13 @@ export async function appendHookStateGitignoreLines(
 
 /**
  * Delivers the root `REVIEW.md` rulebook from the install seed. The file is
- * written when the consumer has none. It is refreshed, with the old bytes kept
- * as `REVIEW.md.bak` first, while its first line carries the marker. Without
- * the marker it is the consumer's own and is left alone with a warning, so a
- * team that rewrote the rulebook keeps it. A PRISM source with no seed copy has
- * nothing to deliver.
+ * written when the consumer has none. It is replaced in place, with no
+ * backup, while its first line carries the marker, the way the hook runtime
+ * replaces its own marked files. A backup would fire on every release that
+ * changes the rulebook, because with no hash a team's edit cannot be told from
+ * an older PRISM copy. Without the marker the file is the consumer's own and
+ * is left alone with a warning, so a team that rewrote the rulebook keeps it.
+ * A PRISM source with no seed copy has nothing to deliver.
  */
 export async function syncReviewMd(
 	consumerRepoRoot: string,
@@ -1800,10 +1802,9 @@ export async function syncReviewMd(
 		return { outcome: { relativePath: "REVIEW.md", action: "no-op" } };
 	}
 
-	const backupPath = await backupConsumerFile(targetPath, dryRun);
 	await writeIncoming(seedPath, targetPath, dryRun);
 
-	return { outcome: { relativePath: "REVIEW.md", action: "backed-up", backupPath } };
+	return { outcome: { relativePath: "REVIEW.md", action: "overwritten" } };
 }
 
 /**
