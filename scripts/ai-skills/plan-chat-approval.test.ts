@@ -135,6 +135,13 @@ const NOT_APPROVALS: string[] = [
 	"run `approve` when ready",
 	"> approve\n\nwhat does that mean",
 	"what is this <pasted_content>approve</pasted_content>",
+	"I'm wondering if i just take that approve guard away and just hope to do it via chat with no guard preventing the agent from auto approving. Less strict, coudl potentially approve something i didnt approve, but without the constant headache.",
+	"But yeah, basically if there is an epic like this, i approve the epic, i dont want to have to approve each child. If i want an agent or agents to work overnight, over 2 nights, on an approved epic, i dont want to have to check every hour.",
+	"if the tests pass, approve it",
+	"I'll approve it after lunch",
+	"you need to approve the plan first",
+	"maybe approve the intent",
+	"I would approve this one",
 ];
 
 for (const prompt of NOT_APPROVALS) {

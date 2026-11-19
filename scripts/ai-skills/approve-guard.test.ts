@@ -1202,6 +1202,35 @@ test("prompt arm tells the Claude agent the exact command to run", () => {
 	);
 });
 
+/** A git checkout holding its own copy of the hook runtime, the way a worktree of this repo does. */
+function makeCheckoutWithGuard(): string {
+	const root = makeGitRepo();
+	cpSync(path.dirname(HOOK), path.join(root, "scripts/ai-skills/hooks"), {
+		recursive: true,
+	});
+
+	return root;
+}
+
+const LOCAL_APPROVE = "scripts/ai-skills/hooks/plan/approve.mjs";
+
+test("prompt arm in another checkout names that checkout's own approve.mjs", () => {
+	const root = makeCheckoutWithGuard();
+	const child = runPromptHook("claude", prompt.claude(`approve ${INTENT}`, root));
+
+	assert.match(child.stdout, new RegExp(`run exactly \`node ${escapeRegExp(LOCAL_APPROVE)} `));
+	assert.equal(requireToken(root).session, "s1");
+});
+
+test("execution arm in another checkout passes that checkout's approve.mjs and denies this one's", () => {
+	const root = makeCheckoutWithGuard();
+	placeToken(root);
+
+	assertPasses("claude", sessionShell.claude(`node ${LOCAL_APPROVE} ${INTENT}`, root));
+	const text = denyText(runHook("claude", sessionShell.claude(CHAT_COMMAND, root)).stdout);
+	assert.match(text ?? "", new RegExp(`run \`node ${escapeRegExp(LOCAL_APPROVE)} <artifact>\``));
+});
+
 test("prompt arm writes nothing outside a git checkout and still exits 0", () => {
 	const root = makeRepo();
 	const child = runPromptHook("claude", prompt.claude("approve", root));
