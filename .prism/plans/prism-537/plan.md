@@ -29,10 +29,9 @@ Groups from `node scripts/ai-skills/hooks/plan/bundles.mjs .prism/plans/prism-53
 
 - Group 1: T1
 - Group 2: T2
-- Group 3: T7
-- Group 4: T8
+- Group 3: T8
 
-These are the first wave, the open tasks with no unfinished dependency. Later waves follow the `depends on` fields: T3, T4, and T5 after T1; T9 after T7; T6 after T3 to T5; T10 after T1, T2, and T6; T11 after T10; T12 after T7 and T10; T13 after T9 and T10. Rerun the script after any task change and replace the groups with what it prints.
+These are the first wave, the open tasks with no unfinished dependency. Later waves follow the `depends on` fields: T3, T4, and T5 after T1; T6 after T3 to T5; T7 after T6; T9 after T7; T10 after T1, T2, and T6; T11 after T10; T12 after T7 and T10; T13 after T9 and T10. Rerun the script after any task change and replace the groups with what it prints.
 
 T1 to T9 are part 1 of a two-PR stack, and T10 to T13 are part 2. The Decisions record the cut.
 
@@ -365,9 +364,9 @@ On `main` the first and third cases fail, because no persona skill has a Voice b
 
 - files: .prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md, .claude/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md, .codex/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md, .cursor/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md, .prism/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md, .claude/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md, .codex/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md, .cursor/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md, .prism/spec/adrs/_toolkit/README.md, .claude/spec/adrs/_toolkit/README.md, .codex/spec/adrs/_toolkit/README.md, .cursor/spec/adrs/_toolkit/README.md, .ai-skills/definitions/seed-curation.json
 - proof: pnpm run prism:build && pnpm run prism:crossref-lint && grep -q "Partly superseded by \[ADR-0084\]" .prism/spec/adrs/_toolkit/0080-skills-are-function-shaped-and-held-to-four-tests.md && grep -q "^Status: accepted" .prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md && test ! -e templates/install/.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md
-- depends on: none
+- depends on: T6
 
-Owner: Clove. Confirm 0084 is free by listing `.prism/spec/adrs/_toolkit/` first. If a later `main` took it, use the next free number here and in every task and Decision that names 0084, and say so in `## History`.
+Owner: Clove. T7 waits on T6 because ADR-0084 cites `scripts/ai-skills/persona-voice.test.ts`, and `prism:crossref-lint` fails on a `scripts/` path in `.prism/spec/**` that does not exist yet. Confirm 0084 is free by listing `.prism/spec/adrs/_toolkit/` first. If a later `main` took it, use the next free number here and in every task and Decision that names 0084, and say so in `## History`.
 
 **ADR-0084, "Persona Skills Carry a Short Voice."** Port thrive's ADR-0054 in PRISM's ADR shape (`.prism/spec/adrs/_toolkit/TEMPLATE.md`): frontmatter `Number: 0084`, `Title`, `Status: accepted`, `Date: <commit date>`. Sections and content:
 
@@ -401,7 +400,7 @@ Then a blank line. Nothing else in the ADR changes.
 ### T8: Write the Voice exception into the skill-authoring rule and guides
 
 - files: .prism/rules/skill-authoring.md, .claude/rules/skill-authoring.md, .codex/rules/skill-authoring.md, .cursor/rules/skill-authoring.mdc, .prism/architect/guides/writing-a-skill.md, .claude/architect/guides/writing-a-skill.md, .codex/architect/guides/writing-a-skill.md, .cursor/architect/guides/writing-a-skill.md, templates/install/.prism/architect/guides/writing-a-skill.md, .prism/architect/_toolkit/business-layer.md, .claude/architect/_toolkit/business-layer.md, .codex/architect/_toolkit/business-layer.md, .cursor/architect/_toolkit/business-layer.md, templates/install/.prism/architect/_toolkit/business-layer.md, CONTEXT.md
-- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && grep -q "first 16 lines" .prism/rules/skill-authoring.md && ! grep -q "There is no persona and no voice" .prism/architect/guides/writing-a-skill.md && ! grep -q "ADR-0084" .prism/architect/guides/writing-a-skill.md && ! grep -q "no voice or reasoning lens" .prism/architect/_toolkit/business-layer.md && ! grep -q "session's own voice\|no voice or lens of its own" CONTEXT.md
+- proof: pnpm run prism:build && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && grep -q "first 16 lines" .prism/rules/skill-authoring.md && grep -q "one short \`## Voice\` block and no reasoning lens" .prism/architect/_toolkit/business-layer.md && ! grep -q "There is no persona and no voice" .prism/architect/guides/writing-a-skill.md && ! grep -q "ADR-0084" .prism/architect/guides/writing-a-skill.md && ! grep -q "no voice or reasoning lens" .prism/architect/_toolkit/business-layer.md && ! grep -q "session's own voice\|no voice or lens of its own" CONTEXT.md
 - depends on: none
 
 Owner: Clove. Four texts say a persona has no voice. Each becomes true again with one edit.
@@ -411,7 +410,7 @@ Owner: Clove. Four texts say a persona has no voice. Each becomes true again wit
   - The Length bullet gains a sentence after `...cited templates and architect docs, and `load: skill` rules.`: `It leaves out the first 16 lines of each `## Voice` section in a skill body.`
   - The proof greps for "first 16 lines".
 - **`.prism/architect/guides/writing-a-skill.md`, The body layout, item 1.** Replace the line `   There is no persona and no voice; the session answers in its own voice.` with exactly one line: `   A persona skill follows it with its `## Voice` block: identity, tone, and a greeting, holding no rule.` It cites no ADR, because the guide is `mirrored` to consumers and ADRs never ship. The guide keeps its line count, because `prism-forge-skill` cites it and loads 119 lines.
-- **`.prism/architect/_toolkit/business-layer.md`, line 100.** `no voice or reasoning lens,` becomes `no reasoning lens and one `## Voice` block,`. The paragraph stays one line.
+- **`.prism/architect/_toolkit/business-layer.md`, line 100.** `no voice or reasoning lens,` becomes `one short `## Voice` block and no reasoning lens,`, so the sentence reads as one list. The paragraph stays one line. The heading above it, "Follow the skill shape, not a persona", stays: it is about the skill's structure, and a Voice block holds no rule.
 - **`CONTEXT.md`, the Persona entry (line 38).** `The skill speaks in the session's own voice, and the name survives as a trigger word in the skill's description (ADR-0080).` becomes `The skill speaks in its persona's short Voice block, and the name is also its trigger word (ADR-0080, ADR-0084).`
 - **`CONTEXT.md`, the Persona skill bullet (line 50).** `a name and lane with no voice or lens of its own;` becomes `a name, a lane, and a short Voice block, with no reasoning lens;`. Line 51, the utility skill bullet, stays as it is, because it becomes true again.
 
@@ -455,7 +454,7 @@ Owner: Clove.
   - `argument-hint: "[bug description]"`
 - **`shared.md`.** Copy thrive's `.ai-skills/skills/thrive-debugger/shared.md` and make exactly these edits:
   - Every `thrive-intent` becomes `prism-intent`, and `thrive's debugger` in the Voice block becomes `the team's debugger`.
-  - Delete the three `<!-- partial: ... -->` lines and the blank line after each. Delete the paragraph that starts `For a diagnosis they also say how the code is meant to behave`.
+  - Delete the two `<!-- partial: ... -->` lines above Startup and the blank line after each. Delete the paragraph that starts `For a diagnosis they also say how the code is meant to behave` together with the blank line after it, so no double blank line is left before the Startup heading. The trailing lessons partial is handled only by the replace below.
   - In Startup's first paragraph, `run `.ai-spec/references/plan-lookup.md` for an existing plan` becomes `run the plan lookup in `.prism/rules/branch-plan.md` for an existing plan`. That rule is `load: always`, so citing it costs nothing, where `.prism/references/plan-lookup.md` would charge 21 lines.
   - In Startup's second paragraph, `and run `.ai-spec/references/architect-context.md` against them.` becomes `and read every architect doc `.prism/architect/manifest.json` routes for them, because those docs say how the code is meant to behave, which separates a bug from an intentional pattern.` This keeps the reason from the deleted paragraph and drops the 25-line reference charge.
   - In the second section's second paragraph, delete the parenthetical ` (route, server component, resolver, service, GraphQL, WordPress)`, which is thrive's stack.
@@ -507,7 +506,7 @@ Owner: Clove.
   - After the Winston row, add `| **Sasha** | Mira (the diagnosis becomes the intent's Problem) | No feedback loop possible → stays and asks for the missing artifact |`.
   - In the Nora row's conditional cell, `Bug with an unknown root cause → Clove confirms it first, then fixes` becomes `Bug with an unknown root cause → Sasha diagnoses it, then Mira`.
   - The file is unlisted in `seed-curation.json`, so the build writes its twin.
-- **`.ai-skills/skills/prism-start-ticket/shared.md`, line 47.** `a bug goes to `prism-implement`.` becomes `a bug goes to `prism-implement`, or to `prism-debug` when its root cause is unknown.` The sentence stays on its line, so the skill's loaded total does not change. Record it in `## History`. T4's Voice block is already in the file, which the `depends on` chain through T10 and T6 guarantees.
+- **`.ai-skills/skills/prism-start-ticket/shared.md`, the handoff sentence in the requirements-summary paragraph (line 47 on `8cb24c49`, lower once T4's Voice block lands).** `a bug goes to `prism-implement`.` becomes `a bug goes to `prism-implement`, or to `prism-debug` when its root cause is unknown.` The sentence stays on its line, so the skill's loaded total does not change. Record it in `## History`. T4's Voice block is already in the file, which the `depends on` chain through T10 and T6 guarantees.
 
 ### T12: Write ADR-0085 and mark ADR-0079 partly superseded
 
@@ -567,6 +566,11 @@ round 1: clean
   - T12 (non-blocking): the ADR-0085 Decision says `prism-implement` "already sits near the cap", but it loads 69 of 120 lines on `8cb24c49`; keep only the lane and no-change-promise reasons.
   - T7 (non-blocking): ADR-0084 lists an "Alternatives" part, but the ADR template has no such section and T12 puts its alternatives inside `## Decision`; say which, so two builds match.
   - plan (non-blocking): AC-2's UNMET note says a body of 22 in the second case, but `main` counts every line there, 27.
+round 2: blocking 1
+  - T7 (blocking): ADR-0084's References and its Enforcement row cite `scripts/ai-skills/persona-voice.test.ts`, which T6 creates, but T7 has `depends on: none` and runs in the first wave. `crossref-lint` resolves `scripts/` paths in `.prism/spec/**` (its allowlist already carries `0044...::scripts/ai-skills/install-cursor.ts` for exactly this case), so T7's proof, and T9's after it, fail until T6 lands. Set T7 `depends on: T6` and rerun `bundles.mjs`.
+  - T11 (non-blocking): it names `prism-start-ticket` "line 47", but T4's Voice block lands above that sentence first, so it moves to about line 61. The old string is unique, so the edit still applies; name the sentence instead of the line.
+  - T10 (non-blocking): deleting the two partial lines and their blanks plus the "For a diagnosis..." paragraph leaves two blank lines in a row before `## Startup`, unless the paragraph's trailing blank goes too, which the "about 122 lines" math assumes. Say so. Also, "delete the three partial lines" overlaps with "replace the trailing lessons partial"; say the lessons partial is handled only by the replace.
+  - T8 (non-blocking): `business-layer.md` keeps its heading "4. Follow the skill shape, not a persona" above a paragraph that now grants a `## Voice` block, and the edited sentence reads "no reasoning lens and one `## Voice` block, and the body plus...". Consider rewording the clause so it reads as one list.
 
 ## Decisions
 
@@ -596,6 +600,7 @@ round 1: clean
 
 - 2026-11-19 [huntermcgrew/prism-537-personas]: Plan created for child 7 as 13 tasks in two parts. Part 1 is the Voice allowance, the unique-name check, 24 Voice blocks with a shape test, ADR-0084, and the rule wording. Part 2 is `prism-debug`, its routing, the workflow moves, ADR-0085, and the roster doc.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: Folded in challenge round 1's eight findings and Winston's fit verdicts. T9 now covers Reese, Sage, and the ADR-0084 link; T10 adds the `autonomous-bug-fixing.md` wording and AC-5's greps; T11 fixes Nora's three bug-route texts; T8 adds `CONTEXT.md`.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: Fixed challenge round 2's blocking finding: T7 now depends on T6, because ADR-0084 cites the test file T6 creates. Also named Nora's handoff sentence instead of its line number, made the debugger's deletions exact, and reworded the `business-layer.md` edit.
 
 ## Sessions
 
