@@ -31,7 +31,7 @@ When several fit, the more severe wins: `open-stale` < `archive-candidate` < `ov
 ## Other surfaces
 
 - **Lessons** (`.prism/lessons.md`): `live` when a plan, rule, ADR, or architect doc referenced the lesson in the last 30 days, else `archive-candidate`. A lesson under 30 days old is never a candidate, since it needs time to be referenced.
-- **Closed plans:** a plan is archive-ready when it has a `> Closed:` marker, every Decision has a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or an `archive-candidate` or `overdue-archive` verdict from this audit, and it closed at least 90 days ago. A folder is closed when its `plan.md`, or an epic's `spec.md`, carries a `> Closed:` marker or a `stage` or `status` of `closed`, and it moves whole.
+- **Closed plans:** a plan is archive-ready when it has a `> Closed:` marker, every Decision has a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or an `archive-candidate` or `overdue-archive` verdict from this audit, and it closed at least 90 days ago. A folder is closed only when its `plan.md`, or an epic's `spec.md`, carries a dated `> Closed: YYYY-MM-DD` line, the date the 90-day rule reads. A `stage` or `status` of `closed` without that line is not yet eligible. A closed folder moves whole.
 - **ADRs** (not `TEMPLATE.md` or `README.md`): flag assumptions in `## Context` and `## Consequences` that may no longer hold, such as a PR closed unmerged or a superseded sibling. Never edit an ADR.
 - **Architect docs:** flag re-enumeration drift (a doc lists the states of X and a sibling doc owns a different list) and cited source paths that no longer exist.
 

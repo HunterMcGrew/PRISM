@@ -60,7 +60,7 @@ Closed plans accumulate in `.prism/plans/` after tickets ship. Plans are never d
 
 **Archive candidate criteria** — a plan qualifies when all three hold:
 
-- The plan carries a `> Closed:` marker. A plan folder qualifies when its `plan.md`, or an epic's `spec.md`, carries that marker or a `stage` or `status` of `closed`.
+- The plan carries a `> Closed: YYYY-MM-DD` marker. A plan folder qualifies when its `plan.md`, or an epic's `spec.md`, carries that dated line, because the 90-day rule below reads its date. A `stage` or `status` of `closed` with no such line carries no date, so the folder is not yet eligible.
 - Every entry in `## Decisions` has either a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or a Zoe verdict sub-bullet (`archive-candidate` or `overdue-archive`). Plans with unresolved Decision entries are not archive-ready.
 - The close date is at least 90 days in the past — a recently-closed plan gets a grace period before becoming a candidate.
 
