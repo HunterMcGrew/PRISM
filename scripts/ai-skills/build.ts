@@ -143,7 +143,7 @@ const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
  * exact path, or a glob when it holds a `*`, so a whole consumer-owned folder
  * such as `review/stack/**` is excluded without listing each file.
  */
-function buildExcludedMatcher(excluded: readonly string[]): (relPath: string) => boolean {
+export function buildExcludedMatcher(excluded: readonly string[]): (relPath: string) => boolean {
 	const exact = new Set(excluded.filter((entry) => !entry.includes("*")));
 	const globs = excluded.filter((entry) => entry.includes("*")).map((entry) => compileMatcher(entry));
 
