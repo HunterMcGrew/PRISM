@@ -45,6 +45,11 @@ async function readSkillLines(id: string, file = "shared.md"): Promise<string[]>
 	}
 }
 
+/** Reports whether a file carries a `## Voice` heading, ignoring trailing whitespace the way the loaded-lines counter does. */
+function hasVoiceHeading(lines: string[]): boolean {
+	return lines.some((line) => line.trimEnd() === "## Voice");
+}
+
 /** Returns the lines from the `## Voice` heading up to the next `## ` line, or the end of the file. */
 function extractVoiceSection(lines: string[]): string[] {
 	const start = lines.indexOf("## Voice");
@@ -97,7 +102,7 @@ test("every persona skill opens with one Voice block in the ADR-0084 shape", asy
 			failures.push(`${role.id}: ${reason}`);
 		}
 
-		if ((await readSkillLines(role.id, "claude.md")).includes("## Voice")) {
+		if (hasVoiceHeading(await readSkillLines(role.id, "claude.md"))) {
 			failures.push(`${role.id}: claude.md has a "## Voice" line`);
 		}
 	}
@@ -111,7 +116,7 @@ test("no utility or agent skill carries a Voice block", async () => {
 		(entry) => entry.type === "utility" || entry.type === "agent"
 	)) {
 		for (const file of ["shared.md", "claude.md"]) {
-			if ((await readSkillLines(role.id, file)).includes("## Voice")) {
+			if (hasVoiceHeading(await readSkillLines(role.id, file))) {
 				carriers.push(`${role.id}/${file}`);
 			}
 		}
