@@ -656,15 +656,15 @@ head: d524ad03f5d897f6f751d7f8e1f223622d077225
 ## Review
 
 - self-review round 1 at a2d2de63 (part 1 of 2): 0 critical, 1 major, 0 minor, 2 nit
-  - **Major, standards violation: ADR-0084 states the Voice block's placement more broadly than the code.** `.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md:18` says the block sits "below the job statement and any `<!-- atlas:... -->` anchor". In `prism-start-ticket` the anchor is at lines 61 to 63, below the block at line 3. A reader trusting the ADR would move that anchor above the block, or flag the skill as breaking the ADR. The architect-doc-verification rule, under its diverged-claims heading, sets a diverged claim in an ADR at Major or above.
+  - **Major, standards violation: ADR-0084 states the Voice block's placement more broadly than the code.** fixed fdff4abc. `.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md:18` says the block sits "below the job statement and any `<!-- atlas:... -->` anchor". In `prism-start-ticket` the anchor is at lines 61 to 63, below the block at line 3. A reader trusting the ADR would move that anchor above the block, or flag the skill as breaking the ADR. The architect-doc-verification rule, under its diverged-claims heading, sets a diverged claim in an ADR at Major or above.
     - Class: a placement rule in a decision record stated without the qualifier its source plan Decision carries.
     - Sweep: `grep -n 'atlas:\|^## Voice' .ai-skills/skills/*/shared.md` over all persona skills, plus `git grep -n "atlas:"` in `skill-authoring.md`, `writing-a-skill.md`, the ADR README, and `CONTEXT.md`. Only `prism-start-ticket` has an anchor below its block, and no other doc repeats the claim.
     - Fix: change the clause to "below the job statement and any `<!-- atlas:... -->` anchor that comes before the first `## ` heading", then run `pnpm prism:build` so the three platform copies follow.
-  - **nit: the rule and guide summaries leave out the signature lines.** `.prism/rules/skill-authoring.md:18` and `.prism/architect/guides/writing-a-skill.md:22` describe the block as "identity, tone, and a greeting". ADR-0084 and `persona-voice.test.ts` also require three or four signature lines. Both texts follow T8's dictated wording, and the shape test catches an author who leaves them out.
+  - **nit: the rule and guide summaries leave out the signature lines.** fixed fdff4abc. `.prism/rules/skill-authoring.md:18` and `.prism/architect/guides/writing-a-skill.md:22` describe the block as "identity, tone, and a greeting". ADR-0084 and `persona-voice.test.ts` also require three or four signature lines. Both texts follow T8's dictated wording, and the shape test catches an author who leaves them out.
     - Class: a short summary of a shape that drops one of the parts the full definition requires.
     - Sweep: `grep -n "identity, tone" .prism/rules .prism/architect CONTEXT.md -r` found only these two lines.
     - Fix: change both to "identity, tone, signature lines, and a greeting". The guide must stay one line, because `prism-forge-skill` loads 119 lines.
-  - **nit: ADR-0084's Neutral line leaves out a second ADR-0080 claim that no longer holds.** `.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md:54` lists only ADR-0080's "session's own voice" note. ADR-0080 line 45 also says persona and utility skills differ "only in routing and in agent-adapter generation", and ADR-0080's new banner says "the rest of this decision stands".
+  - **nit: ADR-0084's Neutral line leaves out a second ADR-0080 claim that no longer holds.** fixed fdff4abc. `.prism/spec/adrs/_toolkit/0084-persona-skills-carry-a-short-voice.md:54` lists only ADR-0080's "session's own voice" note. ADR-0080 line 45 also says persona and utility skills differ "only in routing and in agent-adapter generation", and ADR-0080's new banner says "the rest of this decision stands".
     - Class: a superseding ADR that lists only some of the superseded claims.
     - Sweep: read ADR-0080's Context, Decision, and Consequences in full. The banner's first clause covers its line 42, and line 45 is the only other one.
     - Fix: add to the Neutral line that the Voice block is now a third difference between persona and utility skills.
@@ -678,6 +678,10 @@ head: d524ad03f5d897f6f751d7f8e1f223622d077225
     - AC-8: met for part 1. Every skill T3 to T5 touched measures at or under 120 with no allowlist entry, matching `## History`. `prism-debug` is part 2.
     - AC-9: met for part 1. No lead rule changed, and `agents-md-budget.test.ts` passes in the verify run.
     - AC-10: pending, because no PR or CI run exists yet.
+- self-review round 2 at 1ffa2bf8 (part 1 of 2): clean
+  - Range `94c73989..1ffa2bf8`. All three round 1 findings are fixed in fdff4abc. ADR-0084 line 18 now limits the anchor to one before the first `## ` heading, and every persona `shared.md` has `## Voice` as its first `## ` heading. The rule and the guide now list three or four signature lines, matching ADR-0084's list. The Neutral line now names both ADR-0080 notes, its lines 42 and 45.
+  - Sweep: `git grep -n "identity, tone" -- ':!.prism/plans'` finds only the fixed lines and their generated copies. `pnpm prism:build` leaves the tree clean, and the `.claude`, `.codex`, `.cursor`, and install-template copies match. `skill-loaded-lines.test.ts` and `persona-voice.test.ts` pass, 12 of 12, and `prism:crossref-lint` passes.
+  - Criteria: unchanged from round 1. The fix commits touch no criterion's evidence, and AC-2 and AC-8 still hold at 1ffa2bf8.
 
 ## Acceptance Criteria
 
