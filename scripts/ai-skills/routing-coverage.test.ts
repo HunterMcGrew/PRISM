@@ -117,8 +117,8 @@ async function assertRoutingRuleAgreesWithRoles(
 		}
 	}
 
-	// A phrase in two rows makes routing ambiguous: the first match wins by
-	// accident of table order, not by design.
+	// The router reads the table with no tie-break, so a phrase in two rows
+	// routes ambiguously.
 	const tableRows = routingTableSection
 		.split("\n")
 		.filter((line) => line.startsWith("| "));
@@ -134,12 +134,19 @@ async function assertRoutingRuleAgreesWithRoles(
 		}
 	}
 
-	// A bare "this is broken" is a bug report, so it routes to the debugger.
+	// A report of broken behavior goes to the debugger, not the implementer.
 	const debugRow = tableRows.find((row) => row.includes("`prism-debug`"));
-	assert.ok(
-		debugRow?.includes('"this is broken"'),
-		`${rulePath}: the prism-debug routing row must contain the phrase "this is broken"`
-	);
+	for (const phrase of [
+		"this is broken",
+		"why is this happening",
+		"I'm getting an error",
+		"it's not working",
+	]) {
+		assert.ok(
+			debugRow?.includes(`"${phrase}"`),
+			`${rulePath}: the prism-debug routing row must contain the phrase "${phrase}"`
+		);
+	}
 
 	const knownIds = new Set(roles.map((role) => role.id));
 	for (const id of extractBacktickedSkillIds(raw)) {

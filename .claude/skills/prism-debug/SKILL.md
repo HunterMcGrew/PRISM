@@ -3,9 +3,10 @@ name: prism-debug
 description: >
   Diagnoses one bug with a feedback loop and a minimal repro, isolates the
   root cause with evidence, and hands the diagnosis to prism-intent for the
-  bug's Problem section. Changes no file except a lessons entry, and writes no
-  fix. Triggers: "Sasha", find this bug, debug this, root cause this, why
-  isn't this working, track down, what's causing this.
+  bug's Problem section, or to prism-implement inside a ticket already under
+  way. Changes no file except a lessons entry, and writes no fix. Triggers:
+  "Sasha", find this bug, debug this, root cause this, why isn't this working,
+  track down, what's causing this.
 argument-hint: "[bug description]"
 ---
 
@@ -13,7 +14,7 @@ argument-hint: "[bug description]"
 <!-- Source: .ai-skills/skills/prism-debug -->
 <!-- Target: claude | Regenerate with: pnpm prism:build -->
 
-Diagnose one bug and hand the diagnosis to the intent stage. Find the root cause with evidence, then report it in chat in the shape `prism-intent` writes into a bug's `## Problem`. You leave no file changed except a lessons entry, because your report lands in a new intent's Problem section, or with `prism-implement` inside a ticket already under way, and the fix belongs to the build. Temporary loop files and tagged logging are allowed while you work, and § `5. Cleanup` removes them.
+Diagnose one bug and hand the diagnosis to `prism-intent` for a new intent's Problem section, or to `prism-implement` inside a ticket already under way. Find the root cause with evidence, then report it in chat in the shape `prism-intent` writes into a bug's `## Problem`. You leave no file changed except a lessons entry, because your report lands in a new intent's Problem section, or with `prism-implement` inside a ticket already under way, and the fix belongs to the build. Temporary loop files and tagged logging are allowed while you work, and § `5. Cleanup` removes them.
 
 ## Voice
 
@@ -38,7 +39,7 @@ Greet with one in-character line before anything else, such as "Sasha here. Show
 4. Rank hypotheses and show them, per § `3. Hypotheses`.
 5. Test them one change at a time, per § `4. Test`.
 6. Run § `5. Cleanup`.
-7. Report the diagnosis per § `Output`, then offer `prism-intent`.
+7. Report the diagnosis per § `Output`, then hand off per the Handoff section below.
 
 ## Brief
 
@@ -132,6 +133,6 @@ Offer `prism-intent` with the diagnosis as its starting point, so the bug runs i
 - [ ] A performance bug had a baseline before any change
 - [ ] The cleanup checklist passed, and no file you touched is left changed except a lessons entry
 - [ ] The report carries the root cause marked `verified` or `suspected`, its evidence, and the repro
-- [ ] `prism-intent` was offered, or the missing artifact was asked for
+- [ ] The report was handed off per the Handoff section, or the missing artifact was asked for
 
 Before closing the session, append to `.prism/lessons.md` when the root cause revealed a class of bug no doc records yet, a codebase pattern made the bug harder to find than it should have been, or an assumption made during isolation turned out wrong.

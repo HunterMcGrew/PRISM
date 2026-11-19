@@ -11,7 +11,7 @@ Date: 2026-11-19
 
 The amended PRISM-499 intent (2026-11-17) brings Sasha back as `prism-debug`: she diagnoses, changes no source, and her report becomes the Problem section of an intent. thrive's debugger (`thrive-debugger/shared.md` under its `.ai-skills/skills`) shows the policy fits the cap: a feedback loop before hypotheses, ranked hypotheses shown before testing, tagged temporary logging with a cleanup grep, and a report shaped for the intent stage.
 
-ADR-0079 rejected a slimmed debugger because a model already applies the method unprompted. The skill earns its place on the policy a model would not apply on its own: it changes no file except a lessons entry, tags its temporary logging `[DEBUG-<hash>]` and greps it out twice before closing, checks `git status -s` against a startup snapshot so the person's own uncommitted edits are never touched, and hands its report to a named next stage.
+ADR-0079 rejected a slimmed debugger because a model already applies the method unprompted. The skill earns its place on the policy a model would not apply on its own: it changes no file except a lessons entry, tags its temporary logging `[DEBUG-<hash>]` and greps it out twice before closing, checks `git status -s` against a startup snapshot, so its cleanup leaves the person's own uncommitted edits alone, and hands its report to a named next stage.
 
 ## Decision
 
