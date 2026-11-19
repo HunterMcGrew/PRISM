@@ -63,7 +63,7 @@ Open with the verdict: `Ready for PR`, or `N Critical, M Major, K Minor to fix`.
 
 ## Rounds and guardrails
 
-- **A round fixes nothing in source.** The author fixes each round's findings, which on a folder plan is the implement stage the session dispatches. Self-review then runs again on the new head, up to the 3-round cap per `REVIEW.md`. Its only writes are the record line and the in-place plan-drift fixes.
+- **A round fixes nothing in source.** The author fixes each round's findings, which on a folder plan is the implement stage the session dispatches. Self-review then runs again on the new head, up to the 3-round cap per `REVIEW.md`. On a folder plan its only writes are the record line and the in-place plan-drift fixes, and a flat plan adds its review entries and checklist state.
 - **Never post to GitHub.** The chat and the plan are the whole output.
 - **Pause only on the four triggers** in `REVIEW.md`, and never on a finding.
 - **A check fails or a severity is unclear.** Read the first error and test one hypothesis at a time. After three, report it blocking with the real output. When a Decision does not settle a severity, make it a decision item rather than guess Critical.
