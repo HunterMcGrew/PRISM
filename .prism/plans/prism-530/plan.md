@@ -1080,10 +1080,11 @@ round 5: carried 1
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T1 to T5, the `ci.requiredCheck` key, the CI watcher, reconcile, the report check, and the retro-line check, each with its test. T3 and T4 share one commit.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T7, so `review` is a copied content area with a consumer-owned `review/stack/` folder. `build.ts` now matches `*` globs in `seed-curation.json` `excluded`, since the old exact-match list could not express `review/stack/**`. `ship-closure.ts` gained `review` in its seed content areas, a file outside T7's list that the task's own sweep of the content-area lists required.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T8 and T9, the root `REVIEW.md` and the ten pass files with their generated copies. `pnpm run prism:ship-closure` reports the ten pass files as unreached until a shipped doc names `REVIEW.md`, which no task before T12 does.
-- 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T11, the `review-stack` generator that writes `.prism/review/stack/` files at onboarding, and T6, which delivers `watch-ci.mjs`, `reconcile.mjs`, and `check-report.mjs` and adds the `merge=union` `.gitattributes` line for the misses log. T11 also updated `rule-generators.test.ts`, `rule-generation.md`, and `onboarding.md` with their platform copies, which the first two re-plan Decisions entries allow.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T11, the `review-stack` generator that writes `.prism/review/stack/` files at onboarding, and T6, which delivers `watch-ci.mjs`, `reconcile.mjs`, and `check-report.mjs` and adds the `merge=union` `.gitattributes` line for the misses log. T11 also updated `rule-generators.test.ts`, `rule-generation.md`, and `onboarding.md` with their platform copies, which the first two re-plan Decisions entries allow. `measureSkillLoad` puts `prism-onboard` at 56 loaded lines.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed T7 so `ship-closure.ts` reads the excluded list through the shared `buildExcludedMatcher`, next to the `SEED_CONTENT_AREAS` change T7 made in `c39a4c6c`. Fixed T3, so `reconcile.mjs` exits 2 with a message outside a git repository, and T2, where the Windows skip is one `WINDOWS_SKIP` constant. The "T9 fix" commit added the three `.ai-skill-generated` markers that the `*.md` glob missed in the `review` platform copies.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T10, the root `REVIEW.md` delivery. `prism update` writes it when absent, refreshes a marked copy after saving `REVIEW.md.bak`, and warns on an unmarked one. Doctor and eject learn the marker, and the build mirrors it to `templates/install/REVIEW.md`.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T12, the new `review-runtime.md` and its routes in `manifest.json`, `manifest.base.json`, and the install `manifest.stub.json`, with the `plan-chain-scripts.md`, `hook-runtime.md`, `install-layout.md`, and `token-substitution.md` edits and their copies and seed twins. The `plan-chain-scripts.md` Invocation paragraph was also corrected to list `watch-ci` as a command with its exit codes 8 and 3 and its config-parse behavior, because it was false once `watch-ci` shipped. `pnpm run prism:check` is green at this head, `prism:ship-closure` included.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed Briar's round 1 on stack A, one `T<n> fix:` commit each for T10, T4, T2, T11, and T3, and marked the five Minors and the bookkeeping Minor fixed under `## Review`. The two nits, a two-cell row in `check-report.mjs` and `readOption` in `watch-ci.mjs`, stay open.
 
 ## Sessions
 
@@ -1107,7 +1108,8 @@ round 5: carried 1
 ### runDoctor's JSDoc now documents checkReviewMd
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `7f4ffd8c` moved `checkReviewMd` and its JSDoc above `runDoctor`'s block.
 - **File:** `scripts/ai-skills/doctor.ts:1529`
 - **Problem:** `checkReviewMd` and its JSDoc were inserted between `runDoctor`'s JSDoc block and `runDoctor`. The "Runs every health check" block now sits directly above `checkReviewMd`'s own block, and `runDoctor` has no doc comment at all. Class: a new declaration inserted between an existing JSDoc and the declaration it documents. Sweep: `grep -n -B2 '^/\*\*$' scripts/ai-skills/{doctor,update,eject,build}.ts` turned up no other stacked blocks among the new functions.
 - **Suggested fix:** move `checkReviewMd` and its JSDoc above the "Runs every health check" block, for example next to `checkCodexDocLimit`.
@@ -1115,7 +1117,8 @@ round 5: carried 1
 ### check-report counts a capitalized table header as a row
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `13c2d3ee` compares the header cell case-insensitively, adds a capitalized-header test, and trims the JSDoc's `base:` claim.
 - **File:** `scripts/ai-skills/hooks/verify/check-report.mjs:233`
 - **Problem:** `parseTableRow` skips a header only when its first cell is exactly `check`. A `| Check | Result | Evidence |` header therefore becomes a row, and `checkReport` reports `unknown result for Check: Result`. Thrive never validated results, so this hazard is new. Neither `REVIEW.md` nor `review-runtime.md` names the header the verify stage must write, so the T13 author has nothing that steers them away from the failing spelling. Class: a parser that accepts a narrower input than the documented shape. Sweep: `grep -n '"check"' scripts/ai-skills/hooks/verify/check-report.mjs` shows this as the only header check.
 - **Suggested fix:** compare the first cell case-insensitively, or skip the line just above the separator row. Add a test with a capitalized header.
@@ -1123,7 +1126,8 @@ round 5: carried 1
 ### watch-ci's header says it defends against an early green that the default does not cover
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `24e3ab8c` reworded the watch-ci header, `plan-chain-scripts.md`, and the `ci.requiredCheck` schema text, and left the behavior and tests alone as a doc-only fix.
 - **File:** `scripts/ai-skills/hooks/plan/watch-ci.mjs:19`
 - **Problem:** The header explains that a slow build can register after quicker checks and give an early green, and says the script avoids that by waiting for the required check. With no `--required` flag and no `ci.requiredCheck`, which is the default, a check that registers after the others settle is missed, and the watcher can exit 0 before the build runs. `plan-chain-scripts.md`'s "waits for every check on the head to settle" also reads as stronger than the code. Class: a guarantee stated for one configuration that the default configuration lacks. Sweep: `grep -rn 'every check' .prism/architect/_toolkit/ .ai-skills/config.schema.json` found this claim in `plan-chain-scripts.md` and in the schema description.
 - **Suggested fix:** say in the header, the doc line, and the schema description that the race is closed only when a required check is named. Add a test showing a late-registered check is missed with no required check.
@@ -1131,7 +1135,8 @@ round 5: carried 1
 ### The correctness stack check cannot fire on a first onboarding
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `5df833ec` states in `rule-generation.md` that a person sets `commands.*` by hand and that the next onboarding run writes the file with no `--force`, and leaves the generator's gating as it is.
 - **File:** `scripts/ai-skills/lib/rule-generators/review-stack.ts:100`
 - **Problem:** `buildCorrectnessFile` reads `commands.typecheck` and `commands.test` from `.ai-skills/config.json` on disk. Onboarding runs the generators before `writeOnboardingConfig`, and neither `prism init` nor `writeOnboardingConfig` writes `commands`. So a normal first onboarding never produces `.prism/review/stack/correctness.md`. `rule-generation.md` says "a later run after they are set writes it", but the only later path is a forced regeneration. Class: a generator gated on state that a later step writes. Sweep: `grep -n 'commands' scripts/ai-skills/lib/onboarding-config.ts scripts/ai-skills/init.ts scripts/ai-skills/lib/onboarding-types.ts` found no writer.
 - **Suggested fix:** derive the evidence commands from the detected stack, run `review-stack` after the config write, or state in the onboarding skill that the correctness file needs a `--force` run once `commands` is set.
@@ -1139,7 +1144,8 @@ round 5: carried 1
 ### A thrive developer's login survives in the reconcile fixtures
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `4c60d90c` swapped the login for `author-1` in the test and the fixtures.
 - **File:** `scripts/ai-skills/review-reconcile.test.ts:199`
 - **Problem:** The PR-author login `lucas` comes from thrive's fixtures. The plan's literal swaps replaced thrive's other people (`hunter` and `priya`), and this one was missed. It is still at test lines 199, 273, 284, and 310, and 16 times in `review-reconcile.fixtures.json` in `user.login` and `head.ref`. Class: a third-party identifier left behind after a port's literal swap. Sweep: `grep -n lucas scripts/ai-skills/review-reconcile.*`.
 - **Suggested fix:** swap it for a neutral login such as `author-1` in the test and the fixtures.
@@ -1147,7 +1153,8 @@ round 5: carried 1
 ### AC-11's History record lacks prism-onboard's measured total
 
 - **Severity:** `minor` (bookkeeping only, does not gate)
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** this plan commit adds the 56-line `prism-onboard` total to T11's History line.
 - **File:** `.prism/plans/prism-530/plan.md:1083`
 - **Problem:** AC-11's evidence asks `## History` to record the measured total for `prism-onboard`, and the T11 History line does not. `measureSkillLoad` gives 56 lines at `6d16a76f`.
 - **Suggested fix:** add the 56-line total to the next plan commit.
