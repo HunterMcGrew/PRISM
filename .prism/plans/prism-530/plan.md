@@ -1243,9 +1243,28 @@ head: ffe0e9ae08dacb3c0150d90da980bed9d6cd014e
   - nit: `.prism/rules/branch-plan.md:200` says PRISM cannot force a retro, two lines after the folder-plan sentence that says it does. Scope it to a flat plan, here and in the twin at line 183.
     - Fixed in e83487ef: the rule and its twin scope the sentence, and the epic-grain retro sentence above it, to a flat plan.
   - Minor, bookkeeping-only, not gated: `## Verification` records head `87a06c44`, and the eight fix commits after it touch the schema, rules, templates, and `REVIEW.md`, with no verify re-run before the push. Both CI legs passing at `2fe309fb` cover the substance. Re-dispatch `prism-verify` with the next fix push.
+    - Fixed in 80dabcae: `## Verification` records head `ffe0e9ae`, and the only later commit is plan-only.
   - Still open, a decision item: removing `prism-review-loop` left `modelTiers.overrides` with no reader (`docs/parameterization.md:163`), so a team's `eric` pin for cross-model review silently does nothing. Recommendation: a follow-up PR that has the shipping flow's `prism-pr-review` dispatch honor it.
     - Fixed in 3a022928 and a0a5fedc: the dispatch honors `modelTiers.overrides.eric` in this PR, and the schema and `docs/parameterization.md` name it as the reader. The Decision on the pin replaces the follow-up recommendation.
   - Out of scope: `docs/workflow.md` lines 43 and 87, and `CONTEXT.md` line 51, which the plan leaves to child 9.
+- pr-review round 2 at 80dabcae (part 2 of 2): 0 critical, 0 major, 3 minor, 0 nit
+  - Range: `863d83f0..80dabcae`, which holds six `T<n> fix:` commits and three `plan:` commits, read in a detached checkout at the head. Verify at `ffe0e9ae` passes with 2349 tests and 0 failing. CI ubuntu passes at `80dabcae`, and windows was pending at review time.
+  - Round 1 confirmed closed: all four Minors, the nit, the pin decision item, and the bookkeeping Minor, each at the sha its entry names. The six threads on PR #536 are resolved, each with a reply naming the fix.
+  - Coverage: Docs and citations is not reached, because the full-PR re-sweep was not re-run. The range's citations and every prose home of the three predicates it changed were swept. Round 3 owes the full-range sweep. Every other pass is swept or n/a.
+  - Minor, standards violation: `.prism/rules/workflow.md:59`, and line 16 too. The `modelTiers.overrides.eric` pin is honored only at `shipping-flow.md:58`. The resume row and the re-dispatch after a fix push both send `prism-pr-review` out on the default model with no note.
+    - Class: a dispatch rule stated at one of several sites that dispatch the same agent.
+    - Sweep: `git grep -n "dispatch.*prism-pr-review\|prism-pr-review.*subagent" -- .ai-skills .prism/rules .prism/references .prism/architect docs REVIEW.md` found `shipping-flow.md:58`, `workflow.md:16`, and `workflow.md:59`.
+    - Fix: send both workflow sites through `shipping-flow.md`, or name the pin in the rule. Then widen `docs/parameterization.md:163` and the schema description to every `prism-pr-review` dispatch.
+  - Minor, bug: `.ai-skills/skills/prism-retro/shared.md:30`. The `retro:` commit names `<plan.md>` only, but at full grain duty 4 writes `> Closed:` and `## Retro` into the epic's `spec.md`, and an epic folder has no `plan.md`.
+    - Class: a commit path list that omits a file the same step writes.
+    - Sweep: `grep -n "spec.md" .ai-skills/skills/prism-retro/shared.md` found lines 13 and 29. Line 30 names no `spec.md`.
+    - Fix: change `<plan.md>` to `<plan.md, or the epic's spec.md at full grain>`.
+  - Minor, standards violation: `docs/ai-skills/iris.md:15`. The retro's folder-plan writes are listed without `> Closed:` there and at `iris.md:38`, `docs/personas.md:230`, and `.prism/architect/_toolkit/skills-ecosystem.md:72`. The section-ownership table in `.prism/architect/_toolkit/plan-authoring.md` has no row for the line either.
+    - Class: a writer duty that changed while the prose lists of that writer's output did not.
+    - Sweep: `grep -rn "Retro:\` line\|lessons exits" docs .prism/architect` found the four sites above.
+    - Fix: add the `> Closed:` line to each list, and add a table row naming `prism-retro` for folder plans.
+  - Labels: `effort:deep` and `review:has-minors`. The summary comment is updated in place, and the PR stays in draft. Reconcile `--no-write --json` reports clean.
+  - Out of scope: the plan rule's Before Closing step 2 says to put `> Closed:` under the plan's title. A folder `plan.md` has no title, and the retro writes the line after the frontmatter, which the audit still reads.
 
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
 
