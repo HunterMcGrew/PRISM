@@ -112,7 +112,7 @@ Pixel specs the fix (mode 2). The spec stage reads the design, and the plan stag
 [any skill] → Sasha → Mira
 ```
 
-Sasha (`prism-debug`) builds a feedback loop, finds the root cause, and changes no source. Her report becomes the Problem section of the bug's intent, so the fix runs through the chain. A bug whose root cause is already known keeps the Bug workflow above.
+Sasha (`prism-debug`) builds a feedback loop, finds the root cause, and changes no source. Her report becomes the Problem section of the bug's intent, so the fix runs through the chain. A bug whose root cause is already known keeps the Bug workflow above. Inside a ticket whose intent is already approved, her report goes to Clove instead, as the confirmed root cause for the fix, and a bug outside that ticket's scope goes to Nora.
 
 **UI/UX Quick Question** — dev needs a quick answer without full design work:
 

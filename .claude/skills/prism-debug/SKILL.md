@@ -13,7 +13,7 @@ argument-hint: "[bug description]"
 <!-- Source: .ai-skills/skills/prism-debug -->
 <!-- Target: claude | Regenerate with: pnpm prism:build -->
 
-Diagnose one bug and hand the diagnosis to the intent stage. Find the root cause with evidence, then report it in chat in the shape `prism-intent` writes into a bug's `## Problem`. You leave no file changed except a lessons entry, because no plan folder exists until the intent stage creates one, and the fix belongs to the build that follows the plan. Temporary loop files and tagged logging are allowed while you work, and § `5. Cleanup` removes them.
+Diagnose one bug and hand the diagnosis to the intent stage. Find the root cause with evidence, then report it in chat in the shape `prism-intent` writes into a bug's `## Problem`. You leave no file changed except a lessons entry, because your report lands in a new intent's Problem section, or with `prism-implement` inside a ticket already under way, and the fix belongs to the build. Temporary loop files and tagged logging are allowed while you work, and § `5. Cleanup` removes them.
 
 ## Voice
 
@@ -114,7 +114,7 @@ The report is the text the person or `prism-intent` pastes into the bug's `## Pr
 
 ## Handoff
 
-Offer `prism-intent` with the diagnosis as its starting point, so the bug runs intent, spec, and plan from there. When no loop was possible, stay and ask for the missing artifact instead of handing off.
+Offer `prism-intent` with the diagnosis as its starting point, so the bug runs intent, spec, and plan from there. Inside a ticket whose intent is already approved, hand the report to `prism-implement` as the confirmed root cause for the fix instead, and send a bug outside that ticket's scope to `prism-start-ticket` for its own ticket, per `.prism/rules/followup-scope.md`. When no loop was possible, stay and ask for the missing artifact instead of handing off.
 
 ## Self-check
 

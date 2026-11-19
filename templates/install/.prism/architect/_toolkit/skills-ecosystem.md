@@ -82,10 +82,10 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 
 | From        | Recommends                                                                                               | When                                                                                                                      |
 | ----------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Nora**    | Clove (bugs), Mira (features and improvements — her Design line decides whether Pixel runs) | After ticket setup |
+| **Nora**    | Clove (bugs; Sasha first when the root cause is unknown), Mira (features and improvements — her Design line decides whether Pixel runs) | After ticket setup |
 | **Mira**    | The spec stage, through the resume table | After the intent is approved |
 | **Winston** | Back to whoever asked | After an approach question or a fit verdict |
-| **Sasha** | Mira (the diagnosis becomes the intent's Problem) | After a diagnosis |
+| **Sasha** | Mira (the diagnosis becomes the intent's Problem); Clove inside an approved ticket | After a diagnosis |
 | **The plan stage** | Clove | After the plan is approved |
 | **Clove**   | Briar (in-session) or Eric (fresh chat)                                                                  | After PR is pushed                                                                                                        |
 | **Briar**   | Eric (in a fresh chat)                                                                                   | After clean self-review                                                                                                   |
