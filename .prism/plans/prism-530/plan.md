@@ -1310,6 +1310,12 @@ head: 47072a1fd117d92820af6d9005567f6228ab85a7
   - Out of scope:
     - The ADR links at `.prism/architect/_toolkit/skills-ecosystem.md` lines 70 and 76 resolve to a missing path, which predates this PR.
     - ADR-0080 still says the cap fits in 120 lines, with no amendment note.
+- pr-review confirm at 80edaf22 (part 2 of 2): 0 critical, 0 major, 0 minor, 1 nit
+  - Range: the fix commits `9bd307e0..80edaf22`, plus Docs and citations and Regressions over the full PR. Verify at `47072a1f` passes, and ubuntu CI passes at `80edaf22`. Windows CI was still pending when the pass posted.
+  - Round 3 confirmed closed: all three Minors and all five nits, each against its source, with the fix shas marked above. The seven threads are resolved, each with a reply.
+  - nit: `.ai-skills/skills/prism-pr-review/shared.md:12`: "which Threads, misses, record sets" is hard to parse. Suggested wording: "which the `Threads, misses, record` section sets". It can ride the next commit that touches the skill.
+  - Still open, a judgment call carried from round 3: whether `REVIEW.md` should exempt a structural `not reached`. Recommendation: a follow-up PR.
+  - Labels: `effort:deep` and `confidence:needs-judgment`. The summary is updated in place, and the PR stays in draft.
 
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
 
