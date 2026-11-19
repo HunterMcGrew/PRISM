@@ -7,7 +7,7 @@ Its enumeration unit, severity, finding shape, and coverage line are in `REVIEW.
 ## Checklist
 
 - **Read the tests first.** Before the diff's code, read the tests it adds or changes and list the edge cases they don't consider: empty, boundary, failure, and the callers they skip.
-- **Regression surface by name.** Check every item in the intent's regression surface, per `.prism/templates/intent.md` § `Regression surface`. Each one gets a verdict and the evidence behind it.
+- **Regression surface by name.** Check every item in the intent's regression surface (the epic's `intent.md` on an epic child), per `.prism/templates/intent.md` § `Regression surface`. Each one gets a verdict and the evidence behind it.
 - **Branch against the default branch.** Compare types, lint, and tests on the branch against `origin/<defaultBranch>`, with `defaultBranch` from `.ai-skills/config.json`. The `## Verification` section of `plan.md`, written by the verify stage, serves as the branch half. Which command runs each check is in `.prism/rules/verification-commands.md`.
   - A failure new on the branch blocks.
   - A failure that also happens on the default branch goes under "Out of scope".

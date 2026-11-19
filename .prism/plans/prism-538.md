@@ -59,7 +59,7 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
   - **Root cause:** `[Deduced]` from CI run 44587940829. The Windows temp dir is `C:\Users\RUNNER~1`, an 8.3 short name that JS `realpathSync` keeps, so the delegated copy's long `APPROVE_SCRIPT` never equals the payload's short spelling. The prompt arm passed and the execution arm failed, which fits a path-spelling mismatch.
   - **Chosen approach:** `.native` in `isChatApproveCommand`, `findSessionCopy`, and `findCheckout`, which expands short names. Not reproduced locally; the Windows leg passed at 830991fc (run 44589622597).
 - **The guard delegates only to a checkout of the same repository.** Eric found delegation reached any checkout holding a guard copy. Both checkouts must share `git rev-parse --git-common-dir`, and the tests use a real `git worktree add` pair plus a negative case for an unrelated repo.
-- **The `workflow.md` hedge clause lands in part 2, not part 1.** Eric asked for it on #539, but part 1 had about 7 bytes of `AGENTS.md` lead-section headroom and part 2 rewrites the same paragraph.
+- **The `workflow.md` hedge clause lands in part 2, not part 1.** Eric asked for it on #539, but part 2 rewrites the same paragraph, and part 1's `AGENTS.md` lead sections ended at byte 31,737, 7 bytes under the 31,744 working line PRISM-522 and PRISM-530 set (1 KiB under Codex's 32,768). `agents-md-budget.test.ts` enforces only 32,768, so by the test part 1 had 1,031 bytes; the working line is a convention no test holds.
 - **Part 1 is merged into part 2, not rebased,** because part 2 was already pushed and `git-conventions.md` forbids rebasing a shared branch.
 - **A child must be listed in its epic's `## Children`.** Eric found `checkIntent` proved the named folder was an approved epic but never read `child:`. `auto-approve.mjs` now requires a `## Children` row in the epic's `spec.md` whose first cell, backticks aside, equals `child:`, so an agent-written spec can't claim an unrelated approved epic.
 - **On an epic child, "the intent" every review reader names is the epic's `intent.md`.** One sentence in `.prism/review/intent-scope.md` covers every pass file, and `prism-self-review` and `prism-challenge` name the epic route where they read the intent.
@@ -156,6 +156,24 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 
 - pr-review round 1 at 1c8d51b (part 1 of 2): 0 critical, 1 major, 2 minor, 0 nit
 - pr-review round 1 at 580af0da (part 2 of 2): 0 critical, 1 major, 3 minor, 0 nit
+- pr-review round 2 at 830991fc (part 1 of 2): 0 critical, 0 major, 1 minor open (stale delegation header comment)
+- pr-review round 2 at 4761e654 (part 2 of 2): 0 critical, 0 major, 0 minor, 1 nit
+
+### Three pass files read the intent without the epic route (#540, nit)
+
+- **Severity:** `nit`
+- **Status:** `fixed` in part 2
+- **File:** `.prism/review/intent-scope.md:3`
+- **Problem:** a pass subagent reads only its own pass file, so `regressions.md`, `security.md`, and `contracts.md` didn't see `intent-scope.md`'s epic-route sentence.
+- **Suggested fix:** name the epic's `intent.md` in each of the three lines.
+
+### Guard header still describes delegation to any checkout (#539)
+
+- **Severity:** `minor`
+- **Status:** `fixed` in 58bd694d
+- **File:** `scripts/ai-skills/hooks/approve-guard.mjs:22`
+- **Problem:** the module header said delegation reaches "another checkout", after 830991fc limited it to a worktree of the same repository.
+- **Suggested fix:** reword to "another worktree of the same repository", and say a different repository's checkout runs this copy.
 
 ### Execution arm fails on Windows (#539, #540)
 
