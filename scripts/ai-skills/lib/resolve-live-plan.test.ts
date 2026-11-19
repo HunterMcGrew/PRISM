@@ -317,15 +317,15 @@ test("resolveLivePlan: null when a ticket id is present but no tier resolves a p
 // ---------------------------------------------------------------------------
 
 test("resolveLivePlan: resolves a plan-first branch by matching an unfiled plan's filename slug", async () => {
-	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+	const branchName = "huntermcgrew/prism-plan-lookup-self-audit";
 
 	await withTempTree(
 		async (tempRoot) => {
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self-audit.md",
+				".prism/plans/plan-lookup-self-audit.md",
 				[
-					"# Plan: review-loop-self-audit",
+					"# Plan: plan-lookup-self-audit",
 					"",
 					"## Ticket",
 					"",
@@ -337,21 +337,21 @@ test("resolveLivePlan: resolves a plan-first branch by matching an unfiled plan'
 		async (tempRoot) => {
 			assert.equal(
 				await resolveLivePlan(branchName, tempRoot),
-				".prism/plans/review-loop-self-audit.md"
+				".prism/plans/plan-lookup-self-audit.md"
 			);
 		}
 	);
 });
 
 test("resolveLivePlan: the unfiled-plan-by-slug tier skips a plan whose ## Ticket field is already filed", async () => {
-	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+	const branchName = "huntermcgrew/prism-plan-lookup-self-audit";
 
 	await withTempTree(
 		async (tempRoot) => {
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self-audit.md",
-				["# Plan: review-loop-self-audit", "", "## Ticket", "", "PRISM-2001", ""].join(
+				".prism/plans/plan-lookup-self-audit.md",
+				["# Plan: plan-lookup-self-audit", "", "## Ticket", "", "PRISM-2001", ""].join(
 					"\n"
 				)
 			);
@@ -363,21 +363,21 @@ test("resolveLivePlan: the unfiled-plan-by-slug tier skips a plan whose ## Ticke
 });
 
 test("resolveLivePlan: the unfiled-plan-by-slug tier returns null when two unfiled plans both match", async () => {
-	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+	const branchName = "huntermcgrew/prism-plan-lookup-self-audit";
 
 	await withTempTree(
 		async (tempRoot) => {
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self-audit.md",
-				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+				".prism/plans/plan-lookup-self-audit.md",
+				["# Plan: plan-lookup-self-audit", "", "## Ticket", "", "None yet.", ""].join(
 					"\n"
 				)
 			);
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self.md",
-				["# Plan: review-loop-self", "", "## Ticket", "", "TBD", ""].join("\n")
+				".prism/plans/plan-lookup-self.md",
+				["# Plan: plan-lookup-self", "", "## Ticket", "", "TBD", ""].join("\n")
 			);
 		},
 		async (tempRoot) => {
@@ -387,29 +387,29 @@ test("resolveLivePlan: the unfiled-plan-by-slug tier returns null when two unfil
 });
 
 test("findUnfiledPlanCandidatesBySlug: returns both candidates on the same collision resolveLivePlan collapses to null", async () => {
-	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+	const branchName = "huntermcgrew/prism-plan-lookup-self-audit";
 
 	await withTempTree(
 		async (tempRoot) => {
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self-audit.md",
-				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+				".prism/plans/plan-lookup-self-audit.md",
+				["# Plan: plan-lookup-self-audit", "", "## Ticket", "", "None yet.", ""].join(
 					"\n"
 				)
 			);
 			await writeFile(
 				tempRoot,
-				".prism/plans/review-loop-self.md",
-				["# Plan: review-loop-self", "", "## Ticket", "", "TBD", ""].join("\n")
+				".prism/plans/plan-lookup-self.md",
+				["# Plan: plan-lookup-self", "", "## Ticket", "", "TBD", ""].join("\n")
 			);
 		},
 		async (tempRoot) => {
 			assert.deepEqual(
 				await findUnfiledPlanCandidatesBySlug(branchName, tempRoot),
 				[
-					".prism/plans/review-loop-self-audit.md",
-					".prism/plans/review-loop-self.md",
+					".prism/plans/plan-lookup-self-audit.md",
+					".prism/plans/plan-lookup-self.md",
 				]
 			);
 		}
@@ -509,14 +509,14 @@ test("resolveLivePlan: the unfiled-plan-by-slug tier does not match a slug token
 });
 
 test("resolveLivePlan: the unfiled-plan-by-slug tier never reads .prism/archived/", async () => {
-	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+	const branchName = "huntermcgrew/prism-plan-lookup-self-audit";
 
 	await withTempTree(
 		async (tempRoot) => {
 			await writeFile(
 				tempRoot,
-				".prism/archived/plans/review-loop-self-audit.md",
-				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+				".prism/archived/plans/plan-lookup-self-audit.md",
+				["# Plan: plan-lookup-self-audit", "", "## Ticket", "", "None yet.", ""].join(
 					"\n"
 				)
 			);

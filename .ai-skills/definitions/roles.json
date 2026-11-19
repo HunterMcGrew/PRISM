@@ -137,11 +137,6 @@
 			"routing": "named-only"
 		},
 		{
-			"id": "prism-review-loop",
-			"type": "utility",
-			"routing": "named-only"
-		},
-		{
 			"id": "prism-forge-skill",
 			"type": "utility",
 			"routing": "named-only"

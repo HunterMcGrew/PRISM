@@ -23,12 +23,7 @@ const repoRoot = path.resolve(scriptDirectory, "..", "..");
 
 const LOADED_LINE_CAP = 120;
 
-const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {
-	"prism-review-loop": {
-		thinnedBy: "replaced by REVIEW.md and the phase-3 review runners",
-		max: 306,
-	},
-};
+const OVER_CAP_ALLOWLIST: Record<string, { thinnedBy: string; max: number }> = {};
 
 async function listSkillIds(): Promise<string[]> {
 	const entries = await fs.readdir(path.join(repoRoot, ".ai-skills", "skills"), {
