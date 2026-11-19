@@ -2,7 +2,9 @@
 title: Port the personas — Voice blocks, the cap allowance, the unique-name check, and prism-debug
 ticket: https://github.com/HunterMcGrew/PRISM/issues/537
 stage: plan
-status: draft
+status: approved
+approved_by: Hunter McGrew
+approved_at: 2026-11-19
 ---
 
 Child 7 of the Kitchen Line epic (#499). The design comes from the epic spec on `main`, at `.prism/plans/prism-499/spec.md`. These parts apply:
