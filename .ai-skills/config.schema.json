@@ -246,6 +246,19 @@
 			"additionalProperties": { "type": "string" },
 			"examples": [{ "@/": "src/" }]
 		},
+		"ci": {
+			"type": "object",
+			"description": "How the PR stage waits on CI. Absent means the watcher waits until every check on the head has settled.",
+			"additionalProperties": false,
+			"properties": {
+				"requiredCheck": {
+					"type": "string",
+					"minLength": 1,
+					"description": "The name of the CI check the PR stage waits for, as `gh pr checks` prints it. When absent, the watcher waits until every check on the head has settled.",
+					"examples": ["build"]
+				}
+			}
+		},
 		"hookRuntimeDir": {
 			"type": "string",
 			"description": "The repo-relative directory holding the hook runtime. Defaults to `.claude/hooks`. Set only by a repo that runs the runtime from its source tree, as PRISM does; a consumer never sets it.",
