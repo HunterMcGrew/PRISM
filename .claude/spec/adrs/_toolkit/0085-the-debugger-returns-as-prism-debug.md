@@ -28,7 +28,7 @@ Alternatives that lost:
 
 - Positive: a bug with an unknown cause gets a loop, ranked hypotheses, and a graded root cause before anyone writes a fix.
 - Negative: "changes no file" is prose. No hook stops a debug run from editing source, and the cleanup grep is the model's to run.
-- Negative: a bug that goes through Sasha takes the full chain (intent, spec, plan) before the fix, which is longer than the Bug workflow's direct route to Clove.
+- Negative: a bug that goes through Sasha takes the full chain (intent, spec, plan) before the fix, unless the ticket's intent is already approved, where her report goes straight to the build, which is longer than the Bug workflow's direct route to Clove.
 - Neutral: "Sasha" routes again, so the persona name ADR-0079 left with no skill has one.
 
 ## References
