@@ -1,7 +1,7 @@
 ---
 title: Compatibility
 description: How PRISM's build outputs land across tool namespaces and what gets committed vs ignored.
-last_updated: "2026-11-18"
+last_updated: "2026-11-19"
 ---
 
 # Compatibility
@@ -18,7 +18,7 @@ The short version, before the prose:
 
 ## Persona vs utility skills
 
-Most skills are personas. A skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`, `prism-review-loop`). Utility skills generate skill bodies in all three runtimes like any other skill, but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X, so the build skips its `.codex/agents/<id>.toml` (and removes a stale one if a skill flips type). See [ADR-0046](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md) for the decision and the rejected alternatives.
+Most skills are personas. A skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`). Utility skills generate skill bodies in all three runtimes like any other skill, but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X, so the build skips its `.codex/agents/<id>.toml` (and removes a stale one if a skill flips type). See [ADR-0046](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md) for the decision and the rejected alternatives.
 
 ## Why the asymmetry exists
 

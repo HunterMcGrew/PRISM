@@ -3,7 +3,7 @@ title: "PRISM Personas"
 description: "What each persona does, when to call them, and what they hand off."
 category: "personas"
 audience: "developer-user"
-last_updated: "2026-11-18"
+last_updated: "2026-11-19"
 ---
 
 # PRISM Personas
@@ -43,7 +43,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Briar — self-review (`prism-self-review`)
 
-**What she does:** Reviews the current branch covering types, logic, accessibility, tests, and build. Reports findings in chat and in the branch plan's `## Review Issues` section. Never posts to GitHub.
+**What she does:** Reviews the current branch by running the passes in the repo's `REVIEW.md` through subagents, and grades the acceptance criteria. Reports findings in chat and records one line per round in the branch plan's `## Review` section. Never posts to GitHub.
 
 **When to call:** Before opening a PR. "Briar, review my changes."
 
@@ -55,7 +55,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Eric — PR review (`prism-pr-review`)
 
-**What he does:** Runs a full review on an open GitHub PR. Posts inline comments, severity-ranked issues, test coverage gaps, and a readiness checklist directly to the PR. Never approves — that's a human responsibility.
+**What he does:** Runs the same `REVIEW.md` passes on an open GitHub PR. Posts marked inline comments, one summary, and labels directly to the PR, resolves the threads a later commit fixed, and logs the human catches his review missed. Never approves — that's a human responsibility.
 
 **When to call:** After the PR is open. "Eric, review PR #123."
 
@@ -117,7 +117,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Reese — QA test plans (`prism-qa-plan`)
 
-**What she does:** Writes QA test plans for releases, sprints, PRs, or hotfixes. Produces checklists that a tester can execute against the running app.
+**What she does:** Writes QA test plans for releases, sprints, PRs, or hotfixes. Produces checklists that a tester can execute against the running app, and nothing else. Grading acceptance criteria belongs to the review stages.
 
 **When to call:** "QA plan for PR #123." or "Release checklist for v1.2.0."
 
@@ -148,6 +148,16 @@ These stages carry no persona and no voice. A person approves the intent and the
 **Hands off to:** Implementation, one commit per bundle.
 
 **Skill:** [`.ai-skills/skills/prism-plan/`](../.ai-skills/skills/prism-plan/)
+
+---
+
+### `prism-verify` — verify stage
+
+**What it does:** Runs as a subagent after the build. Runs every check in `commands` of `.ai-skills/config.json`, plus a check on the rules, skills, and docs when the diff touches them, and records the results under `## Verification` in `plan.md`. It fixes nothing and grades no acceptance criterion.
+
+**When it runs:** Once per head after the build, and again after a later commit for the checks that commit reaches. The workflow dispatches it, and no phrase routes to it.
+
+**Skill:** [`.ai-skills/skills/prism-verify/`](../.ai-skills/skills/prism-verify/)
 
 ---
 
@@ -207,7 +217,7 @@ These stages carry no persona and no voice. A person approves the intent and the
 
 ### Zoe — cadence audit (`prism-audit`)
 
-**What she does:** Audits plans, lessons, and open decisions. Surfaces stale open decisions, plans that haven't been closed, and lessons that have fired enough to graduate to rules. Also carries an explicit-only worktree hygiene lane that classifies every `git worktree` entry GREEN/RED/YELLOW and clears the GREEN set on one batch confirmation.
+**What she does:** Audits plans, plan folders, lessons, and open decisions, and checks that each `promoted to` claim in a plan names a file that holds the text. Surfaces stale open decisions, plans that haven't been closed, and lessons that have fired enough to graduate to rules. Also carries an explicit-only worktree hygiene lane that classifies every `git worktree` entry GREEN/RED/YELLOW and clears the GREEN set on one batch confirmation.
 
 **When to call:** "Zoe, run a cadence audit." — typically at the end of a sprint or release cycle. "Zoe, clean up worktrees." for the explicit worktree hygiene lane.
 
@@ -217,7 +227,7 @@ These stages carry no persona and no voice. A person approves the intent and the
 
 ### Iris — retrospective facilitator (`prism-retro`)
 
-**What she does:** Compares a plan's stated intent with the execution record (merged diffs, PR threads, CI) against a six-question charter, at a light per-ticket grain or a full epic grain. Every finding cites its evidence. Writes the report to `.prism/retros/` and offers action items to Nora. Read-only on source plans — never modifies them.
+**What she does:** Compares a plan's stated intent with the execution record (merged diffs, PR threads, CI) against a six-question charter, at a light per-ticket grain or a full epic grain. Every finding cites its evidence. Writes the report to `.prism/retros/` and offers action items to Nora. On a folder plan she is the fixed last stage: she runs after PR review without being asked, writes the Decision verdicts, the `Retro:` line, and the lessons exits, and commits them. On a flat plan she stays optional and read-only.
 
 **When to call:** "Iris, retro this epic." or "What went well on PRISM-1234?"
 
@@ -342,7 +352,6 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 | Skill | What it does |
 |-------|-------------|
 | `prism-handoff` | Compacts the session into a handoff document a fresh agent can continue from |
-| `prism-review-loop` | Orchestrates self-review → fix → PR-review loops to a subject-clean pass |
 | `prism-forge-skill` | Scaffolds a new PRISM skill from scratch or migrates an existing platform skill into canonical source |
 | `tdd` | Utility *reference* — holds the red-green loop, the test-first rules, and the three anti-patterns (with their tells); read for its content, not invoked as a session |
 

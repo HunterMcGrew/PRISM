@@ -53,6 +53,8 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `defaultBranch` | string | optional | Default branch name. Substituted as `${DEFAULT_BRANCH}`. Defaults to `main`. |
 | `techStack` | string[] | optional | Validated against an enum (see schema). Drives onboarding's per-codebase rule generation — e.g. when `typescript` is present, Atlas generates a `code-standards-ts.md` for the team based on patterns in their actual code. |
 | `hosts` | string[] | optional | Which AI coding hosts this repo runs — `claude`, `codex`, `cursor`. Absent means all of them, so an existing install needs no change. Gates every host-specific delivery — the hook registrations and git hook shims, the persona skill roster and agent definitions, and the platform content copies (rules, architect docs, templates) — writing them only for the hosts you list, and taking a dropped host's output back out on the next `prism update`. The hook runtime files under `.claude/hooks/` are the exception: they reach every install, because the skills name them and a Cursor user runs them from a terminal. |
+| `commands.*` | string | optional | The shell commands the verify stage runs from the repo root, one check per key with a non-empty value: `typecheck`, `lint`, `test`, `build`, and `format` are the usual keys. Any extra key you add, such as `e2e`, becomes one more verify check, run the same way. An empty or absent key is recorded as not configured. |
+| `ci.requiredCheck` | string | optional | The name of the CI check the PR stage waits for, as `gh pr checks` prints it. When absent, the watcher waits until the head has a check and none is pending, so a check that registers after the others settle can be missed. Setting this closes that gap. |
 | `hooks.commitCleanupPass` | boolean | optional | Holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read this session; the retry goes through. Off when absent. Runs only where a host registers the hook runtime. |
 | `hooks.pushVerification` | boolean | optional | Runs `commands.lint` and `commands.format` before every `git push`; a non-zero exit denies the push with the output tail. An unset command is skipped; a timeout allows the push and says so. When PRISM's git hooks are installed, the gate skips `lint` if `gitHooks.prePush.command` is set and skips `format` if `gitHooks.preCommit.command` is set, because the git hook already ran it. Off when absent. |
 | `hooks.pushVerificationTimeoutMs` | integer | optional | Per-command budget for `pushVerification`, 120000 by default. Keep it below the host's own hook timeout (Claude Code: 600 s) so the script, not the host, decides the outcome. |
@@ -67,7 +69,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `importAliases` | object | optional | Import specifier prefixes mapped to the repo-relative path prefix each stands for, as in `{ "@/": "src/" }`. The plan bundle check uses it to turn an aliased import into a dependency edge, and ignores a bare specifier that matches no key. |
 | `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
 | `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
-| `modelTiers` | object | optional | Optional model selection. Only `overrides` is read today, by the review loop, which honors an `eric` entry. See § Model overrides below. |
+| `modelTiers` | object | optional | Optional model selection. Nothing reads it today. See § Model overrides below. |
 | `slackChannel` | string | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`. |
 
 ## All tokens
@@ -133,7 +135,7 @@ The `features` object in `.ai-skills/config.json` holds capability flags that ar
 
 ### `features.mainSessionMayMerge`
 
-When set to `true`, the main session — the agent session you are working in — may squash-merge a PR once the review loop came back clean and the PR carries no `review:has-minors` label. When absent or `false`, merge is always a human responsibility.
+When set to `true`, the main session — the agent session you are working in — may squash-merge a PR once the final PR review came back clean and the PR carries no `review:has-minors` label. When absent or `false`, merge is always a human responsibility.
 
 **This flag is off by default.** Most teams should leave it off. It is appropriate for solo maintainers or automated pipelines where a human is on-the-loop rather than in-the-loop for each merge.
 
@@ -149,7 +151,7 @@ When set to `true`, the main session — the agent session you are working in �
 
 Set it once; it survives reconfiguration runs (the reconfigure flow preserves unknown and feature-flag fields without re-prompting for them).
 
-**What the main session checks before merging:** even when this flag is `true`, the main session still verifies that the review loop came back clean. A PR with open review issues or a `review:has-minors` label does not merge — the flag gates the _capability_, not the judgment about readiness. A reviewer persona or a subagent never merges, whatever the flag says.
+**What the main session checks before merging:** even when this flag is `true`, the main session still verifies that the final PR review came back clean. A PR with open review issues or a `review:has-minors` label does not merge — the flag gates the _capability_, not the judgment about readiness. A reviewer persona or a subagent never merges, whatever the flag says.
 
 > [!NOTE]
 > The flag is never mentioned during init or onboarding. You set it by hand.
@@ -158,17 +160,7 @@ Set it once; it survives reconfiguration runs (the reconfigure flow preserves un
 
 ## Model overrides
 
-The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. The review loop honors an `eric` entry when present, and no other key is read today. Absent, each skill keeps the model its generated agent definition or frontmatter pins.
-
-One tradeoff is worth naming. If the reviewer (Eric) and the workers run the same model, the review loop loses some family-level blind-spot coverage — a mistake the model's family is prone to can slip past a reviewer of the same family. A team that wants cross-model review pins Eric explicitly:
-
-```json
-{
-  "modelTiers": {
-    "overrides": { "eric": "gpt-5" }
-  }
-}
-```
+The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. Nothing reads it today, because the review loop that honored an `eric` entry was removed, so a value here has no effect. Each skill keeps the model its generated agent definition or frontmatter pins.
 
 ---
 
