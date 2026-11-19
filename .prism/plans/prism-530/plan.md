@@ -1111,6 +1111,12 @@ round 5: carried 1
   - Round 1 confirmed closed: all five Minors and the bookkeeping Minor. `runDoctor`'s JSDoc sits directly above it again, `check-report.mjs` reads `Check` as the header, the watch-ci header, `plan-chain-scripts.md`, and both schema descriptions now name the late-check gap and match the code at `watch-ci.mjs:83`, `rule-generation.md` matches `review-stack.ts`'s per-file skip, `grep -rn lucas` finds only this plan, and T11's History line carries the 56-line total. The `base:` nit is fixed too. The watch-ci fix added no late-check test, which was part of the suggested fix, and the fix records it as doc-only.
   - Still open: the two-cell row nit in `check-report.mjs` and the `readOption` nit in `watch-ci.mjs`. History says they stay open but gives no reason, so the exit rule counts them until each is fixed or declined with one.
   - No new findings in the range.
+- self-review round 3 at 95089dcc: clean
+  - Range: `61383da8..95089dcc`, one `T4 fix:` commit and two `plan:` commits.
+  - Checks: `pnpm run prism:check` exits 0 at `95089dcc`, with 2324 tests passing and 0 failing. `spec-scope-lint` skipped on the detached checkout. The range adds no always-on spec path.
+  - Two-cell row nit closed: `parseTableRow` now returns null when the evidence cell is missing. Thrive's parser at `db35709` drops a row with fewer than three cells the same way, and its third cell is `result` where PRISM's is evidence. Both new tests pass and assert that their replacement changed the fixture.
+  - `readOption` nit closed as declined: PRISM's `readOption` matches thrive's at `db35709` line for line, so the reason given holds.
+  - No new findings in the range.
 
 ### runDoctor's JSDoc now documents checkReviewMd
 
