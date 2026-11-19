@@ -92,3 +92,73 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
+
+---
+
+## Review Issues
+
+Self-review round 1 at 49388842, over both commits (part 1 of 2 is 24d3907b, part 2 of 2 is 49388842). All ten passes ran; `pnpm run prism:check` exits 0 on this head.
+
+AC grades: AC-1 met (executed: parser test passes, and main's guard records approvals for both messages). AC-2 met (executed: the two "another checkout" tests pass, and main's guard names `../main/...` from a second checkout). AC-3 met (executed: registration warning test). AC-4 met (executed: `prism:check` exit 0). AC-5 met (executed: intent cases pass; main's `auto-approve.mjs` has no intent check, by inspection). AC-6 met (executed: stacked-child test; main's script anchors on `intent.md` only, by inspection). AC-7 met (executed: `agents-md-budget.test.ts`).
+
+### Hedge set misses the `'d` contraction
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/plan/chat-approval.mjs:105`
+- **Problem:** `CONTRACTED_FUTURE` is `/'ll$/`, so `I'd approve this one` parses as an approval and records a token, while `I would approve this one` (in the test list) does not.
+- **Class:** hedge or modal forms the word set misses, so a sentence that talks about approving still approves.
+- **Sweep:** `grep -n "HEDGES\|CONTRACTED_FUTURE" scripts/ai-skills/hooks/plan/chat-approval.mjs` shows the two sites; 28 probe sentences run through `parseApprovePrompt`, and only the `'d` form got through among the earlier-position hedges.
+- **Suggested fix:** widen the contraction pattern to `/'(?:ll|d)$/` and add `I'd approve this one` to `NOT_APPROVALS`.
+
+### The delegation target is trusted by `cwd` alone, and the header's known-misses list doesn't say so
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/approve-guard.mjs:125`
+- **Problem:** with a payload `cwd` inside any git checkout that holds a file at `scripts/ai-skills/hooks/approve-guard.mjs`, the guard runs that file and passes its output through. A stub copy that prints nothing turns every deny into an allow (run: a scratch repo holding a no-op guard, `cwd` set to it, `node scripts/ai-skills/hooks/plan/approve.mjs x.md` returns the deny from the real cwd and empty output from the scratch one). The header says a new bypass shape goes on the known-miss list, and this one is not on it. `runSessionCopy` also ignores `child.error`, so a spawn failure writes no stderr line, against the header's "every error writes one stderr line".
+- **Class:** a new bypass or trust shape missing from a file's own known-misses list.
+- **Sweep:** `grep -n "Known misses" scripts/ai-skills/hooks/approve-guard.mjs` (one list, line 125) and `grep -n "known misses" .prism/architect/_toolkit/hook-runtime.md` (points at the header); neither names the delegation.
+- **Suggested fix:** add one clause to the known-misses list ("a copy of this file in another checkout the session's `cwd` sits in, which the guard hands the event to"), and write one stderr line when `child.error` is set.
+
+### The child-spec gate is only in step 3, so step 1 and the done-when list contradict it
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-spec/shared.md:13`
+- **Problem:** step 1 says to read `intent.md` and return `blocked` on a missing approval, and the final checklist says every intent criterion has a requirement. A child folder has no `intent.md`, and the child-mode paragraph sits in step 3 under the epic bullets. A subagent that follows the file in order blocks on every child.
+- **Class:** a mode added in a later section of a stepwise skill while the earlier gate still reads as unconditional.
+- **Sweep:** `grep -n "intent" .ai-skills/skills/prism-spec/shared.md` (lines 12, 13, 22, 28, 66 all assume an own intent); the other three edited skill sources condition the child case in the sentence that states the rule.
+- **Suggested fix:** in step 1, add "For an epic child, the intent is the epic's, read per step 3", and in the done-when list, "every criterion in the intent or the child's row".
+
+### `## Acceptance Criteria` ownership still names only the intent stage
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/plan-authoring.md:39`
+- **Problem:** the section-ownership table says the intent stage generates a plan's acceptance criteria. For an epic child, `prism-plan` now writes them into `plan.md`, so a reader of the table looks for an intent that doesn't exist. `.prism/review/intent-scope.md` § Grading a criterion has the same owner gap: it sends a criterion defect to `prism-intent` on a plan folder.
+- **Class:** behavior change with no shared symbol, so prose that describes the old owner survives.
+- **Sweep:** `git grep -n "Acceptance Criteria" -- .prism/architect/_toolkit/plan-authoring.md .prism/review/intent-scope.md` (lines 39, 40 and line 17 of the review file).
+- **Suggested fix:** one clause in each: "the plan stage, for an epic child".
+
+### Still open (decision items)
+
+- **An `epic:` line names any approved intent.** `checkIntent` accepts any sibling folder whose `intent.md` reads `status: approved`, so a spec written by the agent can point at an unrelated approved ticket. It is still tighter than main, which checked no intent. Recommend adding one condition: the named intent reads `size: epic`.
+- **The hedge scan blocks real approvals.** `I read the epic and it's what I wanted, approved <file>.md`, `looks good and should be fine, approved <file>.md`, and `it will cost one more night, but approved` all return no approval, because the scan covers the whole sentence. Recommend keeping the Decision as written, and dropping `wanted` from `HEDGES` since it reports a past fact.
+
+## Cleanup Items
+
+- None.
+
+## PR Readiness
+
+- [x] No critical or major issues (four minor open)
+- [x] Types correct (`pnpm run prism:check` includes `check-types`)
+- [x] No stray debug artifacts
+- [x] Tests written for new logic (the guard, parser, intent condition, and spec anchor each have cases)
+- [x] All debugged issues resolved (none recorded)
+- [x] Build passes, last run 2026-11-19 (`pnpm run prism:check` exit 0)
+- [ ] PR description up to date (no PR yet)
+- [ ] Lasting decisions promoted (at close; the epic-child decision is an ADR candidate)
+
+**Last updated:** 2026-11-19
