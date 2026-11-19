@@ -1085,6 +1085,7 @@ round 5: carried 1
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T10, the root `REVIEW.md` delivery. `prism update` writes it when absent, refreshes a marked copy after saving `REVIEW.md.bak`, and warns on an unmarked one. Doctor and eject learn the marker, and the build mirrors it to `templates/install/REVIEW.md`.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Built T12, the new `review-runtime.md` and its routes in `manifest.json`, `manifest.base.json`, and the install `manifest.stub.json`, with the `plan-chain-scripts.md`, `hook-runtime.md`, `install-layout.md`, and `token-substitution.md` edits and their copies and seed twins. The `plan-chain-scripts.md` Invocation paragraph was also corrected to list `watch-ci` as a command with its exit codes 8 and 3 and its config-parse behavior, because it was false once `watch-ci` shipped. `pnpm run prism:check` is green at this head, `prism:ship-closure` included.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed Briar's round 1 on stack A, one `T<n> fix:` commit each for T10, T4, T2, T11, and T3, and marked the five Minors and the bookkeeping Minor fixed under `## Review`. The two nits, a two-cell row in `check-report.mjs` and `readOption` in `watch-ci.mjs`, stay open.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed the two-cell row nit in `T4 fix` 79abb962, so `check-report.mjs` drops a table row with fewer than three cells as thrive does. The `readOption` nit was declined earlier.
 
 ## Sessions
 
@@ -1169,6 +1170,7 @@ round 5: carried 1
 
 - `scripts/ai-skills/hooks/verify/check-report.mjs:9`: the JSDoc says the section opens with `base:` and `head:` lines, but only `head:` is checked. Drop `base:` from the sentence, or check it.
 - `scripts/ai-skills/hooks/verify/check-report.mjs:228`: a two-cell row such as `| lint | pass |` is accepted, so the documented evidence column is never enforced. Thrive dropped rows with fewer than 3 cells.
+  - Fixed in 79abb962: `parseTableRow` now drops a row with fewer than three cells, as thrive's does, and two tests cover a two-cell fail row and a section of only two-cell rows.
 - `scripts/ai-skills/hooks/plan/watch-ci.mjs:205`: `readOption` takes the next token blindly. A trailing `--required` quietly falls back to config, and `--required --timeout-min 5` waits on a check named `--timeout-min`. Thrive has the same behavior.
   - Declined 2026-11-19 by the main session: T2 ports thrive's watcher, and its argument parsing matches thrive's. Changing it would be a behavior change the port doesn't call for.
 
