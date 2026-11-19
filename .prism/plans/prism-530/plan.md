@@ -1170,6 +1170,7 @@ round 5: carried 1
 - `scripts/ai-skills/hooks/verify/check-report.mjs:9`: the JSDoc says the section opens with `base:` and `head:` lines, but only `head:` is checked. Drop `base:` from the sentence, or check it.
 - `scripts/ai-skills/hooks/verify/check-report.mjs:228`: a two-cell row such as `| lint | pass |` is accepted, so the documented evidence column is never enforced. Thrive dropped rows with fewer than 3 cells.
 - `scripts/ai-skills/hooks/plan/watch-ci.mjs:205`: `readOption` takes the next token blindly. A trailing `--required` quietly falls back to config, and `--required --timeout-min 5` waits on a check named `--timeout-min`. Thrive has the same behavior.
+  - Declined 2026-11-19 by the main session: T2 ports thrive's watcher, and its argument parsing matches thrive's. Changing it would be a behavior change the port doesn't call for.
 
 ## Acceptance Criteria
 
