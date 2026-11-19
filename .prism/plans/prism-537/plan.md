@@ -629,6 +629,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T7-T8 fix: Self-review round 1 corrected ADR-0084's Voice block placement to follow an atlas anchor only before the first `## ` heading, and its Neutral consequence to name both ADR-0080 notes it overturns. The rule and the skill-writing guide now say a Voice block carries three or four signature lines.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T6 fix: PR review round 1's Minor is closed. `persona-voice.test.ts` now also reads each skill's `claude.md`, because the load counter exempts a Voice section there too; a temporary Voice line in `prism-plan`'s `claude.md` failed the utility and agent case.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T6 fix: PR review round 2's nit is closed. The `claude.md` and utility-or-agent checks now match a Voice heading by `trimEnd()` like `stripVoice`, so `## Voice ` with a trailing space fails them; a temporary one in `prism-plan` and in `prism-architect` each failed its case.
+- 2026-11-19 [huntermcgrew/prism-537-personas-part2]: Part 1 (T1 to T9) shipped as #541, squash-merged at d83ffd7a with CI green on both legs at 166a62c5. This commit records those tasks as shipped, because the squash leaves no task subjects on main.
 
 ## Sessions
 
@@ -692,7 +693,7 @@ head: 22e246b9b0525b34fdc180ee9012546eec6d08ff
   - Every pass swept or n/a, and CI is green on both legs at 2a6aa063. AC-1 and AC-4 human evidence are still open and posted on the PR. This run's own comments carry no greeting or signature line, which can serve as AC-4's scratch-PR evidence.
 - pr-review round 2 at 49ee05ef (part 1 of 2): 0 critical, 0 major, 0 minor, 1 nit
   - Range `1c02dec8..49ee05ef`. Round 1's Minor is fixed in 33050911: a temporary `## Voice` in the `claude.md` of `prism-plan`, `prism-verify`, and `prism-architect` failed both test cases, and the test passes 3 of 3 once reverted. The thread is resolved.
-  - **nit, bug: the new `claude.md` guards match `## Voice` exactly, but `stripVoice` matches it after `trimEnd()`.** `scripts/ai-skills/persona-voice.test.ts:100` and line 114 use `Array.includes("## Voice")`, while `scripts/ai-skills/lib/skill-loaded-lines.ts:150` exempts `line.trimEnd() === "## Voice"`. A `## Voice ` heading with a trailing space in a `claude.md`, or in a utility or agent `shared.md`, gets the allowance and the test still passes 3 of 3.
+  - **nit, bug: the new `claude.md` guards match `## Voice` exactly, but `stripVoice` matches it after `trimEnd()`.** fixed 717c04f8, merged without another round on Hunter's call. `scripts/ai-skills/persona-voice.test.ts:100` and line 114 use `Array.includes("## Voice")`, while `scripts/ai-skills/lib/skill-loaded-lines.ts:150` exempts `line.trimEnd() === "## Voice"`. A `## Voice ` heading with a trailing space in a `claude.md`, or in a utility or agent `shared.md`, gets the allowance and the test still passes 3 of 3.
     - Class: an exemption check that normalizes its input more loosely than the guard enforcing it.
     - Sweep: `grep -n '"## Voice"' scripts/ai-skills/persona-voice.test.ts` finds lines 50, 61, 66, 100, and 114. Lines 50 to 66 sit behind the persona shape check, which fails on a non-exact heading, so only 100 and 114 let one through.
     - Fix: compare trimmed lines at both sites, or decline with a one-line reason.
