@@ -34,7 +34,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/approve-guard.mjs\" --tool=claude --event=UserPromptSubmit"
+						"command": "f=\"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/approve-guard.mjs\"; if [ -f \"$f\" ]; then node \"$f\" --tool=claude --event=UserPromptSubmit; else echo '{\"systemMessage\":\"PRISM approve guard is missing from the checkout this session started in, so chat approvals are not recorded. Pull that checkout, or run approve.mjs from a terminal.\",\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"PRISM approve guard is missing from the checkout this session started in, so chat approvals are not recorded. Tell the person, and ask them to pull that checkout or run approve.mjs from a terminal.\"}}'; fi"
 					}
 				]
 			}

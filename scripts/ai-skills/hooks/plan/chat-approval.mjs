@@ -71,14 +71,46 @@ const NEGATIONS = new Set([
 ]);
 // A bare `nt` ending isn't matched, so `intent approved` still approves.
 const CONTRACTED_NEGATION = /n't$/;
+// Words that make a sentence talk about approving rather than approve: a
+// condition, a wish, a guess, or a future. Any of them earlier in the sentence
+// voids it, so "if it's an epic, i approve the epic" gives no approval. A miss
+// here costs the person one more message, while a false approval stamps a file.
+const HEDGES = new Set([
+	"if",
+	"when",
+	"whether",
+	"unless",
+	"once",
+	"wonder",
+	"wondering",
+	"maybe",
+	"perhaps",
+	"potentially",
+	"probably",
+	"might",
+	"could",
+	"would",
+	"should",
+	"may",
+	"will",
+	"gonna",
+	"want",
+	"wants",
+	"wanna",
+	"hope",
+	"hoping",
+]);
+// `I'll approve` is a future, and `I'd approve` a condition.
+const CONTRACTED_FUTURE = /'(?:ll|d)$/;
 
 /**
  * Reads a prompt as a chat approval. Returns `{ path }` when a sentence the
  * person wrote says `approve` or `approved`, where `path` is the first word
  * after it ending in `.md`, or null.
  *
- * A sentence ending in `?`, or with a negation in the three words before the
- * match, doesn't count, and neither do quoted text and harness-written
+ * A sentence ending in `?`, with a negation in the three words before the
+ * match, or with `to` or a hedge such as `if`, `could`, or `want` anywhere
+ * before it, doesn't count, and neither do quoted text and harness-written
  * messages. Any other prompt returns null.
  *
  * @param {unknown} prompt
@@ -100,12 +132,15 @@ export function parseApprovePrompt(prompt) {
 			.slice(0, match.index)
 			.toLowerCase()
 			.replaceAll("’", "'");
-		const lead = before
-			.split(/[^\w']+/)
-			.filter(Boolean)
-			.slice(-3);
+		const words = before.split(/[^\w']+/).filter(Boolean);
+		const lead = words.slice(-3);
 		if (
 			lead.some((word) => NEGATIONS.has(word) || CONTRACTED_NEGATION.test(word))
+		)
+			continue;
+		if (
+			words.at(-1) === "to" ||
+			words.some((word) => HEDGES.has(word) || CONTRACTED_FUTURE.test(word))
 		)
 			continue;
 

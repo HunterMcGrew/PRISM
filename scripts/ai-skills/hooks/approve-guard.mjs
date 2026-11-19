@@ -17,6 +17,14 @@
 // `PRISM_HOOK_DENY_DISABLE`. `hook.mjs` checks both switches before it parses
 // stdin, and an approval path an agent can turn off is not a control.
 //
+// A session in a git worktree runs whatever copy its hook command names, which
+// resolves through the directory the session started in, usually the main
+// checkout. When the payload's `cwd` sits in another worktree of the same
+// repository that holds its own copy at the same path, this copy hands the
+// event to that one and passes its output through, so the guard and the
+// `approve.mjs` it names are always the session's own. A session checkout with
+// no copy, or a checkout of a different repository, runs this one.
+//
 // Chat approval has a prompt arm, run on the harness's prompt-submit event
 // (`promptEvent` in each row, passed as `--event`). When the person approves in
 // a prompt, as `parseApprovePrompt` reads it, it writes the token
@@ -126,7 +134,9 @@
 // `rg --pre`); frontmatter written through a shell command (`sed -i`, `>`,
 // `mv`); zsh-only syntax, since the tokenizer follows bash; a Cursor terminal,
 // which carries no agent marker and may give approve.mjs a terminal; edits to
-// this guard or to the harness settings files that register it. approve.mjs
+// this guard or to the harness settings files that register it, including the
+// copy in the checkout the payload's `cwd` points into, which this guard hands
+// the event to. approve.mjs
 // refuses without a terminal and inside an agent session unless it holds a
 // token, which catches accidental runs only.
 //
@@ -169,7 +179,7 @@
 //   Prompt arm   Claude Code and Codex: UserPromptSubmit with prompt,
 //     session_id, and cwd; plain stdout becomes context.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -302,10 +312,8 @@ const TOKEN_UNREADABLE = /promptsubmit|submitprompt|chat-approval/i;
 const CHAT_APPROVE_COMMAND =
 	/^[ \t]*node[ \t]+((?:[A-Za-z]:)?[\w./-]+)[ \t]+((?:[A-Za-z]:)?[\w./-]+)[ \t]*$/;
 const PLAIN_WORD = /^(?:[A-Za-z]:)?[\w./-]+$/;
-const APPROVE_SCRIPT = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"plan/approve.mjs"
-);
+const SELF = fileURLToPath(import.meta.url);
+const APPROVE_SCRIPT = path.resolve(path.dirname(SELF), "plan/approve.mjs");
 const ARTIFACT_PLACEHOLDER = "<artifact>";
 
 /**
@@ -505,6 +513,12 @@ function main(argv, stdin) {
 	const payload = JSON.parse(stdin);
 	if (declineForeignPayload(tool, payload)) return;
 
+	const sessionCopy = findSessionCopy(harness.cwd(payload) || process.cwd());
+	if (sessionCopy) {
+		runSessionCopy(sessionCopy, argv, stdin);
+		return;
+	}
+
 	if (event.toLowerCase() === harness.promptEvent.toLowerCase()) {
 		const promptCwd = harness.promptCwd(payload);
 		const reply = harness.emitPromptReply(
@@ -540,6 +554,90 @@ function main(argv, stdin) {
 	if (harness.isEditCall(payload) && harness.deniesEdit(payload, cwd)) {
 		writeStdout(harness.emitDeny(frontmatterDeny(cwd)));
 	}
+}
+
+/**
+ * Returns the guard's copy in the session's own checkout when the session works
+ * in another checkout than the one this file sits in, or null. A worktree
+ * session's hook command resolves through the project directory the session
+ * started in, usually the main checkout, which can be stale or missing the
+ * guard. The session's copy names its own `approve.mjs`, so its deny and
+ * prompt texts give a command that runs this checkout's script. Only another
+ * worktree of the same repository counts, so a `cwd` in an unrelated checkout
+ * can't pick which guard runs.
+ *
+ * @param {string} cwd
+ * @returns {string | null}
+ */
+function findSessionCopy(cwd) {
+	const self = findCheckout(path.dirname(SELF));
+	const session = findCheckout(cwd);
+	if (!self || !session || self.root === session.root) return null;
+	if (self.common !== session.common) return null;
+
+	try {
+		const selfPath = realpathSync.native(SELF);
+		const copy = path.join(session.root, path.relative(self.root, selfPath));
+
+		return realpathSync.native(copy) === selfPath ? null : copy;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Returns the real paths of the checkout holding `dir` and of the git
+ * directory its worktrees share, or null outside a checkout. The native
+ * realpath expands a Windows 8.3 short name, so two spellings of one folder
+ * compare equal.
+ *
+ * @param {string} dir
+ * @returns {{ root: string, common: string } | null}
+ */
+function findCheckout(dir) {
+	try {
+		const [top, common] = execFileSync(
+			"git",
+			[
+				"rev-parse",
+				"--path-format=absolute",
+				"--show-toplevel",
+				"--git-common-dir",
+			],
+			{ cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+		)
+			.trim()
+			.split("\n");
+		if (!top || !common) return null;
+
+		return {
+			root: realpathSync.native(top.trim()),
+			common: realpathSync.native(common.trim()),
+		};
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Runs the session checkout's guard on the same arguments and payload, and
+ * passes its output through.
+ *
+ * @param {string} copy
+ * @param {string[]} argv
+ * @param {string} stdin
+ */
+function runSessionCopy(copy, argv, stdin) {
+	const child = spawnSync(process.execPath, [copy, ...argv], {
+		input: stdin,
+		encoding: "utf8",
+	});
+	if (child.error)
+		process.stderr.write(
+			`approve-guard hook: could not run ${copy}: ${child.error.message}\n`
+		);
+	if (child.stderr) process.stderr.write(child.stderr);
+	if (child.stdout) writeStdout(child.stdout);
 }
 
 /**
@@ -695,9 +793,12 @@ function isChatApproveCommand(command, cwd) {
 
 	if (script === undefined) return false;
 
+	// The native call expands a Windows 8.3 short name such as `RUNNER~1`, which
+	// the JS one keeps, so the payload's spelling of a path and git's still match.
 	try {
 		return (
-			realpathSync(path.resolve(cwd, script)) === realpathSync(APPROVE_SCRIPT)
+			realpathSync.native(path.resolve(cwd, script)) ===
+			realpathSync.native(APPROVE_SCRIPT)
 		);
 	} catch {
 		return false;

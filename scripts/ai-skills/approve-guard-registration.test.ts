@@ -6,6 +6,7 @@
  * survive repeat merges and leave a consumer's own entries alone.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -125,16 +126,35 @@ test("PRISM's own settings register the guard from its source path", async () =>
 			],
 		},
 	]);
-	assert.deepEqual(guardEntries(settings, "UserPromptSubmit"), [
-		{
-			hooks: [
-				{
-					type: "command",
-					command: `node "${sourcePath}" --tool=claude --event=UserPromptSubmit`,
-				},
-			],
-		},
-	]);
+
+	const [prompt] = guardEntries(settings, "UserPromptSubmit");
+	assert.equal(guardEntries(settings, "UserPromptSubmit").length, 1);
+	assert.match(
+		prompt?.hooks[0]?.command ?? "",
+		/^f="\$CLAUDE_PROJECT_DIR\/scripts\/ai-skills\/hooks\/approve-guard\.mjs"; if \[ -f "\$f" \]; then node "\$f" --tool=claude --event=UserPromptSubmit; else /
+	);
+});
+
+test("PRISM's own prompt registration warns the person and the agent when the guard is missing", async (t) => {
+	if (process.platform === "win32") return t.skip("the registration runs under sh");
+
+	const settings = await readHookFile(prismRoot, ".claude/settings.json");
+	const command = guardEntries(settings, "UserPromptSubmit")[0]?.hooks[0]?.command ?? "";
+	const emptyCheckout = await makeConsumerRoot();
+	const child = spawnSync("sh", ["-c", command], {
+		input: JSON.stringify({ prompt: "approve", session_id: "s1", cwd: emptyCheckout }),
+		env: { ...process.env, CLAUDE_PROJECT_DIR: emptyCheckout },
+		encoding: "utf8",
+	});
+
+	assert.equal(child.status, 0, child.stderr);
+	const reply = JSON.parse(child.stdout) as {
+		systemMessage: string;
+		hookSpecificOutput: { hookEventName: string; additionalContext: string };
+	};
+	assert.match(reply.systemMessage, /approve guard is missing/);
+	assert.equal(reply.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+	assert.match(reply.hookSpecificOutput.additionalContext, /Tell the person/);
 });
 
 test("a second update leaves exactly one guard entry per event in each host's file", async () => {
