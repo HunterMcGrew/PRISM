@@ -177,6 +177,8 @@ test("a cd whose target the hook cannot know credits nothing after it", async ()
 			`cd missing && cd .. && cat .prism/architect/${GATE_DOC}`,
 			`cd missing; cd ..; cat .prism/architect/${GATE_DOC}`,
 			`cd a/b && cd ../.. && cat .prism/architect/${GATE_DOC}`,
+			`cd missing && cat ../.prism/architect/${GATE_DOC}`,
+			`cd missing; cat ../.prism/architect/${GATE_DOC}`,
 		]) {
 			assert.deepEqual(await runRead(repoRoot, command), [], command);
 		}
@@ -272,6 +274,18 @@ test("heredoc text something runs, or pipes on to something that runs it, is sti
 			"cat <<'EOF' > >(sh)\nrm src/index.ts\nEOF",
 			"tee >(sh) <<'EOF'\nrm src/index.ts\nEOF",
 			"cat > /tmp/x.sh <<'EOF'\nrm src/index.ts\nEOF\nsh /tmp/x.sh",
+		]) {
+			assert.match((await runGate(repoRoot, command)) ?? "", /src\/index\.ts/, command);
+		}
+	});
+});
+
+test("a here-string or a comment opens no heredoc that could hide a later command", async () => {
+	await withGateRepo(async (repoRoot) => {
+		for (const command of [
+			"cat <<<EOF\ntee src/index.ts\nEOF",
+			"cat # <<EOF\ntee src/index.ts\nEOF",
+			'gh api x <<< "$J"\ntee src/index.ts',
 		]) {
 			assert.match((await runGate(repoRoot, command)) ?? "", /src\/index\.ts/, command);
 		}

@@ -158,7 +158,29 @@ export function splitShellSegments(command, heredocs) {
 			continue;
 		}
 
-		if (char === "<" && command[index + 1] === "<" && command[index + 2] !== "<") {
+		// A here-string's `<<<` is consumed whole, so its last two characters
+		// never read as a heredoc introducer that would turn every later line
+		// into body text.
+		if (char === "<" && command[index + 1] === "<" && command[index + 2] === "<") {
+			endToken();
+			index += 2;
+			continue;
+		}
+
+		// A `#` that starts a word comments out the rest of the line, so a
+		// `<<EOF` inside the comment opens nothing.
+		if (char === "#" && !started) {
+			while (
+				index + 1 < command.length &&
+				command[index + 1] !== "\n" &&
+				command[index + 1] !== "\r"
+			) {
+				index++;
+			}
+			continue;
+		}
+
+		if (char === "<" && command[index + 1] === "<") {
 			endToken();
 			const queued = pendingHeredocs.length;
 			index = readHeredocDelimiter(command, index, pendingHeredocs);

@@ -61,6 +61,8 @@ The architect-doc write gate records every read it observes, follows a literal `
 - 2026-11-18 [claude/sleepy-mccarthy-b15lxp]: Reproduced all three reported behaviors with a scratch harness and live probes; plan written.
 - 2026-11-18 [claude/sleepy-mccarthy-b15lxp]: Tasks 1-4 and the doc update landed; `hook-gate-read-credit.test.ts` fails 7 of 11 rows against `main`'s `hooks/`, passes all here. See the Decisions on proven commands and per-segment `cd` for two findings made while testing.
 - 2026-11-18 [claude/sleepy-mccarthy-b15lxp]: Fixed all five self-review findings: heredoc bodies stay for process substitution or any unknown head, the lock wait ends on an unremovable stale lock, `cd` behind `(`/`{`/`builtin`/`command` and `pushd` is modelled, `missing/..` ends credit, and stale `.lock` directories are pruned. Each fix has a row that fails on the pre-review commit.
+- 2026-11-18 [claude/sleepy-mccarthy-b15lxp]: Re-review's minor fixed: credit now judges the composed `cd` path, so `cd missing && cd ..` credits nothing.
+- 2026-11-19 [claude/sleepy-mccarthy-b15lxp]: Fixed PR review's two majors and one minor on #534: the splitter consumes `<<<` and skips `#` comments, a `..` operand after a `cd` credits nothing, and `DENY_CREDIT_NOTE` moved up. New rows fail on `b31eefc`.
 
 ---
 
@@ -106,6 +108,30 @@ The architect-doc write gate records every read it observes, follows a literal `
 - **File:** `.prism/architect/_toolkit/hook-runtime.md:27`
 - **Problem:** "Before that, the operand resolved to `hooks/x.mjs`... and the write went through" narrates the commit; `writing-voice.md` wants the current invariant. Separately, the lock's stale-removal and timeout branches have no test, which is where the spin above hides. A crashed hook also leaves a `.lock` directory that `pruneStaleRouteState` never reaps, since it matches only `.json` and `.json.tmp`.
 - **Suggested fix:** drop that sentence, add the two lock tests, and let the prune reap stale `.lock` directories.
+
+### A here-string or a comment opens a heredoc that hides a later command (PR review)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/lib/shell.mjs` (`splitShellSegments`)
+- **Problem:** the splitter opened a heredoc at the second `<` of `<<<` and inside a `#` comment, so every later line read as body, and `removeDataHeredocBodies` cut it. `cat <<<EOF` followed by `tee <routed>` gated on `main` and passed here.
+- **Suggested fix:** consume `<<<` whole and skip a `#` comment at a word start.
+
+### An operand that climbs out of a `cd` target over-credits (PR review)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` (`parseShellReadTargets`)
+- **Problem:** `cd missing && cat ../.prism/architect/<doc>` credited the doc, though the shell skips the `cat`. A symlinked `cd` target has the same lexical-versus-physical gap.
+- **Suggested fix:** run `checkStepsBackOutOfName` on the joined operand too.
+
+### `DENY_CREDIT_NOTE` declared mid-file (PR review)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/hook.mjs`
+- **Problem:** an exported constant sat between functions, against `code-standards.md` § File Organization.
+- **Suggested fix:** move it up with the other constants.
 
 ---
 

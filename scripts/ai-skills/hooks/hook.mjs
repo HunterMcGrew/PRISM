@@ -104,6 +104,10 @@ import { splitShellSegments, unquote } from "./lib/shell.mjs";
  */
 const SHELL_READ_SAFE_CHARACTERS = /^[\w./@+=,:~"' \t;\r\n-]*$/;
 
+/** The deny message's closing line; `formatDenyMessage` says why it is there. @type {string} */
+export const DENY_CREDIT_NOTE =
+	"Only a whole-file read counts: each `cat` above as its own command (a `cd <dir> &&` before it is fine), or the Read tool with no offset or limit. A redirected or piped `cat`, a flag, `head`, or a ranged Read counts as nothing.";
+
 /**
  * True when a command may earn read credit: inside the read-safe class, with
  * each `&&` directly after a `cd`.
@@ -326,13 +330,22 @@ export function parseShellReadTargets(command) {
 			break;
 		}
 
+		// An operand that climbs out of a `cd` target, as in `cd missing && cat
+		// ../doc.md`, collapses back to a real doc only on paper. The shell
+		// skips the `cat` when the `cd` fails, and through a symlinked target
+		// the `..` lands somewhere else entirely.
 		const base = directory;
-		targets.push(
-			...parseSegmentReadTargets(tokens).map((target) => ({
-				...target,
-				filePath: base === "." ? target.filePath : joinShellPath(base, target.filePath),
-			}))
-		);
+		for (const target of parseSegmentReadTargets(tokens)) {
+			if (base === ".") {
+				targets.push(target);
+				continue;
+			}
+
+			const filePath = joinShellPath(base, target.filePath);
+			if (!checkStepsBackOutOfName(filePath)) {
+				targets.push({ ...target, filePath });
+			}
+		}
 	}
 
 	const rewritten = normalized !== command;
@@ -1163,10 +1176,6 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 		return null;
 	}
 }
-
-/** @type {string} */
-export const DENY_CREDIT_NOTE =
-	"Only a whole-file read counts: each `cat` above as its own command (a `cd <dir> &&` before it is fine), or the Read tool with no offset or limit. A redirected or piped `cat`, a flag, `head`, or a ranged Read counts as nothing.";
 
 /**
  * Builds the deny message for a routed path whose docs this scope has not
