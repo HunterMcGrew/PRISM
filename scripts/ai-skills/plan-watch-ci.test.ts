@@ -240,7 +240,9 @@ test("polls past a gh failure on a later head read", async () => {
 	assert.deepEqual(result, { state: "pass", head: "a", failed: [] });
 });
 
-test("the CLI exits 3 naming the gh error when gh can't read the PR", () => {
+const WINDOWS_SKIP = process.platform === "win32" && "a shell-script gh stand-in can't run on Windows";
+
+test("the CLI exits 3 naming the gh error when gh can't read the PR", { skip: WINDOWS_SKIP }, () => {
 	const bin = fs.mkdtempSync(path.join(os.tmpdir(), "watch-ci-gh-"));
 	fs.writeFileSync(
 		path.join(bin, "gh"),
