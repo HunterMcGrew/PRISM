@@ -2,7 +2,9 @@
 title: Port review and verify, the rulebook, reconcile, and the fixed retro
 ticket: https://github.com/HunterMcGrew/PRISM/issues/530
 stage: plan
-status: draft
+status: approved
+approved_by: Hunter McGrew
+approved_at: 2026-11-19
 ---
 
 Child 6 of the Kitchen Line epic (#499). The design comes from the epic spec on `main`, at `.prism/plans/prism-499/spec.md`. These parts apply:
@@ -959,6 +961,7 @@ round 5: carried 1
   - **Alternatives considered.** Copying the epic spec's Affected systems into a child `spec.md` was rejected, because it duplicates the epic spec and drifts. Building child 6 outside the chain, as children 4 and 5 were, was rejected, because child 5's implement stage now refuses an unapproved folder plan.
   - **Chosen approach.** The workflow rule's approval path: Hunter says `approve` in chat, and the session runs `node scripts/ai-skills/hooks/plan/approve.mjs .prism/plans/prism-530/plan.md`, which stamps `approved_via: chat`.
   - **Implementation guidance.** Every pending edit lands before the ask. Per the workflow rule, an approved `plan.md` keeps its approval through any edit outside `## Tasks`. A change to `## Tasks` goes back through `auto-approve.mjs --check`, which fails here, so it goes back to Hunter.
+  - **Approved 2026-11-19.** Hunter typed `approve` in chat twice on 2026-11-18. The first token sat in a worktree on another branch, so it could not stamp this plan. He then ran `approve.mjs` in his own terminal and confirmed with the keypress. That is why the stamp carries no `approved_via: chat` line. The approval covers what the chat ask covered.
   - **What Hunter's chat approval covers.** It covers this plan and the three T25 intent lines quoted below, and nothing else. The AC-2 adjustment is no longer part of the ask: `prism-architect` accepted it at challenge round 4 as not intent-level, and it is listed with the scope changes for Hunter's veto.
   - **The ask quotes T25's three intent lines, so Hunter's approve covers their exact wording.** The workflow rule keeps an approved `intent.md` approved only through an edit that writes down the person's ruling in their words, and these lines are the plan's wording of his soft-cap ruling. The session quotes them verbatim in the approval ask. T25 does not change them after that. The three lines:
     - "3. **Skill size.** Every skill aims for 120 loaded lines or less, enforced by the existing build check as a soft cap: a skill may go over with an allowlist entry that gives a one-line reason. A persona skill's `## Voice` block does not count, up to 16 lines."
