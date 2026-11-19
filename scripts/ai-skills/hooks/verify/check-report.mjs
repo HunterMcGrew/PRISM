@@ -209,7 +209,9 @@ export function parseSection(sectionLines) {
 
 /**
  * Splits a table row on `|` and trims each cell, so padded and unpadded tables
- * read the same. Returns null for the header and separator rows.
+ * read the same. Returns null for the header and separator rows, and for a
+ * row with fewer than three cells, so a row missing its evidence cell is
+ * dropped rather than counted.
  *
  * @param {string} line
  * @returns {Row | null}
@@ -225,11 +227,12 @@ function parseTableRow(line) {
 		cells.pop();
 	}
 
-	const [check, result] = cells;
+	const [check, result, evidence] = cells;
 
 	if (
 		check === undefined ||
 		result === undefined ||
+		evidence === undefined ||
 		check.toLowerCase() === "check" ||
 		/^:?-+:?$/.test(check)
 	) {

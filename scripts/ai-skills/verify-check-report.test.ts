@@ -237,6 +237,22 @@ describe("checkReport shape rules", () => {
 		assert.deepEqual(checkReport(unpadded), ["fail row with no Failures line: test"]);
 	});
 
+	test("drops a row with no evidence cell, so its fail row has no match", () => {
+		const text = plan({ rows: [...PASSING, TEST_FAIL], failures: [TEST_LINE] });
+		const twoCells = text.replace("| test | fail | 1 failed |", "| test | fail |");
+
+		assert.notEqual(twoCells, text);
+		assert.deepEqual(checkReport(twoCells), ["Failures line with no fail row: test src/a.test.ts"]);
+	});
+
+	test("a section whose rows all lack an evidence cell reads as having no rows", () => {
+		const text = plan({ rows: [["typecheck", "maybe"], ["build", "pass"]] });
+		const twoCells = text.replace(/^\| (typecheck|build) \| (\w+) \| {2}\|$/gm, "| $1 | $2 |");
+
+		assert.notEqual(twoCells, text);
+		assert.deepEqual(checkReport(twoCells), []);
+	});
+
 	test("reports a section with no verdict line", () => {
 		const text = "## Verification\n\nhead: abc1234\n\n### Failures\n\n- none\n";
 
