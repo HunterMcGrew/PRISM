@@ -1373,6 +1373,11 @@ head: 47072a1fd117d92820af6d9005567f6228ab85a7
   - nit: `.ai-skills/skills/prism-pr-review/shared.md:12`: "which Threads, misses, record sets" is hard to parse. Suggested wording: "which the `Threads, misses, record` section sets". It can ride the next commit that touches the skill.
   - Still open, a judgment call carried from round 3: whether `REVIEW.md` should exempt a structural `not reached`. Recommendation: a follow-up PR.
   - Labels: `effort:deep` and `confidence:needs-judgment`. The summary is updated in place, and the PR stays in draft.
+- pr-review confirm at 580e555d (part 2 of 2): 0 critical, 0 major, 0 minor, 2 nit
+  - Range: the retro commits `41107d81..580e555d`, reviewed because they edit files outside the plan folder and the retro report. Docs and citations and Regressions cover the full PR. Both CI legs pass at `580e555d`.
+  - The four promotions are walked claim by claim against their sources: `skill-loaded-lines.ts`, `manifest.json`, `spec-scope-lint.ts`, the subject rules in `plan-chain-scripts.md`, `prism-retro` writer duty 4, and the audit's archive lane. The 60 archived lessons move whole, the merged pair keeps both incidents, and none of the 60 has a live reference in the window. The Decision verdicts match the diff.
+  - nit, carried: the `prism-pr-review/shared.md:12` wording, moved to a follow-up PR by the retro's action item. nit: the PR body omits the retro commits and the open items, and still says retro is 115 lines, where it is now 118.
+  - Labels: `effort:deep` and `confidence:needs-judgment`. The summary is updated in place, and the PR stays in draft.
 
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
 
