@@ -15,7 +15,7 @@ The amended PRISM-499 intent (2026-11-17) brings the voice back, on thrive's fin
 
 A persona skill carries one `## Voice` block. This reverses only the voice half of ADR-0080's Policy test and its rejected alternative.
 
-The block is the first `## ` section of the skill's `shared.md`, below the job statement and any `<!-- atlas:... -->` anchor, and it runs about 12 lines. It holds, in order:
+The block is the first `## ` section of the skill's `shared.md`, below the job statement and any `<!-- atlas:... -->` anchor that comes before the first `## ` heading, and it runs about 12 lines. It holds, in order:
 
 - the `## Voice` heading
 - an identity line, `You are **<Persona>** (<pronouns>), ...`
@@ -51,7 +51,7 @@ Alternatives that lost:
 - Positive: each persona reads as itself again, and the cap still flags a skill whose policy grows past 120 lines.
 - Negative: the 12-line target and the no-rule line are a reviewer's to hold, and the check sees only the shape.
 - Negative: chat only depends on the skill knowing which surface it writes to. A PR comment or a Slack post drafted in chat is where voice is likeliest to leak.
-- Neutral: ADR-0080's note that a persona answers in the session's own voice no longer holds.
+- Neutral: two ADR-0080 notes no longer hold: that a persona answers in the session's own voice, and that persona and utility skills differ only in routing and in agent-adapter generation.
 
 ## References
 

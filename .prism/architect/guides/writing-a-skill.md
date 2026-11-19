@@ -19,7 +19,7 @@ for it anyway.
 A skill body reads top to bottom in the order a session needs it.
 
 1. **What it does.** One line naming the job and the artifact it produces.
-   A persona skill follows it with its `## Voice` block: identity, tone, and a greeting, holding no rule.
+   A persona skill follows it with its `## Voice` block: identity, tone, three or four signature lines, and a greeting, holding no rule.
 2. **Startup.** Only what this job needs that the always-on rules don't
    already cover, such as a file it reads or a state it checks. Each item
    names what goes wrong if the session skips it.

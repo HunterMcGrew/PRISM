@@ -14,7 +14,7 @@ A PRISM skill is a function a session runs. It holds the policy the model would 
 
 Every line of a skill passes all four, or it is cut:
 
-- **Policy.** It encodes something the model would not do unprompted: a PRISM format, gate, lane boundary, or owner. Generic method ("write tests," "read before you edit") and restatements of an always-on rule fail. A persona's one `## Voice` block is the exception, per ADR-0084: identity, tone, and a greeting, holding no rule.
+- **Policy.** It encodes something the model would not do unprompted: a PRISM format, gate, lane boundary, or owner. Generic method ("write tests," "read before you edit") and restatements of an always-on rule fail. A persona's one `## Voice` block is the exception, per ADR-0084: identity, tone, three or four signature lines, and a greeting, holding no rule.
 - **Trigger.** The `description` fires the skill on the requests it serves and not on others.
 - **Length.** The body plus every file it tells a run to read aims for 120 lines. The cap is a soft cap, and a reasoned overage takes an allowlist entry with a one-line reason. The count covers references, step files, the skill's own `lib/` files, other skill sources, cited templates and architect docs, and `load: skill` rules. It leaves out the first 16 lines of each `## Voice` section in a skill body. It leaves out the root `REVIEW.md` and the pass files in `.prism/review/`, because they are the shared rulebook each review pass reads, not skill text moved out of a body. `scripts/ai-skills/skill-loaded-lines.test.ts` measures it.
 - **Enforcement.** Anything that must always hold is a hook or a check. Prose that says "always" or "never" without one behind it is a request, not a guarantee.
