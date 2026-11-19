@@ -622,6 +622,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T3: Ported thrive's Voice blocks into `prism-architect`, `prism-intent`, `prism-implement`, `prism-pr-review`, `prism-self-review`, `prism-design`, and `prism-docs`. Loaded totals are unchanged from `8cb24c49`: 86, 113, 69, 116, 53, 108, and 117.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T4: Ported thrive's Voice blocks into `prism-changelog`, `prism-qa-plan`, `prism-retro`, `prism-standup`, `prism-audit`, and `prism-start-ticket`, and removed `prism-retro`'s session-orientation pointer. Loaded totals are unchanged from `8cb24c49`: 50, 28, 118, 94, 61, and 116.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T5: Wrote the 11 Voice blocks for the personas thrive has no skill for, from the plan's text. Loaded totals are unchanged from `8cb24c49`: `prism-onboard` 56, `prism-prd` 62, `prism-strategy` 91, `prism-market-research` 88, `prism-finance` 90, `prism-marketing` 91, `prism-sales` 92, `prism-metrics` 88, `prism-customer-success` 92, `prism-recruiting` 87, and `prism-legal` 94.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T6: Added `persona-voice.test.ts` with the shape, no-Voice-on-utility-or-agent, and Eric's tone-line cases. Run against `main`'s skill sources, the shape and tone-line cases fail and the utility case passes.
 
 ## Sessions
 
