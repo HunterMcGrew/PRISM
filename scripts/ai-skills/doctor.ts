@@ -1527,13 +1527,6 @@ export interface RunDoctorOptions {
 }
 
 /**
- * Runs every health check and returns a single report. Each check is
- * independent — a config-schema failure does not prevent the git-repo, sync-
- * manifest, or version checks from also running, so a consumer sees every
- * problem in one pass instead of fixing them one at a time across repeated
- * runs.
- */
-/**
  * Reports the root `REVIEW.md` rulebook's state: absent, marked and current,
  * marked but behind PRISM's copy, or unmarked. The review stages read this file
  * as the rulebook, so a missing or stale one changes how every review runs.
@@ -1589,6 +1582,13 @@ async function checkReviewMd(
 	];
 }
 
+/**
+ * Runs every health check and returns a single report. Each check is
+ * independent — a config-schema failure does not prevent the git-repo, sync-
+ * manifest, or version checks from also running, so a consumer sees every
+ * problem in one pass instead of fixing them one at a time across repeated
+ * runs.
+ */
 export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport> {
 	const {
 		consumerRepoRoot,
