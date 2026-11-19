@@ -69,7 +69,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `importAliases` | object | optional | Import specifier prefixes mapped to the repo-relative path prefix each stands for, as in `{ "@/": "src/" }`. The plan bundle check uses it to turn an aliased import into a dependency edge, and ignores a bare specifier that matches no key. |
 | `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
 | `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
-| `modelTiers` | object | optional | Optional model selection. Only `overrides.eric` is read, by the shipping flow's PR-review dispatch. See § Model overrides below. |
+| `modelTiers` | object | optional | Optional model selection. Only `overrides.eric` is read, by every `prism-pr-review` dispatch. See § Model overrides below. |
 | `slackChannel` | string | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`. |
 
 ## All tokens
@@ -160,7 +160,7 @@ Set it once; it survives reconfiguration runs (the reconfigure flow preserves un
 
 ## Model overrides
 
-The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. Only the `eric` entry is read, by the shipping flow's `prism-pr-review` dispatch. It runs the review on that model when the host can run it, and on the default otherwise, saying so in the closing summary. A value for any other persona has no effect, and each other skill keeps the model its generated agent definition or frontmatter pins.
+The optional `modelTiers.overrides` object in `.ai-skills/config.json` pins a persona to a concrete model, keyed by lowercase persona name. Only the `eric` entry is read, by every `prism-pr-review` dispatch, which the shipping flow's Close describes. It runs the review on that model when the host can run it, and on the default otherwise, saying so in the closing summary. A value for any other persona has no effect, and each other skill keeps the model its generated agent definition or frontmatter pins.
 
 ---
 

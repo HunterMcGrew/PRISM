@@ -350,7 +350,7 @@
 		},
 		"modelTiers": {
 			"type": "object",
-			"description": "Optional model selection. Only `overrides.eric` is read, by the shipping flow's PR-review dispatch, so a value for any other persona has no effect. Each other skill keeps the model its generated agent definition or frontmatter pins.",
+			"description": "Optional model selection. Only `overrides.eric` is read, by every `prism-pr-review` dispatch, so a value for any other persona has no effect. Each other skill keeps the model its generated agent definition or frontmatter pins.",
 			"properties": {
 				"overrides": {
 					"type": "object",

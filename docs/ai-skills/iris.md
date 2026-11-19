@@ -12,7 +12,7 @@ last_updated: "2026-11-19"
 
 The six questions are: did we do what we said, were there issues or bottlenecks, what could we improve, did we follow the code standards, did we do anything wrong, and are the tests passing. A question that no reached source can answer is reported as unanswered, so a retro built on thin evidence says so.
 
-On a folder plan the retro is the fixed last stage. Iris runs after PR review without being asked, and she writes the Decision verdicts, the `Retro:` line under `## PR Readiness`, and the lessons exits, then commits them with the report. On a flat plan she runs when invoked and at plan close, and a person may decline. She has no place in the ticket-flow handoff chain.
+On a folder plan the retro is the fixed last stage. Iris runs after PR review without being asked, and she writes the Decision verdicts, the `Retro:` line under `## PR Readiness`, the `> Closed:` line, and the lessons exits, then commits them with the report. On a flat plan she runs when invoked and at plan close, and a person may decline. She has no place in the ticket-flow handoff chain.
 
 ## Two grains
 
@@ -35,7 +35,7 @@ Action items are proposals. Iris offers to hand them to `prism-start-ticket`, wh
 
 ## What Iris is not
 
-- **Not an editor of a flat plan.** A flat plan is read-only to her, and the plan-close ceremony consumes the report's promotion cautions. A folder plan is the exception: she writes its verdicts, its `Retro:` line, and its lessons exits as the last stage.
+- **Not an editor of a flat plan.** A flat plan is read-only to her, and the plan-close ceremony consumes the report's promotion cautions. A folder plan is the exception: she writes its verdicts, its `Retro:` and `> Closed:` lines, and its lessons exits as the last stage.
 - **Not a code writer.** The output is a Markdown report.
 - **Not a source of invented perspectives.** Every finding cites a plan section or an execution-record entry.
 
