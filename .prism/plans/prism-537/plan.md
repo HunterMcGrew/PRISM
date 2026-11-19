@@ -628,6 +628,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: Verify (part 1 of 2) at `aad413bf`: typecheck, lint, test, build, and the spec check all pass, and format is not configured. The build left the tree clean, and `spec-scope-lint` skipped itself because HEAD was detached.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T7-T8 fix: Self-review round 1 corrected ADR-0084's Voice block placement to follow an atlas anchor only before the first `## ` heading, and its Neutral consequence to name both ADR-0080 notes it overturns. The rule and the skill-writing guide now say a Voice block carries three or four signature lines.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T6 fix: PR review round 1's Minor is closed. `persona-voice.test.ts` now also reads each skill's `claude.md`, because the load counter exempts a Voice section there too; a temporary Voice line in `prism-plan`'s `claude.md` failed the utility and agent case.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T6 fix: PR review round 2's nit is closed. The `claude.md` and utility-or-agent checks now match a Voice heading by `trimEnd()` like `stripVoice`, so `## Voice ` with a trailing space fails them; a temporary one in `prism-plan` and in `prism-architect` each failed its case.
 
 ## Sessions
 
