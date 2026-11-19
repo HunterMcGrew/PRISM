@@ -5,7 +5,7 @@ Argues against a decision that has already been made, hard enough to change it, 
 The test is whether the artifact commits to a decision before the evidence exists. That is what an adversary can move.
 
 - **Worth challenging:** a plan and its Decisions, a PRD, strategy or OKRs, a pricing or unit-economics model (assumption stacks are where this is strongest), market sizing and competitive claims, a root-cause diagnosis, a refactor proposal, an architect doc, user stories that carry a requirements bet, and a design spec only when it carries a product bet rather than a layout choice.
-- **Not worth challenging:** work already graded against evidence (a self-review, a PR review, an AC verification) or checked by tests. Re-checking checked work is over-verification. Also skip a ticket-readiness check, which is a gate with its own checklist, and the derivative outputs (changelog, standup, retro, audit, docs). Challenge the decision upstream of those instead.
+- **Not worth challenging:** work already graded against evidence (a self-review, a PR review, a review's acceptance-criteria grades) or checked by tests. Re-checking checked work is over-verification. Also skip a ticket-readiness check, which is a gate with its own checklist, and the derivative outputs (changelog, standup, retro, audit, docs). Challenge the decision upstream of those instead.
 - **A half-formed idea** needs a draft, not an adversary.
 
 ## Startup

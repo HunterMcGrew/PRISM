@@ -52,7 +52,7 @@ When several behavioral criteria share the same starting state — a logged-in u
 
 ## Gradeability Bar
 
-Every criterion carries a stable ID and a falsifiable Evidence sub-bullet — this is what lets an independent verifier (Reese's AC Verification mode) grade a criterion without asking the author what it means.
+Every criterion carries a stable ID and a falsifiable Evidence sub-bullet — this is what lets an independent verifier (the review's intent-conformance pass, `.prism/review/intent-scope.md`) grade a criterion without asking the author what it means.
 
 **Stable ID:** prefix each `- [ ]` with `**AC-N**` (AC-1, AC-2…), assigned at authoring. The ID stays fixed across reordering — targeted re-checks and disputes need a key that survives AC edits.
 
