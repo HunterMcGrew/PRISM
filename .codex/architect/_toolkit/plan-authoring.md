@@ -34,7 +34,7 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | `## Goal`                                     | The plan stage, Nora                                                   | All                                         |
 | `## User Stories`                             | No current writer (legacy flat plans only)                             | The plan stage, Clove, Eli                  |
 | `### Story Map` (under `## User Stories`, epic plans) | No current writer (legacy flat plans only)                     | The plan stage, Nora                        |
-| `## Decisions`                                | The plan stage                                                         | All                                         |
+| `## Decisions`                                | The plan stage, `prism-retro` (verdicts on a folder plan)              | All                                         |
 | `## Implementation Tasks`                     | The plan stage                                                         | Clove                                       |
 | `## Acceptance Criteria`                      | The intent stage (generates), Briar (validates/updates), Nora (bug AC) | Clove, Briar, Eric                          |
 | `## Acceptance Criteria` → the ticket tracker | The intent stage (on a yes), Clove (on change), Briar (on change), Nora (on demand), never on a DX ticket | —                                           |

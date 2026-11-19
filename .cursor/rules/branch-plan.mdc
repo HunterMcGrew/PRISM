@@ -233,7 +233,7 @@ Before promoting decisions and marking the plan closed (steps 1–2 above), ever
 
 **Why:** Without an explicit verdict, decisions get promoted mentally, the plan closes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
 
-**How to apply:** The plan stage runs this gate during plan close. A missing verdict is its to fill, not a reviewer finding — Briar and Eric file a plan observation only when the plan contradicts the diff, per each reviewer skill's § Plan-file scope. The same holds for a missing `> Retro:` line under § Before Closing above.
+**How to apply:** On a folder plan, `prism-retro` writes every verdict after the final PR review, and on a flat plan the plan stage runs this gate during plan close. A missing verdict is not a reviewer finding. The review covers the whole PR per `REVIEW.md`, and its intent-scope pass (`.prism/review/intent-scope.md`) fixes plan drift outside `## Tasks` in place, a Decision missing its verdict sub-bullet among it, and lists what it edited. A stale task is reported as a Minor, and `intent.md` is never edited. A missing `> Retro:` line under § Before Closing above is no reviewer finding either, and on a folder plan `pnpm prism:retro-line` fails the plan once the final PR review is recorded with the line empty.
 
 ---
 
