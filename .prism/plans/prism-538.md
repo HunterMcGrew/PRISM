@@ -73,6 +73,7 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
 - 2026-11-19 [huntermcgrew/prism-538-epic-children-approve-guard]: Filed #538 and fixed both approve-guard bugs (part B tasks 1–4).
 - 2026-11-19 [huntermcgrew/prism-538-epic-children-approve-guard]: Part A tasks 5–13: epic child folders, the intent condition in `auto-approve.mjs`, and the `spec.md` anchor in `tasks.mjs`; see Decision: An epic child is a folder with `spec.md` and `plan.md` and no intent.
 - 2026-11-19 [huntermcgrew/prism-538-epic-children]: Fixed PR-review round 1 on both parts: Windows path spelling and same-repo delegation (part 1), `## Children` membership, epic intent routes in review readers, and the hedge clause in `workflow.md` (part 2).
+- 2026-11-19 [huntermcgrew/prism-538-epic-children]: Part 1 (#539) squash-merged as fd6ddcd6 after a clean round 3; part 2 retargeted to `main` and took `origin/main` by merge, with no force-push, because the merged tree matched its own.
 
 ---
 
@@ -158,6 +159,7 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 - pr-review round 1 at 580af0da (part 2 of 2): 0 critical, 1 major, 3 minor, 0 nit
 - pr-review round 2 at 830991fc (part 1 of 2): 0 critical, 0 major, 1 minor open (stale delegation header comment)
 - pr-review round 2 at 4761e654 (part 2 of 2): 0 critical, 0 major, 0 minor, 1 nit
+- pr-review round 3 at 58bd694d (part 1 of 2): clean
 
 ### Three pass files read the intent without the epic route (#540, nit)
 
