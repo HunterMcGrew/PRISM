@@ -1105,6 +1105,7 @@ round 5: carried 1
 - 2026-11-18 [huntermcgrew/prism-530-review-verify] open: Intent: apply the architect's round-4 AC-2 verdict and clear the stale Decisions. Bounds: `plan.md` only, never `## Challenge`, the issue sync left to the main session. Approach: swap in the accepted AC-2 text, record the verdict where the plan reads it, and start the scope-change list. · close: scope held
 - 2026-11-19 [huntermcgrew/prism-530-review-verify] open: Intent: self-review stack A (T1 to T12) at `6d16a76f` against this plan and the repo's rules. Bounds: record in `plan.md` only, no fixes, no GitHub posts, stack B out of scope. Approach: run `prism:check`, read every source and doc change, and check the four ported scripts against thrive at `db35709` with one subagent. · close: scope held
 - 2026-11-19 [huntermcgrew/prism-530-review-verify] open: Intent: fix Eric's PR-review round 1 on stack A under `prism-architect`'s rulings. Bounds: the files named per `T<n> fix:`, their generated copies and seed twins, and `plan.md` Decisions and Review only, no `## Tasks` edit. Approach: record the Decisions first, then one fix commit per task, then mark each finding fixed. close: scope held
+- 2026-11-19 [huntermcgrew/prism-530-review-verify] open: Intent: PR-review round 2 of PR #535 over `95089dcc..b7626d33`, confirming each round 1 finding. Bounds: new findings only in that range, GitHub posts plus this plan's record line, no other repo file. Approach: read the range diff and sweep its references, run `prism:check` at the head, then resolve the fixed threads. · close: scope held
 
 ## Verification
 
@@ -1130,6 +1131,12 @@ round 5: carried 1
   - Range: the full PR, `2aec908e..95089dcc`, read in place with no checkout. The ubuntu CI leg was green and the windows leg pending at review time. Tests were not rerun by the reviewer.
   - Posted on PR #535 as seven inline comments and the summary comment. No prior threads existed, and no labels were applied because a Major stands.
   - Criteria in stack A: AC-2 to AC-8 and AC-6's machine half each have the tests their Evidence names. AC-14 waits on the windows leg. The rest belong to stack B.
+- pr-review round 2 at b7626d33 (part 1 of 2): clean
+  - Range: `95089dcc..b7626d33`, six `T<n> fix:` commits plus plan-only records, checked out detached at the head.
+  - Checks: `pnpm run prism:check` exits 0 at `b7626d33`, with 2330 tests, 2328 passing, 0 failing, and 2 skipped. `spec-scope-lint` skipped on the detached checkout, and the range adds no always-on spec path. Both CI legs, ubuntu and windows, pass at this head, so AC-14 holds for stack A.
+  - Round 1 confirmed closed: the Major, all three Minors, and all three nits, each at the sha its entry names. The seven threads on PR #535 are resolved with a reply naming the fix.
+  - No new findings in the range. The cleaner path on `review-stack.ts` stays not taken and non-blocking.
+  - Labels applied: `effort:deep` and `confidence:high`. The summary comment is updated in place, and the PR stays in draft.
 
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
 
