@@ -1102,6 +1102,7 @@ round 5: carried 1
 - 2026-11-19 [huntermcgrew/prism-530-review-verify]: Fixed Eric's PR-review round 1 on stack A, one `T<n> fix:` commit each for T5, T8, T12, T10, T7, and T9, after `prism-architect` ruled on the stack marker, the in-place `REVIEW.md` replacement, and doctor's info severity. The three rulings are recorded as Decisions, and the cleaner path on the correctness stack check is not taken in this PR.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Recorded T1 to T12 as shipped in #535 (`2cbd8716`), so `tasks.mjs` reads stack B's range correctly. The Decision on the stack B record commit explains why.
 - 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T14, T15, and T16, the self-review, PR-review, and audit rewrites. `measureSkillLoad` puts `prism-self-review` at 53 loaded lines, `prism-pr-review` at 116 (a 48-line body plus 68 lines of `github-writes.md`), and `prism-audit` at 61, so none needs an allowlist entry. The `REVIEW.md` and `review-runtime.md` carry-overs sit in no stack B task, so they go to the report.
+- 2026-11-19 [huntermcgrew/prism-530-review-verify-part-2]: Built T17 and T18. Reese's checklist skill loses AC Verification and drops to 28 loaded lines, `verdict-contract.md` and its copies are deleted, and `prism-retro` is the fixed last stage at 115 loaded lines (a 37-line body plus the 78-line `retro-report.md`). After T18 the old AC-verification names still match only in `followup-scope.md` (T19) and the consumer docs (T24).
 
 ## Sessions
 
