@@ -45,6 +45,7 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | `## Verification`                             | `prism-verify`                                                         | Briar, Eric, Iris                           |
 | `## Review`                                   | `prism-self-review`, `prism-pr-review` (one record line per round)     | Clove, Iris                                 |
 | `Retro:` under `## PR Readiness`              | `prism-retro` (folder plans)                                           | Clove, Eric                                 |
+| `> Closed:` after the frontmatter             | `prism-retro` (folder plans, in `plan.md` or an epic's `spec.md`)      | Zoe                                         |
 | `## Review Issues`                            | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
 | `## Cleanup Items`                            | Briar                                                                  | Clove                                       |
 | `## PR Readiness`                             | Briar                                                                  | Clove, Eric                                 |
