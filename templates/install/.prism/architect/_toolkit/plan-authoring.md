@@ -42,6 +42,9 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | The plan stage, Clove                       |
 | `## History`                                  | All (append-only)                                                      | All                                         |
 | `## Debugged Issues`                          | Clove (creates and marks fixed; any implementer may write it)          | Clove, Briar, Eric                          |
+| `## Verification`                             | `prism-verify`                                                         | Briar, Eric, Iris                           |
+| `## Review`                                   | `prism-self-review`, `prism-pr-review` (one record line per round)     | Clove, Iris                                 |
+| `Retro:` under `## PR Readiness`              | `prism-retro` (folder plans)                                           | Clove, Eric                                 |
 | `## Review Issues`                            | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
 | `## Cleanup Items`                            | Briar                                                                  | Clove                                       |
 | `## PR Readiness`                             | Briar                                                                  | Clove, Eric                                 |

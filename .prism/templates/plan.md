@@ -55,10 +55,13 @@ At close, add a verdict line under each entry: "→ promoted to <path>" or "→ 
 
 ## Review
 
-<!-- Review findings and how each one was resolved. -->
+<!--
+Review findings and how each one was resolved.
+One line per review round, "- self-review round <n> at <sha>: <verdict>", "- pr-review round <n> at <sha>: <verdict>", or "- pr-review confirm at <sha>: <verdict>", per REVIEW.md.
+-->
 
 ## PR Readiness
 
-<!-- Fill the Retro line with the retro report's path, or with "declined — <reason>". -->
+<!-- Fill the Retro line with the retro report's path. The retro always runs. -->
 
 Retro:
