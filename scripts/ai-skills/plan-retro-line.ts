@@ -20,13 +20,18 @@ import { isDirectCliEntry } from "./lib/cli-entry";
  * reads exactly `clean`. A round with open counts means fixes and another
  * round are coming, so the retro is not due yet.
  *
+ * A stacked ticket's earlier PRs carry ` (part <k> of <m>)` after the sha. A
+ * last line whose `k` is less than `m` is not final, because every PR in a
+ * stack shares one plan folder and a later PR is still to be reviewed.
+ *
  * This is PRISM's own lint, run by `prism:check`. It is not delivered to a
  * consumer.
  */
 
 const PLANS_ROOT = ".prism/plans";
 
-const PR_REVIEW_LINE = /^\s*-\s*pr-review (round \d+|confirm) at \S+:\s*(.*)$/;
+const PR_REVIEW_LINE =
+	/^\s*-\s*pr-review (round \d+|confirm) at \S+(?: \(part (\d+) of (\d+)\))?:\s*(.*)$/;
 
 const RETRO_LINE = /^>?\s*Retro:/;
 
@@ -92,7 +97,11 @@ function hasFinalPrReviewVerdict(text: string): boolean {
 		return false;
 	}
 
-	return last[1] === "confirm" || (last[2] ?? "").trim() === "clean";
+	if (last[2] !== undefined && Number(last[2]) < Number(last[3])) {
+		return false;
+	}
+
+	return last[1] === "confirm" || (last[4] ?? "").trim() === "clean";
 }
 
 /**

@@ -114,6 +114,32 @@ test("a plan with no PR-review line passes, because the retro has not come due",
 	assert.deepEqual(await failuresFor(plan([], "Retro:")), []);
 });
 
+test("a part 1 of 2 clean line with an empty Retro passes, because a later PR is still to be reviewed", async () => {
+	assert.deepEqual(
+		await failuresFor(plan(["- pr-review round 2 at abc1234 (part 1 of 2): clean"], "Retro:")),
+		[]
+	);
+});
+
+test("a part 2 of 2 clean line with an empty Retro fails", async () => {
+	assert.deepEqual(
+		await failuresFor(plan(["- pr-review round 1 at abc1234 (part 2 of 2): clean"], "Retro:")),
+		[".prism/plans/prism-1/plan.md"]
+	);
+});
+
+test("a part 1 of 2 confirm line with an empty Retro passes", async () => {
+	assert.deepEqual(
+		await failuresFor(
+			plan(
+				["- pr-review confirm at abc1234 (part 1 of 2): 0 critical, 1 major, 0 minor, 0 nit"],
+				"Retro:"
+			)
+		),
+		[]
+	);
+});
+
 test("a self-review line alone does not count", async () => {
 	assert.deepEqual(
 		await failuresFor(plan(["- self-review round 1 at abc1234: clean"], "Retro:")),
