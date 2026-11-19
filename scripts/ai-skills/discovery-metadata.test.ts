@@ -256,6 +256,19 @@ test("buildRoleMap rejects an unrecognized routing value", () => {
 	);
 });
 
+test("buildRoleMap rejects two roles that share a persona name, ignoring case", () => {
+	const definitions: RolesDefinitions = {
+		skills: [
+			{ id: "first-skill", persona: "Twin", routing: "auto" },
+			{ id: "second-skill", persona: "twin", routing: "auto" },
+		],
+	};
+	assert.throws(
+		() => buildRoleMap(definitions),
+		/Persona 'twin' is claimed by both 'first-skill' and 'second-skill'/
+	);
+});
+
 test("buildCodexAgentToml opens with the persona line for persona entries", () => {
 	const toml = buildCodexAgentToml({
 		codexSkillMarkdown: "# Skill body",
