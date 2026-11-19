@@ -196,7 +196,7 @@ const urlsOf = (comments: Comment[]) => comments.map((comment) => comment.html_u
 const discussion = (id: number) => `https://github.com/acme/app/pull/${PR}#discussion_r${id}`;
 
 describe("marker logic", () => {
-	const pull = { user: { login: "lucas" } };
+	const pull = { user: { login: "author-1" } };
 	const comment = (login: string, body: string, type = "User"): Comment => ({
 		user: { login, type },
 		body,
@@ -270,7 +270,7 @@ describe("marker logic", () => {
 	});
 
 	test("isAuthorNote is an unmarked comment by the PR author", () => {
-		assert.equal(isAuthorNote(comment("lucas", "note"), pull), true);
+		assert.equal(isAuthorNote(comment("author-1", "note"), pull), true);
 		assert.equal(
 			isAuthorNote(comment(AGENT, "<!-- prism-agent -->\nx"), {
 				user: { login: AGENT },
@@ -281,7 +281,7 @@ describe("marker logic", () => {
 
 	test("isHuman excludes agents, bots, and author notes", () => {
 		assert.equal(isHuman(comment(AGENT, "x"), pull), true);
-		assert.equal(isHuman(comment("lucas", "x"), pull), false);
+		assert.equal(isHuman(comment("author-1", "x"), pull), false);
 		assert.equal(isHuman(comment("a[bot]", "x"), pull), false);
 		assert.equal(isHuman(comment(AGENT, "<!-- prism-agent -->\nx"), pull), false);
 	});
@@ -307,7 +307,7 @@ describe("marker logic", () => {
 
 	test("ownAddressed holds back an outdated agent thread while a person has the last word", () => {
 		const opening = comment(AGENT, "<!-- prism-agent -->\nx");
-		const pushback = comment("lucas", "This is still broken.");
+		const pushback = comment("author-1", "This is still broken.");
 		const answer = comment(AGENT, "<!-- prism-agent -->\nFixed in abc123.");
 		const fromBot = comment("ci[bot]", "noted", "Bot");
 
