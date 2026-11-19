@@ -1271,6 +1271,35 @@ head: 203f68454c28b7fa7d9095c3b4fbf52dfb30d23a
     - Fixed in 65d30fe5, 50f8014a, and bc00532f: `iris.md` (both lists), `personas.md`, and `skills-ecosystem.md` with its curated twin name the `> Closed:` line, and the ownership table has a `> Closed:` row owned by `prism-retro` for folder plans.
   - Labels: `effort:deep` and `review:has-minors`. The summary comment is updated in place, and the PR stays in draft. Reconcile `--no-write --json` reports clean.
   - Out of scope: the plan rule's Before Closing step 2 says to put `> Closed:` under the plan's title. A folder `plan.md` has no title, and the retro writes the line after the frontmatter, which the audit still reads.
+- pr-review round 3 at 848a5a0d (part 2 of 2): 0 critical, 0 major, 3 minor, 5 nit
+  - Range: `80dabcae..848a5a0d` for every pass, and the full PR `2cbd8716..848a5a0d` for Docs and citations and Regressions. Read in a detached checkout at the head. Both CI legs pass at `848a5a0d`, and verify at `203f6845` passes, with only a plan commit after it.
+  - Round 2 confirmed closed: the `eric` pin at both `workflow.md` dispatch sites (27da79e9, 65d30fe5), the epic `spec.md` in the retro commit (7b67f939), and the `> Closed:` line in each list of retro writes (65d30fe5, 50f8014a, bc00532f, dc79d10c, 5b0a39fd). The three threads are resolved, each with a reply.
+  - Coverage: every pass is swept or n/a. Docs and citations ran over the full PR, which round 2 owed.
+  - Minor, standards violation: `.prism/spec/adrs/_toolkit/README.md:137`. The ADR-0083 index row lists the retro's writes without the `> Closed:` line, which the ADR now names.
+    - Class: a writer duty that changed while a prose list of that writer's output did not.
+    - Sweep: `git grep -n "lessons exits"` over the tree. This row is the only site that lacks the line.
+    - Fix: add the `> Closed:` line to the row.
+  - Minor, standards violation: `docs/ai-skills/iris.md:15`, also `iris.md:30` and `docs/personas.md:230`. The retro's review-miss class duty and the report template's lessons-exits and review-miss sections are missing from the Iris docs.
+    - Class: a feature doc left behind when the skill gained duties.
+    - Sweep: `git grep -n -i "review-miss" docs/` found nothing in either file.
+    - Fix: name the review-miss proposals at line 15 and in the personas row, and add both sections to step 5.
+  - Minor, standards violation: `README.md:11` still calls Reese an "AC verifier", which T17 removed. No Decision defers README to child 9.
+    - Class: a removed role still named in a doc outside the diff.
+    - Sweep: `git grep -n -i "AC verifi"` over README, `docs/`, the rules, architect docs, skills, and `AGENTS.md` found only this line.
+    - Fix: "QA planner (Reese)".
+  - nit: `.ai-skills/skills/prism-pr-review/shared.md:41` says the reconcile gate reads `prism-pr: <n>`. No reader exists yet, and T15 names child 8's gate.
+  - nit: `.ai-skills/skills/prism-pr-review/shared.md:12` cites "Record", and the heading is "Threads, misses, record".
+  - nit: `.ai-skills/skills/prism-self-review/shared.md:39` says "only writes", which holds on a folder plan only. Line 28 lists the flat-plan writes.
+  - nit: `docs/what-prism-writes.md:82` gives the stack-file predicate as a rule per pass. It misses the language and `commands` gate on `correctness.md`.
+  - nit: `.prism/templates/retro-report.md` lines 38, 41, 72, and 75 hold lessons exits and review-miss classes with no folder-plan-only marker.
+  - Still open, a judgment call:
+    - The pr-review skill (line 27) and its writes reference give a structural `not reached` state 3.
+    - The exit rule and clean definition in `REVIEW.md` still count every `not reached` as unfinished, and that wording dates from stack A.
+    - Recommendation: a follow-up PR that exempts the structural case in `REVIEW.md`.
+  - Labels: `effort:deep` and `review:has-minors`. The summary comment is updated in place, and the PR stays in draft.
+  - Out of scope:
+    - The ADR links at `.prism/architect/_toolkit/skills-ecosystem.md` lines 70 and 76 resolve to a missing path, which predates this PR.
+    - ADR-0080 still says the cap fits in 120 lines, with no amendment note.
 
 ### PR review: the retro-line check fails a stacked ticket at its first PR's final review
 
