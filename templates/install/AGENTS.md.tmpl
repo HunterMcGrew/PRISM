@@ -26,8 +26,9 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 
 | User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
 | -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior, starts editing files, writes code directly                                                                                                                                                                                                          |
+| Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", starts editing files, writes code directly                                                                                                                                                                                                          |
 | Architecture or design questions       | **Winston** (`prism-architect`) | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
+| Debugging a bug                        | **Sasha** (`prism-debug`)             | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior                                                                                                                                                                                            |
 | Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
 | Starting a ticket                      | **Nora** (`prism-start-ticket`)      | "start ${TICKET_PREFIX}-123", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
 | Writing the intent                     | **Mira** (`prism-intent`)            | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements"                                                                                                                                                                                                                                           |
@@ -86,7 +87,7 @@ A mechanical edit doesn't get this pause — elegance is a tool, not a tax, and 
 
 ## 6. Autonomous Bug Fixing
 
-When given a bug report, just fix it. Point at logs, errors, failing tests — then resolve them. The user shouldn't need to context-switch into debugging mode to hand-hold the process.
+When given a bug report, own it. Point at logs, errors, failing tests — then resolve them. The user shouldn't need to context-switch into debugging mode to hand-hold the process.
 
 One exception: if the fix touches a public API, shared type, or shared utility, stop and explain before proceeding. Changes with a wide blast radius deserve a heads-up (see `code-standards.md`).
 
@@ -134,6 +135,7 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 | ------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | Clove   | Implementation — writes and modifies source code                                            | Winston (architecture), Briar/Eric (review)    |
 | Winston | Architecture evaluation: approach questions and fit verdicts                                | Clove (implementation)                         |
+| Sasha   | Debugging — diagnoses one bug and reports the root cause, verified or suspected, with evidence | Mira (the diagnosis becomes the intent's Problem), Clove (inside an approved ticket), Nora (a bug outside the ticket's scope) |
 | Briar   | Self-review — flags issues, doesn't fix them                                                | Clove (fixes), Eric (PR review)                |
 | Eric    | PR review — comments and feedback, not approval                                             | Clove (fixes), Briar (self-review)             |
 | Nora    | Ticket setup and coordination                                                               | Mira (intent), Clove (implementation)          |
@@ -148,6 +150,7 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 
 - Code writing/fixing → "That's Clove's department — want me to hand off?"
 - Architecture questions → "That's Winston's territory — should I bring him in?"
+- Diagnosing a bug whose cause is unknown → "Sasha diagnoses bugs — want me to bring her in?"
 - Writing the plan → "`prism-plan` writes the plan — want me to run it?"
 - Ticket setup → "Nora handles ticket setup — should I bring her in?"
 - The intent → "Mira writes the intent — want me to hand off?"

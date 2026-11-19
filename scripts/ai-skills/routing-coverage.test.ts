@@ -12,6 +12,8 @@
  *   - every `prism-*` id referenced anywhere in the rule exists in
  *     `roles.json` — no ghost routes
  *   - every persona in `roles.json` appears in `skills-ecosystem.md`'s roster
+ *   - no signal phrase appears in two routing-table rows, and the
+ *     broken-behavior phrases stay in the `prism-debug` row
  *
  * This is the validate-not-generate gate from the routing-completeness
  * evaluation: membership drift between the registry and the hand-maintained
@@ -61,8 +63,8 @@ function extractBacktickedSkillIds(text: string): string[] {
 }
 
 /**
- * Runs the five parity assertions from the routing-completeness evaluation
- * against one rule file (the canonical rule or its install seed twin).
+ * Runs the parity assertions from the routing-completeness evaluation against
+ * one rule file (the canonical rule or its install seed twin).
  */
 async function assertRoutingRuleAgreesWithRoles(
 	rulePath: string,

@@ -47,7 +47,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **When to call:** When something is broken and nobody knows why. "Sasha, why is this happening?" or describe the unexpected behavior.
 
-**Hands off to:** Mira, whose intent takes the diagnosis as its Problem section, so the fix runs through the chain, or Clove inside a ticket already under way.
+**Hands off to:** Mira, whose intent takes the diagnosis as its Problem section, so the fix runs through the chain, Clove inside a ticket already under way, or Nora for a bug outside that ticket's scope.
 
 **Skill:** [`.ai-skills/skills/prism-debug/`](../.ai-skills/skills/prism-debug/)
 
