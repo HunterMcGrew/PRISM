@@ -626,6 +626,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T7: Wrote ADR-0084 (0084 was free), marked ADR-0080 partly superseded, added the README rows, and listed 0084 as excluded from the seed; `prism:crossref-lint` passes and the seed has no 0084 twin.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: T9: Matched `docs/personas.md` to the Voice blocks for Reese, Sage, Ellis, Quinn, Remy, and Lex, and linked ADR-0084 beside ADR-0080 in the closing paragraph. `last_updated` already read 2026-11-19.
 - 2026-11-19 [huntermcgrew/prism-537-personas]: Verify (part 1 of 2) at `aad413bf`: typecheck, lint, test, build, and the spec check all pass, and format is not configured. The build left the tree clean, and `spec-scope-lint` skipped itself because HEAD was detached.
+- 2026-11-19 [huntermcgrew/prism-537-personas]: T7-T8 fix: Self-review round 1 corrected ADR-0084's Voice block placement to follow an atlas anchor only before the first `## ` heading, and its Neutral consequence to name both ADR-0080 notes it overturns. The rule and the skill-writing guide now say a Voice block carries three or four signature lines.
 
 ## Sessions
 
