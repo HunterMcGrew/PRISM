@@ -6,6 +6,8 @@ Date: 2026-10-17
 Supersedes: 0045
 ---
 
+> Partly superseded by [ADR-0084](./0084-persona-skills-carry-a-short-voice.md): a persona skill carries one short `## Voice` block again, and the loaded-lines check skips its first 16 lines. The four tests, the cut of the "How X Thinks" lenses, and the rest of this decision stand.
+
 ## Context
 
 [ADR-0045](./0045-skill-content-disclosure-model.md) let a skill keep a large body by moving content into references. Its gate sorted each section into pin, externalize, catalog, or cut. It always pinned the persona's voice and its "How X Thinks" lens, on the theory that a lens shapes reasoning and has to be present when a run starts.
