@@ -86,6 +86,8 @@ A new install's manifest also routes `docs/` to the documentation architect doc,
 
 The same runtime carries two opt-in git gates: a commit-time cleanup pass that holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read, and a push-time verification that runs `commands.lint` and `commands.format` and denies a `git push` on a non-zero exit. Both are off until a `hooks` block in `.ai-skills/config.json` turns them on (`commitCleanupPass`, `pushVerification`). They ride the same delivery as the write gate, so Claude Code and Codex both register them. The shipping flow carries the cleanup pass as a prose step on every host, which is what covers Cursor.
 
+The same runtime carries a secrets gate, on by default. It denies an agent reading `.env` files, `secrets/` folders, and key files, and points it at `env-keys.mjs`, which prints key names only. No kill switch turns it off.
+
 `hosts` reaches past the hook, too: a repo that lists its hosts receives the persona skill roster, agent definitions, and rule copies only for those hosts — dropping a host from the list takes its output back out on the next `prism update`, the same way dropping a host takes its hook registration back out. See [`docs/parameterization.md`](../parameterization.md) § Field reference for the key.
 
 ## The install-script rule
