@@ -13,6 +13,7 @@ import {
 	readFileSync,
 	renameSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import os from "node:os";
@@ -936,5 +937,46 @@ test(
 		}
 
 		assert.deepEqual(readdirSync(tmp), []);
+	}
+);
+
+// --- Review fixes ---
+
+test(
+	"a commit.mjs path starting with a colon is read as a literal file, not as git magic",
+	{ skip: process.platform === "win32" },
+	() => {
+		const repo = createRepo();
+		write(repo, "x.txt", "root\n");
+		write(repo, ":/x.txt", "colon\n");
+		git(repo, "--literal-pathspecs", "add", "--", ":/x.txt", "x.txt");
+		git(repo, "commit", "-q", "-m", "PRISM-1: Seed colon file");
+		change(repo, ":/x.txt");
+
+		assertDeny(
+			gate(repo, commitMjs("plan: Note", ":/x.txt")),
+			"subject",
+			/:\/x\.txt is outside them/
+		);
+	}
+);
+
+test(
+	"a session reaching the repo through a symlink is judged against the real directory",
+	{ skip: process.platform === "win32" },
+	() => {
+		const repo = createRepo();
+		change(repo, CARD);
+		const parent = mkdtempSync(path.join(os.tmpdir(), "commit-gate-link-"));
+		TEMP_DIRS.push(parent);
+		const link = path.join(parent, "link");
+		symlinkSync(repo, link);
+
+		assertDeny(
+			gate(link, commitMjs(TICKET_SUBJECT, CARD)),
+			"subject",
+			/isn't a folder-plan subject/
+		);
+		assert.deepEqual(gate(link, commitMjs("T1: Build the card", CARD)), PASS);
 	}
 );
