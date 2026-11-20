@@ -939,6 +939,10 @@ function removeDataHeredocBodies(command) {
  * resolve (`resolveCdTarget`) leaves the last known directory in place, which
  * keeps this reading over-wide rather than empty.
  *
+ * Only a `cd` at the top level moves the directory. One inside a
+ * substitution or a nested shell string runs in a shell of its own, and the
+ * walk lists those segments before the ones that hold them.
+ *
  * This reading leans on `walkSegments` to place each argument, which the
  * whole-command scan does not. A mis-split moves an argument to the wrong
  * directory here, and the `cwd` reading still has it.
@@ -947,14 +951,15 @@ function removeDataHeredocBodies(command) {
  * @param {string} cwd
  * @returns {string[]}
  */
-function resolveArgumentsAfterCd(command, cwd) {
+export function resolveArgumentsAfterCd(command, cwd) {
+	const walk = walkLines(command);
 	const resolved = [];
 	/** @type {string | null} */
 	let current = null;
-	for (const { words: tokens } of walkLines(command).segments) {
+	for (const { words: tokens, depth } of walk.segments) {
 		const target = resolveCdTarget(tokens);
 		if (target !== null) {
-			if (target !== undefined) {
+			if (target !== undefined && depth === 0) {
 				current = path.resolve(current ?? cwd, target);
 			}
 			continue;

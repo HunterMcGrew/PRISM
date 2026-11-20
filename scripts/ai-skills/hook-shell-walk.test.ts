@@ -10,6 +10,7 @@ import test from "node:test";
 import {
 	parseShellReadTargets,
 	parseUnprovenShellPaths,
+	resolveArgumentsAfterCd,
 	walkLines,
 } from "./hooks/hook.mjs";
 
@@ -71,6 +72,22 @@ test("parseUnprovenShellPaths: only the body that runs a substitution stays when
 
 	assert.equal(candidates.includes(ROUTED), true);
 	assert.equal(candidates.includes(".prism/a.md"), false);
+});
+
+// --- Arguments after a cd ---
+
+test("resolveArgumentsAfterCd: a cd inside a substitution or a nested shell does not move the shell's directory", () => {
+	const commands = [
+		"ROOT=$(cd scripts && pwd); cd src && tee index.ts",
+		"sh -c 'cd scripts && ls'; cd src && tee index.ts",
+	];
+
+	for (const command of commands) {
+		const resolved = resolveArgumentsAfterCd(command, "/repo");
+
+		assert.equal(resolved.includes("/repo/src/index.ts"), true, command);
+		assert.equal(resolved.includes("/repo/scripts/src/index.ts"), false, command);
+	}
 });
 
 // --- Read credit under doubt ---

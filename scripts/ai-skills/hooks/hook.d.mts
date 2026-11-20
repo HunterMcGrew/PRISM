@@ -22,6 +22,8 @@ export const DENY_CREDIT_NOTE: string;
 
 export function parseUnprovenShellPaths(command: string | undefined): string[];
 
+export function resolveArgumentsAfterCd(command: string, cwd: string): string[];
+
 export function resolveTargets(
 	spec: HarnessSpec,
 	payload: HookPayload
