@@ -61,7 +61,7 @@ The new commit gate is a separate thing from `git-gates.mjs`'s opt-in cleanup-pa
 
 ### Shared parser
 
-`hook.mjs` and `git-gates.mjs` call `splitShellSegments` and `unquote` from `lib/shell.mjs` today. They move to `walkSegments` and `tokenize`. The read-credit arm's contract does not move: the safe-character allow-list over the whole command, the `cd <dir> &&` prefix rule, flagless `cat` as the only crediting read, the heredoc data-reader rule, and the `\` to `/` rewrite. The existing suites are the proof that it held, and no assertion in them changes. A segment the walk reports as unreadable credits nothing and gates as a write, which is the direction the write gate already resolves doubt.
+`hook.mjs` and `git-gates.mjs` called `splitShellSegments` and `unquote` from `lib/shell.mjs`, which this child deleted. Both now read commands through `walkSegments`. The read-credit arm's contract did not move: the safe-character allow-list over the whole command, the `cd <dir> &&` prefix rule, flagless `cat` as the only crediting read, the heredoc data-reader rule, and the `\` to `/` rewrite. The existing suites are the proof that it held, and no assertion in them changes. A segment the walk reports as unreadable credits nothing and gates as a write, which is the direction the write gate already resolves doubt.
 
 `git-gates.mjs` reads its `commit` and `push` segments through `walkSegments`, which also reaches a `git commit` inside `bash -c` that the old splitter missed. `plan-chain-scripts.md` drops its line that no gate calls the parser yet.
 
