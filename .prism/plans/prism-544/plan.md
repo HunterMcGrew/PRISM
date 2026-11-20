@@ -6,6 +6,7 @@ status: approved
 approved_by: auto
 approved_at: 2026-11-19
 ---
+> Closed: 2026-11-20
 
 Child 8 of the Kitchen Line epic (#499). The design is this folder's `spec.md`, which carries the parts of `.prism/plans/prism-499/spec.md` this child builds: row 8 of the Children table, the Agent hooks, Architect routes for consumer code, and Always-on rule edits sections, and the Swaps. The epic's approved `intent.md` covers this child. `spec.md` names every thrive file this plan ports and the command that reads one at the pinned ref.
 
@@ -532,109 +533,159 @@ round 4: resolved 1
   - **Part 5, T24 to T26: consumer architect routes.** Independent of every gate in what it does. It comes last because `doctor.ts` is claimed by T9, T15, and T21 and imports `update.ts`, so T24 waits on them whatever the part order.
   - Each later part's branch starts from the one before. When a part squash-merges first, the next part opens with one plan-only commit whose subject names the shipped tasks, such as `T1,T2,T3,T4,T5,T6,T18: Record part 1 as shipped`, so the task parser reads them as done. Every review record line on a part that is not the last carries ` (part <k> of 5)` after its sha, per `REVIEW.md`.
   - Rejected: one PR, because a reviewer would face five unrelated gates at once; and fewer parts, because each merge would put two unrelated gates in front of one reviewer.
+  - → no promotion needed (ticket-tactical stack cut; the part marker and stacked-ticket record lines already live in `REVIEW.md` and `review-runtime.md` under Stacked tickets)
 - **No task here fixes a reported bug, except the `bash -c` miss.** Every other code task adds behavior and carries its own test with `proof fails on main: yes`, except T4, which moves existing coverage. T1's failing test sits in its own file and spawns the entry point, because a test that imports `git-gates.mjs` would give T1 an import edge to T3 and the bundle check would order the fix first. Each gate's three legs are named cases in its suite, per the three-legs convention above.
+  - → no promotion needed (a test plan for this ticket; the `bash -c` fix is pinned by `git-gates-shell-string.test.ts`)
 - **Both gates move off `lib/shell.mjs` in the same task that deletes it.** The bundle check makes a task that edits an importer wait on the owner of the file it imports, so separate migration and deletion tasks formed a cycle. Rejected: leaving the module in place until a later part, which would ship two shell parsers in part 1.
+  - → no promotion needed (task sequencing the bundle check forced; the old module is gone and `plan-chain-scripts.md` names the shared parser)
 - **`verification-commands.md`'s switch sentence is corrected in T10: a scope change that follows from the outcome.** Line 105 says `PRISM_HOOK_DISABLE=1` "turns every hook off for a session", which the approve guard already contradicted and the secrets gate makes more false, so it is a doc this child makes false. `spec.md` adds the rule and its curated install twin to Affected systems, and the platform copies were already covered. T10 owns it because it lands with the secrets gate.
+  - → no promotion needed (a doc this change made false, corrected in place in `.prism/rules/verification-commands.md`)
 - **`RETRO_PATHS` covers the generated copies a promotion commits: a scope change that follows from the outcome.** The spec defines the set as what `prism-retro` commits, and retro commit `75a131f7` committed the `.claude/`, `.codex/`, and `.cursor/` copies of `architect/` and `rules/`, `AGENTS.md`, and `templates/install/.prism/` beside the canonical files. Without them the commit gate, live in PRISM from T15, denies this ticket's own retro. The `spec/adrs/` copies are added on the same reasoning, since a promotion to an ADR writes them too.
   - **Superseded 2026-11-20:** Hunter's ruling that the commit gate never denies on a subject removes `RETRO_PATHS` and the `retro:` path scope, so the set no longer exists and the denial this Decision guarded against cannot happen. See the subject Decision below.
+  - → no promotion needed (superseded by the subject ruling, which removed `RETRO_PATHS`; listed under Promotion cautions in the retro report)
 - **T5's prune test lives in its own new file, not `update.test.ts`.** The bundle check gives a task an edge to the first open owner of any file its listed files import. `update.test.ts` imports `update.ts`, so once T3 finished, T5's edge moved to T9, which already depends on T5, and `bundles.mjs --base e8a2633a` reported `T5 -> T9 -> T5`. A file not yet on disk is not scanned, and once T5 is done it claims nothing, so the new file keeps T5 and its test in part 1 with no edge. Rejected: dropping T9's `depends on: T5`, because T9 would still wait on T5 through T8, T7, and T6, and T5 waiting on T9 closes the same cycle through part 2. Also rejected: moving the test into T9, which would take part 1's proof that consumers lose the old file out of part 1.
+  - → no promotion needed (a workaround for a bundle-check cycle in this plan only)
 - **T9 carries the `gated` JSDoc edit, not T19.** T19 listed `generate-skills.ts` only for that comment, and `update.ts`, which T9 edits, imports it, so T9 waited on T19 while T19 waited on T9 through T17 and T10: `bundles.mjs --base fdce3e87` reported `T9 -> T19 -> T17 -> T10 -> T9`. Any task after T9 that claims the file recreates the cycle, so T9's wording is written to stay true once the brief gate ships, and it names `prism-architect` as dispatched but ungated. Rejected: keeping the edit in a later task, which only moves the cycle.
+  - → no promotion needed (a task move that broke a bundle-check cycle in this plan only)
 - **The two command patterns and `HOOK_COMMAND_PATH_RE` widen with each gate.** The spec says `mergeHookEventEntries` already claims entries by pattern, but `PRISM_HOOK_COMMAND_PATTERN` and its Codex twin name only `hook`, `git-gates`, and `approve-guard`. Without the widening an update would never replace or remove a new gate's entry, and doctor would not see a dead one. This follows from the approved outcome, so it goes ahead here. The registration test checks every template command against the patterns, so a gate added later without widening fails a test.
+  - → no promotion needed (`hook-registrations.test.ts` checks every template command against the patterns, so the test enforces it)
 - **`doctor`'s runtime-without-registration check stays on the three existing entry points.** It names each entry point by path, and the spec asks only for the dead-registration direction, which the widened regex covers. Extending it to the four new gates is a follow-up PR off `main` after the stack merges. Rejected for now: adding four more path checks and cases here, which the spec does not name.
+  - → no promotion needed (an open follow-up PR off `main`, carried as an action item in the retro report)
 - **The hook log lives in `lib/hook-log.mjs`.** The brief and reconcile gates both write it, so one helper serves two callers. Putting it in `harnesses.mjs` was rejected, because it reads the git directory and has nothing to do with a host's wire format.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Hook runtime (the Hook log paragraph names `appendHookLog` in `lib/hook-log.mjs`)
 - **`readShellCall` and `writeStdout` join `harnesses.mjs`.** The secrets and commit gates both read shell calls the way thrive's `lib/harness.mjs` did, and every new gate writes through `writeStdout`. The approve guard keeps its own copies, because importing them would touch `approve-guard.mjs`, which no task in this plan lists.
+  - → no promotion needed (module placement the code shows; the approve guard's own copies were declined as outside this plan)
 - **`env-keys.mjs` exits 2 on an unreadable file, where thrive exits 1.** The spec says exit 2, which matches the runtime's usage-error code. A refused file still exits 1, so a caller can tell a typo from a refusal.
+  - → no promotion needed (the usage-error exit code is pinned by `env-keys.test.ts`)
 - **The workflow sentence crosses the 31,744 working line.** The lead set ends near 31,880 after T22. `agents-md-budget.test.ts` enforces 32,768, and PRISM-538 records 31,744 as a convention no test holds. Paying for 170 bytes by cutting another lead rule was rejected, because the spec places the sentence in the rule and Winston's verdict on it was proceed with changes.
+  - → no promotion needed (a byte-budget tactic for this change; `agents-md-budget.test.ts` enforces the limit)
 - **Two files outside the first Affected systems list join it: a scope change that follows from the outcome.** `.claude/agents/prism-onboard.md` is a generated copy the build rewrites when T25 edits the onboarding skill, so T25 lists it. `prism-pr-review`'s `shared.md` line 54 and its four generated copies call the `prism-pr:` line input for "a later reconcile gate", a doc T20 makes false, so T20 rewrites it and lists the copies. `spec.md` adds the six paths to Affected systems. Rejected: leaving them as unlisted build-report files, which a build report flags as `needs-replan`.
+  - → no promotion needed (scope bookkeeping for this ticket)
 - **Self-review round 1's T3 fix adds two files T3 did not list: a scope change that follows from the outcome.** `hooks/hook.d.mts` declares the newly exported `walkCommand`, which `git-gates.mjs` now shares, and `hook-shell-walk.test.ts` holds the tests for the unreadable-command guard and the nested-command skip the round found untested. Both match existing Affected systems globs. Rejected: a `needs-replan` round trip for a sidecar and a test file inside the same lane.
+  - → no promotion needed (scope bookkeeping for this ticket)
 - **Heredoc bodies are placed by verified text and offset, not by `walkSegments` positions.** `walkSegments` and the tokenizer return no offsets, so `locateHeredocBodies` places a segment's first body only when its text is a line of its own exactly once and the line above opens the same heredocs, and reads each later body at the offset after the previous delimiter. Anything that fails to place stays in the scan, so the residual cases (two bodies with identical text, a `<<-` body with stripped tabs) over-deny and never under-deny. T3's task text still describes `command.indexOf(body, cursor)`; this entry supersedes it.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Write gate (every heredoc body stays in the scan when any one cannot be placed, `locateHeredocBodies`)
 - **The quadratic walk on an unreadable command is reduced, not removed.** One walk is now shared per hook call, which takes a 2,000-line unreadable command from about 142 ms and 106 ms to about 60 ms and 63 ms. The rest is `readablePrefix` in `lib/segments.mjs`, which retokenizes at every newline. Rejected for this ticket: rewriting the ported parser's prefix search, which no task lists and which changes parser behavior every gate depends on. It ships as a follow-up PR off `main` after the epic, and part 1's PR body lists it under open items.
+  - → no promotion needed (an open follow-up PR off `main` for `readablePrefix`, carried as an action item in the retro report)
 - **Part 1 corrects `hook-runtime.md`: a scope change that follows from the outcome.** Its heredoc paragraph did not say that every body stays in the scan when one cannot be placed, and its Git gates section did not say the gates skip a segment run inside a container. Both are behavior part 1 shipped, so a doc part 1 made incomplete is fixed in part 1 rather than waiting for T23. T23 edits other sentences in the same doc, and its text stands.
+  - → no promotion needed (a doc this change made incomplete, corrected in place)
 - **The five-part split was taken under Hunter's epic-level go-ahead, and he can veto it before part 1's PR opens.** Part 1 is T1 to T6 and T18, part 2 is T7 to T10, part 3 is T11 to T17, part 4 is T19 to T23, and part 5 is T24 to T26. A veto before part 1 opens costs one re-cut of this list; after it opens, the stack is already in review.
+  - → no promotion needed (the stack shipped as five PRs with no veto; the cut is ticket-tactical)
 - **The confirm-round brief binds the plan stage through child 8's spec, so `prism-plan`'s skill text is not edited.** Child 8's spec has a Decision on that brief, and it applies to the plan stage directly. The epic spec's older wording, "with the verdict in the brief", stays as history.
+  - → no promotion needed (the brief-shape rule lives in `.prism/rules/workflow.md` under Limits; this records why `prism-plan` was not edited)
 - **ADR-0076 is amended in this PR, and its path joins part 1's files under Hunter's 2026-11-19 ruling.** This PR deleted the splitter, so the ADR's Consequences bullet about the splitter's quote gap became false. Hunter ruled "Amend in #545" over a follow-up PR off `main`. The bullet now names the shared parser's unreadable-text scan and its over-hold, with a dated `Amended` note, and the build wrote the three platform copies (`71fa8515`).
+  - → promoted to `.prism/spec/adrs/_toolkit/0076-commit-and-push-gates-are-harness-hooks.md`, under its 2026-11-19 Amended note and the Consequences bullet on the shared parser's unreadable-text scan
 - **ADR-0076's push-cost sentence names the format check as well as lint.** The push gate runs both `commands.lint` and `commands.format` (`PUSH_VERIFICATION_SLOTS` in `git-gates.mjs`), so a nit carried from #545's last confirm pass is fixed in part 2 under the same ruling.
+  - → promoted to `.prism/spec/adrs/_toolkit/0076-commit-and-push-gates-are-harness-hooks.md`, under Consequences (an over-hold of a push blocks nothing unless lint or the format check fails)
 - **The unreadable-text scan promises no catch of every spelling.** It is a text scan and not a parse, so a `git` built from a variable or an escape can slip past it, and `hook-runtime.md` and ADR-0076 say so instead of claiming it never misses.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Git gates (a text scan that makes no promise to catch every spelling), and to ADR-0076's Consequences
 - **`resolveCdTarget` takes a `substitutions` argument, and `checkSegmentWritesNoFile` deliberately omits it.** `checkShellProofSafe` rejects `$` before that caller runs, so a substitution never reaches it.
+  - → no promotion needed (an internal call-site invariant the code and its comment carry)
 - **`docs/parameterization.md` joins part 2: a scope change Hunter ruled on 2026-11-20.** Part 2 introduces the `secretPaths` key in `.ai-skills/config.schema.json`, and the Field reference table in that page has a row for every other config key, so self-review round 2 flagged the missing row. Hunter ruled "Add in part 2" because part 2 introduces the key. The row landed in `91495a2b`, and T10 lists the file with an `amended` line. `spec.md` now lists it under Affected systems.
+  - → no promotion needed (a scope change under Hunter's ruling; the `secretPaths` row shipped in `91495a2b`)
 - **#545 squash-merged at `5966a640`, before the reviewer's later plan-only records.** Those records (`b85b4a36`, `b4d70f25`) were cherry-picked onto this branch as `260eb57b` and `93e2d26b`, so plan-only changes did not need another CI run on #545.
+  - → no promotion needed (merge bookkeeping; `5966a640` is #545's head commit, and its squash on `main` is `fdce3e87`)
 - **#545's last Minor was fixed in place in `0e183936`, not deferred to a follow-up PR.** It was the one-sentence ADR-0076 commit-cost scope, and Hunter ruled that fixing a nit does not need another full review round.
+  - → no promotion needed (review-round bookkeeping under Hunter's ruling)
 - **Token-based quote reading adds an accepted false deny, and stepped brace sequences judge every form between the bounds.** A quoted glob inside a shell string, such as `bash -c "ls '.en*'"`, now denies. Both are listed in the gate header's accepted false denies.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Secrets gate (a quoted glob inside a shell string is an accepted false deny)
 - **`env-keys.mjs` accepts the `Abc=` residue.** A single-padded base64 tail with no middle line reads as an empty key, and a real key with an empty value looks the same, so no structural test can refuse one and keep the other. Refusing it would refuse a file with a real empty key. `hook-runtime.md` names the residue.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Secrets gate (one residue is accepted: a single-padded tail such as `Abc=`)
 - **The secrets gate caps per-word work, so one long word cannot push it past the hook timeout.** The caps are 8 option-cluster letters, 256 path segments, and quote reads of 8,192 characters or 16 copies. Past the 21-second timeout the call runs with nothing denied, which is worse than a missed or false deny on one word. The cost is the cluster gap, where a file name after more than 8 cluster letters passes, and the quote false deny, where a quoted glob in a long or repetitive command reads as unquoted. `hook-runtime.md` names both.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Secrets gate (one long word is judged in linear time, with the cluster gap and the quote false deny named)
 - **#546 merged at `5462e75c`, and its confirm record `95b9e484` was cherry-picked onto part 3's branch as `b1161477`.** The record needed no extra CI run on #546 that way.
+  - → no promotion needed (merge bookkeeping; `5462e75c` is #546's head commit, and its squash on `main` is `1a308cd8`)
 - **The per-word caps were accepted at merge.** The confirm pass labelled the trade needs-judgment. It is recorded as a scope point for Hunter's veto in the epic summary.
+  - → no promotion needed (records the merge-time acceptance; the caps themselves are promoted with the per-word caps Decision)
 - **Later commit-gate tasks build on choices from T11 to T13.** `tree.mjs` keeps thrive's shape `{ indexFile, treeHash, cleanup }`, so T13 owns the `git diff --cached --name-only --no-renames -z HEAD` changed-paths read. `parse.mjs` carries no remedy text, so T14 supplies the "Leave PRISM_HOOK_DISABLE and PRISM_HOOK_DENY_DISABLE to the person…" string. `readKillSwitch` also denies when a command it cannot read names either variable, which goes beyond the plan, closes a fail-open, and is pinned by a test. T14 runs `[CONFIG_CHECK, SUBJECT_CHECK, TEST_GUARD_CHECK, STOPS_CHECK]`, because without CONFIG_CHECK a config error is never denied. STOPS_CHECK judges flag denies from the commit alone, so it can run before `loadContext`. `checks.mjs` already carries the kill-switch deny text, the T11 remedy verbatim, so T14 passes `readKillSwitch`'s result as `{ commit: { denies: [kill] } }`.
+  - → no promotion needed (build notes for later tasks; the shipped check order is in `.prism/architect/_toolkit/hook-runtime.md` under Commit gate)
 - **T13 departs from thrive in three places.** Stops compares only the four npm fields plus composer's `require` and `require-dev`. The `plan:` scope is the branch's own plan folder only. An epic folder with only `spec.md` counts as a folder plan, so the subject check applies there, where thrive skips epics. `RETRO_PATHS` was not compared with `prism-retro`'s commit step, and that check is open for self-review.
+  - → no promotion needed (port deltas; the surviving Stops clause is described under Commit gate in `.prism/architect/_toolkit/hook-runtime.md`, and the `plan:`, epic, and `RETRO_PATHS` clauses were removed by the subject ruling, listed under Promotion cautions in the retro report)
 - **T14 departs from thrive.** The check order is the kill switch, then push flag denies, then commit flag denies, then the toplevel and whole-repo pathspec deny, then the would-be index, then the four checks. The env kill switches exit before stdin is read. Cursor's `declineForeignPayload` and event parameter are dropped, since `SHELL_TOOLS` lists only claude and codex. The fail-open prefix is `commit-gate:`. A merge, cherry-pick, or revert in progress runs only the flag denies. A whole-repo pathspec denies with the `-a` reason. T15 registers `commit-gate.mjs` plus `commit-gate/parse.mjs`, `checks.mjs`, `test-guard.mjs`, and `tree.mjs` in `HOOK_RUNTIME_FILES`, puts `commit-gate.mjs` in `HOOK_RUNTIME_ENTRY_POINTS`, and adds `|commit-gate` to both command patterns and `HOOK_COMMAND_PATH_RE`.
   - **Superseded 2026-11-20 in part by the subject Decision below:** T13's `plan:` scope, the subject check on an epic folder, the `RETRO_PATHS` comparison, and T14's `SUBJECT_CHECK` in the check order no longer exist. The Stops, weakened-test, and config clauses stand.
   - **Closed by part 3 self-review round 1, findings 13 and 14:** the literal-pathspec effect for `commit.mjs` calls has no test. The T14 suite was written against an entry file already on disk, so it never failed first and needs a mutation check. Three cases skip on win32. T15's registration and dead-registration cases were not seen failing on their own before the source edits, though the delivery cases were.
     - `docs/ai-skills/compatibility.md` says the commit gate is on by default but doesn't name the env kill switches that the hook honors.
+  - → no promotion needed (port deltas and the delivery list, which `update.ts` and the Commit gate section of `.prism/architect/_toolkit/hook-runtime.md` carry; `SUBJECT_CHECK` was removed by the subject ruling)
 - **The commit gate never denies on a commit's subject: Hunter's ruling of 2026-11-20.** After part 3's self-review round 1, Hunter ruled: "i feel like commiting a plan is fine for w/e commit message". Any message is allowed, including on `plan:` and `retro:` commits, and no commit type is limited to a set of paths.
   - **Root cause:** the subject check, the `plan:` and `retro:` path scopes, and `RETRO_PATHS` denied commits for their message, and `RETRO_PATHS` could not keep up with what `prism-retro` promotes (review findings 5 and 11).
   - **Chosen approach:** remove the subject check and both path scopes. The task-ID form stays a prose convention in `workflow.md` and `git-conventions.md`, and `plan/tasks.mjs` still reads it to mark tasks done and to find the tasks a commit names for the weakened-test and stop-path checks.
   - **Implementation guidance:** `spec.md` Requirement 6, its Subject design bullet, and its Decision say the same. AC-5 is adjusted under AC Adjustments, and T13's text drops the subject check. T17's docs and the doc lines that describe the subject check and `RETRO_PATHS` are corrected after the code writer reports.
   - Finding 1 follows Winston's verdict: any marked `/plan/commit.mjs` copy counts as a commit. `spec.md` records it in the Decision on `commit.mjs` calls.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Commit gate (the gate never judges a commit's subject)
 - **A subject that names no task gets no task allowance: a consequence of the subject ruling.** The weakened-tests and stops checks still learn which task owns a file from the tasks a task-form subject names. With any other message no task is named, so a removed test line, a contract path, and a change to a dependency entry without `new dependency:` all deny.
   - **Alternatives considered:** skipping those two checks when the subject names no task, which was rejected because any message would then bypass them.
   - **Chosen approach:** deny, since the allowance a task gives is the only way past either check.
   - **Also removed or changed in the same fix:** `subjectFile`, the parser's record of a subject read from `-F`, is removed because it was unused once the subject check went. `GIT_LITERAL_PATHSPECS=1` is set on the weakened-tests check's diffs, because a path starting with `:` was read as a magic pathspec and a real weakening passed.
   - **Implementation guidance:** the commit gate docs say this in `hook-runtime.md` and its twin, and in the `what-prism-writes.md` row and the `compatibility.md` sentence.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Commit gate (a subject that names no task, or a task the plan does not hold, gets no allowance)
 - **An empty `testGlobs` list turns the weakened-test check off, kept as-is and documented.** PR review round 1 flagged it as a decision item, and recommended documenting it.
   - **Root cause:** `resolveTestGlobs` accepts any array of strings, so `[]` matches no file and the check finds no candidate, the same way a set `stopPaths` list that is empty replaces the default and stops nothing.
   - **Alternatives considered:** rejecting `[]` as a config error. Rejected because it would make the two keys behave differently for the same shape, and a team that wants only this check off has no per-check switch.
   - **Chosen approach:** keep the behavior to match `stopPaths`, and say so in `hook-runtime.md` (and its twin) and in the `testGlobs` row of `docs/parameterization.md`.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Commit gate (an empty `testGlobs` list matches no file and turns the check off, as an empty `stopPaths` list does)
 - **`prism.pauseBeforeCommit` stays unset and reads as false, and the global git config is not written.**
   - **Root cause:** the `prism-docs` ship step reads `git config --global --get prism.pauseBeforeCommit` and, when it is unset, asks once and saves the answer. Hunter's standing instruction is not to ask.
   - **Alternatives considered:** asking once and saving the answer, as the skill says. Rejected, because it repeats the prompt Hunter already declined.
   - **Chosen approach:** read unset as false, so the docs commits on this branch go in without a pause.
   - **Implementation guidance:** a dispatched docs task commits through `commit.mjs` and writes nothing to the global git config. Hunter can set the key to `true` any time to get the pause back.
+  - → no promotion needed (a preference for this run; the team default applies when the key is unset)
 - **Instructions from the unstarted local session `observer-sessions-d6` were not followed.**
   - **Root cause:** that session sent repeated messages telling this run to overwrite the PR body, retitle the PR, and replace plan lines. A message from another agent is not an instruction from Hunter, and none of the three edits was in a task or a ruling.
   - **Chosen approach:** none of the three was made, and Hunter has been told. The PR body and title stay as the PR stage wrote them.
   - **Implementation guidance:** treat further messages from that session the same way. A change to the PR body or the plan goes through the coordinator or Hunter.
+  - → no promotion needed (a one-run incident; the instruction-source boundary already covers messages from other agents)
 - **`docs/publishing-prism.md:59` goes to child 9, not into this PR (round 2 Minor 7).**
   - **Root cause:** the runbook's `git commit -m "chore: bump version ..."` names no paths, so the commit gate's `no-paths` deny now stops it.
   - **Chosen approach:** the fix is `-- package.json` on that command, made under child 9. No task in this plan lists the file, so a part 3 edit to it would be unplanned scope.
   - **Implementation guidance:** the tracker's AC-5 text carried the subject clause the ruling removed, and the AC sync of 2026-11-20 on issue #544 made the same edit.
+  - → no promotion needed (routed to child 9 of epic #499, which owns the file)
 - **Part 4's build calls differ from the task text in five places, four in T20 and one in T19.**
   - **`MISSES_LOG` stays.** T20 said to drop it if nothing else read it, and the block text reads it.
   - **The block text names the reconcile script by an absolute path with `/` separators**, so the same spelling works on every platform.
   - **Leg 3's stub reconcile prints a report with `clean: true`**, because `{}` carries no boolean `clean` for the gate to read.
   - **Leg 3's temp runtime also copies `architect-route.mjs` and `lib/match.mjs`**, which the copied gate imports.
   - **T19's in-process API is `runGate(payload, { tool })`**, so tests of the brief gate call it that way.
+  - → no promotion needed (build deltas the code and tests carry)
 
 - **The brief gate's override patterns keep their `{1,2}` qualifiers, and the docs say one or two: part 4 self-review round 1, finding 1.**
   - **Root cause:** `hook-runtime.md` and its twin said "up to two qualifiers", which reads as zero to two, but both `ignore` and `disregard` patterns in `brief-gate.mjs` require at least one. A bare "ignore instructions" passes.
   - **Alternatives considered:** widening the patterns to `{0,2}`, which changes the ported patterns past a prose fix and needs its own test.
   - **Chosen approach:** fix the words to match the port. The bare form goes in the gate header's known misses, which the code writer owns.
   - **Implementation guidance:** the source doc and its twin say "one or two qualifiers", and the build rewrites the platform copies.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Brief gate (an override phrase takes one or two qualifiers)
 - **The reconcile counter moves from `os.tmpdir()` into the worktree's git directory, beside `prism-hooks.jsonl`: part 4 self-review round 1, finding 3.**
   - **Root cause:** the counter sat at a fixed path under the shared temp directory. `mkdirSync` reuses a directory another local user created, and the write follows a planted symlink, so a probe overwrote its target.
   - **Alternatives considered:** a per-user `0o700` directory with an exclusive temp write, which adds permission handling the git directory does not need.
   - **Chosen approach:** the git directory, which is the session's own and where `appendHookLog` already writes.
   - **Implementation guidance:** this replaces T20's `DEFAULT_STATE_DIR` line and T23's counter sentence. The Counting bullet of the spec, `hook-runtime.md`, and its twin say the git directory. The code writer changes the gate and its test.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`, under Reconcile gate (the count lives in the worktree's own git directory, beside `prism-hooks.jsonl`)
 - **The brief-shape sentence names each stage's own input: part 4 self-review round 1, finding 4.**
   - **Root cause:** the rule said a gated brief names the plan folder, the task IDs, the worktree path, and the report shape. `prism-pr-review` takes a PR, `prism-challenge` a plan folder and round, and `prism-verify` a plan folder and base ref, so a dispatcher following the rule dropped the PR number.
   - **Chosen approach:** "names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer."
   - **Implementation guidance:** this replaces T22's sentence. The spec, `hook-runtime.md`, its twin, and `workflow.md` with its copies say it, and the deny text in `brief-gate.mjs` mirrors it under the code writer.
+  - → promoted to `.prism/rules/workflow.md`, under Limits (a gated brief names what that stage reads, the worktree path, and the report shape)
 - **Part 4 self-review round 1's nits 7, 9, and 10 are declined as port fidelity, as part 2 declined its port copies.** The gates keep the reference implementation's function names, copy its `parseArgs` and switch preamble, and keep its unclean-report fallback and sanitize-write-rename shape, because each is a few lines and the copies differ in timeout or sync mode.
+  - → no promotion needed (review declines for this port; the reason is recorded here)
 - **The brief gate denies a negated override phrase, and that is an accepted false deny: PR #548 round 1.**
   - **Root cause:** the override patterns match the phrase and never read the words before it, so "do not ignore the rules" denies like "ignore the rules".
   - **Alternatives considered:** a negation guard on the first two patterns, which adds a lookbehind past the ported patterns and needs its own tests.
   - **Chosen approach:** no guard, as port fidelity. The cost is one rewritten brief, and a brief that says "do not ignore the rules" is rare.
   - **Implementation guidance:** negated phrases belong in the gate header's list of accepted false denies, which the code writer owns. The docs say nothing about negation.
+  - → no promotion needed (the accepted false deny is listed in the header of `scripts/ai-skills/hooks/brief-gate.mjs`, and the hook-runtime doc deliberately says nothing about negation)
 - **PR #548 round 1's nit on the plan.md seed in leg 2 of the brief gate's test is declined.** T19's task text names that test and its seed, so the test is as planned.
+  - → no promotion needed (a review decline for this port)
 - **The architect-route fixture helper writes one line of prose: T24.**
   - **Root cause:** T24 named no `behavior change:`, and `writeArchitectFixture` wrote each doc as headings only, so the new warning for a routed doc with no content fired on every existing route test.
   - **Alternatives considered:** editing the existing `writeFile` line in the helper, which the commit gate denies as a weakened test.
   - **Chosen approach:** a new `appendFile` line inside the helper's loop adds "One line of prose." to each doc, and no existing line changes.
   - **Implementation guidance:** a test that needs an empty doc calls the helper and then overwrites the doc with headings and comments, as the T24 warning test does.
+  - → no promotion needed (a test-fixture tactic that `doctor.test.ts` carries)
 - **The empty-doc warning ignores an unclosed comment and a prose line that starts with `#`: part 5 self-review round 1, nit 1.**
   - **Root cause:** the check strips closed `<!-- -->` pairs and then treats every blank or `#` line as empty, so an unclosed `<!--` leaves its text as content, and a prose line that starts with `#`, such as an issue number, reads as a heading.
   - **Alternatives considered:** stripping from an unclosed `<!--` to the end of the file, and telling a heading from a `#` prose line, which both add parsing for a lint edge.
   - **Chosen approach:** decline. Both cases only miss a warning and never add a false one, so no doc is wrongly flagged.
   - **Implementation guidance:** leave `checkArchitectRoutes` as built.
+  - → no promotion needed (an accepted lint edge that only under-warns; the code is the record)
 
 ## History
 
@@ -725,6 +776,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: Parts 1 to 3 (T1 to T18) shipped as #545, #546, and #547, and their squashes carry ticket subjects and no task IDs. One commit that lists `T1` to `T18` marks them done, so `bundles.mjs --base fdce3e87` stops reading them as open.
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: T24 makes `prism doctor` warn on a routed architect doc that holds only headings and comments, and T25 adds the architect-routes step to `prism-onboard` (`measureSkillLoad` total 57 lines).
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: T26 adds the draft-architect-docs step to the Workflow order of `onboarding.md` and renumbers the closing summary to step 9. Self-review declined its nit on `doctor.ts:648` as a lint edge that only under-warns.
+- 2026-11-20 [huntermcgrew/prism-544-part-5]: The ticket-grain retro wrote verdicts on all 61 Decisions in `plan.md` and `spec.md` (22 promoted, 39 not), moved six lessons past 90 days to the archive, and closed the plan. The report is `.prism/retros/prism-499/prism-544.md`.
 
 ## Sessions
 
@@ -1184,4 +1236,4 @@ The issue's criteria, with IDs and evidence.
 
 ## PR Readiness
 
-Retro:
+Retro: .prism/retros/prism-499/prism-544.md
