@@ -2,21 +2,24 @@
 // A copy carrying this line is PRISM's own and is replaced in place; one without it
 // is the consumer's own file and is backed up to `.bak` before being replaced.
 /**
- * The commit gate's subject, stops, and config checks, and the context every
- * check reads.
+ * The commit gate's stops and config checks, and the context every check
+ * reads.
  *
  * Each check returns null to pass or `{ reason, remedy }` to deny, with a
- * one-line remedy. The subject check reads the subject's form on a
- * folder-plan branch, which takes the task forms, and keeps a `plan:` commit
- * inside the branch's plan folder and a `retro:` commit inside `RETRO_PATHS`
- * and the plan folder. A branch is a folder-plan branch when the plan
+ * one-line remedy. The gate never judges a commit's subject: any message
+ * passes, and the `T<n>:` form is a prose convention. A subject that does name
+ * tasks still feeds `ctx.namedTasks`, which the stops check and the
+ * weakened-tests check read to learn which task owns a file. A subject that
+ * names none leaves `namedTasks` empty, so the commit gets no task's
+ * allowance: a contract path or a dependency change is denied, and so is a
+ * removed test line. A branch is a folder-plan branch when the plan
  * `findPlanForBranch` resolves from the branch name is a chain file directly
  * under `.prism/plans/<folder>/`, so a flat plan, an archived plan, and a
- * branch with no plan all skip the subject, stop-path, and weakened-test
- * checks. The stops check's flag denies run on every branch and read nothing
- * from the config. Its stop-path half runs wherever a task list exists to
- * read. The weakened-tests check lives in `test-guard.mjs`. The entry point
- * runs config, subject, weakened tests, and stops in that order.
+ * branch with no plan all skip the stop-path and weakened-test checks. The
+ * stops check's flag denies run on every branch and read nothing from the
+ * config. Its stop-path half runs wherever a task list exists to read. The
+ * weakened-tests check lives in `test-guard.mjs`. The entry point runs config,
+ * weakened tests, and stops in that order.
  *
  * `loadContext` reads `.ai-skills/config.json` before it looks for a plan,
  * because `findPlanForBranch` reads `ticketPrefix` itself and swallows a
@@ -27,17 +30,16 @@
  *
  * Known misses:
  * - a branch whose name carries no ticket ID matching `ticketPrefix` reads as
- *   having no plan, so the subject check never sees its plan
- * - the subject check reads a task subject's form, not whether the plan holds
- *   the task it names
+ *   having no plan, so the stop-path and weakened-test checks never see its
+ *   plan
+ * - a task named in a subject that the plan doesn't hold gives no allowance
  * - the stops check's stop-path half needs a task list, so a branch with no
  *   plan folder, or a folder whose `plan.md` isn't written yet, commits a
  *   dependency or contract change unasked
  * - a dependency file other than the npm and composer manifests counts on any
  *   change, since the gate reads no other manifest format
  * - a detached HEAD has no branch name to read a ticket from, so it reads as
- *   having no plan and skips the subject, stop-path, and weakened-test checks,
- *   a `plan:` commit's path check included
+ *   having no plan and skips the stop-path and weakened-test checks
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -74,27 +76,6 @@ import { runGit } from "./tree.mjs";
 const PLANS_PREFIX = ".prism/plans/";
 const FALLBACK_BRANCH = "main";
 const CONFIG_REMEDY = "Fix .ai-skills/config.json, then commit again.";
-// A path ending in `/` admits everything under it, and any other is exact.
-const PROMOTION_PATHS = [
-	".prism/retros/",
-	".prism/lessons.md",
-	".prism/archived/lessons-archive.md",
-	".prism/metrics/review-misses.jsonl",
-	".prism/architect/",
-	".prism/spec/adrs/",
-	".prism/rules/",
-];
-// The generated copies a promotion commits beside its source.
-const GENERATED_ROOTS = [".claude/", ".codex/", ".cursor/"];
-const GENERATED_TARGETS = ["architect/", "rules/", "spec/adrs/"];
-export const RETRO_PATHS = [
-	...PROMOTION_PATHS,
-	...GENERATED_ROOTS.flatMap((root) =>
-		GENERATED_TARGETS.map((target) => `${root}${target}`)
-	),
-	"AGENTS.md",
-	"templates/install/.prism/",
-];
 // The manifest fields the stops check reads as dependency entries. Any other dependency file counts on any change, since the gate reads no other manifest format.
 const DEPENDENCY_FIELDS = new Map([
 	[
@@ -108,8 +89,6 @@ const DEPENDENCY_FIELDS = new Map([
 	],
 	["composer.json", ["require", "require-dev"]],
 ]);
-const SUBJECT_FORMS =
-	"Start the subject with T<n>:, T<a>-T<b>:, T<a>,T<b>:, T<n> fix:, plan:, or retro:.";
 const NAME_PATHS = "Name the paths: git add <path> && git commit -- <path>.";
 /** @type {Record<string, (flag: string) => CheckResult>} */
 const DENY_TEXT = {
@@ -155,7 +134,6 @@ const DENY_TEXT = {
 };
 
 export const CONFIG_CHECK = { name: "config", run: checkConfig };
-export const SUBJECT_CHECK = { name: "subject", run: checkSubject };
 export const STOPS_CHECK = { name: "stops", run: checkStops };
 
 /**
@@ -219,71 +197,6 @@ function checkConfig(ctx) {
 	return ctx.configError
 		? { reason: ctx.configError, remedy: CONFIG_REMEDY }
 		: null;
-}
-
-/**
- * On a folder-plan branch the subject parses as a folder-plan subject, never
- * the ticket key. A `plan:` commit stays inside the plan folder and a `retro:`
- * commit inside its promotion paths and the plan folder, so a draft commit
- * can't carry code under a subject that claims no task.
- *
- * @param {Context} ctx
- * @returns {CheckResult | null}
- */
-function checkSubject(ctx) {
-	if (!ctx.planFolder) return null;
-
-	const planDir = formatRepoPath(ctx, ctx.planFolder);
-	const parsed = ctx.subject;
-	if (!parsed || parsed.kind === "ticket") {
-		if (ctx.commit.subject !== null) {
-			// A subject read from `-F` is named by its file and never quoted, since
-			// the file is the agent's to name and may hold anything.
-			const source = ctx.commit.subjectFile
-				? `The subject in ${ctx.commit.subjectFile}`
-				: `"${ctx.commit.subject}"`;
-
-			return {
-				reason: `${source} isn't a folder-plan subject.`,
-				remedy: SUBJECT_FORMS,
-			};
-		}
-
-		return {
-			reason: "The gate can't read a subject from this command.",
-			remedy: readsMessageFile(ctx.commit)
-				? `Pass the message with -m or a heredoc, which the gate reads. ${SUBJECT_FORMS}`
-				: SUBJECT_FORMS,
-		};
-	}
-
-	if (parsed.kind === "plan") {
-		const outside = ctx.paths.find((p) => !p.startsWith(`${planDir}/`));
-		if (outside) {
-			return {
-				reason: `A plan: commit names only ${planDir}/ paths, and ${outside} is outside them.`,
-				remedy: `Commit ${outside} under its task's subject instead.`,
-			};
-		}
-	}
-
-	if (parsed.kind === "retro") {
-		const allowed = [...RETRO_PATHS, `${planDir}/`];
-		const outside = ctx.paths.find(
-			(p) =>
-				!allowed.some(
-					(entry) => p === entry || (entry.endsWith("/") && p.startsWith(entry))
-				)
-		);
-		if (outside) {
-			return {
-				reason: `A retro: commit names only promotion paths and the plan folder, and ${outside} is outside them.`,
-				remedy: `Commit ${outside} under its task's subject instead.`,
-			};
-		}
-	}
-
-	return null;
 }
 
 /**
@@ -492,21 +405,4 @@ function findNamedTasks({ subject, tasks }) {
 	return subject.ids
 		.map((id) => (tasks ?? []).find((task) => task.id === id))
 		.filter((task) => task !== undefined);
-}
-
-/**
- * True when the commit takes its message from a `-F` or `--file` source.
- *
- * @param {Commit} commit
- */
-function readsMessageFile(commit) {
-	return commit.flags.some((flag) => flag === "-F" || flag === "--file");
-}
-
-/**
- * @param {Context} ctx
- * @param {string} absolute
- */
-function formatRepoPath(ctx, absolute) {
-	return path.relative(ctx.repoRoot, absolute).split(path.sep).join("/");
 }

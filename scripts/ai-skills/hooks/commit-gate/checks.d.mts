@@ -23,15 +23,8 @@ export interface Context {
 	configError: string | null;
 }
 
-export const RETRO_PATHS: string[];
-
 export const CONFIG_CHECK: {
 	name: "config";
-	run: (ctx: Context) => CheckResult | null;
-};
-
-export const SUBJECT_CHECK: {
-	name: "subject";
 	run: (ctx: Context) => CheckResult | null;
 };
 

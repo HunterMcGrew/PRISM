@@ -1,9 +1,8 @@
 /**
- * Pins the commit gate's context reader and its subject and stops checks: a
- * folder-plan branch's subject form, the paths a `plan:` or `retro:` commit may
- * touch, the stop paths a named task has to list, and the config errors that
- * deny instead of skipping a check. Each case builds a throwaway repo whose
- * branch names a plan folder.
+ * Pins the commit gate's context reader and its stops and config checks: that a
+ * commit's subject never denies, the stop paths a named task has to list, and
+ * the config errors that deny instead of skipping a check. Each case builds a
+ * throwaway repo whose branch names a plan folder.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -23,9 +22,7 @@ import { fileURLToPath } from "node:url";
 import {
 	CONFIG_CHECK,
 	loadContext,
-	RETRO_PATHS,
 	STOPS_CHECK,
-	SUBJECT_CHECK,
 } from "./hooks/commit-gate/checks.mjs";
 import type { Context } from "./hooks/commit-gate/checks.mjs";
 import { readCommit, repoRelativePaths } from "./hooks/commit-gate/parse.mjs";
@@ -226,7 +223,7 @@ interface Denial {
 /** The first failing check, in the order the gate runs them, or null. */
 function runGate(repo: string, command: string): Denial | null {
 	return withContext(repo, command, (ctx) => {
-		for (const check of [CONFIG_CHECK, SUBJECT_CHECK, STOPS_CHECK]) {
+		for (const check of [CONFIG_CHECK, STOPS_CHECK]) {
 			const result = check.run(ctx);
 			if (result) return { name: check.name, ...result };
 		}
@@ -238,7 +235,7 @@ function runGate(repo: string, command: string): Denial | null {
 function runCheck(
 	repo: string,
 	command: string,
-	check: typeof SUBJECT_CHECK | typeof STOPS_CHECK
+	check: typeof STOPS_CHECK
 ) {
 	return withContext(repo, command, (ctx) => check.run(ctx));
 }
@@ -257,10 +254,9 @@ function assertDeny(
 // --- Checks ---
 
 test("the checks are named rather than numbered", () => {
-	assert.equal(SUBJECT_CHECK.name, "subject");
 	assert.equal(STOPS_CHECK.name, "stops");
 	assert.equal(CONFIG_CHECK.name, "config");
-	for (const check of [SUBJECT_CHECK, STOPS_CHECK, CONFIG_CHECK])
+	for (const check of [STOPS_CHECK, CONFIG_CHECK])
 		assert.equal(Object.hasOwn(check, "id"), false);
 });
 
@@ -400,180 +396,48 @@ test("loadContext leaves the shared index untouched", () => {
 	assert.deepEqual(readFileSync(sharedIndex), before);
 });
 
-// --- The subject check ---
+// --- Subjects ---
 
-test("the subject check denies a ticket subject on a folder-plan branch", () => {
+test("any subject passes on a folder-plan branch, a plan: commit naming code included", () => {
 	const repo = createRepo();
 	change(repo, "src/a.mjs");
 
-	assertDeny(
-		runGate(repo, commitMjs("PRISM-9: Build a", "src/a.mjs")),
-		"subject",
-		/isn't a folder-plan subject/
-	);
-});
-
-test("the subject check passes a seeded task subject", () => {
-	const repo = createRepo();
-	change(repo, "src/a.mjs");
-
-	withContext(repo, commitMjs("PRISM-9: Build a", "src/a.mjs"), (ctx) => {
-		const seeded: Context = { ...ctx, subject: { kind: "task", ids: ["T1"] } };
-		assert.equal(SUBJECT_CHECK.run(seeded), null);
-	});
-});
-
-test("the subject check passes the same commit rerun with a task subject", () => {
-	const repo = createRepo();
-	change(repo, "src/a.mjs");
-
-	assert.equal(runGate(repo, commitMjs("T1: Build a", "src/a.mjs")), null);
-});
-
-test("the subject check passes a range, a list, and a fix subject", () => {
-	const repo = createRepo();
-	change(repo, "src/c.mjs", "src/d.mjs");
-
-	for (const subject of ["T3-T4: Build", "T3,T4: Build", "T3 fix: Build"]) {
+	for (const subject of [
+		"PRISM-9: Build a",
+		"committing plan",
+		"plan: Draft",
+		"retro: Promote",
+		"anything goes",
+		"",
+	]) {
 		assert.equal(
-			runGate(repo, commitMjs(subject, "src/c.mjs", "src/d.mjs")),
+			runGate(repo, commitMjs(subject, "src/a.mjs")),
 			null,
 			subject
 		);
 	}
+	assert.equal(runGate(repo, "git commit -m 'T1: Build a' -- src/a.mjs"), null);
 });
 
-test("the subject check denies a commit with no readable subject", () => {
-	const repo = createRepo();
-	change(repo, "src/a.mjs");
-
-	assertDeny(
-		runCheck(repo, "git commit -- src/a.mjs", SUBJECT_CHECK),
-		"subject",
-		/can't read a subject/
-	);
-});
-
-test("the subject check names -m or a heredoc for an -F file it can't read, and passes the -m form", () => {
-	const repo = createRepo();
-	change(repo, "src/a.mjs");
-
-	const result = runGate(repo, "git commit -F /nowhere/msg -- src/a.mjs");
-	assertDeny(result, "subject", /can't read a subject/);
-	assert.match(result?.remedy ?? "", /-m or a heredoc/);
-
-	assert.equal(
-		runGate(repo, "git commit -m 'T1: Build a' -- src/a.mjs"),
-		null
-	);
-});
-
-test("the subject check reads an echoed subject fed to git commit -F -", () => {
-	const repo = createRepo();
-	change(repo, "src/a.mjs");
-
-	assert.equal(
-		runGate(repo, "echo 'T1: Build a' | git commit -F - -- src/a.mjs"),
-		null
-	);
-});
-
-test("the subject check denies a retro: subject naming a source file", () => {
-	const repo = createRepo();
-	change(repo, "src/a.mjs");
-
-	assertDeny(
-		runGate(repo, commitMjs("retro: Promote", "src/a.mjs")),
-		"subject",
-		/retro: commit.*src\/a\.mjs/
-	);
-});
-
-test("the subject check passes a retro: subject naming lessons and the plan folder", () => {
-	const repo = createRepo();
-	change(repo, ".prism/lessons.md", PLAN);
-
-	assert.equal(
-		runGate(repo, commitMjs("retro: Promote", ".prism/lessons.md", PLAN)),
-		null
-	);
-});
-
-for (const file of [
-	".prism/rules/a-rule.md",
-	".prism/architect/a-doc.md",
-	".prism/spec/adrs/_toolkit/0001-a.md",
-	".prism/retros/per-pr/prism-9.md",
-	".prism/archived/lessons-archive.md",
-	".prism/metrics/review-misses.jsonl",
-]) {
-	test(`the subject check passes a retro: subject naming ${file}`, () => {
-		const repo = createRepo();
-		write(repo, file, "# Promoted\n");
-
-		assert.equal(runGate(repo, commitMjs("retro: Promote", file)), null);
+test("a commit whose subject names no task gets no task's allowance", () => {
+	const repo = createRepo({
+		config: {
+			ticketPrefix: "PRISM",
+			stopPaths: { contract: ["frontend/lib/contracts/**"] },
+		},
 	});
-}
+	change(repo, "frontend/lib/contracts/thing.ts");
 
-test("a retro: commit touching .claude/rules/x.md, AGENTS.md, and templates/install/.prism/rules/x.md passes", () => {
-	const repo = createRepo();
-	const files = [
-		".claude/rules/x.md",
-		"AGENTS.md",
-		"templates/install/.prism/rules/x.md",
-	];
-	for (const file of files) write(repo, file, "# Promoted\n");
-
-	assert.equal(runGate(repo, commitMjs("retro: Promote", ...files)), null);
-});
-
-test("a retro: commit touching .prism/review/x.md denies, and one touching .prism/rules/x.md passes", () => {
-	const repo = createRepo();
-	write(repo, ".prism/review/x.md", "# Review pass\n");
-	write(repo, ".prism/rules/x.md", "# Rule\n");
-
-	assertDeny(
-		runGate(repo, commitMjs("retro: Promote", ".prism/review/x.md")),
-		"subject",
-		/retro: commit.*\.prism\/review\/x\.md/
-	);
-	assert.equal(
-		runGate(repo, commitMjs("retro: Promote", ".prism/rules/x.md")),
-		null
-	);
-});
-
-test("RETRO_PATHS admits every generated copy of the promotion targets", () => {
-	for (const root of [".claude/", ".codex/", ".cursor/"]) {
-		for (const target of ["architect/", "rules/", "spec/adrs/"]) {
-			assert.ok(RETRO_PATHS.includes(`${root}${target}`), `${root}${target}`);
-		}
+	for (const subject of ["committing plan", "PRISM-9: Touch a contract"]) {
+		assertDeny(
+			runGate(repo, commitMjs(subject, "frontend/lib/contracts/thing.ts")),
+			"stops",
+			/contract path/
+		);
 	}
 });
 
-test("the subject check denies a plan: subject naming a source file", () => {
-	const repo = createRepo();
-	change(repo, PLAN, "src/a.mjs");
-
-	assertDeny(
-		runGate(repo, commitMjs("plan: Log", PLAN, "src/a.mjs")),
-		"subject",
-		/plan: commit.*src\/a\.mjs/
-	);
-});
-
-test("the subject check denies a plan: subject naming another plan's folder", () => {
-	const repo = createRepo();
-	write(repo, ".prism/plans/prism-7/plan.md", "# other\n");
-
-	assertDeny(
-		runGate(repo, commitMjs("plan: Log", ".prism/plans/prism-7/plan.md")),
-		"subject",
-		/plan: commit.*prism-7/
-	);
-});
-
-test("the subject check gives a flat-plan branch no subject check", () => {
+test("a flat-plan branch gets no plan checks, whatever the subject", () => {
 	const repo = createRepo({ kind: "flat" });
 	change(repo, "src/a.mjs");
 
@@ -588,7 +452,7 @@ test("the subject check gives a flat-plan branch no subject check", () => {
 
 // --- A plan folder with no plan.md yet ---
 
-test("a plan folder with no plan.md reads no tasks, and still denies the ticket key", () => {
+test("a plan folder with no plan.md reads as a plan folder with no tasks", () => {
 	const repo = createRepo({ kind: "intent" });
 	const intent = `${PLAN_DIR}/intent.md`;
 	change(repo, intent);
@@ -597,20 +461,8 @@ test("a plan folder with no plan.md reads no tasks, and still denies the ticket 
 		assert.equal(ctx.planFolder, path.join(repo, PLAN_DIR));
 		assert.equal(ctx.tasks, null);
 	});
-	assertDeny(
-		runGate(repo, commitMjs("PRISM-9: Write the intent", intent)),
-		"subject",
-		/isn't a folder-plan subject/
-	);
-});
-
-test("a plan folder with no plan.md clears once the plan: subject replaces the ticket key", () => {
-	const repo = createRepo({ kind: "intent" });
-	const intent = `${PLAN_DIR}/intent.md`;
-	change(repo, intent);
-
 	assert.equal(
-		runGate(repo, commitMjs("plan: Write the intent", intent)),
+		runGate(repo, commitMjs("committing plan", intent)),
 		null
 	);
 });
@@ -624,11 +476,6 @@ test("a folder holding only a spec.md reads as a plan folder with no tasks", () 
 		assert.equal(ctx.tasks, null);
 	});
 	assert.equal(runGate(repo, commitMjs("plan: Write the spec", SPEC)), null);
-	assertDeny(
-		runGate(repo, commitMjs("PRISM-9: Write the spec", SPEC)),
-		"subject",
-		/isn't a folder-plan subject/
-	);
 });
 
 // --- The stops check ---
@@ -917,17 +764,6 @@ test("a repo with no config passes the config check", () => {
 
 // --- Review fixes ---
 
-test("the subject check never quotes an -F file's text, and names the file", () => {
-	const repo = createRepo();
-	change(repo, "src/a.mjs");
-	write(repo, "msg.txt", "sk-secret-token-123\n");
-
-	const result = runGate(repo, "git commit -F msg.txt -- src/a.mjs");
-
-	assertDeny(result, "subject", /msg\.txt/);
-	assert.doesNotMatch(result?.reason ?? "", /sk-secret-token-123/);
-});
-
 test("the stops check passes a contract path a named task amends onto its list", () => {
 	const repo = createRepo({
 		config: {
@@ -950,17 +786,16 @@ test("the stops check passes a contract path a named task amends onto its list",
 	);
 });
 
-test("an archived plan folder gives its branch no subject check", () => {
+test("an archived plan folder gives its branch no plan folder", () => {
 	const repo = createRepo();
 	mkdirSync(path.join(repo, ".prism/archived/plans"), { recursive: true });
 	git(repo, "mv", PLAN_DIR, ".prism/archived/plans/prism-9");
 	git(repo, "commit", "-q", "-m", "plan: Archive");
 	change(repo, "src/a.mjs");
 
-	assert.equal(
-		runGate(repo, "git commit -m 'PRISM-9: Build a' -- src/a.mjs"),
-		null
-	);
+	withContext(repo, "git commit -m 'PRISM-9: Build a' -- src/a.mjs", (ctx) => {
+		assert.equal(ctx.planFolder, null);
+	});
 });
 
 test("the stops check reads a composer.json require-dev change as a dependency change", () => {
