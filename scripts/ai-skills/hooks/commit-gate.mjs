@@ -125,9 +125,11 @@ export function runGate(payload, { tool, cwd = process.cwd() }) {
 	const repoRoot = findPrismRoot(dir);
 	if (!repoRoot) return PASS;
 
-	// git reports the toplevel with symlinks resolved, so the commit's own
-	// directory is resolved too before paths are made relative to it.
-	const commit = { ...parsed, cwd: realpathSync(dir) };
+	// git reports the toplevel with symlinks resolved and Windows 8.3 short names
+	// expanded, so the commit's own directory gets the native realpath too before
+	// paths are made relative to it. A short name left in place makes `git add`
+	// reject every path as outside the repository.
+	const commit = { ...parsed, cwd: realpathSync.native(dir) };
 	const concluding = IN_PROGRESS_HEADS.some((head) =>
 		runGit(repoRoot, ["rev-parse", "-q", "--verify", head], {
 			fallback: null,
