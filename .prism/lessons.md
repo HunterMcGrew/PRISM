@@ -201,3 +201,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-19 (PRISM-537): self-review round 1 told Sasha's report to land in `## Debugged Issues`, which a folder `plan.md` does not have, so the Decision had to route around it.
 
 **How to apply:** Before a handoff names a plan section, confirm `.prism/templates/plan.md` carries it, or route the content to a section the folder plan does have.
+
+## A PR-review re-run PATCHes the marked summary comment and never POSTs a new one
+
+**Why:** 2026-11-19 (PRISM-544): reconcile reads the verdict only from the comment that carries the `code-review-pr-summary` marker, so a second summary comment is invisible to it and the old verdict stays in force.
+
+**How to apply:** On a re-run, find the marked comment and PATCH it in place; post a new comment only when none carries the marker.
