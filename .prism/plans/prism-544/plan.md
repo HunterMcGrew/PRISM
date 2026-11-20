@@ -787,6 +787,11 @@ head: 85800fb69f66b32baf918e5805c125a30aa8ab58 (part 2 of 5)
   - **5. nit, code smell.** File: scripts/ai-skills/hooks/secrets-gate.mjs:763. The tracked-file mode branch only skips work. Fix: collapse it, or decline it for performance. Kept: measured 97 ms against 225 ms on 40,000 files, so the branch earns its place.
   - The secrets-gate section of `hook-runtime.md`, its install twin, and the platform copies follow the gate fixes at 4b186621.
   - CI on run 44704862929: `ubuntu-latest` passed, and `windows-latest` failed on finding 1 alone. AC-2, the secrets half of AC-8, AC-9 for the secrets gate, and the registration half of AC-10: met (executed). AC-13: unmet.
+- pr-review round 3 at a4fa578e (part 2 of 5): 0 critical, 0 major, 1 minor, 0 nit
+  - Range 041aa8c7..a4fa578e for the fix commits, and fdce3e87..a4fa578e for Regressions and Docs. Every pass swept except Accessibility, which is n/a with no UI. The finding is posted inline on #546. The summary is updated in place with verdict state 2, and `effort:deep` and `review:has-minors` are applied. Reconcile is clean.
+  - Round 2 findings 1 to 3 are confirmed fixed at e17e4388, and finding 4 at a31854e0. Their threads are resolved. Finding 5's decline is accepted and its thread resolved. `secrets-gate.test.ts` and `env-keys.test.ts` pass locally at a4fa578e, 113 of 113.
+  - **1. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:1224, plus :1074 and :1170. The short-option cluster walk in `valuesOf` pushes one value per letter, and each value costs filesystem calls, so the gate's time grows with the square of the word length. `curl -d<50,000 base64 chars>` takes 10.4 s at a4fa578e and 35 ms at b5fc08c6. At 80,000 characters, with `; cat .env.production` after, the deny takes 25.4 s, past the 21 s registration timeout. The call then runs with nothing denied. That outcome is deduced, not run end to end. Fix: cap the walk at a few letters, name the cap in the header, and add a timing test. Round 3 is the cap, so this goes to the PR as an open item.
+  - CI on run 44707611519: `ubuntu-latest` and `windows-latest` both passed. AC-2, the secrets half of AC-8, AC-9 for the secrets gate, the registration half of AC-10, and AC-13: met (executed).
 
 ## Debugged Issues
 
