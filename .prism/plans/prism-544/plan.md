@@ -669,6 +669,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: `bundles.mjs --base fdce3e87` read T1 to T10 and T18 as open and reported 21 duplicate claims, because the squashes for parts 1 and 2 carry ticket subjects and no task IDs. A commit that names `T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T18` records them again, with no other change.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Synced AC-5's adjusted text to issue #544's body, so the tracker no longer lists the subject, `plan:`, and `retro:` denies; the AC Sync Log row reads synced.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T22 added the path-brief sentence to the Limits paragraph of `workflow.md`, and the build wrote the twin and the three platform copies and `AGENTS.md`. The lead set now ends at byte 31,879 of the 32,768 window, up from 31,708.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 ported the brief gate and the hook log (brief-gate.mjs, lib/hook-log.mjs, their sidecars, brief-gate.test.ts), with a GATED_ROLES constant held equal to roles.json by test; the registration and HOOK_RUNTIME_FILES edits stay with T21.
 
 ## Sessions
 
