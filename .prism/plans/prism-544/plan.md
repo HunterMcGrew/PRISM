@@ -625,6 +625,11 @@ round 4: resolved 1
   - **Chosen approach:** no guard, as port fidelity. The cost is one rewritten brief, and a brief that says "do not ignore the rules" is rare.
   - **Implementation guidance:** negated phrases belong in the gate header's list of accepted false denies, which the code writer owns. The docs say nothing about negation.
 - **PR #548 round 1's nit on the plan.md seed in leg 2 of the brief gate's test is declined.** T19's task text names that test and its seed, so the test is as planned.
+- **The architect-route fixture helper writes one line of prose: T24.**
+  - **Root cause:** T24 named no `behavior change:`, and `writeArchitectFixture` wrote each doc as headings only, so the new warning for a routed doc with no content fired on every existing route test.
+  - **Alternatives considered:** editing the existing `writeFile` line in the helper, which the commit gate denies as a weakened test.
+  - **Chosen approach:** a new `appendFile` line inside the helper's loop adds "One line of prose." to each doc, and no existing line changes.
+  - **Implementation guidance:** a test that needs an empty doc calls the helper and then overwrites the doc with headings and comments, as the T24 warning test does.
 
 ## History
 
@@ -713,6 +718,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: PR #548 round 2 docs fix: the Brief gate section of `hook-runtime.md` and its twin say the `do not read plan.md` pattern also reads a bare `plan` and `the plan`, so "do not read plan first" denies.
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: Part 4 (T19 to T23) shipped as #548, squash `e715c91d`. Part 5 builds from `main` after it, on `huntermcgrew/prism-544-part-5`. The commit that marks it done lists every ID, because the squash dropped the task-ID commits.
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: Parts 1 to 3 (T1 to T18) shipped as #545, #546, and #547, and their squashes carry ticket subjects and no task IDs. One commit that lists `T1` to `T18` marks them done, so `bundles.mjs --base fdce3e87` stops reading them as open.
+- 2026-11-20 [huntermcgrew/prism-544-part-5]: T24 makes `prism doctor` warn on a routed architect doc that holds only headings and comments, and T25 adds the architect-routes step to `prism-onboard` (`measureSkillLoad` total 57 lines).
 
 ## Sessions
 
