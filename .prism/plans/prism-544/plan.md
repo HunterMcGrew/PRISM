@@ -488,6 +488,14 @@ Owner: Eli. In `.prism/architect/_toolkit/onboarding.md` § Workflow order, inse
 
 ## Challenge
 
+- round 1: blocking 1
+  - T11 (blocking): the parser reads a `commit.mjs` call only when the script's `realpathSync.native` equals the runtime's own `plan/commit.mjs` (`path.dirname(path.dirname(import.meta.url))`), but the test builds its fixture as "a temp dir holding a copy of that path" and runs the relative `node scripts/ai-skills/hooks/plan/commit.mjs`. A copy resolves to itself, not the runtime file, so every ported `commit.sh` case reads no commit and the proof fails. Name one fixture: the absolute runtime path, or a segment cwd at the repo root. Don't use a symlink, which needs privileges on `windows-latest`.
+  - T3 (non-blocking): `hook.mjs` line 65's comment says the quote characters are allowed "so `unquote` keeps working", and T3's comment list (lines 93, 295, 796, 944) misses it, so it is stale once `unquote` goes.
+  - T13 (non-blocking): `readPlanConfig` returns the raw config or null, not `ticketPrefix` and `defaultBranch`, which are read off it (`defaultBranch` falls back to `main`). `findPlanForBranch` swallows an unparseable config and returns null, so the config read has to come before the folder-plan test, or the "config that does not parse denies" case passes as a non-plan branch. State that order.
+  - T20 (non-blocking): leg 3 says `PRISM_RECONCILE_SCRIPT` unset, but no such variable exists anywhere, and `RECONCILE_SCRIPT` comes from `import.meta.url`. Drop the clause, and name the files the temp runtime copy holds (`reconcile-gate.mjs`, `harnesses.mjs`, `lib/hook-log.mjs`, and the `review/reconcile.mjs` stub).
+  - T23 (non-blocking): `hook-runtime.md` § Hook runtime says "Both templates register `PreToolUse`, `PostToolUse`, `PostCompact`, and `UserPromptSubmit`", which T21's `SubagentStart` and `SubagentStop` make false. No bullet names that sentence.
+  - plan (non-blocking): `.prism/rules/verification-commands.md` line 105 says `PRISM_HOOK_DISABLE=1` "turns every hook off for a session", which the secrets gate makes more false (the approve guard already ignored it). The file is outside Affected systems, so it needs a scope-change entry under spec Requirement 16, or an open item.
+
 ## Decisions
 
 - **Stack: five PRs, cut at T6, T10, T17, and T23.** The child passes 10 files and 500 lines in every part, mostly ported tests and generated copies.
