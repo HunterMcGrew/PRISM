@@ -561,6 +561,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Fixed the part 1 self-review findings: the shell-parser doc names which gates use `lib/segments.mjs`, the gated-role comment and the prune-test header state what is true now, and the plan cites the kill-switch checks by name.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T3 fix for round 1 findings 2 to 7: the git gates normalize CRLF and skip container and `env -C` segments, heredoc bodies are placed by verified text and offset, and one walk is shared per hook call.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Self-review round 2 plan edits: T19 now also fixes the `gated` comment, the quadratic-walk follow-up is a PR off `main`, `hook-runtime.md` joins part 1 as a scope change, and `spec.md` no longer calls `update.ts` an importer of the old splitter. Nits 9 and 10 are declined, since no under-deny was found and T2 specified the ported function.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Round 2 fixes: `hook-runtime.md` says an unplaceable heredoc body keeps every body in the scan and that the git gates skip container segments, and the git gates fold an `env -C` directory into the segment's directory chain, with the heredoc substitution guard now pinned by tests.
 
 ## Sessions
 
