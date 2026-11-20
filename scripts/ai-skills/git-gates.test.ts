@@ -241,6 +241,8 @@ test("detectGitSegments: a command the walk cannot read is scanned for a commit 
 		[`${unreadable}; git push`, ["push"]],
 		[`${unreadable}; git commit -m x`, ["commit"]],
 		[`${unreadable}\ngit add -A && git commit -m x`, ["commit"]],
+		[`${unreadable}; timeout 60 git push`, ["push"]],
+		[`${unreadable}; { git push; }`, ["push"]],
 		[`${unreadable}; git push --delete origin x`, []],
 		[`${unreadable}; git status`, []],
 	];

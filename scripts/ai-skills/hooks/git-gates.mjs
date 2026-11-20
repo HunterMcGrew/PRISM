@@ -186,10 +186,12 @@ function readEnvDirectories(segment) {
  * repo is not the session's. An `env -C` or `env --chdir` directory leads the
  * segment's directories, ahead of the `git -C` chain.
  *
- * Text the walk could not read is split on shell separators and read piece by
- * piece, so a stray quote or parenthesis never hides a later commit or push.
- * That reading holds on a mention such as `echo "git commit` inside the
- * unreadable text, which costs a held commit and nothing more.
+ * Text the walk could not read is split on `;`, `&`, `|`, parentheses, and
+ * line breaks, and each piece is read from its first word that is `git` or a
+ * path ending in `/git`. That finds a commit or push behind a wrapper such as
+ * `timeout 60` or a brace, but it is a text scan and not a parse: it also
+ * reads a `git` that only a quoted string or an argument names, which holds
+ * a commit or push that was never going to run.
  *
  * @param {string | undefined} command
  * @returns {GitGateSegment[]}
@@ -217,9 +219,9 @@ export function detectGitSegments(command) {
 
 	for (const text of unreadable) {
 		for (const piece of text.split(/[;&|()\n]+/)) {
-			const invocation = resolveGitInvocation(
-				piece.replace(/["'`$]/g, "").split(/\s+/).filter(Boolean)
-			);
+			const words = piece.replace(/["'`$]/g, "").split(/\s+/).filter(Boolean);
+			const gitAt = words.findIndex((word) => /^git$|[/\\]git$/.test(word));
+			const invocation = gitAt === -1 ? null : resolveGitInvocation(words.slice(gitAt));
 			if (invocation !== null) {
 				segments.push(...toGateSegments(invocation, []));
 			}

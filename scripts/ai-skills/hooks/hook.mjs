@@ -940,8 +940,7 @@ function removeDataHeredocBodies(command) {
  * keeps this reading over-wide rather than empty.
  *
  * Only a `cd` at the top level moves the directory. One inside a
- * substitution or a nested shell string runs in a shell of its own, and the
- * walk lists those segments before the ones that hold them.
+ * substitution or a nested shell string runs in a shell of its own.
  *
  * This reading leans on `walkSegments` to place each argument, which the
  * whole-command scan does not. A mis-split moves an argument to the wrong
