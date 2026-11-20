@@ -571,16 +571,16 @@ round 4: resolved 1
 
 verdict: done
 base: 6f045ec596e560147e91f32f84d2649e5690eb51
-head: e4ce2059658c6ea9442e4153f3ff309b6eb546ac (part 1 of 5)
+head: de7a3e788916e2bec402508f7fd0fede100bb3c3 (part 1 of 5)
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/typecheck.rerun.log |
-| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/lint.rerun.log |
-| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/test.rerun.log |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/typecheck.r2.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/lint.r2.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/test.r2.log |
 | format | n/a: not configured | none |
-| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/build.rerun.log |
-| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/spec.rerun.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/build.r2.log |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/spec.r2.log |
 
 ### Failures
 
