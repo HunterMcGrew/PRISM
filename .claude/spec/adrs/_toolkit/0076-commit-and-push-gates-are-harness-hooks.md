@@ -97,14 +97,16 @@ Alternatives, and why each lost:
   there, and Cursor is the remaining gap.
 - Recognizing `commit` and `push` in command text is a parse with a fallback,
   and each half has a cost. The gates read a command through the shared shell
-  parser, which unwraps `bash -c`, `env`, and `timeout`, follows a `cd`, and
-  reads a heredoc body as data. Text the parser can't read is scanned for
-  `git commit` and `git push` words instead, and that scan can hold a command
-  that would never run, such as a quoted mention. It is a text scan and not a
-  parse, so it makes no promise to catch every spelling: a `git` built from a
-  variable or an escape can slip past. An over-hold blocks nothing unless
-  lint actually fails, and a miss is the same gap the write gate's shell arm
-  has.
+  parser, which unwraps `bash -c`, `env`, and `timeout`, and reads a heredoc
+  body as data unless a shell reads it. A `cd` before the command is not
+  followed: the gates use only the `-C` and `env -C` directories the `git`
+  call carries, so `cd sub && git push` is judged from the session's
+  directory. Text the parser can't read is scanned for `git commit` and
+  `git push` words instead, and that scan can hold a command that would never
+  run, such as a quoted mention. It is a text scan and not a parse, so it
+  makes no promise to catch every spelling: a `git` built from a variable or
+  an escape can slip past. An over-hold blocks nothing unless lint actually
+  fails, and a miss is the same gap the write gate's shell arm has.
 
 ## References
 
