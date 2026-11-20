@@ -191,7 +191,7 @@ Owner: Clove. Port thrive's `scripts/hooks/secrets-gate/hook.mjs` as `scripts/ai
 - **Switches.** The header gains one sentence: it reads neither kill switch, because a secrets path an agent can turn off is not a control.
 - **Schema.** `.ai-skills/config.schema.json` gains, after `importAliases`: `"secretPaths": { "type": "array", "items": { "type": "string" }, "description": "Extra paths the secrets gate denies, beside its built-in patterns, which it always keeps. Patterns use the manifest route syntax and match without regard to case.", "examples": [["config/credentials/**"]] }`.
 
-`scripts/ai-skills/secrets-gate.test.ts` ports thrive's `scripts/hooks/secrets-gate/hook.test.mjs` minus the Cursor, container, env-dump, and executable cases, with `scripts/env-keys.sh` read as `node <runtime>/env-keys.mjs`, plus:
+`scripts/ai-skills/secrets-gate.test.ts` ports thrive's `scripts/hooks/secrets-gate/hook.test.mjs` minus the Cursor, container, env-dump, and executable cases, with `scripts/env-keys.sh` read as `node <runtime>/env-keys.mjs`, where `<runtime>` is `fileURLToPath(new URL("./hooks/", import.meta.url)).split(path.sep).join("/")`, the forward-slash spelling `approve-guard.test.ts` builds as `APPROVE_COMMAND_PATH`. On `windows-latest` `fileURLToPath` returns backslashes, and `tokenize` reads a `\` in a command string as an escape. Add:
 
 - **"secrets gate leg 1: a Read of .env is denied and the deny names the env-keys form"**, whose reason holds `env-keys.mjs .env` or `env-keys.mjs <file>`.
 - **"secrets gate leg 2: with only .env.example on disk, a Read of it passes"**.
@@ -252,7 +252,7 @@ Owner: Clove. Port thrive's `scripts/hooks/commit-gate/parse.mjs`, with its deny
 - **`kill-switch`.** A new deny id, judged on every segment of any command: an `assignments` entry starting `PRISM_HOOK_DISABLE=` or `PRISM_HOOK_DENY_DISABLE=`, or an argv whose head is `export`, `declare`, `typeset`, or `readonly` with an operand equal to either name or starting with either name followed by `=`. Export `readKillSwitch(command, sessionCwd)` returning `{ id: "kill-switch", flag }` or `null`. Remedy: `Leave PRISM_HOOK_DISABLE and PRISM_HOOK_DENY_DISABLE to the person; run the command without them.`
 - Deny text keeps the shape `Commit gate (<check>): <reason> <remedy>`.
 
-`scripts/ai-skills/commit-gate-parse.test.ts` ports thrive's `parse.test.mjs` with `scripts/plan/commit.sh` rewritten to `node <runtime>/plan/commit.mjs`, where `<runtime>` is the absolute path `fileURLToPath(new URL("./hooks/", import.meta.url))` from the test file, so the script word resolves through `realpathSync.native` to the runtime's own `plan/commit.mjs`. A copy of the script in a temp dir resolves to itself and reads no commit, and a symlink needs privileges on `windows-latest`, so the fixture uses neither. The commit's paths still resolve against the temp fixture repo, passed as the segment cwd. Add: a `commit.mjs` call with a `:` path reads no `magic-pathspec` deny; a `node other.mjs "T1: x" a` call reads no commit; and the kill-switch rows `PRISM_HOOK_DISABLE=1 git commit -m x a`, `export PRISM_HOOK_DENY_DISABLE=1; ls`, `env PRISM_HOOK_DISABLE=1 ls`, and `readonly PRISM_HOOK_DISABLE` each read `kill-switch`, while `echo PRISM_HOOK_DISABLE` reads `null`.
+`scripts/ai-skills/commit-gate-parse.test.ts` ports thrive's `parse.test.mjs` with `scripts/plan/commit.sh` rewritten to `node <runtime>/plan/commit.mjs`, where `<runtime>` is the absolute path `fileURLToPath(new URL("./hooks/", import.meta.url)).split(path.sep).join("/")` from the test file, spelled with forward slashes as in T8 because `tokenize` reads a `\` as an escape, so the script word resolves through `realpathSync.native` to the runtime's own `plan/commit.mjs`. A copy of the script in a temp dir resolves to itself and reads no commit, and a symlink needs privileges on `windows-latest`, so the fixture uses neither. The commit's paths still resolve against the temp fixture repo, passed as the segment cwd. Add: a `commit.mjs` call with a `:` path reads no `magic-pathspec` deny; a `node other.mjs "T1: x" a` call reads no commit; and the kill-switch rows `PRISM_HOOK_DISABLE=1 git commit -m x a`, `export PRISM_HOOK_DENY_DISABLE=1; ls`, `env PRISM_HOOK_DISABLE=1 ls`, and `readonly PRISM_HOOK_DISABLE` each read `kill-switch`, while `echo PRISM_HOOK_DISABLE` reads `null`.
 
 ### T12: Port the commit gate's would-be tree
 
@@ -278,7 +278,7 @@ Owner: Clove. Port thrive's `checks.mjs` and `test-guard.mjs`. Changes:
 - **Config.** `readPlanConfig(repoRoot)` from `../plan/tasks.mjs` returns the raw config, or `null` when no file exists, and throws `PlanConfigError` on a file that does not parse. Read `ticketPrefix` off it as `typeof config?.ticketPrefix === "string" ? config.ticketPrefix : null`, and `defaultBranch` as a non-empty string or `main`, the same reads `tasks.mjs` makes at its line 349. Call it before `findPlanForBranch`: that function swallows a config it can't parse and returns `null`, so a later read would let a broken config pass as a non-plan branch instead of denying. A `PlanConfigError`, or an error from `resolveStopPaths` or `resolveTestGlobs`, becomes a deny `Commit gate (config): <message> Fix .ai-skills/config.json, then commit again.`, so the gate never skips a check on a config it can't read.
 - **Subject.** `parseSubject(subject, ticketPrefix)` from `../plan/tasks.mjs` must read a task form, `plan:`, or `retro:`.
 - **`PLANS_PREFIX`** is `.prism/plans/`. A `plan:` commit may touch only the branch's plan folder.
-- **`RETRO_PATHS`** is the branch's plan folder plus `.prism/retros/`, `.prism/lessons.md`, `.prism/archived/lessons-archive.md`, `.prism/metrics/review-misses.jsonl`, `.prism/architect/`, `.prism/spec/adrs/`, and `.prism/rules/`.
+- **`RETRO_PATHS`** is the branch's plan folder plus `.prism/retros/`, `.prism/lessons.md`, `.prism/archived/lessons-archive.md`, `.prism/metrics/review-misses.jsonl`, `.prism/architect/`, `.prism/spec/adrs/`, and `.prism/rules/`, and the generated copies a promotion commits beside them: `.claude/`, `.codex/`, and `.cursor/` each followed by `architect/`, `rules/`, and `spec/adrs/`, plus `AGENTS.md` and `templates/install/.prism/`. Add a case to `commit-gate-checks.test.ts`: **"a retro: commit touching .claude/rules/x.md, AGENTS.md, and templates/install/.prism/rules/x.md passes"**.
 - **Stop paths.** `resolveStopPaths(config)` and `matchStopPath` from `../plan/stop-paths.mjs`. A dependency path counts only when its dependency entries change: for `package.json` and `composer.json`, compare the parsed `dependencies`, `devDependencies`, `peerDependencies`, and `optionalDependencies` (and `require` and `require-dev` for `composer.json`) between `HEAD` and the would-be index with `git show`. Any other dependency file counts on any change.
 - **Weakened tests.** `MAIN_REF` becomes `origin/<defaultBranch>`. A removed line counts when its file matches `testGlobs` and `git blame` dates it before `git merge-base origin/<defaultBranch> HEAD`. thrive's flat-plan allowance goes.
 - **`resolveTestGlobs(config)`**, exported from `test-guard.mjs`: an absent `testGlobs` gives `DEFAULT_TEST_GLOBS`, `["*.test.*", "**/*.test.*", "*.spec.*", "**/*.spec.*", "__tests__/**", "**/__tests__/**", "test/**", "**/test/**", "tests/**", "**/tests/**"]`. A set array of strings replaces it. A value that is not an array of strings, or an entry holding `{`, throws an `Error` naming `testGlobs`.
@@ -302,7 +302,7 @@ Owner: Clove. Port thrive's `scripts/hooks/commit-gate/hook.mjs` as `scripts/ai-
 - **`commit.mjs` calls** build the index with `{ literal: true }`.
 - `outsideThriveRepo` is renamed `outsidePrismRepo`.
 
-`scripts/ai-skills/commit-gate.test.ts` ports thrive's `hook.test.mjs` with `commit.sh` read as `node <runtime>/plan/commit.mjs`, plus:
+`scripts/ai-skills/commit-gate.test.ts` ports thrive's `hook.test.mjs` with `commit.sh` read as `node <runtime>/plan/commit.mjs`, `<runtime>` spelled with forward slashes as in T11, plus:
 
 - **"commit gate leg 1: git commit -a is denied with the all reason"**.
 - **"commit gate leg 2: with a staged sibling file and a folder plan whose T1 lists a.txt, commit.mjs naming a.txt with subject T1: x passes"**. In-process `runGate`.
@@ -357,7 +357,7 @@ Owner: Eli. Every claim is checked against `commit-gate.mjs` and `commit-gate/*.
 ### T18: Add the gated flag to roles.json
 
 - files: .ai-skills/definitions/roles.json, scripts/ai-skills/generate-skills.ts, scripts/ai-skills/discovery-metadata.test.ts
-- proof: pnpm exec tsx --test scripts/ai-skills/discovery-metadata.test.ts && pnpm run prism:check-types && pnpm run prism:build > /dev/null && git status -s .claude .codex .cursor | wc -l | grep -qx 0
+- proof: pnpm exec tsx --test scripts/ai-skills/discovery-metadata.test.ts && pnpm run prism:check-types && pnpm exec tsx scripts/ai-skills/build.ts --check
 - proof fails on main: yes
 - depends on: none
 
@@ -368,7 +368,7 @@ Owner: Clove.
 - `roles.json`: add `"gated": true` to `prism-spec`, `prism-challenge`, `prism-verify`, `prism-implement`, `prism-docs`, and `prism-pr-review`, after each entry's `routing`. `prism-architect` stays ungated.
 - `discovery-metadata.test.ts`: append **"buildRoleMap rejects a non-boolean gated value"** with `gated: "yes"`, and **"buildRoleMap accepts a boolean gated value"**.
 
-The flag renders into no generated file, which the proof's empty `git status` checks.
+The flag renders into no generated file, which the proof's `build.ts --check` shows by finding no drift. The proof runs no full suite, because T1's test fails on purpose until T3 lands and T18 may run first.
 
 ### T19: Port the brief gate and the hook log
 
@@ -475,19 +475,19 @@ Append to `doctor.test.ts`, built like the existing route cases: **"runDoctor wa
 - proof: pnpm run prism:build > /dev/null && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && grep -q 'manifest.json' .ai-skills/skills/prism-onboard/shared.md
 - depends on: T24
 
-Owner: Clove (skill content). In `.ai-skills/skills/prism-onboard/shared.md`, under `## Confirm, generate, write`, insert a new item after item 2 (**Rules.**) and renumber the items after it:
+Owner: Clove (skill content). In `.ai-skills/skills/prism-onboard/shared.md`, under `## Confirm, generate, write`, append a new item 6 after item 5 (**Regenerate.**):
 
-`3. **Architect routes.** For each source tree the detection found, offer once to draft one architect doc at \`.prism/architect/<topic>.md\` from the code, per the writing-an-architect-doc guide. Add its route to the live \`.prism/architect/manifest.json\` in the same step, and only once the doc holds content that passes the guide's Deletion Test. When the person declines, or nothing survives the test, write neither file, because a route to an empty doc holds the team's first edit to read nothing. Mark \`rule-generation\` complete only after this step.`
+`6. **Architect routes.** After regeneration, and for first-contact after the seed-and-sync, so the live manifest already holds the stub's default routes: for each source tree the detection found, offer once to draft one architect doc at \`.prism/architect/<topic>.md\` from the code, per the writing-an-architect-doc guide. Add its route to the live \`.prism/architect/manifest.json\` in the same step, and only once the doc holds content that passes the guide's Deletion Test. When the person declines, or nothing survives the test, write neither file, because a route to an empty doc holds the team's first edit to read nothing. Mark \`build-verify\` complete only after this step.`
 
 In `## Close`, add "the architect docs and routes written" to the summary list after "the review stack checks included". Run `pnpm prism:build`, measure `prism-onboard` with `measureSkillLoad`, and record the total in `## History`.
 
 ### T26: Add the route step to the onboarding workflow order
 
 - files: .prism/architect/_toolkit/onboarding.md, .claude/architect/_toolkit/onboarding.md, .codex/architect/_toolkit/onboarding.md, .cursor/architect/_toolkit/onboarding.md
-- proof: pnpm exec tsx scripts/ai-skills/build.ts --check && pnpm run prism:crossref-lint && grep -q 'Draft architect docs' .prism/architect/_toolkit/onboarding.md
+- proof: pnpm exec tsx scripts/ai-skills/build.ts --check && pnpm run prism:crossref-lint && grep -q 'draft architect docs' .prism/architect/_toolkit/onboarding.md
 - depends on: T25
 
-Owner: Eli. In `.prism/architect/_toolkit/onboarding.md` § Workflow order, insert after step 5 and renumber the steps after it: `6. Draft architect docs for the detected source trees on a yes, one per tree, and add each route to the live \`manifest.json\` only once its doc holds content. A declined or empty doc writes neither file, and \`prism doctor\` warns on a route to a doc with no content.` Run `pnpm prism:build`.
+Owner: Eli. In `.prism/architect/_toolkit/onboarding.md` § Workflow order, insert after step 7 and renumber step 8: `8. After regeneration, draft architect docs for the detected source trees on a yes, one per tree, and add each route to the live \`manifest.json\` only once its doc holds content. A declined or empty doc writes neither file, and \`prism doctor\` warns on a route to a doc with no content.` Run `pnpm prism:build`.
 
 ## Challenge
 
@@ -517,6 +517,7 @@ round 2: blocking 1
 - **No task here fixes a reported bug, except the `bash -c` miss.** Every other code task adds behavior and carries its own test with `proof fails on main: yes`, except T4, which moves existing coverage. T1's failing test sits in its own file and spawns the entry point, because a test that imports `git-gates.mjs` would give T1 an import edge to T3 and the bundle check would order the fix first. Each gate's three legs are named cases in its suite, per the three-legs convention above.
 - **Both gates move off `lib/shell.mjs` in the same task that deletes it.** The bundle check makes a task that edits an importer wait on the owner of the file it imports, so separate migration and deletion tasks formed a cycle. Rejected: leaving the module in place until a later part, which would ship two shell parsers in part 1.
 - **`verification-commands.md`'s switch sentence is corrected in T10: a scope change that follows from the outcome.** Line 105 says `PRISM_HOOK_DISABLE=1` "turns every hook off for a session", which the approve guard already contradicted and the secrets gate makes more false, so it is a doc this child makes false. `spec.md` adds the rule and its curated install twin to Affected systems, and the platform copies were already covered. T10 owns it because it lands with the secrets gate.
+- **`RETRO_PATHS` covers the generated copies a promotion commits: a scope change that follows from the outcome.** The spec defines the set as what `prism-retro` commits, and retro commit `75a131f7` committed the `.claude/`, `.codex/`, and `.cursor/` copies of `architect/` and `rules/`, `AGENTS.md`, and `templates/install/.prism/` beside the canonical files. Without them the commit gate, live in PRISM from T15, denies this ticket's own retro. The `spec/adrs/` copies are added on the same reasoning, since a promotion to an ADR writes them too.
 - **The two command patterns and `HOOK_COMMAND_PATH_RE` widen with each gate.** The spec says `mergeHookEventEntries` already claims entries by pattern, but `PRISM_HOOK_COMMAND_PATTERN` and its Codex twin name only `hook`, `git-gates`, and `approve-guard`. Without the widening an update would never replace or remove a new gate's entry, and doctor would not see a dead one. This follows from the approved outcome, so it goes ahead here. The registration test checks every template command against the patterns, so a gate added later without widening fails a test.
 - **`doctor`'s runtime-without-registration check stays on the three existing entry points.** It names each entry point by path, and the spec asks only for the dead-registration direction, which the widened regex covers. Extending it to the four new gates is a follow-up PR off `main` after the stack merges. Rejected for now: adding four more path checks and cases here, which the spec does not name.
 - **The hook log lives in `lib/hook-log.mjs`.** The brief and reconcile gates both write it, so one helper serves two callers. Putting it in `harnesses.mjs` was rejected, because it reads the git directory and has nothing to do with a host's wire format.
@@ -530,6 +531,7 @@ round 2: blocking 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Wrote the plan, 26 tasks in a five-part stack, with acceptance criteria AC-1 to AC-13 carried from issue #544.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Folded the two out-of-scope findings into T20 and T25, after `spec.md` added the onboarding agent file and the `prism-pr-review` skill copies to Affected systems.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Fixed challenge round 1's six findings: T11's fixture, T3's line 65 comment, T13's config order, T20's temp runtime, T23's registered-events sentence, and the `verification-commands.md` switch sentence, now T10's.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Fixed challenge round 2's four findings: T18's proof is `build.ts --check`, T13's `RETRO_PATHS` covers the generated copies, T8, T11, and T14 spell the runtime path with forward slashes, and T25 and T26 run the route step after regeneration.
 
 ## Sessions
 
