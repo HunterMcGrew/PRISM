@@ -43,8 +43,9 @@
 //   including those in the shell strings, fed heredocs, `eval`s, and
 //   substitutions its header lists, with the directory each one runs in. Every
 //   word is judged as a path, including redirect targets, the value after a
-//   `=`, the path after a `rev:` colon, the text after a short option's
-//   letter such as the `.env` of `-a.env`, and brace expansions. An unquoted glob
+//   `=`, the path after a `rev:` colon, the text after each letter of a short
+//   option cluster such as the `.env` of `-a.env` and `-0a.env`, and brace
+//   expansions. An unquoted glob
 //   word expands against the segment's cwd, and one that could match a secret
 //   name (`.en*`, `*.k?y`) denies even when nothing matches on disk. A
 //   filename filter, the value of `-g`, `--glob`, `--iglob`, or `--include`,
@@ -118,6 +119,8 @@
 //   `cp .env.example .env`, because a word is judged without knowing whether
 //   the program reads or writes it.
 // - A search term spelled exactly like a secret name, such as `rg .env src`.
+//   On Windows this includes `rg '\.env' src`, because there a `\` is a folder
+//   break and `\.env` names a file at the drive root.
 // - A word holding a glob character that the source spells with a quote or
 //   escape inside it, such as `"$(pwd)/*.key"`, because the word is probed
 //   as a glob whenever it isn't written verbatim.
@@ -161,7 +164,9 @@ const CONFIG_FILE = ".ai-skills/config.json";
 // Stand-ins for each secret name, used to ask whether a glob could match one.
 const BASENAME_PROBES = [".env", ".env.local", "a.pem", "a.key"];
 const GLOB_CHAR = /[*?[]/;
-const SHORT_OPTION = /^-[A-Za-z](.+)$/s;
+const OPTION_CLUSTER = /^-[A-Za-z0-9]/;
+// A shell word separates folders at `/` only, and on Windows at `\` too.
+const SEPARATOR = path.sep === "/" ? /\/+/ : /[\\/]+/;
 const URL_WORD = /^[a-z][a-z0-9+.-]*:\/\//i;
 const KEY_SUFFIX = /.\.(pem|key)$/i;
 const MAX_DEPTH = 6;
@@ -519,7 +524,7 @@ function expandGlob(pattern, cwd, dotglob) {
 	const root = path.isAbsolute(pattern) ? path.parse(pattern).root : "";
 	const segments = pattern.slice(root.length).split(/[\\/]+/);
 	/** @type {string[]} */
-	let bases = [root || (cwd ?? "")];
+	let bases = [root || (cwd === null ? "" : (realPath(cwd) ?? cwd))];
 	for (const segment of segments) {
 		if (segment === "") continue;
 
@@ -527,7 +532,7 @@ function expandGlob(pattern, cwd, dotglob) {
 		const next = [];
 		for (const base of bases) {
 			if (!GLOB_CHAR.test(segment)) {
-				next.push(path.join(base, segment));
+				next.push(stepInto(base, segment));
 				continue;
 			}
 
@@ -705,7 +710,7 @@ function grepDenies(input, cwd) {
 	if (input.path && pathDenies(input.path, cwd, { dotglob: true })) return true;
 	if (input.glob && globNamesSecret(input.glob)) return true;
 
-	return rootHoldsVisibleSecret(path.resolve(cwd, input.path ?? "."));
+	return rootHoldsVisibleSecret(resolveFrom(cwd, input.path ?? "."));
 }
 
 /**
@@ -849,15 +854,38 @@ function runsEnvKeys(command, cwd) {
 }
 
 /**
- * Resolves a relative path against the real directory of `cwd`, the way the
- * kernel does. A `..` in the path climbs out of the directory a symlinked `cwd`
- * points at, not out of the link's own parent.
+ * Resolves a path the way the kernel does: a relative one starts in the real
+ * directory of `cwd`, and a `..` climbs out of the real directory of the path
+ * so far, so it leaves the directory a symlink points at and not the link's own
+ * parent. A symlink with no `..` after it stays as spelled, which keeps a
+ * folder name the path was written with.
  *
  * @param {string} cwd
  * @param {string} target
  */
 function resolveFrom(cwd, target) {
-	return path.resolve(realPath(cwd) ?? cwd, target);
+	const root = path.parse(target).root;
+	if (root !== "" && !path.isAbsolute(target)) return path.resolve(cwd, target);
+
+	let current = root || (realPath(cwd) ?? cwd);
+	for (const segment of target.slice(root.length).split(SEPARATOR))
+		current = stepInto(current, segment);
+
+	return current;
+}
+
+/**
+ * One path segment from `base`: `..` leaves the real directory of `base`.
+ *
+ * @param {string} base
+ * @param {string} segment
+ */
+function stepInto(base, segment) {
+	if (segment === "" || segment === ".") return base;
+
+	return segment === ".."
+		? path.dirname(realPath(base) ?? base)
+		: path.join(base, segment);
 }
 
 /**
@@ -1181,8 +1209,8 @@ function spellsWord(original, command, at, word) {
 
 /**
  * A word, and the values `wordDenies` judges inside it: the text after its
- * first `=` and `:`, and the text after a short option's letter, as in the
- * `.env` of `-a.env`.
+ * first `=` and `:`, and the text after each letter of a short option cluster,
+ * as in the `.env` of `-a.env` and of `-0a.env`.
  *
  * @param {string} word
  */
@@ -1192,8 +1220,9 @@ function valuesOf(word) {
 		const at = word.indexOf(cut);
 		if (at !== -1) values.push(word.slice(at + 1));
 	}
-	const attached = SHORT_OPTION.exec(word)?.[1];
-	if (attached !== undefined) values.push(attached);
+	if (OPTION_CLUSTER.test(word))
+		for (let at = 2; at < word.length && /[A-Za-z0-9]/.test(word[at - 1]); at += 1)
+			values.push(word.slice(at));
 
 	return values;
 }

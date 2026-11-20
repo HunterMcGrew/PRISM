@@ -430,12 +430,17 @@ test("ordinary words that only look like secret names pass", () => {
 	for (const command of [
 		"rg -n event.key src",
 		"jq .spec.key data.json",
-		"rg '\\.env' src",
 		"grep -c '.*' notes.txt",
 		"find . -name '.env*'",
 		"curl -s https://example.com/docs/secrets/page",
 	])
 		assertPassed(claudeBash(command, cwd));
+
+	// On Windows a `\` is a folder break, so `\.env` names a file at the drive
+	// root. That search term is an accepted false deny there.
+	const escaped = claudeBash("rg '\\.env' src", cwd);
+	if (process.platform === "win32") assertDenied(escaped);
+	else assertPassed(escaped);
 });
 
 test("a bare key or pem word denies when the file exists or the glob is unquoted", () => {
@@ -1102,6 +1107,8 @@ test("a file name attached to a short option is judged as a path", () => {
 		"xargs -a.env.production echo",
 		"tar -cf /dev/null -T.env.production",
 		"xargs -a.en*",
+		"xargs -0a.env.production echo",
+		"xargs -ra.env.production echo",
 	])
 		assertDenied(claudeBash(command, cwd));
 
@@ -1153,4 +1160,31 @@ test("secrets gate leg 3: the remedy passes from a symlinked cwd nested deeper t
 		.permissionDecisionReason;
 	const script = /Run node (\S+) <file>/.exec(reason)?.[1] ?? "";
 	assertPassed(claudeBash(`node ${script} .env`, link));
+});
+
+test("a .. after a symlink climbs out of the directory the link points at", (t) => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["a/b/config/**"] }),
+		"a/b/c/x.txt": "x",
+		"a/b/config/prod.json": "{}",
+		"secrets/inner/y.txt": "y",
+		"secrets/token.txt": "TOKEN",
+	});
+	try {
+		symlinkSync(path.join("a", "b", "c"), path.join(root, "lnk"), "dir");
+		symlinkSync(path.join("secrets", "inner"), path.join(root, "l"), "dir");
+	} catch {
+		t.skip("symlinks are unavailable here");
+		return;
+	}
+
+	const link = path.join(root, "lnk");
+	assertDenied(claudeBash("cat ../conf*/prod.json", link));
+	assertDenied(claudeGrep({ path: "../config" }, link));
+	assertPassed(claudeGrep({ path: "../c" }, link));
+
+	const rootWords = root.split(path.sep).join("/");
+	assertDenied(claudeBash("cat l/../token.txt", root));
+	assertDenied(claudeRead(`${rootWords}/l/../token.txt`, { cwd: root }));
+	assertPassed(claudeBash("cat lnk/../b/c/x.txt", root));
 });
