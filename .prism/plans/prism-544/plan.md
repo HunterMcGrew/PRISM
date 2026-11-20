@@ -987,6 +987,11 @@ head: acd8732839073ee75bb951244fc3e095ad8a9dda (part 3 of 5)
   - AC-13: met (executed, run 44781681536, 0 failures on ubuntu-latest and windows-latest). AC-4, AC-5, AC-6: met (executed, both OSes). AC-8, AC-9, AC-10: the commit halves are met (executed). AC-12: met (inspected). AC-1 to AC-3, AC-7, and AC-11 are out of part 3. Evidence gap: every symlink test skips on win32, so `resolveEntry` has never run on Windows.
   - Round 3 was the last finding round, so a fix to Major 1 goes to the confirm pass. Out of scope: `runGate` turns any `git add` failure while building the index into fail-open (commit-gate.mjs:150). This predates the range, and it is a follow-up PR candidate.
   - Round 3 fix record: the fixes are `c1a75694` (T11) and `e1a7fa59` (T13). Both go to the confirm pass.
+- pr-review confirm at c784e073 (part 3 of 5): clean
+  - Range: c2ca52b9..c784e073, with Regressions checked over 1a308cd8..c784e073. Both round-3 threads were confirmed fixed, replied to, and resolved. Summary comment 7044990959 was updated to state 3, and the labels are `effort:deep` and `confidence:high`. Reconcile was clean on its first run.
+  - Major 1: fixed `c1a75694`. A live `git commit --dry-run` probe agrees with the gate on each form: an outside link to the root takes every change, and an in-repo link named through an outside link stays a link. Mutant `return link;` fails two new tests.
+  - Minor 2: fixed `e1a7fa59`. The adjacent-only mutant fails the new test, 46 pass and 1 fail. The three commit-gate suites pass at c784e073, 166 of 166.
+  - AC-13: met (executed, run 44785070527, ubuntu-latest and windows-latest both pass). AC-4, AC-5, AC-6: met (executed, both OSes). AC-8, AC-9, AC-10: the commit halves are met. AC-12: met (inspected). Evidence gap: the symlink tests skip on win32.
 
 ## Debugged Issues
 
