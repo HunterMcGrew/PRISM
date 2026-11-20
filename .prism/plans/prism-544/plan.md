@@ -630,6 +630,11 @@ round 4: resolved 1
   - **Alternatives considered:** editing the existing `writeFile` line in the helper, which the commit gate denies as a weakened test.
   - **Chosen approach:** a new `appendFile` line inside the helper's loop adds "One line of prose." to each doc, and no existing line changes.
   - **Implementation guidance:** a test that needs an empty doc calls the helper and then overwrites the doc with headings and comments, as the T24 warning test does.
+- **The empty-doc warning ignores an unclosed comment and a prose line that starts with `#`: part 5 self-review round 1, nit 1.**
+  - **Root cause:** the check strips closed `<!-- -->` pairs and then treats every blank or `#` line as empty, so an unclosed `<!--` leaves its text as content, and a prose line that starts with `#`, such as an issue number, reads as a heading.
+  - **Alternatives considered:** stripping from an unclosed `<!--` to the end of the file, and telling a heading from a `#` prose line, which both add parsing for a lint edge.
+  - **Chosen approach:** decline. Both cases only miss a warning and never add a false one, so no doc is wrongly flagged.
+  - **Implementation guidance:** leave `checkArchitectRoutes` as built.
 
 ## History
 
@@ -719,6 +724,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: Part 4 (T19 to T23) shipped as #548, squash `e715c91d`. Part 5 builds from `main` after it, on `huntermcgrew/prism-544-part-5`. The commit that marks it done lists every ID, because the squash dropped the task-ID commits.
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: Parts 1 to 3 (T1 to T18) shipped as #545, #546, and #547, and their squashes carry ticket subjects and no task IDs. One commit that lists `T1` to `T18` marks them done, so `bundles.mjs --base fdce3e87` stops reading them as open.
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: T24 makes `prism doctor` warn on a routed architect doc that holds only headings and comments, and T25 adds the architect-routes step to `prism-onboard` (`measureSkillLoad` total 57 lines).
+- 2026-11-20 [huntermcgrew/prism-544-part-5]: T26 adds the draft-architect-docs step to the Workflow order of `onboarding.md` and renumbers the closing summary to step 9. Self-review declined its nit on `doctor.ts:648` as a lint edge that only under-warns.
 
 ## Sessions
 
