@@ -585,6 +585,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: Re-plan: the `gated` JSDoc edit moved from T19 to T9, which now lists `generate-skills.ts`, to break the cycle `T9 -> T19 -> T17 -> T10 -> T9`.
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T7 ported thrive's `env-keys.sh` as zero-dependency `hooks/env-keys.mjs` with a `.d.mts` sidecar and a 16-case test; a missing file exits 2, and a repeated key prints twice, as in thrive.
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T8 ported thrive's secrets gate as `hooks/secrets-gate.mjs` with its Read, Grep, and shell arms and a `.d.mts` sidecar, and added `secretPaths` to the config schema. It exports `judge` for the leg 2 test, and the call's git toplevel replaces thrive's `REPO_ROOT` for repo-relative matching.
+- 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T9 delivers `secrets-gate.mjs` and `env-keys.mjs`, registers the gate in both install templates and PRISM's own settings with `timeout: 21`, and widens the claim patterns and the doctor's dead-registration regex. A new `hook-registrations.test.ts` pins every registration, and the `gated` JSDoc in `generate-skills.ts` now names `prism-architect` as ungated.
 
 ## Sessions
 
