@@ -795,6 +795,9 @@ head: 07dc8771e1057245d9ad55bb4fd023cb29a0527f (part 2 of 5)
   - **1. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:1224, plus :1074 and :1170. The short-option cluster walk in `valuesOf` pushes one value per letter, and each value costs filesystem calls, so the gate's time grows with the square of the word length. `curl -d<50,000 base64 chars>` takes 10.4 s at a4fa578e and 35 ms at b5fc08c6. At 80,000 characters, with `; cat .env.production` after, the deny takes 25.4 s, past the 21 s registration timeout. The call then runs with nothing denied. That outcome is deduced, not run end to end. Fix: cap the walk at a few letters, name the cap in the header, and add a timing test. Round 3 is the cap, so this goes to the PR as an open item. Fixed 9fe9dff6: the cluster walk, path depth, and quote reads are capped (see the Decision on per-word caps).
   - The secrets-gate section of `hook-runtime.md`, its install twin, and the platform copies follow the fix at 71689cc9.
   - CI on run 44707611519: `ubuntu-latest` and `windows-latest` both passed. AC-2, the secrets half of AC-8, AC-9 for the secrets gate, the registration half of AC-10, and AC-13: met (executed).
+- pr-review confirm at 5462e75c (part 2 of 5): clean
+  - Range 49530e84..5462e75c for the fix commits, and fdce3e87..5462e75c for Regressions and Docs. Round 3 finding 1 confirmed fixed 9fe9dff6: the round-3 trigger, spawned the way the tests spawn the gate, denies in 43 ms (25.4 s at a4fa578e). Its thread is resolved, and the summary is updated in place with verdict state 3. `effort:deep` and `confidence:needs-judgment` are applied for the cap trade-off in the Decision on per-word caps. Reconcile is clean.
+  - Tests pass locally, 114 of 114. CI run 44710459805 passed on `ubuntu-latest` and `windows-latest`.
 
 ## Debugged Issues
 
