@@ -40,8 +40,8 @@ after(() => {
 	}
 });
 
-const denyReason = (type: string, cause: string) =>
-	`Briefs to ${type} are path briefs: move the content into plan.md and send the plan folder, task IDs, worktree path, and report shape. ${cause}`;
+const denyReason = (cause: string) =>
+	`A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. ${cause}`;
 const tooLong = (lines: number) =>
 	`It has ${lines} non-blank lines, over the limit of 15.`;
 const says = (phrase: string) => `It says "${phrase}".`;
@@ -134,16 +134,16 @@ function assertDenied(
 	type: string,
 	prompt: string,
 	cause: string,
-	{ tool = "claude" as Tool, cwd }: { tool?: Tool; cwd?: string } = {}
+	{ tool = "claude", cwd }: { tool?: Tool; cwd?: string } = {}
 ) {
 	const { stdout } = runHook(tool, payload(tool, type, prompt, cwd));
-	assert.equal(denyText(stdout), denyReason(type, cause), prompt);
+	assert.equal(denyText(stdout), denyReason(cause), prompt);
 }
 
 function assertAllowed(
 	type: string,
 	prompt: string,
-	{ tool = "claude" as Tool, cwd }: { tool?: Tool; cwd?: string } = {}
+	{ tool = "claude", cwd }: { tool?: Tool; cwd?: string } = {}
 ) {
 	const { stdout } = runHook(tool, payload(tool, type, prompt, cwd));
 	assert.equal(stdout, "", prompt);
@@ -183,7 +183,7 @@ test("brief gate leg 1: a 16-line brief to prism-implement is denied and names t
 		payload("claude", "prism-implement", brief(16))
 	);
 	const reason = denyText(stdout);
-	assert.equal(reason, denyReason("prism-implement", tooLong(16)));
+	assert.equal(reason, denyReason(tooLong(16)));
 	assert.match(reason ?? "", /It has 16 non-blank lines/);
 });
 
@@ -378,7 +378,7 @@ test("Claude reads the Task tool name as a dispatch too", () => {
 	body.tool_name = "Task";
 	assert.equal(
 		denyText(runHook("claude", body).stdout),
-		denyReason("prism-verify", tooLong(16))
+		denyReason(tooLong(16))
 	);
 });
 

@@ -29,7 +29,11 @@
 // - Codex's `SubagentStart` payload documents no brief field
 //   (https://learn.chatgpt.com/docs/hooks, checked 2026-11-02), so its
 //   would-deny line fires only if a `prompt` field arrives
-// - an override phrase reworded past the patterns below
+// - an override phrase reworded past the patterns below, including a bare
+//   "ignore instructions" or "disregard rules" with no "the", "all", or
+//   "previous" before the noun
+// - a long brief to an agent type outside `GATED_ROLES`, such as
+//   `general-purpose`, which the gate never reads
 // - a brief packed into a few very long lines, because the limit counts lines
 //   and not characters
 import { readFileSync, realpathSync } from "node:fs";
@@ -58,8 +62,8 @@ const GATED_ROLES = new Set([
 	"prism-pr-review",
 ]);
 
-// Up to two qualifiers may stack, as in "ignore all previous instructions". A
-// `your` among them always denies, because it names the agent's own rules
+// One or two qualifiers (`the`, `all`, `previous`) must precede the noun, as in
+// "ignore all previous instructions". A `your` among them always denies, because it names the agent's own rules
 // wherever they live. Without one, the second pattern exempts a target other
 // than the plan, so "ignore all instructions in them" about fetched content
 // passes while "ignore the rules in plan.md" denies. The last pattern passes
@@ -72,12 +76,11 @@ const OVERRIDE_PATTERNS = [
 ];
 
 /**
- * @param {string} type
  * @param {string[]} causes
  * @returns {string}
  */
-function denyReason(type, causes) {
-	return `Briefs to ${type} are path briefs: move the content into plan.md and send the plan folder, task IDs, worktree path, and report shape. ${causes.join(" ")}`;
+function denyReason(causes) {
+	return `A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. ${causes.join(" ")}`;
 }
 
 /**
@@ -138,7 +141,7 @@ export async function runGate(payload, { tool }) {
 
 	return {
 		decision: "deny",
-		reason: denyReason(dispatch.type, causes),
+		reason: denyReason(causes),
 		type: dispatch.type,
 		lines,
 		repoRoot,

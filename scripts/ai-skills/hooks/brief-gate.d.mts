@@ -6,7 +6,7 @@ export const MAX_LINES: number;
 
 export const OVERRIDE_PATTERNS: RegExp[];
 
-export function denyReason(type: string, causes: string[]): string;
+export function denyReason(causes: string[]): string;
 
 export function runGate(
 	payload: HookPayload,
