@@ -53,6 +53,11 @@ const BASE_FILES: Record<string, string> = {
 	"a.txt": "a\n",
 	"b.txt": "b\n",
 	"notes.md": "# Notes\n",
+	// A test file under a directory named ":", beside a root file the same name
+	// reads as through git's `:/` magic. A colon is not a legal Windows name.
+	...(process.platform === "win32"
+		? {}
+		: { ":/x.test.txt": "a\nb\n", "x.test.txt": "a\nb\n" }),
 };
 const TICKET_SUBJECT = "PRISM-1: Build the card";
 const PASS = { decision: "pass" };
@@ -152,6 +157,11 @@ function createRepo({
 /** The `node <runtime>/plan/commit.mjs` command that commits `files` under `subject`. */
 function commitMjs(subject: string, ...files: string[]): string {
 	return `node ${RUNTIME}/plan/commit.mjs "${subject}" ${files.join(" ")}`;
+}
+
+/** Removes the test body's assertion line, a weakening no task permits. */
+function weaken(repo: string): void {
+	write(repo, CARD_TEST, 'test("card", () => {\n});\n');
 }
 
 function claudePayload(repo: string, command: string): HookPayload {
@@ -292,16 +302,13 @@ test("commit gate leg 3: the remedy commit.mjs passes the spawned gate and commi
 
 // --- Folder-plan branch ---
 
-test("a ticket subject is denied, and the same commit under a task subject passes", () => {
+test("any subject passes on a folder-plan branch, a ticket subject included", () => {
 	const repo = createRepo();
 	change(repo, CARD);
 
-	assertDeny(
-		gate(repo, commitMjs(TICKET_SUBJECT, CARD)),
-		"subject",
-		/isn't a folder-plan subject/
-	);
-	assert.deepEqual(gate(repo, commitMjs("T1: Build the card", CARD)), PASS);
+	for (const subject of [TICKET_SUBJECT, "T1: Build the card", "committing plan"]) {
+		assert.deepEqual(gate(repo, commitMjs(subject, CARD)), PASS, subject);
+	}
 });
 
 test("a task commit passes and leaves the shared index alone", () => {
@@ -331,32 +338,33 @@ test("a live remedy: naming the path through commit.mjs passes and commits", () 
 	assert.equal(git(repo, "log", "-1", "--format=%s"), "T1: Build the card");
 });
 
-test("subject runs before weakened tests, and weakened tests before stops", () => {
+test("a removed test line is denied whatever the subject, and the flag denies come first", () => {
 	const repo = createRepo();
-	write(repo, CARD_TEST, 'test("card", () => {\n});\n');
+	weaken(repo);
 
+	for (const subject of [TICKET_SUBJECT, "T1: Build the card"]) {
+		assertDeny(
+			gate(repo, commitMjs(subject, CARD_TEST)),
+			"weakened tests",
+			/loses 1 line/
+		);
+	}
 	assertDeny(
-		gate(repo, commitMjs(TICKET_SUBJECT, CARD_TEST)),
-		"subject",
-		/isn't a folder-plan subject/
-	);
-	assertDeny(
-		gate(repo, commitMjs("T1: Build the card", CARD_TEST)),
-		"weakened tests",
-		/loses 1 line/
+		gate(repo, `git commit --no-verify -m x -- ${CARD_TEST}`),
+		"stops",
+		/skips the git hooks/
 	);
 });
 
-test("every check runs on a plan: subject, and none needs an approved plan", () => {
+test("a plan: subject naming code passes, a draft plan needs no approval, and the flag denies still run", () => {
 	const repo = createRepo({ approved: false });
 	const plan = `${PLAN_DIR}/plan.md`;
 	change(repo, plan, CARD);
 
 	assert.deepEqual(gate(repo, commitMjs("plan: Draft the plan", plan)), PASS);
-	assertDeny(
+	assert.deepEqual(
 		gate(repo, commitMjs("plan: Draft the plan", plan, CARD)),
-		"subject",
-		/outside them/
+		PASS
 	);
 	assertDeny(
 		gate(repo, `git commit --no-verify -m "plan: Draft" -- ${plan}`),
@@ -524,7 +532,7 @@ test("a Codex argv array is read", () => {
 			command: [
 				"bash",
 				"-lc",
-				commitMjs(TICKET_SUBJECT, CARD),
+				"git commit --no-verify -m x -- a",
 			] as unknown as string,
 		},
 		cwd: repo,
@@ -532,8 +540,8 @@ test("a Codex argv array is read", () => {
 
 	assertDeny(
 		runGate(payload, { tool: "codex" }),
-		"subject",
-		/isn't a folder-plan subject/
+		"stops",
+		/skips the git hooks/
 	);
 });
 
@@ -581,15 +589,15 @@ test("either kill switch in the hook's environment passes leg 1's payload and re
 
 test("a Claude deny envelope is written to stdout", () => {
 	const repo = createRepo();
-	change(repo, CARD);
-	const result = runCli(repo, claudePayload(repo, commitMjs(TICKET_SUBJECT, CARD)));
+	weaken(repo);
+	const result = runCli(repo, claudePayload(repo, commitMjs("T1: x", CARD_TEST)));
 
 	assert.equal(result.status, 0);
 	const body = JSON.parse(result.stdout);
 	assert.equal(body.hookSpecificOutput.permissionDecision, "deny");
 	assert.match(
 		body.hookSpecificOutput.permissionDecisionReason,
-		/^Commit gate \(subject\): /
+		/^Commit gate \(weakened tests\): /
 	);
 });
 
@@ -698,10 +706,11 @@ test("a toplevel substitution runs every check from the session's directory", ()
 		"stops",
 		/names no paths/
 	);
+	weaken(repo);
 	assertDeny(
-		gate(repo, `${TOPLEVEL} && git commit -m "${TICKET_SUBJECT}" -- ${CARD}`),
-		"subject",
-		/isn't a folder-plan subject/
+		gate(repo, `${TOPLEVEL} && git commit -m "T1: x" -- ${CARD_TEST}`),
+		"weakened tests",
+		/loses 1 line/
 	);
 	assertDeny(
 		gate(repo, 'cd `git rev-parse --show-toplevel` && git commit -m "T2: x"'),
@@ -724,7 +733,7 @@ test("an unresolved directory runs only the flag denies", () => {
 
 test("the toplevel resolves from a session in a subdirectory", () => {
 	const repo = createRepo();
-	change(repo, CARD);
+	weaken(repo);
 	const fromSubdir = (command: string) =>
 		runGate(
 			{ ...claudePayload(repo, command), cwd: path.join(repo, "frontend") },
@@ -732,16 +741,16 @@ test("the toplevel resolves from a session in a subdirectory", () => {
 		);
 
 	assertDeny(
-		fromSubdir(`${TOPLEVEL} && git commit -m "plan: Note" -- ${CARD}`),
-		"subject",
-		/outside them/
+		fromSubdir(`${TOPLEVEL} && git commit -m "T1: x" -- ${CARD_TEST}`),
+		"weakened tests",
+		/loses 1 line/
 	);
 	assertDeny(
 		fromSubdir(
-			`git -C "$(git rev-parse --show-toplevel)" commit -m "plan: Note" -- ${CARD}`
+			`git -C "$(git rev-parse --show-toplevel)" commit -m "T1: x" -- ${CARD_TEST}`
 		),
-		"subject",
-		/outside them/
+		"weakened tests",
+		/loses 1 line/
 	);
 });
 
@@ -835,15 +844,15 @@ test("a toplevel followed by an unresolved word runs only the flag denies", () =
 
 test("a cd inside a subshell doesn't move the commit", () => {
 	const repo = createRepo();
-	write(repo, "plans/prism-1/plan.md", "# Not a plan folder\n");
+	weaken(repo);
 
 	assertDeny(
 		gate(
 			repo,
-			`${TOPLEVEL} && (cd .prism) && git commit -m "plan: Note" -- plans/prism-1/plan.md`
+			`${TOPLEVEL} && (cd .prism) && git commit -m "T1: x" -- ${CARD_TEST}`
 		),
-		"subject",
-		/outside them/
+		"weakened tests",
+		/loses 1 line/
 	);
 });
 
@@ -926,10 +935,11 @@ test(
 				gate(repo, `git commit -m "T1: Build the card" -- ${CARD}`),
 				PASS
 			);
+			weaken(repo);
 			assertDeny(
-				gate(repo, `git commit -m "${TICKET_SUBJECT}" -- ${CARD}`),
-				"subject",
-				/isn't a folder-plan subject/
+				gate(repo, `git commit -m "T1: x" -- ${CARD_TEST}`),
+				"weakened tests",
+				/loses 1 line/
 			);
 		} finally {
 			if (saved === undefined) delete process.env.TMPDIR;
@@ -947,16 +957,12 @@ test(
 	{ skip: process.platform === "win32" },
 	() => {
 		const repo = createRepo();
-		write(repo, "x.txt", "root\n");
-		write(repo, ":/x.txt", "colon\n");
-		git(repo, "--literal-pathspecs", "add", "--", ":/x.txt", "x.txt");
-		git(repo, "commit", "-q", "-m", "PRISM-1: Seed colon file");
-		change(repo, ":/x.txt");
+		write(repo, ":/x.test.txt", "a\n");
 
 		assertDeny(
-			gate(repo, commitMjs("plan: Note", ":/x.txt")),
-			"subject",
-			/:\/x\.txt is outside them/
+			gate(repo, commitMjs("T1: x", ":/x.test.txt")),
+			"weakened tests",
+			/:\/x\.test\.txt loses 1 line/
 		);
 	}
 );
@@ -967,15 +973,16 @@ test(
 	() => {
 		const repo = createRepo();
 		change(repo, CARD);
+		weaken(repo);
 		const parent = mkdtempSync(path.join(os.tmpdir(), "commit-gate-link-"));
 		TEMP_DIRS.push(parent);
 		const link = path.join(parent, "link");
 		symlinkSync(repo, link);
 
 		assertDeny(
-			gate(link, commitMjs(TICKET_SUBJECT, CARD)),
-			"subject",
-			/isn't a folder-plan subject/
+			gate(link, commitMjs("T1: Build the card", CARD_TEST)),
+			"weakened tests",
+			/loses 1 line/
 		);
 		assert.deepEqual(gate(link, commitMjs("T1: Build the card", CARD)), PASS);
 	}

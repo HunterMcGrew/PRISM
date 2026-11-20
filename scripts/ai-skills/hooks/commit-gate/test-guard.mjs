@@ -34,6 +34,9 @@
 import { compileMatcher } from "../lib/match.mjs";
 import { runGit } from "./tree.mjs";
 
+// Every path the check hands to git is a file name the parse already resolved, so
+// a name starting with `:` or holding `*` must not be read as pathspec magic.
+const LITERAL_PATHSPECS = { GIT_LITERAL_PATHSPECS: "1" };
 const NO_NEWLINE_MARKER = "\\ No newline at end of file";
 // Each `**/` form is listed beside its root form, because a `**/` prefix does
 // not match a file at the repo root.
@@ -199,7 +202,7 @@ function readTestChanges(ctx, candidates) {
 			"--",
 			...candidates,
 		],
-		{ env: { GIT_INDEX_FILE: ctx.index.indexFile }, trim: false }
+		{ env: { ...LITERAL_PATHSPECS, GIT_INDEX_FILE: ctx.index.indexFile }, trim: false }
 	).split("\0");
 	/** @type {Change[]} */
 	const changes = [];
@@ -303,7 +306,7 @@ function readRemovedLines(ctx, { from, to }) {
 			from,
 			...(to ? [to] : []),
 		],
-		{ env: { GIT_INDEX_FILE: ctx.index.indexFile }, trim: false }
+		{ env: { ...LITERAL_PATHSPECS, GIT_INDEX_FILE: ctx.index.indexFile }, trim: false }
 	);
 
 	/** @type {number[]} */
