@@ -775,6 +775,15 @@ head: 590fef3d70abf2a4dbc2c8d6e2e8503336da724f (part 2 of 5)
   - **10. nit, code smell.** File: scripts/ai-skills/doctor.ts:645. The entry-point list is spelled by hand in four places. Declined: the entry-point list stays hand-written, as declinable.
   - The secrets-gate section of `hook-runtime.md`, its install twin, and the platform copies follow the gate fixes at a2906d38.
   - AC-2, the secrets half of AC-8, AC-9 for the secrets gate, and the registration half of AC-10: met (executed on Linux). AC-13: unmet, because `windows-latest` is red.
+- pr-review round 2 at b5fc08c6 (part 2 of 5): 0 critical, 2 major, 2 minor, 1 nit
+  - Range 80440b79..b5fc08c6 for the fix commits, and fdce3e87..b5fc08c6 for Regressions and Docs. Every pass swept except Accessibility, which is n/a with no UI. Findings are posted inline on #546, and the summary is updated in place with verdict state 1, so no review labels are applied. Reconcile is clean.
+  - Round 1 findings 1 to 9 are confirmed fixed at c58a55ed, 25240560, and 0976ab32, and their threads are resolved. Findings 2, 4, 5, and 7 fixed the reported trigger and left a residue, which is findings 1 to 4 below. Finding 10 stays declined. Mutation runs kill each Linux-side fix.
+  - **1. Major, bug.** File: scripts/ai-skills/secrets-gate.test.ts:433. `windows-latest` fails "ordinary words that only look like secret names pass" on run 44704862929, with 1 failure out of 2529. Deduced cause: on win32, `rg '\.env' src` resolves to `D:\.env`, and the `path.sep` join in `namesSecret` now reads its basename as `.env`. Fix: assert a deny on win32, since this is the accepted false-deny class, and do not revert the gate.
+  - **2. Major, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:859, plus :708 and :522. A `..` after a symlink is still resolved on the path text, in the Grep `path`, the glob base, and a link inside the path. The hook-runtime architect doc and its install twin say otherwise. Fix: route :708 and :522 through the real cwd, and resolve an in-path link on disk before its `..`.
+  - **3. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:164. A file name attached after grouped short options, as in `xargs -0a.env.production echo`, is not judged. Fix: judge every suffix after each leading option letter.
+  - **4. Minor, security risk.** File: scripts/ai-skills/hooks/env-keys.mjs:37. The 20-character threshold lets a shorter padded base64 tail print as a key name, a case the test at env-keys.test.ts:194 pins. It also refuses a real long key with an empty value. Fix: refuse any unquoted line that is not a key line, plus a value made only of `=`.
+  - **5. nit, code smell.** File: scripts/ai-skills/hooks/secrets-gate.mjs:763. The tracked-file mode branch only skips work. Fix: collapse it, or decline it for performance.
+  - CI on run 44704862929: `ubuntu-latest` passed, and `windows-latest` failed on finding 1 alone. AC-2, the secrets half of AC-8, AC-9 for the secrets gate, and the registration half of AC-10: met (executed). AC-13: unmet.
 
 ## Debugged Issues
 
