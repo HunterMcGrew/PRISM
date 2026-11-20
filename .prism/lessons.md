@@ -213,3 +213,21 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-20 (PRISM-544, PR #546): part 2's verify and three self-review rounds all ran on Linux, so the Windows failures in the path-sensitive gate tests first showed up on the PR's CI.
 
 **How to apply:** Before opening a PR, check any test that builds, compares, or matches a path for Windows forms (backslashes, drive letters, `\\?\` prefixes, case-insensitive names), since neither verify nor self-review runs on Windows.
+
+## Verify a tool's behavior for each case a prose exception lists before writing it as the reason
+
+**Why:** 2026-11-20 (PRISM-544): the commit-naming exception in `git-conventions.md` said git refuses named paths during a merge, cherry-pick, or revert. A fixture run showed git accepts named paths while a revert is in progress, so the reason was false for one of the three.
+
+**How to apply:** Before a rule gives a reason for each case in a list (merge, cherry-pick, revert), run the tool once per case in a scratch repo, and split the sentence where the reasons differ.
+
+## When a review finds one config-sensitive git read, audit every git read in the module at once
+
+**Why:** 2026-11-20 (PRISM-544): the commit gate's diff and blame calls surfaced one git flag per review round (`--no-ext-diff`, then `--text` and `--inter-hunk-context`, then `--no-textconv`), because each round fixed the call it found and none listed the rest.
+
+**How to apply:** When a finding shows a git call whose output a user's config can change, list every `runGit` call in the module and check each against color, external diff, textconv, ignore-revs, and attributes before the fix lands.
+
+## A review's prescribed fix is spec, so state its boundary as precisely as the defect
+
+**Why:** 2026-11-20 (PRISM-544, PR #547): round 1 prescribed "realpath the longest existing prefix of each path" and "pair only the lines next to the markers". The author applied both literally. The first also resolved a symlink leaf and left `repoRoot` unresolved, so the gate failed open on a committed outside link and 74 Windows tests went red. The second over-denied an ordinary insert. Each regression traced to the fix text, not to the author.
+
+**How to apply:** When a finding's fix touches path canonicalization or diff pairing, name what stays untouched (the leaf, the other operand, the adjacent run) and the case the fix must still pass, so the fix carries its own regression test.

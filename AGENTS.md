@@ -611,7 +611,7 @@ A persona that writes plan content but does not own the branch's code lane, such
 - Stage only the plan file: `git add <plan-path>`.
 - Verify the staged set before committing: `git diff --cached --name-only` must print exactly that one path. Anything else — abort, leave the tree alone, and report the unexpected paths in chat.
 - On a plan folder, the staged set is the files under `.prism/plans/<ticket>/` only, checked with the same `git diff --cached --name-only`, and the subject is `plan: <persona> record` in place of the `chore:` subject below. Commit through `node scripts/ai-skills/hooks/plan/commit.mjs "<subject>" <paths>`, which stages exactly the named files. The commit stays local, because the session's PR stage pushes once for the whole branch ([ADR-0082](../spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md)). That holds on a later review round too, when the session's next push re-enters `.prism/references/shipping-flow.md` at step 1 and carries the record.
-- Commit with `chore: <persona> plan record for <ticket-id>` per `git-conventions.md` § Commit Messages.
+- Commit with `git commit -m "chore: <persona> plan record for <ticket-id>" -- <plan-path>` per `git-conventions.md` § Commit Messages. Name the plan path after `--`: the commit gate denies a commit that names no paths, because it would take whatever the shared index holds.
 - On a flat plan, push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — because a plain `git push origin HEAD` fails from detached HEAD.
 - The exception covers the plan file only. It never extends to source, docs, config, or lockfiles — those stay the author's lane.
 
@@ -1380,8 +1380,10 @@ The ILink migration missed two files: index.tsx still registered buttonUrl/butto
 as block attributes, and MegaMenuInfoBannerBlock.view.tsx still exported the old prop types.
 Updated both to use link: ILink, matching the featured-banner pattern.
 EOF
-)"
+)" -- index.tsx MegaMenuInfoBannerBlock.view.tsx
 ```
+
+End the command with `-- <paths>` naming the files this commit changes. The commit gate denies a commit that names none, because it would take whatever the shared index holds. The one exception is concluding a merge or cherry-pick, where git refuses named paths, or a revert: stage the resolved files with `git add <path>`, then run `git commit` with no paths, which the gate allows.
 
 ### Not allowed
 
@@ -1466,7 +1468,8 @@ Entering and removing worktrees has its own conventions — an entry decision tr
 - **Never** force-push to `main` or `master`
 - Feature branches: allowed only when the user explicitly requests it
 - Prefer new commits over amending — amending after a failed pre-commit hook targets the wrong commit
-- `--no-verify` and `--no-gpg-sign`: never use unless the user explicitly asks
+- `--no-verify`: never use. The commit gate denies it on `git commit` and `git push`, because a skipped hook protects nothing.
+- `--no-gpg-sign`: never use unless the user explicitly asks
 
 ---
 

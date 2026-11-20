@@ -60,6 +60,11 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/verify/check-report.mjs",
 	".claude/hooks/secrets-gate.mjs",
 	".claude/hooks/env-keys.mjs",
+	".claude/hooks/commit-gate.mjs",
+	".claude/hooks/commit-gate/parse.mjs",
+	".claude/hooks/commit-gate/checks.mjs",
+	".claude/hooks/commit-gate/test-guard.mjs",
+	".claude/hooks/commit-gate/tree.mjs",
 	".claude/hooks/approve-guard.mjs",
 ];
 
@@ -220,6 +225,21 @@ test("a fresh update delivers every plan-chain module with the runtime marker", 
 		}
 	});
 });
+
+test(
+	"an update leaves the delivered commit gate executable",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	async () => {
+		await withRoots(async (roots) => {
+			await update(roots);
+
+			const { mode } = await fs.stat(
+				path.join(roots.consumerRepoRoot, ".claude/hooks/commit-gate.mjs")
+			);
+			assert.equal(mode & 0o111, 0o111);
+		});
+	}
+);
 
 test("the declaration sidecars stay behind", async () => {
 	await withRoots(async (roots) => {

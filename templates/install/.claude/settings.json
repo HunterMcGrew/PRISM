@@ -37,6 +37,16 @@
 						"timeout": 21
 					}
 				]
+			},
+			{
+				"matcher": "Bash|PowerShell",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/commit-gate.mjs\" --tool=claude --event=PreToolUse",
+						"timeout": 21
+					}
+				]
 			}
 		],
 		"UserPromptSubmit": [

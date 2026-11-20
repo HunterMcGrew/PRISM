@@ -18,6 +18,7 @@
 		"commitCleanupPass": true,
 		"pushVerification": true
 	},
+	"testGlobs": ["scripts/ai-skills/*.test.ts", "scripts/ai-skills/**/*.test.ts"],
 	"techStack": ["typescript", "node"],
 	"commands": {
 		"typecheck": "pnpm run prism:check-types",

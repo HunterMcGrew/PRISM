@@ -252,6 +252,12 @@
 			"description": "Extra paths the secrets gate denies, beside its built-in patterns, which it always keeps. Patterns use the manifest route syntax and match without regard to case.",
 			"examples": [["config/credentials/**"]]
 		},
+		"testGlobs": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "The test files the commit gate's weakened-test check reads. A list that is set replaces the default, which covers common test names at the root and at any depth. Braces are not supported, and `**/` needs at least one directory, so list a root pattern beside it.",
+			"examples": [["src/*.test.ts", "src/**/*.test.ts"]]
+		},
 		"ci": {
 			"type": "object",
 			"description": "How the PR stage waits on CI. Absent means the watcher waits until the head has a check and none is pending, so a check that registers after the others settle can be missed. Setting `requiredCheck` closes that gap.",

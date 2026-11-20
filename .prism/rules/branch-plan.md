@@ -177,7 +177,7 @@ A persona that writes plan content but does not own the branch's code lane, such
 - Stage only the plan file: `git add <plan-path>`.
 - Verify the staged set before committing: `git diff --cached --name-only` must print exactly that one path. Anything else — abort, leave the tree alone, and report the unexpected paths in chat.
 - On a plan folder, the staged set is the files under `.prism/plans/<ticket>/` only, checked with the same `git diff --cached --name-only`, and the subject is `plan: <persona> record` in place of the `chore:` subject below. Commit through `node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "<subject>" <paths>`, which stages exactly the named files. The commit stays local, because the session's PR stage pushes once for the whole branch ([ADR-0082](../spec/adrs/_toolkit/0082-session-ships-on-folder-plan-branches.md)). That holds on a later review round too, when the session's next push re-enters `.prism/references/shipping-flow.md` at step 1 and carries the record.
-- Commit with `chore: <persona> plan record for <ticket-id>` per `git-conventions.md` § Commit Messages.
+- Commit with `git commit -m "chore: <persona> plan record for <ticket-id>" -- <plan-path>` per `git-conventions.md` § Commit Messages. Name the plan path after `--`: the commit gate denies a commit that names no paths, because it would take whatever the shared index holds.
 - On a flat plan, push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — because a plain `git push origin HEAD` fails from detached HEAD.
 - The exception covers the plan file only. It never extends to source, docs, config, or lockfiles — those stay the author's lane.
 
