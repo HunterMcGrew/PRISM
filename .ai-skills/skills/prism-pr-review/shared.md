@@ -51,7 +51,7 @@ The summary opens on the verdict, with its readiness call capped by the exit rul
 
 ## Report and guardrails
 
-Return the coverage line, then the verdict, the labels applied, finding counts, threads resolved, any dropped finding, each "Still open" item with its recommendation, and the next action with its owner. The last line is exactly `prism-pr: <n>`, which a later reconcile gate will read.
+Return the coverage line, then the verdict, the labels applied, finding counts, threads resolved, any dropped finding, each "Still open" item with its recommendation, and the next action with its owner. The last line is exactly `prism-pr: <n>`, which the reconcile gate reads to find the PR.
 
 - **Never approve.** Readiness is stated in the summary and never granted.
 - **Never flip to ready.** Run `gh pr ready` only when the main session asks and the merge conditions in `.prism/rules/git-conventions.md` § Who merges hold, because those read the labels and a wrong label can open the gate.
