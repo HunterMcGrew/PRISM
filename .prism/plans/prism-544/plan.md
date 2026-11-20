@@ -390,8 +390,8 @@ Owner: Clove.
 
 ### T20: Port the reconcile gate
 
-- files: scripts/ai-skills/hooks/reconcile-gate.mjs, scripts/ai-skills/hooks/reconcile-gate.d.mts, scripts/ai-skills/reconcile-gate.test.ts
-- proof: pnpm exec tsx --test scripts/ai-skills/reconcile-gate.test.ts && pnpm run prism:check-types
+- files: scripts/ai-skills/hooks/reconcile-gate.mjs, scripts/ai-skills/hooks/reconcile-gate.d.mts, scripts/ai-skills/reconcile-gate.test.ts, .ai-skills/skills/prism-pr-review/shared.md, .claude/agents/prism-pr-review.md, .claude/skills/prism-pr-review/SKILL.md, .cursor/skills/prism-pr-review/SKILL.md, .codex/agents/prism-pr-review.toml
+- proof: pnpm exec tsx --test scripts/ai-skills/reconcile-gate.test.ts scripts/ai-skills/skill-loaded-lines.test.ts && pnpm run prism:check-types && pnpm exec tsx scripts/ai-skills/build.ts --check && ! git grep -q 'later reconcile gate' -- .ai-skills .claude .codex .cursor
 - proof fails on main: yes
 - depends on: T19
 
@@ -409,6 +409,8 @@ Owner: Clove. Port thrive's `scripts/hooks/reconcile-gate/hook.mjs` as `scripts/
 - **"reconcile gate leg 2: a counter seeded at 3 lets the stop through and logs reconcile:unclean"**.
 - **"reconcile gate leg 3: a clean reconcile run through the spawned gate passes and deletes the counter"**, spawning the entry point with `PRISM_RECONCILE_SCRIPT` unset and a temp copy of the runtime whose `review/reconcile.mjs` is a stub that prints `{}` and exits 0.
 - **"a stop from another agent type passes"**, and the switch and fail-open cases.
+
+**The skill line the gate makes true.** In `.ai-skills/skills/prism-pr-review/shared.md` line 54, replace "The last line is exactly `prism-pr: <n>`, which a later reconcile gate will read." with "The last line is exactly `prism-pr: <n>`, which the reconcile gate reads to find the PR." Run `pnpm prism:build` and commit the four generated copies the files list names.
 
 ### T21: Deliver and register the brief and reconcile gates
 
@@ -466,7 +468,7 @@ Append to `doctor.test.ts`, built like the existing route cases: **"runDoctor wa
 
 ### T25: Add the architect-route step to onboarding
 
-- files: .ai-skills/skills/prism-onboard/shared.md, .claude/skills/prism-onboard/SKILL.md, .cursor/skills/prism-onboard/SKILL.md, .codex/agents/prism-onboard.toml
+- files: .ai-skills/skills/prism-onboard/shared.md, .claude/skills/prism-onboard/SKILL.md, .cursor/skills/prism-onboard/SKILL.md, .codex/agents/prism-onboard.toml, .claude/agents/prism-onboard.md
 - proof: pnpm run prism:build > /dev/null && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && grep -q 'manifest.json' .ai-skills/skills/prism-onboard/shared.md
 - depends on: T24
 
@@ -504,11 +506,12 @@ Owner: Eli. In `.prism/architect/_toolkit/onboarding.md` § Workflow order, inse
 - **`readShellCall` and `writeStdout` join `harnesses.mjs`.** The secrets and commit gates both read shell calls the way thrive's `lib/harness.mjs` did, and every new gate writes through `writeStdout`. The approve guard keeps its own copies, because its parser is frozen.
 - **`env-keys.mjs` exits 2 on an unreadable file, where thrive exits 1.** The spec says exit 2, which matches the runtime's usage-error code. A refused file still exits 1, so a caller can tell a typo from a refusal.
 - **The workflow sentence crosses the 31,744 working line.** The lead set ends near 31,880 after T22. `agents-md-budget.test.ts` enforces 32,768, and PRISM-538 records 31,744 as a convention no test holds. Paying for 170 bytes by cutting another lead rule was rejected, because the spec places the sentence in the rule and Winston's verdict on it was proceed with changes.
-- **OPEN — TBD, needs the main session's input.** Two files this child makes stale sit outside the spec's Affected systems: `.claude/agents/prism-onboard.md`, which `pnpm prism:build` rewrites when T25 edits the skill, and `.ai-skills/skills/prism-pr-review/shared.md` with its copies, whose "which a later reconcile gate will read" turns false once T20 lands. No task lists either, because every task's files must match a spec glob. **Default path (used until resolved):** T25's build report lists `.claude/agents/prism-onboard.md` as an unlisted file, and the `prism-pr-review` sentence stays until `spec.md` adds both paths, after which the plan appends a task for each.
+- **Two files outside the first Affected systems list join it: a scope change that follows from the outcome.** `.claude/agents/prism-onboard.md` is a generated copy the build rewrites when T25 edits the onboarding skill, so T25 lists it. `prism-pr-review`'s `shared.md` line 54 and its four generated copies call the `prism-pr:` line input for "a later reconcile gate", a doc T20 makes false, so T20 rewrites it and lists the copies. `spec.md` adds the six paths to Affected systems. Rejected: leaving them as unlisted build-report files, which a build report flags as `needs-replan`.
 
 ## History
 
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Wrote the plan, 26 tasks in a five-part stack, with acceptance criteria AC-1 to AC-13 carried from issue #544.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Folded the two out-of-scope findings into T20 and T25, after `spec.md` added the onboarding agent file and the `prism-pr-review` skill copies to Affected systems.
 
 ## Sessions
 
