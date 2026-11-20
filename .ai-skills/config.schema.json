@@ -246,6 +246,12 @@
 			"additionalProperties": { "type": "string" },
 			"examples": [{ "@/": "src/" }]
 		},
+		"secretPaths": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Extra paths the secrets gate denies, beside its built-in patterns, which it always keeps. Patterns use the manifest route syntax and match without regard to case.",
+			"examples": [["config/credentials/**"]]
+		},
 		"ci": {
 			"type": "object",
 			"description": "How the PR stage waits on CI. Absent means the watcher waits until the head has a check and none is pending, so a check that registers after the others settle can be missed. Setting `requiredCheck` closes that gap.",
