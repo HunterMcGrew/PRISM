@@ -507,6 +507,7 @@ round 3: blocking 1
   - T4 (blocking): the case asserts `"line one\n"` in the first segment's `stdinTexts`, but `walkSegments("tee f <<'E'\nline one\nE\necho after")` returns `stdinTexts: ["line one"]` on this head, with no trailing newline. The task says the case passes on `main`, so as written its proof fails and T4 blocks wave 1. Assert `["line one"]`, or assert with `includes("line one")`. The other T4 argvs and T1's three commands walk as the plan says.
   - T3 (non-blocking): the proof's `! grep -rln 'lib/shell.mjs' scripts/ai-skills --include=*.mjs --include=*.mts --include=*.ts` leaves the globs unquoted. Under zsh, this checkout's shell, `nomatch` aborts the grep and the leading `!` turns the abort into a pass, so the leg checks nothing. Quote each `--include` value.
   - T3 (non-blocking): line 1002 is in `checkCommandWritesNoFile`, not `parseUnprovenShellPaths`, so "treats the whole command as unproven" should read as that function returning `false` when `unreadable` is non-empty. `removeDataHeredocBodies` also calls `splitShellSegments(command, heredocs)` at line 750, under a `@type {import("./lib/shell.mjs").HeredocBody[]}` at line 749. The rewrite bullet covers the call, but name the JSDoc type too, because `check-types` fails on it once the module is deleted.
+round 4: resolved 1
 
 ## Decisions
 
