@@ -319,6 +319,28 @@ test(
 	}
 );
 
+test("loadContext reads a ticket ID only at a word boundary in the branch name", () => {
+	for (const branch of ["u/myprism-9-x", "u/prism-99-x", "u/2prism-9"]) {
+		const repo = createRepo();
+		git(repo, "checkout", "-q", "-b", branch);
+		change(repo, "src/a.mjs");
+
+		withContext(repo, "git commit -m 'x' -- src/a.mjs", (ctx) => {
+			assert.equal(ctx.planFolder, null, branch);
+		});
+	}
+
+	for (const branch of ["u/prism-9", "PRISM-9_x", "feature/prism-9-x"]) {
+		const repo = createRepo();
+		git(repo, "checkout", "-q", "-b", branch);
+		change(repo, "src/a.mjs");
+
+		withContext(repo, "git commit -m 'x' -- src/a.mjs", (ctx) => {
+			assert.equal(ctx.planFolder, path.join(repo, PLAN_DIR), branch);
+		});
+	}
+});
+
 test("loadContext finds no plan folder when the config names no ticket prefix", () => {
 	const repo = createRepo({ config: null });
 	change(repo, "src/a.mjs");

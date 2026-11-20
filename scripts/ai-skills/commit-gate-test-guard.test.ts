@@ -444,6 +444,50 @@ test("denies a changed last line in a test file that had no final newline", () =
 	);
 });
 
+test("passes adding a test above the last line of a file that had no final newline", () => {
+	const repo = createRepo();
+	write(repo, NO_EOL_FILE, 'test("c", () => {});\ntest("last", () => {});');
+	git(repo, "add", NO_EOL_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add c");
+	git(repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+	write(
+		repo,
+		NO_EOL_FILE,
+		'test("c", () => {});\ntest("added", () => {});\ntest("last", () => {});\n'
+	);
+
+	assert.equal(runCheck(repo, commitMjs("T1: Build a", NO_EOL_FILE)), null);
+});
+
+test("passes adding a test above the last line when the edit drops the final newline", () => {
+	const repo = createRepo();
+	write(repo, NO_EOL_FILE, 'test("c", () => {});\ntest("last", () => {});\n');
+	git(repo, "add", NO_EOL_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add c");
+	git(repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+	write(
+		repo,
+		NO_EOL_FILE,
+		'test("c", () => {});\ntest("added", () => {});\ntest("last", () => {});'
+	);
+
+	assert.equal(runCheck(repo, commitMjs("T1: Build a", NO_EOL_FILE)), null);
+});
+
+test("denies a removed line next to a last line that only gained its final newline", () => {
+	const repo = createRepo();
+	write(repo, NO_EOL_FILE, 'test("c", () => {});\ntest("gone", () => {});\ntest("last", () => {});');
+	git(repo, "add", NO_EOL_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add c");
+	git(repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+	write(repo, NO_EOL_FILE, 'test("c", () => {});\ntest("last", () => {});\n');
+
+	assertDeny(
+		runCheck(repo, commitMjs("T1: Build a", NO_EOL_FILE)),
+		/src\/c\.test\.mjs loses 1 line/
+	);
+});
+
 test("denies moving a no-newline file's assertion out of its test body", () => {
 	const repo = createRepo();
 	write(repo, NO_EOL_FILE, 'test("one", () => {\n\tsetup();\n\tassert.ok(check());\n})');

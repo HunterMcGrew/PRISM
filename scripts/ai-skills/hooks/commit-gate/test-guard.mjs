@@ -344,10 +344,11 @@ function readRemovedLines(ctx, { from, to }) {
 /**
  * The body indexes of the `-` lines a hunk only re-terminates. A `\ No newline`
  * marker follows the last line of a file that lacks its final newline, so that
- * line differs from its twin by the newline alone. Only the two lines beside a
- * marker pair, and only when their text is equal: after a `-` line, the `+`
- * line that follows the marker, and after a `+` line, the `-` line just before
- * that `+` run. A line that merely repeats elsewhere in the hunk is a moved
+ * line differs from its twin by the newline alone. A marker's anchor is the
+ * line just before it, and its twin is the equal-text line in the run of the
+ * opposite sign that touches the anchor's own run: after a `-` anchor, the `+`
+ * run that follows the marker, and before a `+` anchor, the `-` run just
+ * before its `+` run. A line that repeats elsewhere in the hunk is a moved
  * line, not an unchanged one.
  *
  * @param {string[]} body
@@ -360,20 +361,45 @@ function findNewlineOnlyLines(body) {
 		if (line !== NO_NEWLINE_MARKER || marker === 0) return;
 
 		const anchor = marker - 1;
-		let twin = -1;
-		if (body[anchor].startsWith("-")) {
-			twin = body[marker + 1]?.startsWith("+") ? marker + 1 : -1;
-		} else if (body[anchor].startsWith("+")) {
-			let runStart = anchor;
-			while (body[runStart - 1]?.startsWith("+")) runStart -= 1;
-			twin = body[runStart - 1]?.startsWith("-") ? runStart - 1 : -1;
-		}
-		if (twin === -1 || body[twin].slice(1) !== body[anchor].slice(1)) return;
-
-		unchanged.add(body[anchor].startsWith("-") ? anchor : twin);
+		const twin = body[anchor].startsWith("-")
+			? findTwin(body, marker + 1, 1, "+", body[anchor])
+			: findTwin(body, findRunStart(body, anchor) - 1, -1, "-", body[anchor]);
+		if (twin !== -1) unchanged.add(body[anchor].startsWith("-") ? anchor : twin);
 	});
 
 	return unchanged;
+}
+
+/**
+ * The index of the first line of the run of `body[from]`'s sign that ends at
+ * `from`.
+ *
+ * @param {string[]} body
+ * @param {number} from
+ */
+function findRunStart(body, from) {
+	let start = from;
+	while (body[start - 1]?.startsWith(body[from][0])) start -= 1;
+
+	return start;
+}
+
+/**
+ * The index of the line with `anchor`'s text in the run of `sign` lines that
+ * starts at `from` and walks by `step`, or -1.
+ *
+ * @param {string[]} body
+ * @param {number} from
+ * @param {1 | -1} step
+ * @param {string} sign
+ * @param {string} anchor
+ */
+function findTwin(body, from, step, sign, anchor) {
+	for (let i = from; body[i]?.startsWith(sign); i += step) {
+		if (body[i].slice(1) === anchor.slice(1)) return i;
+	}
+
+	return -1;
 }
 
 /**
