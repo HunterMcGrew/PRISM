@@ -68,11 +68,8 @@ export function listEnvKeys(text) {
 	const lines = text.split("\n");
 	let openQuote = "";
 
-	for (const [lineIndex, rawLine] of lines.entries()) {
-		let line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-
-		// A byte order mark would hide a first-line PEM header from the check below.
-		if (lineIndex === 0) line = line.replace(/^\uFEFF/, "");
+	for (const rawLine of lines) {
+		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
 
 		if (openQuote) {
 			if (findClose(openQuote, line)) openQuote = "";
@@ -110,20 +107,23 @@ function runCli(argv) {
 	try {
 		if (!file || !statSync(file).isFile()) throw new Error("not a file");
 
+		// A key or token file has no key names, and its base64 body can read as
+		// one, so the name is checked before the file is opened.
+		const names = [path.basename(file), path.basename(realpathSync(file))];
+
+		if (!names.every((name) => DOTENV_NAME.test(name))) {
+			process.stderr.write(
+				`env-keys: ${file} is not named like a dotenv file\n`
+			);
+			process.exitCode = 1;
+
+			return;
+		}
+
 		text = readFileSync(file, "utf8");
 	} catch {
 		process.stderr.write(`env-keys: cannot read ${file}\n`);
 		process.exitCode = 2;
-
-		return;
-	}
-
-	// A key or token file has no key names, and its base64 body can read as one.
-	const names = [path.basename(file), path.basename(realpathSync(file))];
-
-	if (!names.every((name) => DOTENV_NAME.test(name))) {
-		process.stderr.write(`env-keys: ${file} is not named like a dotenv file\n`);
-		process.exitCode = 1;
 
 		return;
 	}

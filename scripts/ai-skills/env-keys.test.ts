@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+	chmodSync,
 	mkdtempSync,
 	rmSync,
 	symlinkSync,
@@ -250,4 +251,18 @@ test("a dotenv-named link to a file not named like one is refused", (t) => {
 test("listEnvKeys returns the key names, and null for a PEM file", () => {
 	assert.deepEqual(listEnvKeys("A=1\nB='x\nC=2\ny'\nD=3\n"), ["A", "B", "D"]);
 	assert.equal(listEnvKeys("A=1\n-----BEGIN PRIVATE KEY-----\n"), null);
+});
+
+test("a file not named like a dotenv file is refused before it is read", (t) => {
+	if (process.platform === "win32" || process.getuid?.() === 0) {
+		t.skip("a mode of 0 doesn't stop this user reading the file");
+		return;
+	}
+
+	const file = writeNamed("server.key", "KEY=1\n");
+	chmodSync(file, 0o000);
+	const result = runScript(file);
+	assert.equal(result.status, 1);
+	assert.equal(result.stdout, "");
+	assert.match(result.stderr, /not named like a dotenv file/);
 });
