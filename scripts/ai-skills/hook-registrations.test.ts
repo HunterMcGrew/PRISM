@@ -10,6 +10,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { HOOK_COMMAND_PATH_RE } from "./doctor";
 import { PRISM_CODEX_HOOK_COMMAND_PATTERN, PRISM_HOOK_COMMAND_PATTERN } from "./update";
 
 const prismRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -220,5 +221,22 @@ test("every runtime file a template command names exists under scripts/ai-skills
 
 		assert.ok(script, `no runtime file named in: ${row.command}`);
 		await fs.access(path.join(prismRoot, "scripts", "ai-skills", "hooks", script));
+	}
+});
+
+test("every registered command's script path matches the pattern doctor reads registrations with", async () => {
+	const rows = [
+		...(await readRows("templates/install/.claude/settings.json")),
+		...(await readRows("templates/install/.codex/hooks.json")),
+		...(await readRows(".claude/settings.json")),
+	];
+
+	for (const row of rows) {
+		const script = /hooks\/([\w./-]+\.mjs)"/.exec(row.command)?.[1];
+		const found = [...row.command.matchAll(HOOK_COMMAND_PATH_RE)].map((match) => match[1]);
+
+		assert.ok(script, `no runtime file named in: ${row.command}`);
+		assert.equal(found.length, 1, `doctor reads no script path from: ${row.command}`);
+		assert.ok(found[0]?.endsWith(script), `doctor reads ${found[0]} from: ${row.command}`);
 	}
 });
