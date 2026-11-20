@@ -564,6 +564,7 @@ round 4: resolved 1
 - **T13 departs from thrive in three places.** Stops compares only the four npm fields plus composer's `require` and `require-dev`. The `plan:` scope is the branch's own plan folder only. An epic folder with only `spec.md` counts as a folder plan, so the subject check applies there, where thrive skips epics. `RETRO_PATHS` was not compared with `prism-retro`'s commit step, and that check is open for self-review.
 - **T14 departs from thrive.** The check order is the kill switch, then push flag denies, then commit flag denies, then the toplevel and whole-repo pathspec deny, then the would-be index, then the four checks. The env kill switches exit before stdin is read. Cursor's `declineForeignPayload` and event parameter are dropped, since `SHELL_TOOLS` lists only claude and codex. The fail-open prefix is `commit-gate:`. A merge, cherry-pick, or revert in progress runs only the flag denies. A whole-repo pathspec denies with the `-a` reason. T15 registers `commit-gate.mjs` plus `commit-gate/parse.mjs`, `checks.mjs`, `test-guard.mjs`, and `tree.mjs` in `HOOK_RUNTIME_FILES`, puts `commit-gate.mjs` in `HOOK_RUNTIME_ENTRY_POINTS`, and adds `|commit-gate` to both command patterns and `HOOK_COMMAND_PATH_RE`.
   - **Open for self-review:** the literal-pathspec effect for `commit.mjs` calls has no test. The T14 suite was written against an entry file already on disk, so it never failed first and needs a mutation check. Three cases skip on win32. T15's registration and dead-registration cases were not seen failing on their own before the source edits, though the delivery cases were.
+    - `docs/ai-skills/compatibility.md` says the commit gate is on by default but doesn't name the env kill switches that the hook honors.
 
 ## History
 
@@ -615,6 +616,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T14 ported the commit gate's entry point (commit-gate.mjs, .d.mts, 49-case test) over the T11-T13 modules.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T15 delivered commit-gate.mjs and its four commit-gate/ modules, added it to the entry points and command patterns, and registered a 21 s PreToolUse group in the Claude and Codex templates and PRISM's own .claude/settings.json.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T16 made git-conventions, ADR-0081, and its index say the commit gate denies --no-verify for agents; the lead set ends at byte 31,708 of the 32,768 window.
+- 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T17 documented the commit gate (new section in hook-runtime.md and its twin), renamed the old hold "the cleanup-pass hold", and added the commit gate to the docs pages' registration lists.
 
 ## Sessions
 
