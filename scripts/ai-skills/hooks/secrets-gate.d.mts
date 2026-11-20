@@ -2,7 +2,7 @@ import type { HookPayload } from "./harnesses.d.mts";
 
 export function matchesSecretPath(
 	candidate: unknown,
-	options?: { backslashSeparates?: boolean; folders?: boolean }
+	options?: { backslashSeparates?: boolean }
 ): boolean;
 
 export function denyReason(cwd: string): string;

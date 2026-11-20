@@ -883,3 +883,82 @@ test("a symlink to a secret file is denied by Read and by a shell read", (t) => 
 	assertDenied(claudeBash("cat notes.txt", root));
 	assertPassed(claudeRead(path.join(root, "README.md"), { cwd: root }));
 });
+
+test("a cd the walk can't resolve doesn't hide an absolute secrets path", () => {
+	const root = makeRepo({ "secrets/token.txt": "x", "src/a.ts": "x" });
+	assertDenied(claudeBash(`cd $DIR && cat ${root}/secrets/token.txt`, root));
+	assertPassed(claudeBash(`cd $DIR && cat ${root}/src/a.ts`, root));
+});
+
+test("a brace sequence expands into each name it spells", () => {
+	const cwd = makeDir();
+	for (const command of [
+		"cat .en{u..w}",
+		"cat .e{n..n}v",
+		"cat .e{o..m}v",
+		"cat .env.{1..2}",
+		"cat {,.}env",
+	])
+		assertDenied(claudeBash(command, cwd));
+
+	for (const command of ["cat .en{a..c}", "cat {1..3}.txt", "cat .e{n..n}x"])
+		assertPassed(claudeBash(command, cwd));
+});
+
+test("secrets gate leg 3: the remedy the deny names runs from a symlinked cwd", (t) => {
+	// The target sits deeper than the link, so a path counted up from the
+	// link's own spelling lands somewhere else from the target's directory.
+	const real = path.join(makeDir(), "deep", "nest", "repo");
+	mkdirSync(real, { recursive: true });
+	execFileSync("git", ["init", "-q"], { cwd: real });
+	place(real, ".env", "API_KEY=sk-test-123\n");
+	const link = path.join(makeDir(), "link");
+	try {
+		symlinkSync(real, link, "dir");
+	} catch {
+		t.skip("symlinks are unavailable here");
+		return;
+	}
+
+	const denied = claudeRead(path.join(link, ".env"), { cwd: link });
+	assertDenied(denied);
+
+	const reason: string = JSON.parse(denied.stdout).hookSpecificOutput
+		.permissionDecisionReason;
+	const script = /Run node (\S+) <file>/.exec(reason)?.[1] ?? "";
+	assertPassed(claudeBash(`node ${script} .env`, link));
+
+	const output = execFileSync(process.execPath, [script, ".env"], {
+		cwd: link,
+		encoding: "utf8",
+	});
+	assert.equal(output, "API_KEY\n");
+});
+
+test("secrets gate leg 3: the remedy the deny names resolves from the runtime directory itself", () => {
+	const denied = claudeRead(path.join(RUNTIME_PATH, ".env"), {
+		cwd: RUNTIME_PATH,
+	});
+	assertDenied(denied);
+
+	const reason: string = JSON.parse(denied.stdout).hookSpecificOutput
+		.permissionDecisionReason;
+	const script = /Run node (\S+) <file>/.exec(reason)?.[1] ?? "";
+	assert.equal(script, "./env-keys.mjs");
+	assertPassed(claudeBash(`node ${script} .env`, RUNTIME_PATH));
+});
+
+test("a glob word is probed when the command spells fewer verbatim copies than it holds words", () => {
+	const cwd = makeDir();
+	assertDenied(claudeBash("echo '.en*'; cat .en''*", cwd));
+	assertPassed(claudeBash("echo '.en*'", cwd));
+	assertPassed(claudeBash("cat '.en*' '.en*'", cwd));
+});
+
+test("a file named like a parent segment, such as ..notes, is judged as inside the repo", () => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["..notes"] }),
+	});
+	assertDenied(claudeRead(path.join(root, "..notes"), { cwd: root }));
+	assertPassed(claudeRead(path.join(root, "..other"), { cwd: root }));
+});

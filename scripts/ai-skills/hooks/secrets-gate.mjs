@@ -88,6 +88,10 @@
 // - A word holding a blank counts only when it names a file that exists, so
 //   a commit message stays allowed and a quoted path to a file not yet
 //   written passes.
+// - A brace sequence whose bounds the gate can't read, such as `{$a..$b}`, or
+//   whose forms run past `MAX_EXPANSIONS`, after which it stops expanding.
+//   It reads a padded sequence like `{01..03}` without the padding, which
+//   can't change a secret shape.
 // - A Grep outside any git repo passes, because there is no file list to
 //   check. Claude's Grep tool exposes no option that disables ignore files,
 //   so no payload field marks one.
@@ -118,6 +122,9 @@
 // - Every absolute path when the checkout sits under a `secrets` folder and
 //   isn't a git repo, because only a repo has a toplevel to cut the folders
 //   above it away.
+// - A `~/` or `$HOME/` path into a checkout that sits under a `secrets`
+//   folder, because the gate reads the word as written and never expands the
+//   home directory, so the `secrets` folder above the repo shows.
 // - A metadata program beside any command outside the allowed list, or
 //   carrying an assignment, such as `ls -la .env | cat`, `cd x && stat .env`,
 //   or `LC_ALL=C stat .env`, because the metadata pass then drops.
@@ -193,12 +200,18 @@ let context = { roots: [], extra: [] };
 
 /**
  * The deny text, with the remedy's path written relative to the call's `cwd`,
- * so the command it prints runs from wherever the agent is.
+ * so the command it prints runs from wherever the agent is. The path is cut
+ * from the real `cwd`, because the shell resolves `..` physically, and from
+ * `.` when the `cwd` is the runtime directory itself.
  *
  * @param {string} cwd
  */
 export function denyReason(cwd) {
-	const runtime = path.relative(cwd, RUNTIME_DIR).split(path.sep).join("/");
+	const runtime =
+		path
+			.relative(realPath(cwd) ?? cwd, RUNTIME_DIR)
+			.split(path.sep)
+			.join("/") || ".";
 
 	return `Secret files stay unread. Run node ${runtime}/env-keys.mjs <file> for key names, or read .env.example.`;
 }
@@ -269,16 +282,14 @@ function warnSecretPaths() {
  *
  * Splits on both separators by default, so a Windows path matches too. A bare
  * `secrets` word needs a separator to count, because it is far more often a
- * search term than a folder, and a URL never counts. With `folders` false only
- * the basename counts, for an absolute path whose folders above the repo say
- * nothing about it.
+ * search term than a folder, and a URL never counts.
  *
  * @param {unknown} candidate
- * @param {{ backslashSeparates?: boolean, folders?: boolean }} [options]
+ * @param {{ backslashSeparates?: boolean }} [options]
  */
 export function matchesSecretPath(
 	candidate,
-	{ backslashSeparates = true, folders = true } = {}
+	{ backslashSeparates = true } = {}
 ) {
 	if (typeof candidate !== "string" || candidate === "") return false;
 	if (URL_WORD.test(candidate)) return false;
@@ -289,7 +300,7 @@ export function matchesSecretPath(
 	if (base === undefined) return false;
 	if (namesEnvFile(base) || KEY_SUFFIX.test(base)) return true;
 
-	return folders && separator.test(candidate) && segments.includes("secrets");
+	return separator.test(candidate) && segments.includes("secrets");
 }
 
 /**
@@ -353,7 +364,7 @@ export function judge(tool, payload) {
  */
 function pathDenies(target, cwd, { dotglob = false } = {}) {
 	for (const variant of expandBraces(target)) {
-		if (matchesAsWritten(variant)) return true;
+		if (!path.isAbsolute(variant) && matchesSecretPath(variant)) return true;
 		if (secretAt(path.resolve(cwd, variant))) return true;
 		if (GLOB_CHAR.test(variant) && globDenies(variant, cwd, dotglob))
 			return true;
@@ -372,24 +383,15 @@ function pathDenies(target, cwd, { dotglob = false } = {}) {
 function repoForm(absolute) {
 	for (const root of context.roots) {
 		const relative = path.relative(root, absolute);
-		if (!relative.startsWith("..") && !path.isAbsolute(relative))
+		if (
+			relative !== ".." &&
+			!relative.startsWith(`..${path.sep}`) &&
+			!path.isAbsolute(relative)
+		)
 			return relative === "" ? "." : relative;
 	}
 
 	return absolute;
-}
-
-/**
- * `matchesSecretPath` on a word as the call wrote it. An absolute word skips
- * the `secrets` folder test, because the folders above the repo say nothing
- * about a file inside it. The repo-relative form, which `secretAt` judges,
- * still tests the folders.
- *
- * @param {string} word
- * @param {{ backslashSeparates?: boolean }} [options]
- */
-function matchesAsWritten(word, options) {
-	return matchesSecretPath(word, { ...options, folders: !path.isAbsolute(word) });
 }
 
 /**
@@ -528,50 +530,124 @@ function listDir(dir) {
 }
 
 /**
- * Bash's `{a,b}` expansion, alternatives only, capped at `MAX_EXPANSIONS`. A
- * group with no comma, such as the `{PWD}` in `${PWD}`, expands to itself, so
- * the search carries on to the next group.
+ * Returns the brace expansions of a word, `a{b,c}` as `ab` and `ac`, and
+ * `a{1..3}` as `a1`, `a2`, `a3`, stopping after `MAX_EXPANSIONS` forms. A word
+ * with no brace group returns itself.
  *
  * @param {string} word
+ * @param {{ left: number }} [budget]
  * @returns {string[]}
  */
-function expandBraces(word) {
-	for (
-		let open = word.indexOf("{");
-		open !== -1;
-		open = word.indexOf("{", open + 1)
-	) {
-		let depth = 0;
-		/** @type {number[]} */
-		const commas = [];
-		let close = -1;
-		for (let i = open; i < word.length; i += 1) {
-			if (word[i] === "{") depth += 1;
-			else if (word[i] === "}") depth -= 1;
-			else if (word[i] === "," && depth === 1) commas.push(i);
-			if (depth === 0) {
-				close = i;
-				break;
-			}
-		}
-		if (close === -1) return [word];
-		if (commas.length === 0) continue;
+function expandBraces(word, budget = { left: MAX_EXPANSIONS }) {
+	const group = findBraceGroup(word);
+	if (!group) return [word];
 
-		const head = word.slice(0, open);
-		const tail = word.slice(close + 1);
-		const cuts = [open, ...commas, close];
-		/** @type {string[]} */
-		const results = [];
-		for (let k = 0; k < cuts.length - 1; k += 1) {
-			const middle = word.slice((cuts[k] ?? 0) + 1, cuts[k + 1]);
-			results.push(...expandBraces(`${head}${middle}${tail}`));
-			if (results.length >= MAX_EXPANSIONS) break;
-		}
+	/** @type {string[]} */
+	const forms = [];
+	for (const choice of group.choices) {
+		if (budget.left <= 0) break;
 
-		return results.slice(0, MAX_EXPANSIONS);
+		budget.left -= 1;
+		const expanded =
+			word.slice(0, group.start) + choice + word.slice(group.end);
+		forms.push(...expandBraces(expanded, budget));
 	}
 
-	return [word];
+	return forms;
+}
+
+/**
+ * Finds the first brace group holding a top-level comma or a `..` sequence,
+ * and skips a group with neither, such as the `{PWD}` in `${PWD}`. Returns its
+ * bounds and its choices, or null when there is none.
+ *
+ * @param {string} word
+ * @returns {{ start: number, end: number, choices: string[] } | null}
+ */
+function findBraceGroup(word) {
+	let start = word.indexOf("{");
+	while (start !== -1) {
+		const end = findClosingBrace(word, start);
+		if (end === -1) return null;
+
+		const choices =
+			splitTopLevelCommas(word.slice(start + 1, end)) ??
+			expandSequence(word.slice(start + 1, end));
+		if (choices) return { start, end: end + 1, choices };
+
+		start = word.indexOf("{", start + 1);
+	}
+
+	return null;
+}
+
+/**
+ * @param {string} word
+ * @param {number} start
+ * @returns {number}
+ */
+function findClosingBrace(word, start) {
+	let depth = 0;
+	for (let i = start; i < word.length; i += 1) {
+		if (word[i] === "{") depth += 1;
+		else if (word[i] === "}" && --depth === 0) return i;
+	}
+
+	return -1;
+}
+
+/**
+ * Splits brace contents at commas outside nested braces, or returns null.
+ *
+ * @param {string} inside
+ * @returns {string[] | null}
+ */
+function splitTopLevelCommas(inside) {
+	/** @type {string[]} */
+	const choices = [];
+	let depth = 0;
+	let from = 0;
+	for (let i = 0; i < inside.length; i += 1) {
+		if (inside[i] === "{") depth += 1;
+		else if (inside[i] === "}") depth -= 1;
+		else if (inside[i] === "," && depth === 0) {
+			choices.push(inside.slice(from, i));
+			from = i + 1;
+		}
+	}
+	if (choices.length === 0) return null;
+
+	choices.push(inside.slice(from));
+	return choices;
+}
+
+/**
+ * Expands `1..3` or `a..c`, ignoring any step and any zero padding, or
+ * returns null.
+ *
+ * @param {string} inside
+ * @returns {string[] | null}
+ */
+function expandSequence(inside) {
+	const numbers = /^(-?\d+)\.\.(-?\d+)(?:\.\.-?\d+)?$/.exec(inside);
+	const letters = /^(.)\.\.(.)(?:\.\.-?\d+)?$/.exec(inside);
+	if (!numbers && !letters) return null;
+
+	const [from, to] = numbers
+		? [Number(numbers[1]), Number(numbers[2])]
+		: [
+				(letters?.[1] ?? "").charCodeAt(0),
+				(letters?.[2] ?? "").charCodeAt(0),
+			];
+	const step = from <= to ? 1 : -1;
+	/** @type {string[]} */
+	const choices = [];
+	for (let n = from; choices.length < MAX_EXPANSIONS; n += step) {
+		choices.push(numbers ? String(n) : String.fromCharCode(n));
+		if (n === to) break;
+	}
+
+	return choices;
 }
 
 // --- Grep arm ---
@@ -733,6 +809,7 @@ function realPath(target) {
  */
 function judgeShell(command, cwd) {
 	const { segments } = walkSegments(command, { cwd, maxDepth: MAX_DEPTH });
+	const spelling = { command, words: segments.flatMap(({ words }) => words) };
 	/**
 	 * @param {import("./lib/segments.mjs").Segment} segment
 	 * @param {string} written
@@ -741,7 +818,7 @@ function judgeShell(command, cwd) {
 		wordDenies(
 			stripSubstitutions(written, segment.substitutions),
 			segment.cwd,
-			command
+			spelling
 		);
 	const source = [
 		command,
@@ -883,7 +960,7 @@ function stripSubstitutions(word, substitutions) {
  *
  * @param {string} word
  * @param {string | null} cwd
- * @param {string} source
+ * @param {{ command: string, words: string[] }} source
  */
 function wordDenies(word, cwd, source) {
 	if (word === "" || URL_WORD.test(word)) return false;
@@ -914,7 +991,7 @@ function wordDenies(word, cwd, source) {
  *
  * @param {string} word
  * @param {string | null} cwd
- * @param {string} source
+ * @param {{ command: string, words: string[] }} source
  */
 function shellPathDenies(word, cwd, source) {
 	const globbing = GLOB_CHAR.test(word) && !quotedInSource(word, source);
@@ -936,9 +1013,13 @@ function shellPathDenies(word, cwd, source) {
  * @param {string | null} cwd
  */
 function literalDenies(word, cwd) {
-	const absolute = cwd === null ? null : path.resolve(cwd, word);
+	const absolute = path.isAbsolute(word)
+		? word
+		: cwd === null
+			? null
+			: path.resolve(cwd, word);
 	const named =
-		matchesAsWritten(word, SHELL_FORM) ||
+		(!path.isAbsolute(word) && matchesSecretPath(word, SHELL_FORM)) ||
 		(absolute !== null && secretAt(absolute, SHELL_FORM));
 	if (!named) return false;
 
@@ -950,29 +1031,34 @@ function literalDenies(word, cwd) {
 }
 
 /**
- * True unless `source` holds `word` verbatim with no quote wrapped around it.
- * A word the source never spells verbatim had a quote or escape inside it,
- * and a glob character outside that quote still expands, so it reads as
- * unquoted: `".env"*` and `'.e'nv*` are probed as globs.
+ * True when every copy of `word` in the call sits wrapped in a quote. A copy
+ * of the word the command never spells verbatim had a quote or escape inside
+ * it, and a glob character outside that quote still expands, so the word reads
+ * as unquoted: `".env"*` and `'.e'nv*` are probed as globs. So does a word the
+ * segments hold more copies of than the command spells, as in
+ * `echo '.en*'; cat .en''*`.
  *
  * @param {string} word
- * @param {string} source
+ * @param {{ command: string, words: string[] }} source
  */
-function quotedInSource(word, source) {
-	if (!source.includes(word)) return false;
-
+function quotedInSource(word, { command, words }) {
+	let spelled = 0;
 	for (
-		let at = source.indexOf(word);
+		let at = command.indexOf(word);
 		at !== -1;
-		at = source.indexOf(word, at + 1)
+		at = command.indexOf(word, at + 1)
 	) {
-		const before = source[at - 1];
-		const after = source[at + word.length];
+		const before = command[at - 1];
+		const after = command[at + word.length];
 		const wrapped = (before === "'" || before === '"') && after === before;
 		if (!wrapped) return false;
+
+		spelled += 1;
 	}
 
-	return true;
+	return (
+		spelled > 0 && words.filter((held) => held === word).length <= spelled
+	);
 }
 
 // --- Entry ---
