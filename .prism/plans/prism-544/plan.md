@@ -377,7 +377,7 @@ The flag renders into no generated file, which the proof's `build.ts --check` sh
 
 ### T19: Port the brief gate and the hook log
 
-- files: scripts/ai-skills/hooks/brief-gate.mjs, scripts/ai-skills/hooks/brief-gate.d.mts, scripts/ai-skills/hooks/lib/hook-log.mjs, scripts/ai-skills/hooks/lib/hook-log.d.mts, scripts/ai-skills/brief-gate.test.ts
+- files: scripts/ai-skills/hooks/brief-gate.mjs, scripts/ai-skills/hooks/brief-gate.d.mts, scripts/ai-skills/hooks/lib/hook-log.mjs, scripts/ai-skills/hooks/lib/hook-log.d.mts, scripts/ai-skills/brief-gate.test.ts, scripts/ai-skills/generate-skills.ts
 - proof: pnpm exec tsx --test scripts/ai-skills/brief-gate.test.ts && pnpm run prism:check-types
 - proof fails on main: yes
 - depends on: T2, T17, T18
@@ -394,6 +394,7 @@ Owner: Clove.
 - **"brief gate leg 2: with the content seeded into the plan, a 4-line path brief passes"**.
 - **"brief gate leg 3: a brief built from the deny's own instructions passes the spawned gate"**: the plan folder, two task IDs, a worktree path, and a report shape on four lines.
 - **"a long brief to prism-architect passes"**, **"Codex logs a would-deny row and writes nothing"**, reading `prism-hooks.jsonl` from the fixture's git directory, and the switch and fail-open cases.
+- In `scripts/ai-skills/generate-skills.ts`, the `gated` field's comment reads "the brief gate, when it ships, reads as a path brief". Replace "the brief gate, when it ships, reads" with "the brief gate reads", since this task ships it.
 
 ### T20: Port the reconcile gate
 
@@ -538,7 +539,8 @@ round 4: resolved 1
 - **Two files outside the first Affected systems list join it: a scope change that follows from the outcome.** `.claude/agents/prism-onboard.md` is a generated copy the build rewrites when T25 edits the onboarding skill, so T25 lists it. `prism-pr-review`'s `shared.md` line 54 and its four generated copies call the `prism-pr:` line input for "a later reconcile gate", a doc T20 makes false, so T20 rewrites it and lists the copies. `spec.md` adds the six paths to Affected systems. Rejected: leaving them as unlisted build-report files, which a build report flags as `needs-replan`.
 - **Self-review round 1's T3 fix adds two files T3 did not list: a scope change that follows from the outcome.** `hooks/hook.d.mts` declares the newly exported `walkLines`, which `git-gates.mjs` now shares, and `hook-shell-walk.test.ts` holds the tests for the unreadable-command guard and the nested-command skip the round found untested. Both match existing Affected systems globs. Rejected: a `needs-replan` round trip for a sidecar and a test file inside the same lane.
 - **Heredoc bodies are placed by verified text and offset, not by `walkSegments` positions.** `walkSegments` and the tokenizer return no offsets, so `locateHeredocBodies` places a segment's first body only when its text is a line of its own exactly once and the line above opens the same heredocs, and reads each later body at the offset after the previous delimiter. Anything that fails to place stays in the scan, so the residual cases (two bodies with identical text, a `<<-` body with stripped tabs) over-deny and never under-deny. T3's task text still describes `command.indexOf(body, cursor)`; this entry supersedes it.
-- **The quadratic walk on an unreadable command is reduced, not removed.** One walk is now shared per hook call, which takes a 2,000-line unreadable command from about 142 ms and 106 ms to about 60 ms and 63 ms. The rest is `readablePrefix` in `lib/segments.mjs`, which retokenizes at every newline. Rejected for this ticket: rewriting the ported parser's prefix search, which no task lists and which changes parser behavior every gate depends on. Left as an open item for a follow-up.
+- **The quadratic walk on an unreadable command is reduced, not removed.** One walk is now shared per hook call, which takes a 2,000-line unreadable command from about 142 ms and 106 ms to about 60 ms and 63 ms. The rest is `readablePrefix` in `lib/segments.mjs`, which retokenizes at every newline. Rejected for this ticket: rewriting the ported parser's prefix search, which no task lists and which changes parser behavior every gate depends on. It ships as a follow-up PR off `main` after the epic, and part 1's PR body lists it under open items.
+- **Part 1 corrects `hook-runtime.md`: a scope change that follows from the outcome.** Its heredoc paragraph did not say that every body stays in the scan when one cannot be placed, and its Git gates section did not say the gates skip a segment run inside a container. Both are behavior part 1 shipped, so a doc part 1 made incomplete is fixed in part 1 rather than waiting for T23. T23 edits other sentences in the same doc, and its text stands.
 
 ## History
 
@@ -558,6 +560,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T6 rewrote the Shell parser paragraph in `plan-chain-scripts.md` and the `lib/tokenize.mjs` row in `what-prism-writes.md` to say every gate reads commands through the shared parser, then rebuilt the twin and three platform copies. Part 1 (T1 to T6, T18) is built.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Fixed the part 1 self-review findings: the shell-parser doc names which gates use `lib/segments.mjs`, the gated-role comment and the prune-test header state what is true now, and the plan cites the kill-switch checks by name.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T3 fix for round 1 findings 2 to 7: the git gates normalize CRLF and skip container and `env -C` segments, heredoc bodies are placed by verified text and offset, and one walk is shared per hook call.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Self-review round 2 plan edits: T19 now also fixes the `gated` comment, the quadratic-walk follow-up is a PR off `main`, `hook-runtime.md` joins part 1 as a scope change, and `spec.md` no longer calls `update.ts` an importer of the old splitter. Nits 9 and 10 are declined, since no under-deny was found and T2 specified the ported function.
 
 ## Sessions
 
