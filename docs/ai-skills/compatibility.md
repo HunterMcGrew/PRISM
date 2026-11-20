@@ -88,7 +88,7 @@ The same runtime carries two opt-in git gates: a cleanup-pass hold that holds th
 
 The same runtime carries a secrets gate, on by default wherever Claude Code or Codex is a host, because both install templates register it. A repo whose `hosts` lists only Cursor receives the gate's files but no registration, so the gate does not run there. On Codex it fires only once you trust the project's `.codex/` layer and review each hook definition. It denies an agent reading `.env` files, `secrets/` folders, and key files, and points it at `env-keys.mjs`, which prints key names only. No kill switch turns it off.
 
-A commit gate, on by default, denies an agent's `--no-verify`, a whole-tree commit, and a commit that sets a kill switch, and on a plan-folder branch checks each commit against its task.
+A commit gate, on by default wherever Claude Code or Codex is a host, denies an agent's `--no-verify`, a whole-tree commit, and a command that sets a kill switch, and on a plan-folder branch checks each commit against its task. A repo whose `hosts` lists only Cursor gets no registration, so the gate does not run there, and on Codex it fires only once you trust the project's `.codex/` layer and review each hook definition. `PRISM_HOOK_DISABLE=1` and `PRISM_HOOK_DENY_DISABLE=1` turn it off when either is set in the hook's own environment.
 
 `hosts` reaches past the hook, too: a repo that lists its hosts receives the persona skill roster, agent definitions, and rule copies only for those hosts — dropping a host from the list takes its output back out on the next `prism update`, the same way dropping a host takes its hook registration back out. See [`docs/parameterization.md`](../parameterization.md) § Field reference for the key.
 
