@@ -474,6 +474,24 @@ test("passes adding a test above the last line when the edit drops the final new
 	assert.equal(runCheck(repo, commitMjs("T1: Build a", NO_EOL_FILE)), null);
 });
 
+test("passes dropping a branch-added line and the final newline together, past the unchanged last line", () => {
+	const repo = createRepo();
+	write(repo, NO_EOL_FILE, 'test("c", () => {});\ntest("last", () => {});\n');
+	git(repo, "add", NO_EOL_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add c");
+	git(repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+	write(
+		repo,
+		NO_EOL_FILE,
+		'test("c", () => {});\ntest("last", () => {});\ntest("more", () => {});\n'
+	);
+	git(repo, "add", NO_EOL_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add more");
+	write(repo, NO_EOL_FILE, 'test("c", () => {});\ntest("last", () => {});');
+
+	assert.equal(runCheck(repo, commitMjs("T1 fix: Build a", NO_EOL_FILE)), null);
+});
+
 test("denies a removed line next to a last line that only gained its final newline", () => {
 	const repo = createRepo();
 	write(repo, NO_EOL_FILE, 'test("c", () => {});\ntest("gone", () => {});\ntest("last", () => {});');
