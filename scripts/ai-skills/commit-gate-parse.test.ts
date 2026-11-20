@@ -311,6 +311,12 @@ test("readCommit reads an abbreviated long option's value as the value, not a pa
 	assert.equal(read("git commit --mes='T1: x' -- f").subject, "T1: x");
 	assert.equal(read("git commit --fil msg.txt -- f", dir).subject, "T1: from file");
 	assert.deepEqual(read("git commit --auth 'A <a@b>' -m x f").paths, ["f"]);
+
+	// `--fi` abbreviates both --file and --fixup, which git refuses, so it takes
+	// a value and reads no message from it.
+	assert.equal(read("git commit --fi msg.txt -- f", dir).subject, null);
+	assert.deepEqual(read("git commit --fi msg.txt -- f", dir).paths, ["f"]);
+	assert.equal(read("git commit --re 'T1: x' -- f").subject, null);
 });
 
 test(
@@ -332,12 +338,50 @@ test(
 					paths: [
 						path.join(link, "frontend", "a.ts"),
 						path.join(link, "gone.ts"),
-						link,
 					],
 				},
 				root
 			),
-			["frontend/a.ts", "gone.ts", "."]
+			["frontend/a.ts", "gone.ts"]
+		);
+	}
+);
+
+test(
+	"repoRelativePaths reads a path against a repo root spelled through a symlink",
+	{ skip: process.platform === "win32" },
+	() => {
+		const parent = tempDir("commit-gate-parse-root-link-");
+		mkdirSync(path.join(parent, "repo", "frontend"), { recursive: true });
+		const link = path.join(parent, "lnk");
+		symlinkSync(parent, link);
+		const spelled = path.join(link, "repo");
+
+		assert.deepEqual(
+			repoRelativePaths(
+				{ cwd: spelled, paths: ["frontend/a.ts", "frontend", "."] },
+				spelled
+			),
+			["frontend/a.ts", "frontend", "."]
+		);
+	}
+);
+
+test(
+	"repoRelativePaths keeps a committed symlink as its own path, not its target's",
+	{ skip: process.platform === "win32" },
+	() => {
+		const parent = tempDir("commit-gate-parse-leaf-link-");
+		const repo = path.join(parent, "repo");
+		mkdirSync(path.join(repo, "src"), { recursive: true });
+		mkdirSync(path.join(parent, "outside"));
+		symlinkSync(path.join(parent, "outside"), path.join(repo, "src", "out"));
+		symlinkSync(".", path.join(repo, "self"));
+		const root = realpathSync.native(repo);
+
+		assert.deepEqual(
+			repoRelativePaths({ cwd: root, paths: ["src/out", "self"] }, root),
+			["src/out", "self"]
 		);
 	}
 );
@@ -429,6 +473,7 @@ test("readCommit denies -c core.hooksPath=…, in any case", () => {
 		"git -c core.hooksPath=x commit -m y -- a",
 		"git -c CORE.HOOKSPATH=/dev/null commit -m y -- a",
 		"git --config-env=core.hooksPath=V commit -m y -- a",
+		"git --config-env core.hooksPath=V commit -m y -- a",
 	]) {
 		assert.deepEqual(denyIds(command), ["hooks-path"], command);
 	}
@@ -690,6 +735,10 @@ test("readKillSwitch reads local -x, a default assignment, and mapfile", () => {
 		);
 	}
 	assert.equal(readKillSwitch("echo ${PRISM_HOOK_DISABLE:-x}", CWD), null);
+	assert.deepEqual(readKillSwitch("X=${PRISM_HOOK_DISABLE:=1} git status", CWD), {
+		id: "kill-switch",
+		flag: "PRISM_HOOK_DISABLE",
+	});
 });
 
 test("readKillSwitch reads a name it can't tokenize past", () => {

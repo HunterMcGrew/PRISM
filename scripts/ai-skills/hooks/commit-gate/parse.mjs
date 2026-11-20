@@ -53,6 +53,8 @@
 // - `--git-dir`, `--work-tree`, `GIT_DIR`, or `GIT_WORK_TREE` on the command
 //   itself, which leaves the directory unresolved so only the flag denies run;
 //   one exported by an earlier segment is not tracked
+// - a named path that is itself a symlink, which reads as the link and not its
+//   target, so one that names the repo from outside it falls outside the repo
 // - a script of another name, or an unmarked copy of `commit.mjs`, which reads
 //   as no commit though it may commit the same way
 // - a toplevel substitution after a `cd` into another repo, which the hook
@@ -69,6 +71,7 @@
 //   value, since the option's value reads as the script
 import {
 	closeSync,
+	lstatSync,
 	openSync,
 	readFileSync,
 	readSync,
@@ -280,14 +283,39 @@ export function readKillSwitch(command, sessionCwd) {
  */
 export function repoRelativePaths(commit, repoRoot) {
 	const base = commit.cwd ?? repoRoot;
+	const realRoot = realPrefix(repoRoot);
 
 	return commit.paths.map(
 		(p) =>
 			path
-				.relative(repoRoot, realPrefix(path.resolve(base, toHostPath(p))))
+				.relative(realRoot, resolveEntry(path.resolve(base, toHostPath(p))))
 				.split(path.sep)
 				.join("/") || "."
 	);
+}
+
+/**
+ * `target` for comparing with git's realpath'd toplevel. The directories above
+ * it resolve through symlinks, and so does the leaf unless the leaf is itself a
+ * symlink: git adds a committed link as a link, not as its target, so an
+ * outside link must stay inside the repo and `self -> .` must not read as the
+ * whole repo.
+ *
+ * @param {string} target
+ */
+function resolveEntry(target) {
+	if (!isSymlink(target)) return realPrefix(target);
+
+	return path.join(realPrefix(path.dirname(target)), path.basename(target));
+}
+
+/** @param {string} target */
+function isSymlink(target) {
+	try {
+		return lstatSync(target).isSymbolicLink();
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -334,7 +362,9 @@ function killSwitchIn(segment) {
 
 	// `${NAME:=value}` and `${NAME=value}` assign the variable when it is unset.
 	const defaulted = KILL_SWITCHES.find((n) =>
-		argv.some((word) => word.includes(`\${${n}:=`) || word.includes(`\${${n}=`))
+		[...segment.assignments, ...argv].some(
+			(word) => word.includes(`\${${n}:=`) || word.includes(`\${${n}=`)
+		)
 	);
 	if (defaulted) return defaulted;
 
