@@ -45,7 +45,7 @@ import {
 } from "./hook.mjs";
 import { readGitHooksState } from "./git-hooks/install.mjs";
 import { asRecord, isCommandNotFound } from "./lib/command.mjs";
-import { splitShellSegments, unquote } from "./lib/shell.mjs";
+import { walkSegments } from "./lib/segments.mjs";
 
 const STATE_FILE_PREFIX = "git-gates-state.";
 
@@ -105,7 +105,7 @@ function resolveGitInvocation(tokens) {
 		index++;
 	}
 
-	const head = unquote(tokens[index] ?? "");
+	const head = tokens[index] ?? "";
 	if (head !== "git" && !/[/\\]git$/.test(head)) {
 		return null;
 	}
@@ -120,7 +120,7 @@ function resolveGitInvocation(tokens) {
 		}
 
 		if (token === "-C" && index + 1 < tokens.length) {
-			directories.push(unquote(tokens[index + 1]));
+			directories.push(tokens[index + 1]);
 		}
 
 		const takesValue =
@@ -141,13 +141,8 @@ function resolveGitInvocation(tokens) {
  * head is not `git`, yields nothing: `gh pr create`, `git merge`, and
  * `echo "git commit"` are all silent.
  *
- * The HEREDOC commit form from `git-conventions.md` § Formatting — `git commit
- * -m "$(cat <<'EOF' … EOF)"` — is one double-quoted token to the splitter, so
- * the head and subcommand read is unaffected. An unquoted heredoc body is
- * skipped by the splitter. One gap is accepted: a `"` inside such a body
- * closes the splitter's quote early and the remainder tokenizes as commands.
- * Only a body line beginning with `git push` could trip a spurious check, and
- * a spurious push check blocks nothing unless lint actually fails.
+ * The walk unwraps `bash -c`, `env`, and `timeout`, and reads a heredoc body
+ * as data, so a body line is never a command.
  *
  * @param {string | undefined} command
  * @returns {GitGateSegment[]}
@@ -159,8 +154,8 @@ export function detectGitSegments(command) {
 
 	/** @type {GitGateSegment[]} */
 	const segments = [];
-	for (const tokens of splitShellSegments(command)) {
-		const invocation = resolveGitInvocation(tokens);
+	for (const segment of walkSegments(command).segments) {
+		const invocation = resolveGitInvocation(segment.argv);
 		if (invocation === null) {
 			continue;
 		}

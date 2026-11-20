@@ -57,12 +57,12 @@ import {
 	resolveListedToolKind,
 	resolveToolKind,
 } from "./harnesses.mjs";
-import { splitShellSegments, unquote } from "./lib/shell.mjs";
+import { walkSegments } from "./lib/segments.mjs";
 
 /**
  * The characters a whole command may contain and still be considered for read
  * credit: letters, digits, `_ . / - @ + = , : ~`, both quote characters (so
- * `unquote` keeps working), space and tab, and `;` and line breaks as the only
+ * `walkSegments` can read a quoted word), space and tab, and `;` and line breaks as the only
  * command separators. A command carrying anything else parses to zero targets,
  * in its entirety.
  *
@@ -90,7 +90,7 @@ import { splitShellSegments, unquote } from "./lib/shell.mjs";
  * crediting, and one unparseable clause costs the whole command rather than
  * itself.
  *
- * `;` and line breaks are in the class because `splitShellSegments` cuts on
+ * `;` and line breaks are in the class because `walkSegments` cuts on
  * them and the commands they separate each run unconditionally, printing to
  * the same transcript. A multi-line remedy is several commands, not one
  * unparseable one.
@@ -181,7 +181,7 @@ function resolveCdTarget(tokens) {
 		return undefined;
 	}
 
-	const target = unquote(operands[0]);
+	const target = operands[0];
 	return target.startsWith("~") || target.includes("$") || target.includes("`")
 		? undefined
 		: target;
@@ -256,6 +256,18 @@ function normalizeShellSeparators(command) {
 }
 
 /**
+ * `walkSegments` over a command whose `\r` and `\r\n` line endings read as the
+ * line breaks they are on Windows, so a CRLF-joined remedy is several
+ * commands and no word carries a trailing `\r`.
+ *
+ * @param {string} command
+ * @returns {ReturnType<typeof walkSegments>}
+ */
+function walkLines(command) {
+	return walkSegments(command.replace(/\r\n?/g, "\n"));
+}
+
+/**
  * Extracts the paths a shell read command names, and whether reading them
  * that way delivered the whole file.
  *
@@ -292,7 +304,7 @@ function normalizeShellSeparators(command) {
  * test above it is: a rewrite is a property of the command text rather than
  * of any one operand, so only a whole-command test sees a `\` sitting outside
  * the operand being credited. `cat <doc> other\x.md` is the shortest example,
- * and every separator `splitShellSegments` cuts on puts the same `\` a whole
+ * and every separator `walkSegments` cuts on puts the same `\` a whole
  * segment away.
  *
  * @param {string | undefined} command
@@ -314,7 +326,20 @@ export function parseShellReadTargets(command) {
 	/** @type {string | undefined} */
 	let directory = ".";
 	const targets = [];
-	for (const tokens of splitShellSegments(normalized)) {
+	const walk = walkLines(normalized);
+	// A command the walk cannot read is doubt, and doubt credits nothing.
+	if (walk.unreadable.length > 0) {
+		return [];
+	}
+
+	for (const segment of walk.segments) {
+		// A command inside `bash -c` or a substitution is not the read the
+		// agent's own shell ran at the top level, so it credits nothing.
+		if (segment.depth > 0) {
+			continue;
+		}
+
+		const tokens = segment.words;
 		const cdTarget = resolveCdTarget(tokens);
 		if (cdTarget !== null) {
 			/** @type {string | undefined} */
@@ -377,7 +402,7 @@ function parseSegmentReadTargets(tokens) {
 			continue;
 		}
 
-		operands.push(unquote(arg));
+		operands.push(arg);
 	}
 
 	// Only `cat` credits, and only unflagged. Everything else — a `head`
@@ -715,6 +740,24 @@ function scanPathShapedTokens(command) {
 }
 
 /**
+ * True when the command word that reads a heredoc stands before its `<<`
+ * introducer on the line that opens the body. `<<'EOF' cat` opens its
+ * segment with the introducer, and its body stays in the scan like any body
+ * with no reader named.
+ *
+ * @param {string} command
+ * @param {number} bodyStart Index of the body's first character.
+ * @param {string} reader
+ * @returns {boolean}
+ */
+function checkReaderPrecedesIntroducer(command, bodyStart, reader) {
+	const lineStart = command.lastIndexOf("\n", bodyStart - 2) + 1;
+	const header = command.slice(lineStart, bodyStart - 1);
+	const readerAt = header.indexOf(reader);
+	return readerAt !== -1 && readerAt < header.search(/<<-?/);
+}
+
+/**
  * The command with every heredoc body cut out whose text only a data reader
  * sees, so the words in a PR comment or a JSON payload are not read as paths.
  *
@@ -745,14 +788,16 @@ function removeDataHeredocBodies(command) {
 		return command;
 	}
 
-	/** @type {import("./lib/shell.mjs").HeredocBody[]} */
-	const heredocs = [];
-	const segments = splitShellSegments(command, heredocs);
+	const { segments, unreadable } = walkLines(command);
+	if (unreadable.length > 0) {
+		return command;
+	}
+
 	const runsOnlyKnownHeads = segments.every(
-		([head]) =>
+		({ words: [head] }) =>
 			head === "cd" ||
-			DATA_STDIN_READERS.has(unquote(head)) ||
-			SHELL_INSPECTION_COMMANDS.has(unquote(head))
+			DATA_STDIN_READERS.has(head) ||
+			SHELL_INSPECTION_COMMANDS.has(head)
 	);
 	if (!runsOnlyKnownHeads) {
 		return command;
@@ -760,22 +805,39 @@ function removeDataHeredocBodies(command) {
 
 	let kept = "";
 	let cursor = 0;
-	for (const { start, end, readers } of heredocs) {
-		const body = command.slice(start, end);
-		const inert =
-			!/\$\(|`/.test(body) &&
-			readers.every(
-				(reader) =>
-					reader.head !== undefined &&
-					DATA_STDIN_READERS.has(unquote(reader.head)) &&
-					!reader.piped
-			);
-		if (!inert) {
-			continue;
-		}
+	for (const segment of segments) {
+		const [reader] = segment.words;
+		const pipesOnward = segments.some((other) => other.pipedFrom === segment);
+		for (const body of segment.stdinTexts) {
+			if (body.length === 0) {
+				continue;
+			}
 
-		kept += `${command.slice(cursor, start)}\n`;
-		cursor = end;
+			// A body is found verbatim, on lines of its own, past the last one
+			// found. One that is not (a here-string, a `<<-` body with its tabs
+			// stripped) leaves the whole command in the scan, which is the
+			// over-deny direction.
+			const start = command.indexOf(`\n${body}\n`, cursor) + 1;
+			if (start === 0) {
+				return command;
+			}
+
+			const bodyEnd = start + body.length;
+			const lineEnd = command.indexOf("\n", bodyEnd + 1);
+			const end = lineEnd === -1 ? command.length : lineEnd;
+			const inert =
+				!/\$\(|`/.test(body) &&
+				DATA_STDIN_READERS.has(reader) &&
+				!pipesOnward &&
+				checkReaderPrecedesIntroducer(command, start, reader);
+			if (inert) {
+				kept += `${command.slice(cursor, start)}\n`;
+			} else {
+				kept += command.slice(cursor, end);
+			}
+
+			cursor = end;
+		}
 	}
 
 	return kept + command.slice(cursor);
@@ -793,7 +855,7 @@ function removeDataHeredocBodies(command) {
  * resolve (`resolveCdTarget`) leaves the last known directory in place, which
  * keeps this reading over-wide rather than empty.
  *
- * This reading leans on `splitShellSegments` to place each argument, which the
+ * This reading leans on `walkSegments` to place each argument, which the
  * whole-command scan does not. A mis-split moves an argument to the wrong
  * directory here, and the `cwd` reading still has it.
  *
@@ -805,7 +867,7 @@ function resolveArgumentsAfterCd(command, cwd) {
 	const resolved = [];
 	/** @type {string | null} */
 	let current = null;
-	for (const tokens of splitShellSegments(command)) {
+	for (const { words: tokens } of walkLines(command).segments) {
 		const target = resolveCdTarget(tokens);
 		if (target !== null) {
 			if (target !== undefined) {
@@ -941,7 +1003,7 @@ function checkFlagsAreInert(args, inertFlags) {
  * manifest route matches.
  *
  * The proof reuses the read arm's own `SHELL_READ_SAFE_CHARACTERS` class and
- * `splitShellSegments`, and it is all-or-nothing over the whole command: one
+ * `walkSegments`, and it is all-or-nothing over the whole command: one
  * character outside the class, or one segment whose head is not a known
  * read-only command, and nothing is proven. That is what makes the five
  * shapes this arm used to miss unreachable rather than handled — an
@@ -999,7 +1061,14 @@ function checkCommandWritesNoFile(command) {
 		return false;
 	}
 
-	return splitShellSegments(command).every(checkSegmentWritesNoFile);
+	const { segments, unreadable } = walkLines(command);
+
+	// A command the walk cannot read is doubt, and doubt resolves as a write.
+	if (unreadable.length > 0) {
+		return false;
+	}
+
+	return segments.every(({ words }) => checkSegmentWritesNoFile(words));
 }
 
 /**

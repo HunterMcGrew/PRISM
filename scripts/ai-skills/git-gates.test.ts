@@ -1,9 +1,8 @@
 /**
  * Regression suite for the git gates (ADR-0076): the `commit`/`push` segment
  * detector, the once-per-HEAD commit hold, the push gate's deny and fail-open
- * paths, every inert path that must write nothing, the spawned entry point's
- * argv dispatch, and the shared shell splitter's branches that only these
- * gates reach.
+ * paths, every inert path that must write nothing, and the spawned entry point's
+ * argv dispatch.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
@@ -21,7 +20,6 @@ import {
 	runGitGatesArm,
 } from "./hooks/git-gates.mjs";
 import { HARNESSES } from "./hooks/harnesses.mjs";
-import { splitShellSegments } from "./hooks/lib/shell.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const claude = HARNESSES.claude;
@@ -749,27 +747,4 @@ test("the spawned entry point dispatches only on --event=PreToolUse", async () =
 		assert.equal(announceOnly.status, 0, announceOnly.stderr);
 		assert.equal(announceOnly.stdout, "", "without the event flag nothing is written");
 	});
-});
-
-// --- lib/shell.mjs ---
-
-test("splitShellSegments: cuts on every separator, skips heredoc bodies, and keeps a continuation in one segment", () => {
-	assert.deepEqual(splitShellSegments("a && b"), [["a"], ["b"]]);
-	assert.deepEqual(splitShellSegments("a | b"), [["a"], ["b"]]);
-	assert.deepEqual(splitShellSegments("a; b"), [["a"], ["b"]]);
-	assert.deepEqual(
-		splitShellSegments("tee f <<'E'\nline one\nE\necho after"),
-		[["tee", "f"], ["echo", "after"]],
-		"a quoted delimiter's body is skipped whole"
-	);
-	assert.deepEqual(
-		splitShellSegments("cat <<-E\n\tbody\n\tE\necho x"),
-		[["cat"], ["echo", "x"]],
-		"a <<- body with a tab-indented delimiter is skipped"
-	);
-	assert.equal(
-		splitShellSegments("git commit \\\n-m x").length,
-		1,
-		"a backslash-newline continuation does not cut the segment"
-	);
 });
