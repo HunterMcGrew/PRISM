@@ -712,6 +712,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Recorded negated override phrases as an accepted false deny with no guard, and declined the leg 2 plan.md seed nit because T19's text names that test.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: PR #548 round 2 docs fix: the Brief gate section of `hook-runtime.md` and its twin say the `do not read plan.md` pattern also reads a bare `plan` and `the plan`, so "do not read plan first" denies.
 - 2026-11-20 [huntermcgrew/prism-544-part-5]: Part 4 (T19 to T23) shipped as #548, squash `e715c91d`. Part 5 builds from `main` after it, on `huntermcgrew/prism-544-part-5`. The commit that marks it done lists every ID, because the squash dropped the task-ID commits.
+- 2026-11-20 [huntermcgrew/prism-544-part-5]: Parts 1 to 3 (T1 to T18) shipped as #545, #546, and #547, and their squashes carry ticket subjects and no task IDs. One commit that lists `T1` to `T18` marks them done, so `bundles.mjs --base fdce3e87` stops reading them as open.
 
 ## Sessions
 
