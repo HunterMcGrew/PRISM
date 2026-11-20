@@ -145,7 +145,8 @@ test("a sibling's staged file is not in the would-be tree and the shared index i
 	assert.equal(git(repo, "diff", "--cached", "--name-only"), "b.txt");
 });
 
-test("literal mode reads a path holding a glob character as itself", () => {
+// Windows forbids `*` in a file name, so the fixture can't exist there.
+test("literal mode reads a path holding a glob character as itself", { skip: process.platform === "win32" }, () => {
 	const repo = createRepo();
 	write(repo, "x*.txt", "star\n");
 	write(repo, "xa.txt", "not named\n");
@@ -160,7 +161,8 @@ test("literal mode reads a path holding a glob character as itself", () => {
 	);
 });
 
-test("without literal mode a glob character expands as a pathspec", () => {
+// Windows forbids `*` in a file name, so the fixture can't exist there.
+test("without literal mode a glob character expands as a pathspec", { skip: process.platform === "win32" }, () => {
 	const repo = createRepo();
 	write(repo, "x*.txt", "star\n");
 	write(repo, "xa.txt", "matched by the glob\n");
