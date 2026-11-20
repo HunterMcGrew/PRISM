@@ -584,6 +584,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: Part 1 of 5 (T1 to T6 and T18) shipped as #545, squash `fdce3e87`. Parts 2 to 5 build from `main` after it. The commit that marks them done lists every ID (`T1,T2,T3,T4,T5,T6,T18`), because the subject parser reads a range or a list and not both in one subject.
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: Re-plan: the `gated` JSDoc edit moved from T19 to T9, which now lists `generate-skills.ts`, to break the cycle `T9 -> T19 -> T17 -> T10 -> T9`.
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T7 ported thrive's `env-keys.sh` as zero-dependency `hooks/env-keys.mjs` with a `.d.mts` sidecar and a 16-case test; a missing file exits 2, and a repeated key prints twice, as in thrive.
+- 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T8 ported thrive's secrets gate as `hooks/secrets-gate.mjs` with its Read, Grep, and shell arms and a `.d.mts` sidecar, and added `secretPaths` to the config schema. It exports `judge` for the leg 2 test, and the call's git toplevel replaces thrive's `REPO_ROOT` for repo-relative matching.
 
 ## Sessions
 
