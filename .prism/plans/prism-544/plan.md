@@ -666,6 +666,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: round 3 fixes: an outside symlink to the repo root reads as the root again, and the backward twin walk is pinned.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: PR #547 round 3 code fixes landed in `c1a75694` (T11) and `e1a7fa59` (T13), and the round 3 findings are marked fixed under `## Review`. The round 3 Major was a regression from round 2's `lstat` fix.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Part 3 (T11 to T17) shipped as #547, squash `fd1d1393`. Part 4 builds from `main` after it. The commit that marks it done lists every ID (`T11,T12,T13,T14,T15,T16,T17`), because the subject parser reads a range or a list and not both in one subject.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: `bundles.mjs --base fdce3e87` read T1 to T10 and T18 as open and reported 21 duplicate claims, because the squashes for parts 1 and 2 carry ticket subjects and no task IDs. A commit that names `T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T18` records them again, with no other change.
 
 ## Sessions
 
