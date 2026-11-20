@@ -47,6 +47,16 @@
 						"timeout": 21
 					}
 				]
+			},
+			{
+				"matcher": "Agent|Task",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/brief-gate.mjs\" --tool=claude --event=PreToolUse",
+						"timeout": 21
+					}
+				]
 			}
 		],
 		"UserPromptSubmit": [
@@ -97,6 +107,18 @@
 					{
 						"type": "command",
 						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/hook.mjs\" --tool=claude --event=SessionStart"
+					}
+				]
+			}
+		],
+		"SubagentStop": [
+			{
+				"matcher": "^prism-pr-review$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/reconcile-gate.mjs\" --tool=claude --event=SubagentStop",
+						"timeout": 120
 					}
 				]
 			}

@@ -90,6 +90,29 @@
 					}
 				]
 			}
+		],
+		"SubagentStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/brief-gate.mjs\" --tool=codex --event=SubagentStart",
+						"timeout": 21
+					}
+				]
+			}
+		],
+		"SubagentStop": [
+			{
+				"matcher": "^prism-pr-review$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/reconcile-gate.mjs\" --tool=codex --event=SubagentStop",
+						"timeout": 120
+					}
+				]
+			}
 		]
 	}
 }

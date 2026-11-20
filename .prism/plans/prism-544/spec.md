@@ -31,7 +31,7 @@ The epic's Swaps table applies to every port: `.ai-spec/` becomes `.prism/`, `th
 7. The commit gate judges the would-be commit from a temporary index, so files a sibling staged and did not name are ignored, and the shared index is never written.
 8. The commit gate reads a `node <runtime dir>/plan/commit.mjs "<subject>" <paths>` call the same way it reads a `git commit`, since every folder-plan stage commits through that script.
 9. A new `testGlobs` config key names the test files the weakened-test check reads.
-10. The reconcile gate blocks a `prism-pr-review` subagent from stopping while `reconcile.mjs` reports unclean, at most three times per session, then lets it stop and logs the fact.
+10. The reconcile gate blocks a `prism-pr-review` subagent from stopping while `reconcile.mjs` reports unclean, at most three stops in a row, then lets it stop and logs the fact.
 11. `PRISM_HOOK_DISABLE` and `PRISM_HOOK_DENY_DISABLE` keep their behavior for the existing gates and apply to the brief, commit, and reconcile gates. The secrets gate and the approve guard ignore both. The commit gate denies a command that assigns or exports either one.
 12. Every gate fails open on its own crash: nothing on stdout, one stderr line, exit 0. The approve guard's execution arm keeps failing closed on shell syntax it cannot read.
 13. Each gate has the three-leg test: the deny fires, a seeded state clears it, and the live remedy clears it.
@@ -84,7 +84,7 @@ A port of thrive's three arms: Read on the file path, Grep on its `path` and `gl
 
 ### Brief gate
 
-A port of thrive's gate: a brief to a gated role is denied past 15 non-blank lines, or when it matches an override pattern (ignore or disregard the instructions or rules, "you may skip", "do not read the plan"). The deny names the role and says to move the content into `plan.md` and send the plan folder, the task IDs, the worktree path, and the report shape, then gives the cause.
+A port of thrive's gate: a brief to a gated role is denied past 15 non-blank lines, or when it matches an override pattern (ignore or disregard the instructions or rules, "you may skip", "do not read the plan"). The deny states what the stage reads, the worktree path, and the report shape, says that anything longer goes into `plan.md` first, then gives the cause.
 
 - **Which roles are gated.** `roles.json` gains the optional boolean `gated`. `generate-skills.ts` rejects a non-boolean value. It is set on the roles a plan-folder run dispatches as subagents: `prism-spec`, `prism-challenge`, `prism-verify`, `prism-implement`, `prism-docs`, and `prism-pr-review`. `prism-architect` is left ungated, because a stage sends it a scope idea or a finding in prose by design.
 - **How the gate knows.** A consumer has no `roles.json` on disk, because `prism update` reads the roster from PRISM's package. So `brief-gate.mjs` exports a `GATED_ROLES` constant, and its test asserts the constant equals the `gated: true` IDs in `roles.json`. One source of truth, one runtime file, and no build step.
@@ -118,7 +118,7 @@ A port of thrive's gate:
 
 - **What it reads.** On `SubagentStop` with `agent_type` `prism-pr-review`, it runs `node <runtime dir>/review/reconcile.mjs <pr> --json` with a 90-second limit. The PR number comes from the reply's last non-blank line, `prism-pr: <n>`, which `prism-pr-review` already prints, or from stored state.
 - **Blocking.** The block reason lists each unclean item in one sentence and ends by asking for the `prism-pr:` line.
-- **Counting.** The count lives in `<os.tmpdir()>/prism-hooks/reconcile/<tool>/<session>.json`, written through a temp file and a rename. A clean report deletes the file. After three blocks, the gate deletes the file, lets the stop through, and logs `reconcile:unclean`. With no PR line and nothing stored, it blocks once to ask for the line, and lets a second miss through.
+- **Counting.** The count lives in the worktree's git directory beside `prism-hooks.jsonl`, one file per tool and session, written through a temp file and a rename. A clean report deletes the file. After three blocks, the gate deletes the file, lets the stop through, and logs `reconcile:unclean`. With no PR line and nothing stored, it blocks once to ask for the line, and lets a second miss through.
 - **Registration.** `SubagentStop` matched `^prism-pr-review$` on Claude and Codex, timeout 120. The gate checks `agent_type` itself too, so a host that ignores the matcher still reaches only that role.
 
 ### Kill switches and failure
@@ -140,7 +140,7 @@ The Codex host gaps go into `hook-runtime.md` as host limitations: the brief gat
 ### Text this child makes false
 
 - `.prism/rules/git-conventions.md`, under Force Push Policy: `--no-verify` becomes never used, and its reason is the commit gate. `--no-gpg-sign` keeps "never use unless the user explicitly asks", since no gate denies it.
-- `.prism/rules/workflow.md`, one sentence beside the Limits paragraph: "A brief to a gated subagent names the plan folder, the task IDs, the worktree path, and the report shape, in 15 lines or fewer. Anything longer goes into `plan.md` first."
+- `.prism/rules/workflow.md`, one sentence beside the Limits paragraph: "A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. Anything longer goes into `plan.md` first."
 - `.prism/spec/adrs/_toolkit/0081-git-hooks-ship-beside-the-agent-gates.md`: the Consequences line about `--no-verify` stays as written, and a second `> Amended <date> by PRISM-544 …` note goes under the existing one, saying the commit gate now denies `--no-verify` for agents.
 - `.prism/spec/adrs/_toolkit/README.md`, the ADR-0081 row, which says `--no-verify` still skips the hooks until the commit gate lands.
 - `.prism/architect/_toolkit/git-hooks.md`: the opening line's "the commit cleanup pass" becomes "the cleanup-pass hold", and the line saying an agent passing `--no-verify` skips the hook while the push gate believes it ran is corrected.
