@@ -648,6 +648,11 @@ head: f2603abdf032229d810420a8862b1aa9ab3cba04 (part 1 of 5)
   - **5. nit, code smell, fixed 13d67c40 (renamed `walkCommand`).** File: scripts/ai-skills/hooks/hook.mjs:273. The name `walkLines` does not say it returns the cached whole-command walk.
   - **6. nit, nitpick, deferred to T19, which already lists that comment.** File: scripts/ai-skills/generate-skills.ts:52. The gated JSDoc's membership rule also covers prism-architect. Fold the fix into T19.
   - AC-1: met (executed); findings 1 and 2 sit outside its Evidence. AC-3: the gated half is met. AC-13: met for part 1, with both CI legs green at 6cc418a4. AC-2, AC-4 to AC-12: out of part.
+- pr-review round 2 at 829b09b9 (part 1 of 5): 0 critical, 1 major, 1 minor, 1 nit
+  - **1. Major, bug (test portability).** File: scripts/ai-skills/hook-shell-walk.test.ts:86, also line 96. Both new resolveArgumentsAfterCd tests compare path.resolve output to POSIX literals like "/repo/src/index.ts", so windows-latest fails them at 829b09b9 (run 44663861943) and AC-13 is unmet. Class: a test expectation written as a POSIX path literal where the code returns path.resolve output. Sweep: changed test files grepped for the "/repo/ literal; only this file fails. Fix: build cwd and the expected paths with path.resolve and path.join.
+  - **2. Minor, bug.** File: scripts/ai-skills/hooks/git-gates.mjs:218, JSDoc at lines 189-192. The unreadable-text fallback finds git only at a piece's head, so timeout, braces, then, !, command, nohup, and env -C forms of git push stay hidden after unreadable text, and the JSDoc's "never hides" claim and its echo example are both wrong. Base misses them too. Class: a fallback reading built on a narrower recognizer than the main path it backs up. Fix: start each piece at its first git word.
+  - **3. nit, nitpick.** File: scripts/ai-skills/hooks/hook.mjs:944. The comment says nested segments come before their holder, which is false for bash -c. Drop the clause.
+  - Round 1 findings 1, 2, and 5 confirmed fixed at 81c1e667 and 13d67c40, threads resolved. AC-1: met. AC-3: the gated half is met. AC-13: unmet, windows-latest red at 829b09b9. AC-2, AC-4 to AC-12: out of part.
 
 ## Acceptance Criteria
 
