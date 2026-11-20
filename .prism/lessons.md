@@ -204,6 +204,6 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 ## A PR-review re-run PATCHes the marked summary comment and never POSTs a new one
 
-**Why:** 2026-11-19 (PRISM-544): reconcile reads the verdict only from the comment that carries the `code-review-pr-summary` marker, so a second summary comment is invisible to it.
+**Why:** 2026-11-19 (PRISM-544): reconcile reads the verdict only from the latest comment that carries the `code-review-pr-summary` marker, so a second marked summary comment is read and the earlier one goes stale.
 
 **How to apply:** On a re-run, find the marked comment and PATCH it in place; post a new comment only when none carries the marker.
