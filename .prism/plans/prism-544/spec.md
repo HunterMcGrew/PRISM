@@ -219,4 +219,5 @@ AGENTS.md
 docs/what-prism-writes.md
 docs/adopting-into-existing-repos.md
 docs/ai-skills/compatibility.md
+docs/parameterization.md
 ```
