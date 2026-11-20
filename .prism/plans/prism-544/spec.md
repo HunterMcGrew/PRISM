@@ -55,9 +55,9 @@ PRISM's runtime is the base, per the epic's Decision on it. Each new gate is its
 | `commit-gate/parse.mjs`, `checks.mjs`, `test-guard.mjs`, `tree.mjs` | ports of the same thrive modules |
 | `reconcile-gate.mjs` | entry point, port of thrive's `reconcile-gate/hook.mjs` |
 
-Each runtime file carries the `@prism-hook-runtime` marker and a `.d.mts` sidecar, imports only `node:` builtins and its siblings, and keeps thrive's entry guard and header comments, known-misses lists included, per `.prism/architect/_toolkit/hook-runtime.md` and `.prism/architect/_toolkit/plan-chain-scripts.md`. `HOOK_RUNTIME_FILES` in `scripts/ai-skills/update.ts` gains every new file and drops `lib/shell.mjs`, so `pruneStaleHookRuntimeFiles` backs up and removes a consumer's old marked copy. `HOOK_RUNTIME_ENTRY_POINTS` gains the four entry points. The `test-helpers.mjs` module from thrive is not delivered. Its git fixture helpers move into the commit gate's test file.
+Each runtime file carries the `@prism-hook-runtime` marker and a `.d.mts` sidecar, imports only `node:` builtins and its siblings, and keeps thrive's entry guard and header comments, known-misses lists included, per `.prism/architect/_toolkit/hook-runtime.md` and `.prism/architect/_toolkit/plan-chain-scripts.md`. `HOOK_RUNTIME_FILES` in `scripts/ai-skills/update.ts` gains every new file and drops `lib/shell.mjs`, so `pruneStaleHookRuntimeFiles` backs up and removes a consumer's old marked copy. The same task deletes `lib/shell.mjs` and `lib/shell.d.mts` and fixes their references in `update.test.ts` and `git-gates.test.ts`. The remaining importers, `hook.mjs`, `git-gates.mjs`, and `update.ts`, have already moved by then. A `## History` line, carried into the release note, says a consumer will find `.claude/hooks/lib/shell.mjs.bak` after updating. `HOOK_RUNTIME_ENTRY_POINTS` gains the four entry points. The `test-helpers.mjs` module from thrive is not delivered. Its git fixture helpers move into the commit gate's test file.
 
-The new commit gate is a separate thing from `git-gates.mjs`'s opt-in cleanup-pass hold, which `hook-runtime.md` also calls a commit gate. The doc names the new one "the commit gate" and the old one "the cleanup-pass hold", so the two stop sharing a name.
+The new commit gate is a separate thing from `git-gates.mjs`'s opt-in cleanup-pass hold, which `hook-runtime.md` also calls a commit gate. `hook-runtime.md` and `git-hooks.md` name the new one "the commit gate" and the old one "the cleanup-pass hold", so the two stop sharing a name. ADR-0076 is left as written, and `hook-runtime.md` gains a clause saying that ADR calls the hold "the commit gate".
 
 ### Shared parser
 
@@ -95,13 +95,15 @@ A port of thrive's gate: a brief to a gated role is denied past 15 non-blank lin
 
 A port of thrive's `commit-gate/` modules with PRISM's sources swapped in:
 
+- **Order.** The flag denies run before any config read, so a broken config never stops them.
+- **Config errors.** A config error in `testGlobs` or `stopPaths`, or a `.ai-skills/config.json` that does not parse, denies the commit with the config message, the way `auto-approve.mjs` exits 2 on the same errors. The gate never fails open on it and never skips the check.
 - **Flag denies.** The `parse.mjs` ids and remedies as written: `all`, `include`, `no-paths`, `no-verify`, `hooks-path`, `expanded-paths`, `magic-pathspec`, and `multiple-commits`, plus the push pair. One addition, `kill-switch`, denies a command that assigns or exports `PRISM_HOOK_DISABLE` or `PRISM_HOOK_DENY_DISABLE` anywhere in it. Deny text keeps the shape `Commit gate (<check>): <reason> <remedy>`.
-- **`commit.mjs` calls.** The thrive parser reads `scripts/plan/commit.sh`. PRISM's equivalent is a `node` segment whose script resolves to `plan/commit.mjs` under the runtime directory, `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. Its first operand is the subject and the rest are paths. Because `commit.mjs` passes `--literal-pathspecs`, a `:` path in a `commit.mjs` call is not magic, and only the `git commit` form gets the magic-pathspec deny.
+- **`commit.mjs` calls.** The thrive parser reads `scripts/plan/commit.sh`. PRISM's equivalent is a `node` segment whose script resolves to `plan/commit.mjs` under the runtime directory, `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. The script path is compared through the native realpath, as the approve guard compares `approve.mjs`. Its first operand is the subject and the rest are paths. Because `commit.mjs` passes `--literal-pathspecs`, a `:` path in a `commit.mjs` call is not magic, and only the `git commit` form gets the magic-pathspec deny.
 - **Folder-plan branch.** The branch's ticket ID comes from `ticketPrefix`, resolved to a plan through `plan/lookup.mjs` the way `findPlanForBranch` in `compact-handoff.mjs` does. A branch whose plan is a flat file or absent gets the flag denies only.
 - **Subject.** A subject passes when `parseSubject` in `plan/tasks.mjs` reads it as a task form, `plan:`, or `retro:`. `plan:` may touch only the plan folder. `retro:` may touch only the plan folder, `.prism/retros/**`, `.prism/lessons.md`, `.prism/archived/lessons-archive.md`, `.prism/metrics/review-misses.jsonl`, and the promotion targets `.prism/architect/**`, `.prism/spec/adrs/**`, and `.prism/rules/**`, the set `prism-retro` commits.
 - **Weakened tests.** A removed line counts when the file matches `testGlobs` and `git blame` marks the line as older than `git merge-base origin/<defaultBranch> HEAD`. It is allowed when a task the subject names lists the file and carries `behavior change:`. The flat-plan allowance in thrive is moot, since the check fires only on a folder plan.
 - **Stop paths.** `resolveStopPaths` and `matchStopPath` from `plan/stop-paths.mjs`, read from config. A contract path needs a named task that lists it. A dependency path needs a named task that lists it and carries `new dependency:`, and counts only when its dependency entries change. For `package.json` and `composer.json` that is the dependency fields, compared as parsed JSON. Any other dependency-kind file counts on any change, because PRISM reads no TOML or lockfile format.
-- **Would-be tree.** As in thrive's `tree.mjs`: a temp `GIT_INDEX_FILE` under `os.tmpdir()`, `git read-tree HEAD`, `git add -A -- <paths>`, then the changed paths from `git diff --cached --name-only --no-renames -z HEAD`, with cleanup in a `finally` and a 5-second limit per git call. A `cd` or `git -C` the walk cannot resolve falls back to the session directory.
+- **Would-be tree.** As in thrive's `tree.mjs`: a temp `GIT_INDEX_FILE` under `os.tmpdir()`, `git read-tree HEAD`, `git add -A -- <paths>`, then the changed paths from `git diff --cached --name-only --no-renames -z HEAD`, with cleanup in a `finally` and a 5-second limit per git call. For a `commit.mjs` call, `tree.mjs` passes `--literal-pathspecs` to the git calls that build the temporary index, so the tree it judges is the one `commit.mjs` will commit. A `cd` or `git -C` the walk cannot resolve falls back to the session directory.
 - **Mid-operation.** During a merge, cherry-pick, or revert, only the flag denies run.
 - **Repos without PRISM.** A repo with no `.prism/architect/manifest.json` passes, as in thrive.
 - **Registration.** Claude `PreToolUse` matched `Bash|PowerShell`. Codex `PreToolUse` matched `^Bash$`. Timeout 21 on both.
@@ -138,9 +140,11 @@ The Codex host gaps go into `hook-runtime.md` as host limitations: the brief gat
 ### Text this child makes false
 
 - `.prism/rules/git-conventions.md`, under Force Push Policy: `--no-verify` becomes never used, and its reason is the commit gate. `--no-gpg-sign` keeps "never use unless the user explicitly asks", since no gate denies it.
-- `.prism/spec/adrs/_toolkit/0081-git-hooks-ship-beside-the-agent-gates.md`, the Consequences line saying an agent can pass `--no-verify` until child 8 lands.
-- `.prism/architect/_toolkit/git-hooks.md`, the line saying an agent passing `--no-verify` skips the hook while the push gate believes it ran.
-- `.prism/architect/_toolkit/hook-runtime.md`: the new gates, the hook log, the Switches paragraph, the delivered file list, and the host limitations.
+- `.prism/rules/workflow.md`, one sentence beside the Limits paragraph: "A brief to a gated subagent names the plan folder, the task IDs, the worktree path, and the report shape, in 15 lines or fewer. Anything longer goes into `plan.md` first."
+- `.prism/spec/adrs/_toolkit/0081-git-hooks-ship-beside-the-agent-gates.md`: the Consequences line about `--no-verify` stays as written, and a second `> Amended <date> by PRISM-544 …` note goes under the existing one, saying the commit gate now denies `--no-verify` for agents.
+- `.prism/spec/adrs/_toolkit/README.md`, the ADR-0081 row, which says `--no-verify` still skips the hooks until the commit gate lands.
+- `.prism/architect/_toolkit/git-hooks.md`: the opening line's "the commit cleanup pass" becomes "the cleanup-pass hold", and the line saying an agent passing `--no-verify` skips the hook while the push gate believes it ran is corrected.
+- `.prism/architect/_toolkit/hook-runtime.md`: the new gates, the hook log, the Switches paragraph, the delivered file list, the host limitations, and the cleanup-pass hold rename with its ADR-0076 clause.
 - `.prism/architect/_toolkit/plan-chain-scripts.md`, the shell-parser line.
 - `.prism/architect/_toolkit/onboarding.md`, the workflow order, for the route step.
 - The generated copies of each, `AGENTS.md`, the install seed, and the `docs/` pages that list what the hook runtime delivers, regenerated or edited to match.
@@ -149,7 +153,15 @@ The Codex host gaps go into `hook-runtime.md` as host limitations: the brief gat
 
 - **Codex subagent events.** Whether Codex fires `SubagentStart` and `SubagentStop` with the fields thrive reads is unprobed in PRISM. Default: register them as thrive does and record them in `hook-runtime.md` as documentation-read.
 - **Claude `SubagentStop` matcher.** Whether Claude Code matches a `SubagentStop` matcher against the agent type is unverified here. Default: keep the matcher and the gate's own `agent_type` check, which holds either way.
-- **Brief shape in the workflow text.** The brief gate will deny a long prose brief to a gated role, including briefs shaped like the one that dispatched this spec stage. Nothing in `.prism/rules/workflow.md` or the dispatching skills states the 15-line path brief. Default: no rule edit, because the deny text names the shape and the run corrects on the retry. Whether the workflow rule should say it up front is a scope idea for `prism-architect`.
+
+## Decisions
+
+- **Gate `prism-docs` and leave `prism-architect` ungated.** The epic spec says the flag is "set on the roles that run as subagents from a plan folder". `prism-docs` runs that way as a build stage, so it is gated. `prism-architect` is dispatched from a plan folder too, which this narrows, because its brief is a prose scope idea or challenge finding by design. Winston's fit verdict: proceed.
+- **`testGlobs` has a default list.** An absent key takes the default, and a set list replaces it, following the `stopPaths.dependency` precedent, so a consumer who skips onboarding still gets the weakened-test check. Winston's fit verdict: proceed.
+- **The workflow rule states the brief shape up front.** `.prism/rules/workflow.md` gains the 15-line path-brief sentence beside Limits. When the plan stage dispatches a confirm round to `prism-challenge` after an architect ruling, the brief says a verdict exists and does not paste it, which is how `prism-challenge` already reads the brief. The plan stage records the verdict itself in `plan.md`. Rejected: relying on the deny text alone, because Codex only logs at subagent start and never shows a deny there. Winston's fit verdict: proceed with changes.
+- **`lib/shell.mjs` is deleted with its delivery entry.** One task removes it from `HOOK_RUNTIME_FILES`, deletes `lib/shell.mjs` and `lib/shell.d.mts`, and fixes `update.test.ts` and `git-gates.test.ts`. A History line, carried into the release note, tells consumers they will find `.claude/hooks/lib/shell.mjs.bak` after updating. Winston's fit verdict: proceed with changes.
+- **The commit gate reads `commit.mjs` calls.** Every folder-plan stage commits through `commit.mjs`, which spawns git with no shell, so a gate reading only `git commit` would miss them. The script path is matched through the native realpath, as in the approve guard. `tree.mjs` passes `--literal-pathspecs` when it builds the temporary index for such a call. Winston's fit verdict: proceed with changes.
+- **The old hold is renamed "the cleanup-pass hold".** `hook-runtime.md` and the opening line of `git-hooks.md` use the new name. ADR-0076 and ADR-0081's Consequences line are left as written. ADR-0081 gets a second amendment note, and the ADR-0081 row in `.prism/spec/adrs/_toolkit/README.md` is corrected along with its generated copies. Winston's fit verdict: proceed with changes.
 
 ## Affected systems
 
@@ -186,6 +198,10 @@ templates/install/.prism/architect/_toolkit/**
 .prism/architect/_toolkit/plan-chain-scripts.md
 .prism/architect/_toolkit/onboarding.md
 .prism/spec/adrs/_toolkit/0081-git-hooks-ship-beside-the-agent-gates.md
+.prism/spec/adrs/_toolkit/README.md
+templates/install/.prism/spec/adrs/_toolkit/README.md
+.prism/rules/workflow.md
+templates/install/.prism/rules/workflow.md
 .prism/plans/prism-544/**
 .prism/lessons.md
 AGENTS.md
