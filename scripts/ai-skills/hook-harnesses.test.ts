@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import {
@@ -181,11 +180,11 @@ test("writeStdout writes a string as is and an object as JSON", () => {
 });
 
 test("writeStdout leaves a hook alive when the host has already closed stdout", async () => {
-	const harnesses = fileURLToPath(new URL("./hooks/harnesses.mjs", import.meta.url));
+	const harnesses = new URL("./hooks/harnesses.mjs", import.meta.url).href;
 	// The write waits until the parent has closed its end of the pipe, and is
 	// large enough that it cannot finish before the close is noticed.
 	const script = `
-		import { writeStdout } from ${JSON.stringify(`file://${harnesses}`)};
+		import { writeStdout } from ${JSON.stringify(harnesses)};
 		setTimeout(() => writeStdout("x".repeat(4 * 1024 * 1024)), 300);
 	`;
 

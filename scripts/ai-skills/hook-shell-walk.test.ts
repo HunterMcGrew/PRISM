@@ -5,6 +5,7 @@
  * and one walk shared by every reader of the same command.
  */
 import assert from "node:assert/strict";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -76,6 +77,8 @@ test("parseUnprovenShellPaths: only the body that runs a substitution stays when
 
 // --- Arguments after a cd ---
 
+const root = path.resolve("/repo");
+
 test("resolveArgumentsAfterCd: a cd inside a substitution or a nested shell does not move the shell's directory", () => {
 	const commands = [
 		"ROOT=$(cd scripts && pwd); cd src && tee index.ts",
@@ -83,20 +86,24 @@ test("resolveArgumentsAfterCd: a cd inside a substitution or a nested shell does
 	];
 
 	for (const command of commands) {
-		const resolved = resolveArgumentsAfterCd(command, "/repo");
+		const resolved = resolveArgumentsAfterCd(command, root);
 
-		assert.equal(resolved.includes("/repo/src/index.ts"), true, command);
-		assert.equal(resolved.includes("/repo/scripts/src/index.ts"), false, command);
+		assert.equal(resolved.includes(path.join(root, "src", "index.ts")), true, command);
+		assert.equal(
+			resolved.includes(path.join(root, "scripts", "src", "index.ts")),
+			false,
+			command
+		);
 	}
 });
 
 test("resolveArgumentsAfterCd: a command the walk cannot read resolves its paths under every cd it names", () => {
 	const resolved = resolveArgumentsAfterCd(
 		'echo "$(echo ")")"; cd src && tee index.ts',
-		"/repo"
+		root
 	);
 
-	assert.equal(resolved.includes("/repo/src/index.ts"), true);
+	assert.equal(resolved.includes(path.join(root, "src", "index.ts")), true);
 });
 
 // --- Read credit under doubt ---
