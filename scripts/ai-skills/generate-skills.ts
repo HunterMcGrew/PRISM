@@ -49,6 +49,8 @@ export interface RoleDefinition {
 	routing?: "auto" | "named-only";
 	/** Skill ids whose content a Claude agent def injects at start. */
 	preloads?: string[];
+	/** True for a role a plan-folder run dispatches as a subagent, whose brief the brief gate holds to a path brief. */
+	gated?: boolean;
 }
 
 export interface RolesDefinitions {
@@ -490,6 +492,11 @@ export function buildRoleMap(
 		if (role.routing !== "auto" && role.routing !== "named-only") {
 			throw new Error(
 				`Role '${role.id}' in .ai-skills/definitions/roles.json has missing or unrecognized routing '${role.routing}' — use "auto" or "named-only".`
+			);
+		}
+		if (role.gated !== undefined && typeof role.gated !== "boolean") {
+			throw new Error(
+				`Role '${role.id}' in .ai-skills/definitions/roles.json has a non-boolean gated value — use true, false, or omit it.`
 			);
 		}
 		if (role.persona) {
