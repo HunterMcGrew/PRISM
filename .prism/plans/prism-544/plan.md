@@ -596,7 +596,7 @@ round 4: resolved 1
 - **`docs/publishing-prism.md:59` goes to child 9, not into this PR (round 2 Minor 7).**
   - **Root cause:** the runbook's `git commit -m "chore: bump version ..."` names no paths, so the commit gate's `no-paths` deny now stops it.
   - **Chosen approach:** the fix is `-- package.json` on that command, made under child 9. No task in this plan lists the file, so a part 3 edit to it would be unplanned scope.
-  - **Implementation guidance:** the tracker's AC-5 text still carries the subject clause the ruling removed, and takes that edit at the next AC sync.
+  - **Implementation guidance:** the tracker's AC-5 text carried the subject clause the ruling removed, and the AC sync of 2026-11-20 on issue #544 made the same edit.
 
 ## History
 
@@ -667,6 +667,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: PR #547 round 3 code fixes landed in `c1a75694` (T11) and `e1a7fa59` (T13), and the round 3 findings are marked fixed under `## Review`. The round 3 Major was a regression from round 2's `lstat` fix.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Part 3 (T11 to T17) shipped as #547, squash `fd1d1393`. Part 4 builds from `main` after it. The commit that marks it done lists every ID (`T11,T12,T13,T14,T15,T16,T17`), because the subject parser reads a range or a list and not both in one subject.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: `bundles.mjs --base fdce3e87` read T1 to T10 and T18 as open and reported 21 duplicate claims, because the squashes for parts 1 and 2 carry ticket subjects and no task IDs. A commit that names `T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T18` records them again, with no other change.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Synced AC-5's adjusted text to issue #544's body, so the tracker no longer lists the subject, `plan:`, and `retro:` denies; the AC Sync Log row reads synced.
 
 ## Sessions
 
@@ -1053,7 +1054,7 @@ The issue's criteria, with IDs and evidence.
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-19 | plan stage | Wrote AC-1 to AC-13 from issue #544's thirteen criteria, adding IDs and Evidence only; the wording matches the issue | written | synced |
-| 2026-11-20 | Eli, on the coordinator's relay of Hunter's ruling | AC-5 dropped its subject, `plan:`, and `retro:` clauses | adjusted | not synced |
+| 2026-11-20 | Eli, on the coordinator's relay of Hunter's ruling | AC-5 dropped its subject, `plan:`, and `retro:` clauses | adjusted | synced |
 
 ### AC Adjustments
 
@@ -1061,7 +1062,7 @@ The issue's criteria, with IDs and evidence.
 
 - **Original:** On a folder-plan branch, the commit gate also denies a subject that is not a task form, a `plan:` commit touching anything outside the plan folder, a `retro:` commit outside the retro's paths, a removed line in a test file that predates the branch unless a named task lists it, and a stop-path file no named task lists.
 - **Proposed:** the same, without the first three denies, and the criterion adds that the gate never denies on a commit's subject. Evidence drops the ported subject, plan-path, and retro-path cases, and its UNMET line drops `PRISM-9: x` passing and adds a commit denied for its subject alone.
-- **Reason:** Hunter's ruling of 2026-11-20, in his words: "i feel like commiting a plan is fine for w/e commit message". The tracker's AC-5 text still carries the subject clauses and needs the same edit on the next sync.
+- **Reason:** Hunter's ruling of 2026-11-20, in his words: "i feel like commiting a plan is fine for w/e commit message". The tracker's AC-5 text carried the subject clauses, and the AC sync of 2026-11-20 on issue #544 made the same edit.
 - **Status:** `accepted`
 
 ## PR Readiness
