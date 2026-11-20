@@ -118,6 +118,17 @@ function withSecretsGate(rows: HookRow[], row: HookRow): HookRow[] {
 
 const CLAUDE_SECRETS_MATCHER = "Read|Grep|Bash|PowerShell";
 
+/** Inserts the commit gate row after the secrets gate PreToolUse row, where each file carries it. */
+function withCommitGate(rows: HookRow[], row: HookRow): HookRow[] {
+	const at = rows.findIndex(
+		(r) => r.event === "PreToolUse" && r.command.includes("secrets-gate.mjs"),
+	);
+
+	return [...rows.slice(0, at + 1), row, ...rows.slice(at + 1)];
+}
+
+const CLAUDE_COMMIT_MATCHER = "Bash|PowerShell";
+
 const CODEX_ROWS: HookRow[] = [
 	{
 		event: "PreToolUse",
@@ -141,6 +152,12 @@ const CODEX_ROWS: HookRow[] = [
 		timeout: 21,
 	},
 	{
+		event: "PreToolUse",
+		matcher: "^Bash$",
+		command: codexTemplate("commit-gate.mjs", "--tool=codex --event=PreToolUse"),
+		timeout: 21,
+	},
+	{
 		event: "UserPromptSubmit",
 		command: codexTemplate("approve-guard.mjs", "--tool=codex --event=UserPromptSubmit"),
 	},
@@ -161,12 +178,20 @@ const CODEX_ROWS: HookRow[] = [
 ];
 
 test("the Claude install template registers each hook with the matcher and timeout it ships", async () => {
-	const expected = withSecretsGate(claudeRows(claudeTemplate), {
-		event: "PreToolUse",
-		matcher: CLAUDE_SECRETS_MATCHER,
-		command: claudeTemplate("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
-		timeout: 21,
-	});
+	const expected = withCommitGate(
+		withSecretsGate(claudeRows(claudeTemplate), {
+			event: "PreToolUse",
+			matcher: CLAUDE_SECRETS_MATCHER,
+			command: claudeTemplate("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
+			timeout: 21,
+		}),
+		{
+			event: "PreToolUse",
+			matcher: CLAUDE_COMMIT_MATCHER,
+			command: claudeTemplate("commit-gate.mjs", "--tool=claude --event=PreToolUse"),
+			timeout: 21,
+		},
+	);
 
 	assert.deepEqual(await readRows("templates/install/.claude/settings.json"), expected);
 });
@@ -177,12 +202,20 @@ test("the Codex install template registers each hook with the matcher and timeou
 
 test("PRISM's own Claude settings register each hook from scripts/ai-skills/hooks", async () => {
 	const rows = await readRows(".claude/settings.json");
-	const expected = withSecretsGate(claudeRows(claudeOwn), {
-		event: "PreToolUse",
-		matcher: CLAUDE_SECRETS_MATCHER,
-		command: claudeOwn("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
-		timeout: 21,
-	});
+	const expected = withCommitGate(
+		withSecretsGate(claudeRows(claudeOwn), {
+			event: "PreToolUse",
+			matcher: CLAUDE_SECRETS_MATCHER,
+			command: claudeOwn("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
+			timeout: 21,
+		}),
+		{
+			event: "PreToolUse",
+			matcher: CLAUDE_COMMIT_MATCHER,
+			command: claudeOwn("commit-gate.mjs", "--tool=claude --event=PreToolUse"),
+			timeout: 21,
+		},
+	);
 
 	// PRISM's own prompt hook wraps the guard in a missing-file fallback, so only its prefix is pinned.
 	const promptAt = expected.findIndex((r) => r.event === "UserPromptSubmit");

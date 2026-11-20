@@ -60,6 +60,11 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/verify/check-report.mjs",
 	".claude/hooks/secrets-gate.mjs",
 	".claude/hooks/env-keys.mjs",
+	".claude/hooks/commit-gate.mjs",
+	".claude/hooks/commit-gate/parse.mjs",
+	".claude/hooks/commit-gate/checks.mjs",
+	".claude/hooks/commit-gate/test-guard.mjs",
+	".claude/hooks/commit-gate/tree.mjs",
 	".claude/hooks/approve-guard.mjs",
 ];
 
