@@ -5,7 +5,14 @@
  * commit the way a `git commit` does.
  */
 import assert from "node:assert/strict";
-import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	copyFileSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
@@ -190,23 +197,46 @@ test("readCommit reads commit.mjs named relative to the directory it runs in", (
 	}
 });
 
-test("readCommit leaves node on any other script, or a copy of commit.mjs, unread", () => {
-	const copy = tempDir("commit-gate-parse-copy-");
-	copyFileSync(
-		path.join(RUNTIME_PATH, "plan", "commit.mjs"),
-		path.join(copy, "commit.mjs")
-	);
-
+test("readCommit leaves node on any other script unread", () => {
 	for (const command of [
 		'node other.mjs "T1: x" a',
 		`node ${RUNTIME}/plan/other.mjs "T1: x" a`,
-		`node ${copy.split(path.sep).join("/")}/commit.mjs "T1: x" a`,
 		`node ${RUNTIME}/plan/missing/../absent.mjs "T1: x" a`,
 		`node -e 'x' ${RUNTIME}/plan/commit.mjs "T1: x" a`,
 		`node`,
 	]) {
 		assert.equal(readCommit(command, CWD), null, command);
 	}
+});
+
+test("readCommit reads a marked commit.mjs under any plan directory, and not an unmarked or misplaced one", () => {
+	const source = path.join(RUNTIME_PATH, "plan", "commit.mjs");
+	const marked = tempDir("commit-gate-parse-marked-");
+	mkdirSync(path.join(marked, "plan"));
+	copyFileSync(source, path.join(marked, "plan", "commit.mjs"));
+	const unmarked = tempDir("commit-gate-parse-unmarked-");
+	mkdirSync(path.join(unmarked, "plan"));
+	writeFileSync(path.join(unmarked, "plan", "commit.mjs"), "// a consumer's own file\n");
+	copyFileSync(source, path.join(unmarked, "commit.mjs"));
+	const asCommand = (dir: string, ...parts: string[]) =>
+		`node ${path.join(dir, ...parts).split(path.sep).join("/")} "T1: x" a`;
+
+	assert.equal(readCommit(asCommand(marked, "plan", "commit.mjs"), CWD)?.form, "commit.mjs");
+	assert.equal(readCommit(asCommand(unmarked, "plan", "commit.mjs"), CWD), null);
+	assert.equal(readCommit(asCommand(unmarked, "commit.mjs"), CWD), null);
+});
+
+test("readCommit reads a symlink to a marked commit.mjs by its real path", () => {
+	const dir = tempDir("commit-gate-parse-link-");
+	mkdirSync(path.join(dir, "plan"));
+	copyFileSync(
+		path.join(RUNTIME_PATH, "plan", "commit.mjs"),
+		path.join(dir, "plan", "commit.mjs")
+	);
+	symlinkSync(path.join(dir, "plan", "commit.mjs"), path.join(dir, "run.mjs"));
+	const command = `node ${path.join(dir, "run.mjs").split(path.sep).join("/")} "T1: x" a`;
+
+	assert.equal(readCommit(command, CWD)?.form, "commit.mjs");
 });
 
 test("readCommit takes the subject from a heredoc message's first line", () => {
@@ -587,17 +617,6 @@ test("readCommit denies a commit.mjs path holding a glob character the shell wou
 
 test("readCommit leaves a git commit glob to git's own pathspec", () => {
 	assert.deepEqual(read("git commit -m x -- 'src/*.ts'").denies, []);
-});
-
-test("readCommit names the -F file a subject came from, and no file for a -m or stdin subject", () => {
-	const dir = tempDir("commit-gate-parse-subjectfile-");
-	writeFileSync(path.join(dir, "msg.txt"), "retro: Promote\n");
-
-	assert.equal(read("git commit -F msg.txt -- a", dir).subjectFile, "msg.txt");
-	assert.equal(read("git commit --file=msg.txt -- a", dir).subjectFile, "msg.txt");
-	assert.equal(read("git commit -m 'plan: x' -- a", dir).subjectFile, null);
-	assert.equal(read("echo 'plan: x' | git commit -F - -- a", dir).subjectFile, null);
-	assert.equal(read(commitMjs("T1: x", "a"), dir).subjectFile, null);
 });
 
 test("readKillSwitch reads an append assignment, printf -v, and read", () => {

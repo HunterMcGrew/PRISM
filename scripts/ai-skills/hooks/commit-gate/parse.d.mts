@@ -6,7 +6,6 @@ export interface Deny {
 export interface Commit {
 	form: "git" | "commit.mjs";
 	subject: string | null;
-	subjectFile?: string | null;
 	paths: string[];
 	cwd: string | null;
 	flags: string[];

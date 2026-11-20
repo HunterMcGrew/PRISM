@@ -23,11 +23,12 @@
 // Bash form (`/d/...`) maps to `D:/...` on win32 before any git call reads it.
 //
 // A `commit.mjs` call is a `node` segment whose first operand, past node's own
-// options, resolves from the segment's directory to this runtime's
-// `plan/commit.mjs` by native realpath, so a copy elsewhere reads as no commit
-// and so does a script path that doesn't resolve. The runtime is the directory
-// above this file's, `.claude/hooks` in a consumer. Its next operand is the
-// subject and the rest are paths. `commit.mjs` passes `--literal-pathspecs`, so
+// options, resolves from the segment's directory to a regular file whose
+// native realpath ends in `/plan/commit.mjs` and whose first line starts with
+// the `@prism-hook-runtime` marker. That is every copy of the runtime's script,
+// `.claude/hooks` in a consumer and `scripts/ai-skills/hooks` in PRISM, and
+// not a file of another name or one that carries no marker. Its next operand is
+// the subject and the rest are paths. `commit.mjs` passes `--literal-pathspecs`, so
 // a `:` path there is a file name and gets no magic-pathspec deny.
 //
 // The denies are `-a`, `-i`, a commit naming no paths, `--no-verify` or `-n`,
@@ -47,6 +48,10 @@
 // - a `$VAR` in a `cd` or `-C` path, which leaves `cwd` null, and a
 //   `commit.mjs` path written relative to such a directory, which can't
 //   resolve and reads as no commit
+// - a `commit.mjs` path that doesn't resolve, such as a missing file or a
+//   symlink loop, which reads as no commit
+// - a script of another name, or an unmarked copy of `commit.mjs`, which reads
+//   as no commit though it may commit the same way
 // - a toplevel substitution after a `cd` into another repo, which the hook
 //   resolves to the session's toplevel where bash uses that repo's
 // - git config reaching core.hooksPath through `GIT_CONFIG_*` variables or an
@@ -59,9 +64,15 @@
 //   magic, though git would read it literally
 // - a `commit.mjs` run behind a node option this parser doesn't know takes a
 //   value, since the option's value reads as the script
-import { readFileSync, realpathSync } from "node:fs";
+import {
+	closeSync,
+	openSync,
+	readFileSync,
+	readSync,
+	realpathSync,
+	statSync,
+} from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import {
 	containsSubstitution,
@@ -74,15 +85,13 @@ import {
 /**
  * @typedef {import("../lib/segments.mjs").Segment} Segment
  * @typedef {{ id: string, flag: string }} Deny
- * @typedef {{ form: "git" | "commit.mjs", subject: string | null, subjectFile?: string | null, paths: string[], cwd: string | null, flags: string[], denies: Deny[] }} Commit
+ * @typedef {{ form: "git" | "commit.mjs", subject: string | null, paths: string[], cwd: string | null, flags: string[], denies: Deny[] }} Commit
  * @typedef {{ cPaths: string[], configs: string[], sub: string | null, args: string[] }} GitSegment
  * @typedef {{ paths: string[], flags: string[], messages: string[], messageFile: string | null, all: string | null, include: string | null, noVerify: string | null }} CommitArgs
  */
 
-const RUNTIME_DIR = path.dirname(
-	path.dirname(fileURLToPath(import.meta.url))
-);
-const COMMIT_SCRIPT = realPath(path.join(RUNTIME_DIR, "plan", "commit.mjs"));
+const COMMIT_SCRIPT_SUFFIX = "/plan/commit.mjs";
+const RUNTIME_MARKER = /^\/\/\s*@prism-hook-runtime/;
 const KILL_SWITCHES = ["PRISM_HOOK_DISABLE", "PRISM_HOOK_DENY_DISABLE"];
 const EXPORT_COMMANDS = new Set(["export", "declare", "typeset", "readonly"]);
 // Node options that take the next word as their value, and the ones after
@@ -392,9 +401,12 @@ function findNodeScript(argv) {
 }
 
 /**
- * True when `word`, resolved against the directory the segment runs in, is
- * this runtime's `plan/commit.mjs` by native realpath. A word that can't be
- * resolved, or names no file, is not.
+ * True when `word`, resolved against the directory the segment runs in, is a
+ * regular file whose native realpath, with separators read as `/`, ends in
+ * `/plan/commit.mjs` and whose first line starts with the runtime marker. A
+ * word that can't be resolved, or names no file, is not. The marker separates
+ * PRISM's script from a consumer's own file of the same name, and the check
+ * reads one line only.
  *
  * @param {string} word
  * @param {string | null} cwd
@@ -402,8 +414,36 @@ function findNodeScript(argv) {
 function isCommitScript(word, cwd) {
 	const resolved = resolveDir(word, cwd);
 	const target = resolved === null ? null : realPath(resolved);
+	if (target === null) return false;
+	if (!target.split(path.sep).join("/").endsWith(COMMIT_SCRIPT_SUFFIX)) {
+		return false;
+	}
 
-	return target !== null && target === COMMIT_SCRIPT;
+	return RUNTIME_MARKER.test(readHead(target));
+}
+
+/**
+ * The first 64 bytes of the regular file `target`, or an empty string when it
+ * is not a regular file or can't be read. A named pipe is skipped before
+ * opening, because opening one blocks.
+ *
+ * @param {string} target
+ */
+function readHead(target) {
+	try {
+		if (!statSync(target).isFile()) return "";
+		const fd = openSync(target, "r");
+		try {
+			const buffer = Buffer.alloc(64);
+			const length = readSync(fd, buffer, 0, buffer.length, 0);
+
+			return buffer.toString("utf8", 0, length);
+		} finally {
+			closeSync(fd);
+		}
+	} catch {
+		return "";
+	}
 }
 
 /**
@@ -477,7 +517,6 @@ function readScriptCommit(argv, segment) {
 	return {
 		form: "commit.mjs",
 		subject: argv[1] === undefined ? null : firstLine(argv[1]),
-		subjectFile: null,
 		paths,
 		cwd: segment.cwd,
 		flags: [],
@@ -507,7 +546,6 @@ function readGitCommit(git, cwd, segment) {
 	return {
 		form: "git",
 		subject: readSubject(args, cwd, segment),
-		subjectFile: readSubjectFile(args),
 		paths: args.paths,
 		cwd,
 		flags: args.flags,
@@ -639,20 +677,6 @@ function abbreviates(name, option) {
 		name.length >= entry.shortest.length &&
 		option.startsWith(name)
 	);
-}
-
-/**
- * The file `-F` names when the subject came from it, or null when a `-m`
- * message or stdin gave the subject. The gate names the file in a deny and
- * never quotes its text.
- *
- * @param {CommitArgs} args
- * @returns {string | null}
- */
-function readSubjectFile(args) {
-	if (args.messages.length > 0) return null;
-
-	return args.messageFile && args.messageFile !== "-" ? args.messageFile : null;
 }
 
 /**
