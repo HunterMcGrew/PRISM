@@ -678,6 +678,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 ported the brief gate and the hook log (brief-gate.mjs, lib/hook-log.mjs, their sidecars, brief-gate.test.ts), with a GATED_ROLES constant held equal to roles.json by test; the registration and HOOK_RUNTIME_FILES edits stay with T21.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T20 ports the reconcile gate (reconcile-gate.mjs, .d.mts, 46-test suite), and the prism-pr-review skill line now says the reconcile gate reads `prism-pr: <n>` to find the PR.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T21 delivers brief-gate.mjs, reconcile-gate.mjs and lib/hook-log.mjs, widens both command patterns and doctor's path regex, and registers the gates in both templates and PRISM's own settings.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T23 documents the brief gate, the reconcile gate, the hook log, and the host limits in hook-runtime.md, its install twin, and three docs pages.
 
 ## Sessions
 
