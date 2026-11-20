@@ -36,6 +36,12 @@
 //   `general-purpose`, which the gate never reads
 // - a brief packed into a few very long lines, because the limit counts lines
 //   and not characters
+//
+// Accepted false denies, because the patterns read no negation and an extra
+// deny costs one rewritten brief:
+// - "Don't ignore the rules."
+// - "Never ignore the instructions in plan.md."
+// - "No step you may skip."
 import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 

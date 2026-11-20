@@ -432,6 +432,10 @@ test("appendHookLog writes one JSON line to the git directory and swallows every
 	assert.doesNotThrow(() =>
 		appendHookLog(path.join(repo, "missing", "dir"), { hook: "x" })
 	);
+
+	const blocked = makeRepo();
+	mkdirSync(path.join(blocked, ".git", "prism-hooks.jsonl"));
+	assert.doesNotThrow(() => appendHookLog(blocked, { hook: "x" }));
 });
 
 // --- Kill switches ---
