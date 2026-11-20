@@ -945,6 +945,18 @@ head: cbee24b90da6b6f1d3c88750b56982e81090ac89 (part 3 of 5)
   - AC-8, AC-9, AC-10: the commit halves are met (executed).
   - AC-12: met (inspected) at .prism/rules/git-conventions.md:143.
   - AC-13: unmet. windows-latest failed in run 44772579391.
+- pr-review round 2 at 94e57139 (part 3 of 5): 0 critical, 2 major, 5 minor, 2 nit
+  - Range: 2c400af1..94e57139, with Docs and citations and Regressions over 1a308cd8..94e57139. Three subagents covered the passes, and each finding was confirmed at HEAD. All 22 round-1 threads were confirmed and resolved: 20 fixed, checks.mjs:142 declined, and parse.mjs:470 partly fixed with the shared parser declined as a follow-up. Summary comment 7044990959 was updated. No labels, because a Major stands. Reconcile was clean on its first run. CI run 44777830585: ubuntu-latest passed, and windows-latest failed 74 tests, all `is outside repository`, in commit-gate-checks and commit-gate-test-guard.
+  - Coverage: every pass swept except Accessibility, which is n/a (no UI). The summary comment lists each pass's enumeration.
+  - **1. Major, bug (regression).** File: scripts/ai-skills/hooks/commit-gate/parse.mjs:287. `repoRelativePaths` realpaths each path but not `repoRoot`, so the test fixtures' 8.3 short-name roots relativize outside the repo. This causes all 74 Windows failures. Fix: relativize against `realPrefix(repoRoot)`.
+  - **2. Major, security risk (regression).** File: scripts/ai-skills/hooks/commit-gate/parse.mjs:287. `realPrefix` resolves the leaf symlink. A committed link is judged as its target, and an outside-pointing link makes `git add` throw, so the gate fails open for the whole commit. Fix: resolve only the directory, plus a symlink test.
+  - **3. Minor, bug (regression, fails closed).** File: scripts/ai-skills/hooks/commit-gate/test-guard.mjs:365. Newline-only pairing compares only the line next to the marker, so inserting a test before a newline-less last line is denied. The `+`-run walk at :368 is untested.
+  - **4. Minor, test gap.** File: scripts/ai-skills/hooks/commit-gate/checks.mjs:423. `readTicketId`'s left boundary is unpinned.
+  - **5. Minor, test gap.** File: scripts/ai-skills/hooks/commit-gate/parse.mjs:530. The `--config-env core.hooksPath=V` space form is unpinned.
+  - **6. Minor, plan drift (reported, not edited).** Files: .prism/plans/prism-544/spec.md:102, and plan.md:285 and :291 (T13). They name `findPlanForBranch` and quote the old `testGlobs` schema entry.
+  - **7. Minor, standards.** File: docs/publishing-prism.md:59. The runbook's pathless `git commit -m "chore: bump version ..."` is now denied by the `no-paths` deny. Fix: add `-- package.json`.
+  - nit: parse.mjs:337, `${NAME:=}` in a leading assignment word is not read; parse.mjs:676, the ambiguous-prefix guard is unpinned. checks.mjs:423 duplicating compact-handoff's regex was already declined as a follow-up.
+  - AC-4: met (executed, both OSes). AC-5: met on ubuntu-latest (executed), and its suites fail on windows-latest (finding 1). AC-6: met (executed, both OSes). AC-8, AC-9, AC-10: the commit halves are met (executed). AC-12: met (inspected). AC-13: unmet, windows-latest failed in run 44777830585.
 
 ## Debugged Issues
 
