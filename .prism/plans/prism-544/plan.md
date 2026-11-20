@@ -552,6 +552,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Re-planned T5 into its own test file `update-prune-shell.test.ts` after `bundles.mjs --base e8a2633a` reported the cycle `T5 -> T9 -> T5`, which appeared once T3 finished.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T5 added `update-prune-shell.test.ts`, which pins that `refreshHookRuntime` backs up and removes a marked consumer `lib/shell.mjs` the runtime no longer ships; re-adding the entry to `HOOK_RUNTIME_FILES` failed it.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Replaced the section signs in four task lines with `[ref: <Heading>]` and plain section names, per a new Conventions paragraph, because `plan-folder-citations.test.ts` rejects the sign anywhere in a plan folder.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T6 rewrote the Shell parser paragraph in `plan-chain-scripts.md` and the `lib/tokenize.mjs` row in `what-prism-writes.md` to say every gate reads commands through the shared parser, then rebuilt the twin and three platform copies. Part 1 (T1 to T6, T18) is built.
 
 ## Sessions
 
