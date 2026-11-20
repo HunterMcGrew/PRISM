@@ -13,12 +13,18 @@ export interface HookPayload {
 		new_string?: string;
 		content?: string;
 		contents?: string;
+		subagent_type?: string;
+		prompt?: string;
 	};
 	hook_event_name?: string;
+	agent_type?: string;
+	prompt?: string;
+	last_assistant_message?: string;
+	stop_hook_active?: boolean;
 }
 
 export interface HarnessSpec {
-	toolKinds: Record<string, "read" | "write" | "search" | "shell">;
+	toolKinds: Record<string, "read" | "write" | "search" | "shell" | "dispatch">;
 	scopeId: (payload: HookPayload) => string | null;
 	filePaths: (payload: HookPayload) => string[];
 	/** The text a write would put into `filePath`, or `""` when the payload carries none. */
@@ -29,6 +35,16 @@ export interface HarnessSpec {
 	emitDeny: (reason: string) => unknown;
 	/** An allow carrying a reason; `null` on the same hosts `emitDeny` is `null` for. */
 	emitAllow: (reason: string) => unknown;
+	/** The subagent type and brief a payload dispatches, or `null` for any other call. */
+	subagentDispatch: (
+		payload: HookPayload
+	) => { type?: string; prompt?: string } | null;
+	/** What a subagent's stop event carries, or `null` on a host with no such event. */
+	subagentStop: (
+		payload: HookPayload
+	) => { agentType?: string; message?: string; active?: boolean } | null;
+	/** The reply that sends a stopping subagent back to work; `null` on a host with none. */
+	emitBlockStop: (reason: string) => unknown;
 }
 
 export function extractPatchFilePaths(command: string | undefined): string[];
@@ -49,3 +65,10 @@ export function resolveToolKind(
 	spec: HarnessSpec,
 	toolName: string | undefined
 ): string;
+
+export function readShellCall(
+	tool: string,
+	payload: HookPayload | null | undefined
+): { command: string; cwd: string | null } | null;
+
+export function writeStdout(body: unknown): void;
