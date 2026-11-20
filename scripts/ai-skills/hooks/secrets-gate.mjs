@@ -8,14 +8,16 @@
 // transcript. The remedy is `node <runtime>/env-keys.mjs <file>`, which prints
 // a dotenv file's key names and never a value, or reading `.env.example`.
 // `<runtime>` is this file's directory, written in the deny text relative to
-// the git toplevel of the call's `cwd`, or absolute outside a git repo. Ported
-// from the reference implementation's secrets gate.
+// the call's `cwd`, so the printed command runs from wherever the agent is.
+// Ported from the reference implementation's secrets gate.
 //
 // A secret path is any path whose repo-relative form (or absolute form, for a
 // path outside this repo) has a `.env` or `.env.*` basename other than
 // `.env.example`, a `secrets` folder segment, or a `*.pem` or `*.key`
 // basename, compared without case because a macOS disk reads `.ENV` as
-// `.env`. `matchesSecretPath` owns the exact shapes. The `secretPaths` list in
+// `.env`. An absolute path as written keeps only the basename tests, so a
+// checkout under a `secrets` folder still reads. A symlink that resolves to a
+// secret path is one too. `matchesSecretPath` owns the exact shapes. The `secretPaths` list in
 // `.ai-skills/config.json` at the git toplevel adds patterns in the manifest
 // route syntax, matched against the lowercased repo-relative path, and never
 // removes a built-in. A `secretPaths` value that isn't a list of strings, or a
@@ -80,8 +82,6 @@
 //   run time, such as the names `find -exec` or `xargs` hand to a command.
 // - A relative word after a `cd` the walk can't resolve, such as `cd $DIR`,
 //   is judged as written only.
-// - A glob the tokenizer unquoted from an escape, such as `\.en*`, reads as
-//   quoted, so it skips the glob probe.
 // - A line the tokenizer can't read, and every line after it, passes, since
 //   bash stops at the same unbalanced quote, backtick, or substitution. The
 //   lines before it are judged, because bash runs them first.
@@ -112,6 +112,12 @@
 //   `cp .env.example .env`, because a word is judged without knowing whether
 //   the program reads or writes it.
 // - A search term spelled exactly like a secret name, such as `rg .env src`.
+// - A word holding a glob character that the source spells with a quote or
+//   escape inside it, such as `"$(pwd)/*.key"`, because the word is probed
+//   as a glob whenever it isn't written verbatim.
+// - Every absolute path when the checkout sits under a `secrets` folder and
+//   isn't a git repo, because only a repo has a toplevel to cut the folders
+//   above it away.
 // - A metadata program beside any command outside the allowed list, or
 //   carrying an assignment, such as `ls -la .env | cat`, `cd x && stat .env`,
 //   or `LC_ALL=C stat .env`, because the metadata pass then drops.
@@ -175,28 +181,24 @@ const CURSOR_EVENT_NAMES = new Set([
 ]);
 
 /**
- * What one call knows about its repo: the git toplevel of its `cwd`, that
- * toplevel spelled as the `cwd` spells it and as git does, and the compiled
- * `secretPaths`. `judge` replaces it at the start of every call, and the
- * process handles one call, so the path helpers below read it as module state
- * rather than taking it as an argument.
+ * What one call knows about its repo: the git toplevel of its `cwd` spelled as
+ * the `cwd` spells it and as git does, and the compiled `secretPaths`. `judge`
+ * replaces it at the start of every call, and the process handles one call, so
+ * the path helpers below read it as module state rather than taking it as an
+ * argument.
  *
- * @type {{ toplevel: string | null, roots: string[], extra: Array<(path: string) => boolean> }}
+ * @type {{ roots: string[], extra: Array<(path: string) => boolean> }}
  */
-let context = { toplevel: null, roots: [], extra: [] };
+let context = { roots: [], extra: [] };
 
 /**
- * The deny text, with the remedy named relative to the git toplevel, or by
- * its absolute path outside a git repo.
+ * The deny text, with the remedy's path written relative to the call's `cwd`,
+ * so the command it prints runs from wherever the agent is.
  *
- * @param {string | null} toplevel
+ * @param {string} cwd
  */
-export function denyReason(toplevel) {
-	const runtime = (
-		toplevel === null ? RUNTIME_DIR : path.relative(toplevel, RUNTIME_DIR)
-	)
-		.split(path.sep)
-		.join("/");
+export function denyReason(cwd) {
+	const runtime = path.relative(cwd, RUNTIME_DIR).split(path.sep).join("/");
 
 	return `Secret files stay unread. Run node ${runtime}/env-keys.mjs <file> for key names, or read .env.example.`;
 }
@@ -208,7 +210,7 @@ export function denyReason(toplevel) {
  */
 function loadContext(cwd) {
 	const toplevel = runGit(["rev-parse", "--show-toplevel"], cwd)?.trim() || null;
-	if (toplevel === null) return { toplevel, roots: [], extra: [] };
+	if (toplevel === null) return { roots: [], extra: [] };
 
 	const roots = [toplevel];
 	try {
@@ -223,7 +225,7 @@ function loadContext(cwd) {
 		// a cwd that can't resolve leaves git's spelling alone
 	}
 
-	return { toplevel, roots, extra: readSecretPaths(toplevel) };
+	return { roots, extra: readSecretPaths(toplevel) };
 }
 
 /**
@@ -267,14 +269,16 @@ function warnSecretPaths() {
  *
  * Splits on both separators by default, so a Windows path matches too. A bare
  * `secrets` word needs a separator to count, because it is far more often a
- * search term than a folder, and a URL never counts.
+ * search term than a folder, and a URL never counts. With `folders` false only
+ * the basename counts, for an absolute path whose folders above the repo say
+ * nothing about it.
  *
  * @param {unknown} candidate
- * @param {{ backslashSeparates?: boolean }} [options]
+ * @param {{ backslashSeparates?: boolean, folders?: boolean }} [options]
  */
 export function matchesSecretPath(
 	candidate,
-	{ backslashSeparates = true } = {}
+	{ backslashSeparates = true, folders = true } = {}
 ) {
 	if (typeof candidate !== "string" || candidate === "") return false;
 	if (URL_WORD.test(candidate)) return false;
@@ -285,7 +289,7 @@ export function matchesSecretPath(
 	if (base === undefined) return false;
 	if (namesEnvFile(base) || KEY_SUFFIX.test(base)) return true;
 
-	return separator.test(candidate) && segments.includes("secrets");
+	return folders && separator.test(candidate) && segments.includes("secrets");
 }
 
 /**
@@ -321,7 +325,7 @@ export function judge(tool, payload) {
 			? payload.cwd
 			: process.cwd();
 	context = loadContext(cwd);
-	const reason = denyReason(context.toplevel);
+	const reason = denyReason(cwd);
 	if (shellCall) {
 		if (runsEnvKeys(shellCall.command, cwd)) return null;
 
@@ -349,12 +353,10 @@ export function judge(tool, payload) {
  */
 function pathDenies(target, cwd, { dotglob = false } = {}) {
 	for (const variant of expandBraces(target)) {
-		if (matchesSecretPath(variant)) return true;
-		if (GLOB_CHAR.test(variant)) {
-			if (globDenies(variant, cwd, dotglob)) return true;
-			continue;
-		}
+		if (matchesAsWritten(variant)) return true;
 		if (secretAt(path.resolve(cwd, variant))) return true;
+		if (GLOB_CHAR.test(variant) && globDenies(variant, cwd, dotglob))
+			return true;
 	}
 
 	return false;
@@ -370,26 +372,53 @@ function pathDenies(target, cwd, { dotglob = false } = {}) {
 function repoForm(absolute) {
 	for (const root of context.roots) {
 		const relative = path.relative(root, absolute);
-		if (
-			relative !== "" &&
-			!relative.startsWith("..") &&
-			!path.isAbsolute(relative)
-		)
-			return relative;
+		if (!relative.startsWith("..") && !path.isAbsolute(relative))
+			return relative === "" ? "." : relative;
 	}
 
 	return absolute;
 }
 
 /**
- * True when an absolute path is a secret in its repo-relative form: one of the
- * built-in shapes, or one of the config's `secretPaths`, which match the
- * lowercased repo-relative path with a `/` separator.
+ * `matchesSecretPath` on a word as the call wrote it. An absolute word skips
+ * the `secrets` folder test, because the folders above the repo say nothing
+ * about a file inside it. The repo-relative form, which `secretAt` judges,
+ * still tests the folders.
+ *
+ * @param {string} word
+ * @param {{ backslashSeparates?: boolean }} [options]
+ */
+function matchesAsWritten(word, options) {
+	return matchesSecretPath(word, { ...options, folders: !path.isAbsolute(word) });
+}
+
+/**
+ * True when an absolute path, or the file it resolves to, is a secret in its
+ * repo-relative form: one of the built-in shapes, or one of the config's
+ * `secretPaths`, which match the lowercased repo-relative path with a `/`
+ * separator.
  *
  * @param {string} absolute
  * @param {{ backslashSeparates?: boolean }} [options]
  */
 function secretAt(absolute, options) {
+	if (namesSecret(absolute, options)) return true;
+
+	let resolved;
+	try {
+		resolved = realpathSync.native(absolute);
+	} catch {
+		return false;
+	}
+
+	return resolved !== absolute && namesSecret(resolved, options);
+}
+
+/**
+ * @param {string} absolute
+ * @param {{ backslashSeparates?: boolean }} [options]
+ */
+function namesSecret(absolute, options) {
 	const form = repoForm(absolute);
 	if (matchesSecretPath(form, options)) return true;
 	if (form === absolute) return false;
@@ -499,30 +528,42 @@ function listDir(dir) {
 }
 
 /**
- * Bash's `{a,b}` expansion, alternatives only, capped at `MAX_EXPANSIONS`.
+ * Bash's `{a,b}` expansion, alternatives only, capped at `MAX_EXPANSIONS`. A
+ * group with no comma, such as the `{PWD}` in `${PWD}`, expands to itself, so
+ * the search carries on to the next group.
  *
  * @param {string} word
  * @returns {string[]}
  */
 function expandBraces(word) {
-	const open = word.indexOf("{");
-	if (open === -1) return [word];
-
-	let depth = 0;
-	const commas = [];
-	for (let i = open; i < word.length; i += 1) {
-		if (word[i] === "{") depth += 1;
-		else if (word[i] === "}") depth -= 1;
-		else if (word[i] === "," && depth === 1) commas.push(i);
-		if (depth !== 0) continue;
-		if (commas.length === 0) return [word];
+	for (
+		let open = word.indexOf("{");
+		open !== -1;
+		open = word.indexOf("{", open + 1)
+	) {
+		let depth = 0;
+		/** @type {number[]} */
+		const commas = [];
+		let close = -1;
+		for (let i = open; i < word.length; i += 1) {
+			if (word[i] === "{") depth += 1;
+			else if (word[i] === "}") depth -= 1;
+			else if (word[i] === "," && depth === 1) commas.push(i);
+			if (depth === 0) {
+				close = i;
+				break;
+			}
+		}
+		if (close === -1) return [word];
+		if (commas.length === 0) continue;
 
 		const head = word.slice(0, open);
-		const tail = word.slice(i + 1);
-		const cuts = [open, ...commas, i];
+		const tail = word.slice(close + 1);
+		const cuts = [open, ...commas, close];
+		/** @type {string[]} */
 		const results = [];
 		for (let k = 0; k < cuts.length - 1; k += 1) {
-			const middle = word.slice(cuts[k] + 1, cuts[k + 1]);
+			const middle = word.slice((cuts[k] ?? 0) + 1, cuts[k + 1]);
 			results.push(...expandBraces(`${head}${middle}${tail}`));
 			if (results.length >= MAX_EXPANSIONS) break;
 		}
@@ -897,7 +938,7 @@ function shellPathDenies(word, cwd, source) {
 function literalDenies(word, cwd) {
 	const absolute = cwd === null ? null : path.resolve(cwd, word);
 	const named =
-		matchesSecretPath(word, SHELL_FORM) ||
+		matchesAsWritten(word, SHELL_FORM) ||
 		(absolute !== null && secretAt(absolute, SHELL_FORM));
 	if (!named) return false;
 
@@ -910,13 +951,16 @@ function literalDenies(word, cwd) {
 
 /**
  * True unless `source` holds `word` verbatim with no quote wrapped around it.
- * A word the source never spells verbatim had a quote or escape inside it, so
- * it reads as quoted too.
+ * A word the source never spells verbatim had a quote or escape inside it,
+ * and a glob character outside that quote still expands, so it reads as
+ * unquoted: `".env"*` and `'.e'nv*` are probed as globs.
  *
  * @param {string} word
  * @param {string} source
  */
 function quotedInSource(word, source) {
+	if (!source.includes(word)) return false;
+
 	for (
 		let at = source.indexOf(word);
 		at !== -1;

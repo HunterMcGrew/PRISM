@@ -11,6 +11,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import os from "node:os";
@@ -160,7 +161,7 @@ test("secrets gate leg 2: with only .env.example on disk, a Read of it passes", 
 		});
 
 	assert.equal(read(".env.example"), null);
-	assert.equal(read(".env"), denyReason(realpathOf(root)));
+	assert.equal(read(".env"), denyReason(root));
 });
 
 test("secrets gate leg 3: the remedy run through the spawned gate passes and prints key names only", () => {
@@ -176,12 +177,23 @@ test("secrets gate leg 3: the remedy run through the spawned gate passes and pri
 	assert.equal(output.includes("sk-test-123"), false);
 });
 
-function realpathOf(dir: string): string {
-	return execFileSync("git", ["rev-parse", "--show-toplevel"], {
-		cwd: dir,
+test("secrets gate leg 3: the remedy the deny names passes and runs from a subdirectory", () => {
+	const root = makeRepo({ "sub/.env": "API_KEY=sk-test-123\n" });
+	const sub = path.join(root, "sub");
+	const denied = claudeRead(path.join(sub, ".env"), { cwd: sub });
+	assertDenied(denied);
+
+	const reason: string = JSON.parse(denied.stdout).hookSpecificOutput
+		.permissionDecisionReason;
+	const script = /Run node (\S+) <file>/.exec(reason)?.[1] ?? "";
+	assertPassed(claudeBash(`node ${script} .env`, sub));
+
+	const output = execFileSync(process.execPath, [script, ".env"], {
+		cwd: sub,
 		encoding: "utf8",
-	}).trim();
-}
+	});
+	assert.equal(output, "API_KEY\n");
+});
 
 // --- Secret path shapes ---
 
@@ -782,4 +794,92 @@ test("a Cursor payload writes nothing, since no Cursor deny envelope is known", 
 		tool_input: { file_path: path.join(REPO_ROOT, ".env") },
 	});
 	assertPassed(result);
+});
+
+// --- Repo-relative judging ---
+
+test("a checkout under a secrets folder reads and searches normally, and its own secrets still deny", () => {
+	const base = makeDir();
+	const clean = path.join(base, "secrets", "clean");
+	const proj = path.join(base, "secrets", "proj");
+	for (const dir of [clean, proj]) {
+		mkdirSync(dir, { recursive: true });
+		execFileSync("git", ["init", "-q"], { cwd: dir });
+		place(dir, "src/a.ts", "x");
+	}
+	place(proj, ".env", "KEY=1\n");
+	place(proj, "secrets/db", "x");
+
+	assertPassed(claudeRead(path.join(proj, "src/a.ts"), { cwd: proj }));
+	assertPassed(claudeBash(`cat ${proj}/src/a.ts`, proj));
+	assertPassed(claudeGrep({ path: path.join(proj, "src") }, proj));
+	assertPassed(claudeGrep({ path: clean }, clean));
+	assertDenied(claudeRead(path.join(proj, ".env"), { cwd: proj }));
+	assertDenied(claudeRead(path.join(proj, "secrets/db"), { cwd: proj }));
+	assertDenied(claudeBash(`cat ${proj}/secrets/db`, proj));
+});
+
+test("a brace group after a group with no comma still expands", () => {
+	const cwd = makeDir();
+	assertDenied(claudeBash("cat ${PWD}/{.env,x}", cwd));
+	assertDenied(claudeBash("cat {a}/{.env,x}", cwd));
+	assertPassed(claudeBash("cat ${PWD}/{a,b}", cwd));
+});
+
+test("a glob whose quotes the source spells differently is probed as a glob", () => {
+	const cwd = makeDir();
+	for (const command of ['cat ".env"*', "cat '.e'nv*", "cat \\.en*"])
+		assertDenied(claudeBash(command, cwd));
+
+	assertPassed(claudeBash('cat ".env*"', cwd));
+});
+
+test("a secretPaths pattern judges a path that holds a glob character", () => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["config/creds/**"] }),
+	});
+	assertDenied(
+		claudeRead(path.join(root, "config/creds/[id]/a.json"), { cwd: root })
+	);
+	assertPassed(
+		claudeRead(path.join(root, "config/other/[id]/a.json"), { cwd: root })
+	);
+});
+
+test("secretPaths patterns match the lowercased path whatever case the config spells", () => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["Config/Creds/**"] }),
+	});
+	assertDenied(claudeRead(path.join(root, "config/creds/a.json"), { cwd: root }));
+	assertDenied(claudeRead(path.join(root, "CONFIG/CREDS/A.json"), { cwd: root }));
+});
+
+test("a cwd reached through a symlink still reads the repo-relative path", (t) => {
+	const real = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["config/creds/**"] }),
+	});
+	const link = path.join(makeDir(), "link");
+	try {
+		symlinkSync(real, link, "dir");
+	} catch {
+		t.skip("symlinks are unavailable here");
+		return;
+	}
+
+	assertDenied(claudeRead(path.join(link, "config/creds/a.json"), { cwd: link }));
+	assertPassed(claudeRead(path.join(link, "config/other/a.json"), { cwd: link }));
+});
+
+test("a symlink to a secret file is denied by Read and by a shell read", (t) => {
+	const root = makeRepo({ ".env": "KEY=1\n" });
+	try {
+		symlinkSync(".env", path.join(root, "notes.txt"));
+	} catch {
+		t.skip("symlinks are unavailable here");
+		return;
+	}
+
+	assertDenied(claudeRead(path.join(root, "notes.txt"), { cwd: root }));
+	assertDenied(claudeBash("cat notes.txt", root));
+	assertPassed(claudeRead(path.join(root, "README.md"), { cwd: root }));
 });
