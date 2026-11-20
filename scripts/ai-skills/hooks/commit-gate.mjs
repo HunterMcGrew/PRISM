@@ -224,7 +224,7 @@ function findPrismRoot(dir) {
  * @returns {Commit}
  */
 function flagsOnly(denies, cwd) {
-	return { form: "git", subject: null, paths: [], cwd, flags: [], denies };
+	return { form: "git", subject: null, paths: [], cwd, denies };
 }
 
 /**

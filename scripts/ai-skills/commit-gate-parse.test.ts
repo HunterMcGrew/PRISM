@@ -5,10 +5,12 @@
  * commit the way a `git commit` does.
  */
 import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
 	copyFileSync,
 	mkdirSync,
 	mkdtempSync,
+	realpathSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -90,7 +92,7 @@ test("readPushes reads -c core.hooksPath before push", () => {
 test("readPushes takes the directory from -C", () => {
 	assert.equal(
 		readPushes("git -C /other push --no-verify", CWD)[0]?.cwd,
-		"/other"
+		path.normalize("/other")
 	);
 });
 
@@ -100,7 +102,7 @@ test("readPushes returns every bypassing push in command order", () => {
 			"git -C /other push --no-verify; git push; git push --no-verify",
 			CWD
 		).map((push) => push.cwd),
-		["/other", CWD]
+		[path.normalize("/other"), CWD]
 	);
 });
 
@@ -274,10 +276,13 @@ test("readCommit drops a redirect's fd digit rather than reading it as a path", 
 });
 
 test("readCommit folds cd and -C into the effective cwd", () => {
-	assert.equal(read("cd sub && git commit -m x -- a").cwd, "/repo/sub");
+	assert.equal(
+		read("cd sub && git commit -m x -- a").cwd,
+		path.normalize("/repo/sub")
+	);
 	assert.equal(
 		read("cd /other && git -C nested -C deeper commit -m x -- a").cwd,
-		"/other/nested/deeper"
+		path.normalize("/other/nested/deeper")
 	);
 	assert.equal(read("cd $DIR && git commit -m x -- a").cwd, null);
 });
@@ -286,7 +291,7 @@ test("readCommit reads the commit inside a bash -lc string", () => {
 	const commit = read(`bash -lc "cd sub && git commit -m 'T2: x' -- a"`);
 
 	assert.equal(commit.form, "git");
-	assert.equal(commit.cwd, "/repo/sub");
+	assert.equal(commit.cwd, path.normalize("/repo/sub"));
 	assert.equal(commit.subject, "T2: x");
 });
 
@@ -296,6 +301,90 @@ test("readCommit keeps option values out of the path list", () => {
 		["a"]
 	);
 });
+
+test("readCommit reads an abbreviated long option's value as the value, not a path", () => {
+	const dir = tempDir("commit-gate-parse-abbrev-");
+	writeFileSync(path.join(dir, "msg.txt"), "T1: from file\n");
+
+	assert.deepEqual(read("git commit --mess 'T1: x' f").paths, ["f"]);
+	assert.equal(read("git commit --mess 'T1: x' f").subject, "T1: x");
+	assert.equal(read("git commit --mes='T1: x' -- f").subject, "T1: x");
+	assert.equal(read("git commit --fil msg.txt -- f", dir).subject, "T1: from file");
+	assert.deepEqual(read("git commit --auth 'A <a@b>' -m x f").paths, ["f"]);
+});
+
+test(
+	"repoRelativePaths reads an absolute path through a symlink as the repo path",
+	{ skip: process.platform === "win32" },
+	() => {
+		const parent = tempDir("commit-gate-parse-link-");
+		const repo = path.join(parent, "repo");
+		mkdirSync(path.join(repo, "frontend"), { recursive: true });
+		writeFileSync(path.join(repo, "frontend", "a.ts"), "x\n");
+		const link = path.join(parent, "lnk");
+		symlinkSync(repo, link);
+		const root = realpathSync.native(repo);
+
+		assert.deepEqual(
+			repoRelativePaths(
+				{
+					cwd: root,
+					paths: [
+						path.join(link, "frontend", "a.ts"),
+						path.join(link, "gone.ts"),
+						link,
+					],
+				},
+				root
+			),
+			["frontend/a.ts", "gone.ts", "."]
+		);
+	}
+);
+
+test("a command that relocates the repo with --git-dir, --work-tree, or GIT_DIR has no resolvable directory", () => {
+	for (const command of [
+		"git --git-dir=/x/.git --work-tree=/x commit -m x -- a",
+		"git --git-dir /x/.git commit -m x -- a",
+		"git --work-tree /x commit -m x -- a",
+		"GIT_DIR=/x/.git git commit -m x -- a",
+		"GIT_WORK_TREE=/x git commit -m x -- a",
+		"env GIT_DIR=/x/.git git commit -m x -- a",
+	]) {
+		assert.equal(read(command).cwd, null, command);
+	}
+	for (const command of [
+		"git --git-dir=/x/.git push --no-verify",
+		"GIT_DIR=/x/.git git push --no-verify",
+	]) {
+		assert.equal(readPushes(command, CWD)[0]?.cwd, null, command);
+	}
+});
+
+test(
+	"readCommit doesn't block reading a -F message that is a named pipe",
+	{ skip: process.platform === "win32" },
+	() => {
+		const dir = tempDir("commit-gate-parse-fifo-");
+		execFileSync("mkfifo", [path.join(dir, "msgpipe")]);
+		const parser = fileURLToPath(
+			new URL("./hooks/commit-gate/parse.mjs", import.meta.url)
+		);
+		const child = spawnSync(
+			process.execPath,
+			[
+				"--input-type=module",
+				"-e",
+				`import { readCommit } from ${JSON.stringify(parser)};
+console.log(JSON.stringify(readCommit("git commit -F msgpipe -- a", ${JSON.stringify(dir)})?.subject));`,
+			],
+			{ encoding: "utf8", timeout: 10_000 }
+		);
+
+		assert.equal(child.status, 0, child.stderr);
+		assert.equal(child.stdout.trim(), "null");
+	}
+);
 
 // --- readCommit denies ---
 
@@ -584,6 +673,23 @@ test("readKillSwitch reads an inline assignment, an export form, and env", () =>
 			command
 		);
 	}
+});
+
+test("readKillSwitch reads local -x, a default assignment, and mapfile", () => {
+	for (const [command, flag] of [
+		["local -x PRISM_HOOK_DISABLE=1", "PRISM_HOOK_DISABLE"],
+		[": ${PRISM_HOOK_DISABLE:=1}", "PRISM_HOOK_DISABLE"],
+		[": \"${PRISM_HOOK_DENY_DISABLE=1}\"", "PRISM_HOOK_DENY_DISABLE"],
+		["mapfile -t PRISM_HOOK_DISABLE <<< 1", "PRISM_HOOK_DISABLE"],
+		["readarray PRISM_HOOK_DENY_DISABLE <<< 1", "PRISM_HOOK_DENY_DISABLE"],
+	] as const) {
+		assert.deepEqual(
+			readKillSwitch(command, CWD),
+			{ id: "kill-switch", flag },
+			command
+		);
+	}
+	assert.equal(readKillSwitch("echo ${PRISM_HOOK_DISABLE:-x}", CWD), null);
 });
 
 test("readKillSwitch reads a name it can't tokenize past", () => {

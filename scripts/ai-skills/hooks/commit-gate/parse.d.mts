@@ -8,7 +8,6 @@ export interface Commit {
 	subject: string | null;
 	paths: string[];
 	cwd: string | null;
-	flags: string[];
 	denies: Deny[];
 }
 

@@ -677,7 +677,6 @@ test("the stops check carries a remedy for every deny the parser reads", () => {
 				subject: null,
 				paths: [],
 				cwd: "/repo",
-				flags: [],
 				denies: [{ id, flag: "--flag" }],
 			},
 		});

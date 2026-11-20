@@ -50,6 +50,9 @@
 //   resolve and reads as no commit
 // - a `commit.mjs` path that doesn't resolve, such as a missing file or a
 //   symlink loop, which reads as no commit
+// - `--git-dir`, `--work-tree`, `GIT_DIR`, or `GIT_WORK_TREE` on the command
+//   itself, which leaves the directory unresolved so only the flag denies run;
+//   one exported by an earlier segment is not tracked
 // - a script of another name, or an unmarked copy of `commit.mjs`, which reads
 //   as no commit though it may commit the same way
 // - a toplevel substitution after a `cd` into another repo, which the hook
@@ -85,15 +88,23 @@ import {
 /**
  * @typedef {import("../lib/segments.mjs").Segment} Segment
  * @typedef {{ id: string, flag: string }} Deny
- * @typedef {{ form: "git" | "commit.mjs", subject: string | null, paths: string[], cwd: string | null, flags: string[], denies: Deny[] }} Commit
- * @typedef {{ cPaths: string[], configs: string[], sub: string | null, args: string[] }} GitSegment
- * @typedef {{ paths: string[], flags: string[], messages: string[], messageFile: string | null, all: string | null, include: string | null, noVerify: string | null }} CommitArgs
+ * @typedef {{ form: "git" | "commit.mjs", subject: string | null, paths: string[], cwd: string | null, denies: Deny[] }} Commit
+ * @typedef {{ cPaths: string[], configs: string[], relocated: boolean, sub: string | null, args: string[] }} GitSegment
+ * @typedef {{ paths: string[], messages: string[], messageFile: string | null, all: string | null, include: string | null, noVerify: string | null }} CommitArgs
  */
 
 const COMMIT_SCRIPT_SUFFIX = "/plan/commit.mjs";
 const RUNTIME_MARKER = /^\/\/\s*@prism-hook-runtime/;
 const KILL_SWITCHES = ["PRISM_HOOK_DISABLE", "PRISM_HOOK_DENY_DISABLE"];
-const EXPORT_COMMANDS = new Set(["export", "declare", "typeset", "readonly"]);
+const EXPORT_COMMANDS = new Set([
+	"export",
+	"declare",
+	"typeset",
+	"readonly",
+	"local",
+]);
+// Builtins that read into a named variable, `read`-style.
+const READ_COMMANDS = new Set(["read", "mapfile", "readarray"]);
 // Node options that take the next word as their value, and the ones after
 // which node runs no script file.
 const NODE_OPTS_WITH_ARG = new Set([
@@ -160,6 +171,8 @@ const SHELL_EXPANDS = /\$|^~|\{[^{}]*(,|\.\.)[^{}]*\}/;
 // path literally and the shell would have expanded a glob first.
 const SCRIPT_GLOB = /[*?[]/;
 // A leading `NAME+=value` word, which the segmenter leaves in argv.
+// An assignment that moves the repo a git command acts on away from its directory.
+const RELOCATING_ASSIGNMENT = /^GIT_(DIR|WORK_TREE)=/;
 const APPEND_ASSIGNMENT = /^([A-Za-z_][A-Za-z0-9_]*)\+=/;
 
 /**
@@ -271,10 +284,33 @@ export function repoRelativePaths(commit, repoRoot) {
 	return commit.paths.map(
 		(p) =>
 			path
-				.relative(repoRoot, path.resolve(base, toHostPath(p)))
+				.relative(repoRoot, realPrefix(path.resolve(base, toHostPath(p))))
 				.split(path.sep)
 				.join("/") || "."
 	);
+}
+
+/**
+ * `target` with the longest existing prefix resolved through symlinks, so an
+ * absolute path written through a link compares with git's realpath'd
+ * toplevel, and a path that no longer exists still resolves its directory.
+ *
+ * @param {string} target
+ */
+function realPrefix(target) {
+	/** @type {string[]} */
+	const missing = [];
+	let current = target;
+	for (;;) {
+		const real = realPath(current);
+		if (real !== null) return path.join(real, ...missing.reverse());
+
+		const parent = path.dirname(current);
+		if (parent === current) return target;
+
+		missing.push(path.basename(current));
+		current = parent;
+	}
 }
 
 // --- Segments ---
@@ -296,9 +332,15 @@ function killSwitchIn(segment) {
 		if (KILL_SWITCHES.includes(appended)) return appended;
 	}
 
+	// `${NAME:=value}` and `${NAME=value}` assign the variable when it is unset.
+	const defaulted = KILL_SWITCHES.find((n) =>
+		argv.some((word) => word.includes(`\${${n}:=`) || word.includes(`\${${n}=`))
+	);
+	if (defaulted) return defaulted;
+
 	const command = path.basename(argv[0] ?? "");
 	if (command === "printf") return printfTarget(argv);
-	if (command === "read") {
+	if (READ_COMMANDS.has(command)) {
 		return KILL_SWITCHES.find((n) => argv.slice(1).includes(n)) ?? null;
 	}
 	if (!EXPORT_COMMANDS.has(command)) return null;
@@ -358,13 +400,18 @@ function readSegmentCommit(segment) {
 
 /**
  * The directory a git segment runs in once its `-C` paths fold on top of the
- * segment's own, or null when one is built from a substitution.
+ * segment's own, or null when one is built from a substitution or when
+ * `--git-dir`, `--work-tree`, `GIT_DIR`, or `GIT_WORK_TREE` moves the repo
+ * somewhere the directory no longer names.
  *
  * @param {GitSegment} git
  * @param {Segment} segment
  * @returns {string | null}
  */
 function resolveGitDir(git, segment) {
+	if (git.relocated || segment.assignments.some((a) => RELOCATING_ASSIGNMENT.test(a)))
+		return null;
+
 	let dir = segment.cwd;
 	for (const p of git.cPaths) {
 		dir = containsSubstitution(p, segment.substitutions)
@@ -475,9 +522,11 @@ function parseGitSegment(argv) {
 	const cPaths = [];
 	/** @type {string[]} */
 	const configs = [];
+	let relocated = false;
 	let i = 1;
 	while (i < argv.length) {
 		const word = argv[i];
+		if (/^--(git-dir|work-tree)(=|$)/.test(word)) relocated = true;
 		if (word === "-C" || word === "-c" || word === "--config-env") {
 			if (argv[i + 1] !== undefined) {
 				(word === "-C" ? cPaths : configs).push(argv[i + 1]);
@@ -501,7 +550,13 @@ function parseGitSegment(argv) {
 		break;
 	}
 
-	return { cPaths, configs, sub: argv[i] ?? null, args: argv.slice(i + 1) };
+	return {
+		cPaths,
+		configs,
+		relocated,
+		sub: argv[i] ?? null,
+		args: argv.slice(i + 1),
+	};
 }
 
 // --- Commit forms ---
@@ -519,7 +574,6 @@ function readScriptCommit(argv, segment) {
 		subject: argv[1] === undefined ? null : firstLine(argv[1]),
 		paths,
 		cwd: segment.cwd,
-		flags: [],
 		denies: expansionDenies(paths, segment, SCRIPT_GLOB),
 	};
 }
@@ -548,7 +602,6 @@ function readGitCommit(git, cwd, segment) {
 		subject: readSubject(args, cwd, segment),
 		paths: args.paths,
 		cwd,
-		flags: args.flags,
 		denies,
 	};
 }
@@ -591,7 +644,6 @@ function readCommitArgs(args) {
 	/** @type {CommitArgs} */
 	const result = {
 		paths: [],
-		flags: [],
 		messages: [],
 		messageFile: null,
 		all: null,
@@ -613,21 +665,22 @@ function readCommitArgs(args) {
 		if (arg.startsWith("--")) {
 			const equals = arg.indexOf("=");
 			const name = equals === -1 ? arg : arg.slice(0, equals);
-			result.flags.push(name);
 			if (name === "--all") result.all = name;
 			if (abbreviates(name, "--include")) result.include = name;
 			if (abbreviates(name, "--no-verify")) result.noVerify = name;
-			if (!COMMIT_LONG_WITH_ARG.has(name)) continue;
+			const candidates = valueOptionsNamed(name);
+			if (candidates.length === 0) continue;
 
 			const value = equals === -1 ? args[(i += 1)] : arg.slice(equals + 1);
-			if (name === "--message") result.messages.push(value);
-			if (name === "--file") result.messageFile = value;
+			// An ambiguous prefix makes git refuse the commit, so it reads no message.
+			const option = candidates.length === 1 ? candidates[0] : null;
+			if (option === "--message") result.messages.push(value);
+			if (option === "--file") result.messageFile = value;
 			continue;
 		}
 
 		for (let j = 1; j < arg.length; j += 1) {
 			const letter = arg[j];
-			result.flags.push(`-${letter}`);
 			if (letter === "a") result.all = "-a";
 			if (letter === "i") result.include = "-i";
 			if (letter === "n") result.noVerify = "-n";
@@ -661,6 +714,20 @@ function readPushNoVerify(args) {
 	}
 
 	return null;
+}
+
+/**
+ * The long options that take a value and that `name` spells, in full or as a
+ * prefix, since git reads any unambiguous prefix of a long option.
+ *
+ * @param {string} name
+ * @returns {string[]}
+ */
+function valueOptionsNamed(name) {
+	if (COMMIT_LONG_WITH_ARG.has(name)) return [name];
+	if (name.length < 3) return [];
+
+	return [...COMMIT_LONG_WITH_ARG].filter((option) => option.startsWith(name));
 }
 
 /**
@@ -703,7 +770,11 @@ function readSubject(args, cwd, segment) {
 	if (!args.messageFile || !cwd) return null;
 
 	try {
-		return firstLine(readFileSync(path.resolve(cwd, args.messageFile), "utf8"));
+		const file = path.resolve(cwd, args.messageFile);
+		// Reading a named pipe blocks the gate, so only a regular file is read.
+		if (!statSync(file).isFile()) return null;
+
+		return firstLine(readFileSync(file, "utf8"));
 	} catch {
 		return null;
 	}
