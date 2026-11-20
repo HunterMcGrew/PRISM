@@ -578,7 +578,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: PR review confirm-pass fixes: a `cd` target that holds a substitution reads as unresolvable in the write gate (`7159cd61`), `hook-harnesses.test.ts` now pins the argv quote escape, the empty cwd, and a non-string command, each mutation-checked (`af5b0521`), and the spec's Shared parser paragraph is in past tense.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Hunter ruled to amend ADR-0076 in this PR, so the open question on its splitter bullet closed. The ADR's Consequences bullet and its three platform copies now describe the shared parser's unreadable-text scan (`71fa8515`).
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Confirm-pass fix: ADR-0076 drops the `cd` claim from its parser bullet (`dfb018f8`) and scopes the over-hold cost per gate, a push blocks nothing unless lint fails and a commit costs one retry (`0e183936`).
-- 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: Part 1 of 5 (T1 to T6 and T18) shipped as #545, squash `fdce3e87`. Parts 2 to 5 build from `main` after it.
+- 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: Part 1 of 5 (T1 to T6 and T18) shipped as #545, squash `fdce3e87`. Parts 2 to 5 build from `main` after it. The commit that marks them done lists every ID (`T1,T2,T3,T4,T5,T6,T18`), because the subject parser reads a range or a list and not both in one subject.
 
 ## Sessions
 
