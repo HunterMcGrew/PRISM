@@ -962,3 +962,85 @@ test("a file named like a parent segment, such as ..notes, is judged as inside t
 	assertDenied(claudeRead(path.join(root, "..notes"), { cwd: root }));
 	assertPassed(claudeRead(path.join(root, "..other"), { cwd: root }));
 });
+
+test("a secretPaths pattern judges a read made from a subdirectory of the repo", () => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["config/creds/**"] }),
+		"config/creds/a.json": "x",
+	});
+	const cwd = path.join(root, "config/creds");
+	assertDenied(claudeRead("a.json", { cwd }));
+	assertDenied(claudeBash("cat a.json", cwd));
+	assertPassed(claudeRead(path.join(root, "config/other.json"), { cwd }));
+});
+
+test("a Grep path glob reaches a dotfile, and the same word in a shell command does not", () => {
+	const root = makeRepo({ ".env": "KEY=1\n", "a.txt": "x" });
+	assertDenied(claudeGrep({ path: path.join(root, "*") }, root));
+	assertPassed(claudeBash("cat *", root));
+});
+
+test("a glob that could name a secrets folder denies, though a lone segment is no path", () => {
+	const cwd = makeDir();
+	assertDenied(claudeBash("cat config/sec*", cwd));
+	assertDenied(claudeBash("cat sec*/token", cwd));
+	assertPassed(claudeBash("cat sec*", cwd));
+});
+
+test("a shell glob without a leading dot skips dotfiles, and a Grep glob does not", () => {
+	const cwd = makeDir();
+	assertPassed(claudeBash("cat *env", cwd));
+	assertPassed(claudeBash("cat *v", cwd));
+	assertDenied(claudeGrep({ glob: "*env" }, cwd));
+});
+
+test("secretPaths patterns judge repo-relative paths, never a path outside the repo", () => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["**/creds/**"] }),
+	});
+	const outside = makeDir();
+	assertDenied(claudeRead(path.join(root, "src/creds/a.json"), { cwd: root }));
+	assertPassed(claudeRead(path.join(outside, "src/creds/a.json"), { cwd: root }));
+	assertPassed(claudeBash(`cat ${outside}/src/creds/a.json`, root));
+});
+
+test("a filter glob with no literal character selects no secret by name", () => {
+	const cwd = makeRepo();
+	assertPassed(claudeBash("rg KEY -g '*'", cwd));
+	assertPassed(claudeGrep({ glob: "*" }, cwd));
+});
+
+test("a quoted copy in a comment, a heredoc body, or a longer word doesn't quote the bare glob", () => {
+	const cwd = makeDir();
+	for (const command of [
+		"cat .en''* #'.en*'",
+		"cat .en''* # '.en*'",
+		"cat .en''* x'.en*'",
+		"cat .en''* '.en*'x",
+		"cat .en''* <<EOF\n'.en*'\nEOF",
+		"cat .en''* x='.en*'",
+	])
+		assertDenied(claudeBash(command, cwd));
+
+	assertPassed(claudeBash("cat '.en*' #'.en*'", cwd));
+	assertPassed(claudeBash("cat '.en*'", cwd));
+	assertPassed(claudeBash("git log --grep='.en*'", cwd));
+});
+
+test("a zero-padded brace sequence expands with its padding, as in bash", () => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["config/prod01.json"] }),
+	});
+	assertDenied(claudeBash("cat config/prod{01..02}.json", root));
+	assertDenied(claudeBash("cat config/prod{1..01}.json", root));
+	assertPassed(claudeBash("cat config/prod{1..2}.json", root));
+	assertPassed(claudeBash("cat config/prod{02..03}.json", root));
+});
+
+test("the brace expansion cap counts the forms produced, not the groups opened", () => {
+	const cwd = makeDir();
+	assertDenied(
+		claudeBash("cat {a,b,c,d,e,f,g,h,i,j,k,secrets}/{x,y}{x,y}", cwd)
+	);
+	assertPassed(claudeBash("cat {a,b,c,d,e,f,g,h,i,j,k,l}/{x,y}{x,y}", cwd));
+});

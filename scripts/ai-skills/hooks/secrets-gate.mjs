@@ -9,7 +9,6 @@
 // a dotenv file's key names and never a value, or reading `.env.example`.
 // `<runtime>` is this file's directory, written in the deny text relative to
 // the call's `cwd`, so the printed command runs from wherever the agent is.
-// Ported from the reference implementation's secrets gate.
 //
 // A secret path is any path whose repo-relative form (or absolute form, for a
 // path outside this repo) has a `.env` or `.env.*` basename other than
@@ -90,8 +89,6 @@
 //   written passes.
 // - A brace sequence whose bounds the gate can't read, such as `{$a..$b}`, or
 //   whose forms run past `MAX_EXPANSIONS`, after which it stops expanding.
-//   It reads a padded sequence like `{01..03}` without the padding, which
-//   can't change a secret shape.
 // - A Grep outside any git repo passes, because there is no file list to
 //   check. Claude's Grep tool exposes no option that disables ignore files,
 //   so no payload field marks one.
@@ -106,7 +103,8 @@
 //   that renames it.
 // - An allowed command whose argument assigns through a shape other than a
 //   `${` or `$[` expansion, a `[[` arithmetic comparison, a `-v` array
-//   subscript, or a `printf` argument holding `=` keeps the metadata pass.
+//   subscript, or an `=` in a `printf` argument after the format keeps the
+//   metadata pass.
 //   Bash and zsh have no closed list of such shapes, so this check names the
 //   known ones rather than closing the class.
 //
@@ -125,6 +123,10 @@
 // - A `~/` or `$HOME/` path into a checkout that sits under a `secrets`
 //   folder, because the gate reads the word as written and never expands the
 //   home directory, so the `secrets` folder above the repo shows.
+// - A brace sequence with a step, such as `{1..9..2}`, because the step is
+//   ignored and every form between the bounds is judged.
+// - A quoted glob word inside a shell string, such as `bash -c "ls '.env*'"`,
+//   because the quote is read only in the outer command's own words.
 // - A metadata program beside any command outside the allowed list, or
 //   carrying an assignment, such as `ls -la .env | cat`, `cd x && stat .env`,
 //   or `LC_ALL=C stat .env`, because the metadata pass then drops.
@@ -161,6 +163,8 @@ const MAX_DEPTH = 6;
 const MAX_EXPANSIONS = 64;
 const MAX_GLOB_MATCHES = 2000;
 const MAX_WALK = 5000;
+// Swapped in for a word to find which token of a command spells it.
+const STAND_IN = "\u0001";
 // Shell words take only `/` as a separator, since a backslash in a bash word
 // is a literal character, such as the `\.` in a quoted regex.
 const SHELL_FORM = { backslashSeparates: false };
@@ -531,8 +535,8 @@ function listDir(dir) {
 
 /**
  * Returns the brace expansions of a word, `a{b,c}` as `ab` and `ac`, and
- * `a{1..3}` as `a1`, `a2`, `a3`, stopping after `MAX_EXPANSIONS` forms. A word
- * with no brace group returns itself.
+ * `a{1..3}` as `a1`, `a2`, `a3`, stopping once `MAX_EXPANSIONS` forms are
+ * produced. A word with no brace group returns itself.
  *
  * @param {string} word
  * @param {{ left: number }} [budget]
@@ -540,14 +544,17 @@ function listDir(dir) {
  */
 function expandBraces(word, budget = { left: MAX_EXPANSIONS }) {
 	const group = findBraceGroup(word);
-	if (!group) return [word];
+	if (!group) {
+		budget.left -= 1;
+
+		return [word];
+	}
 
 	/** @type {string[]} */
 	const forms = [];
 	for (const choice of group.choices) {
 		if (budget.left <= 0) break;
 
-		budget.left -= 1;
 		const expanded =
 			word.slice(0, group.start) + choice + word.slice(group.end);
 		forms.push(...expandBraces(expanded, budget));
@@ -622,8 +629,9 @@ function splitTopLevelCommas(inside) {
 }
 
 /**
- * Expands `1..3` or `a..c`, ignoring any step and any zero padding, or
- * returns null.
+ * Expands `1..3` or `a..c`, ignoring any step, or returns null. When either
+ * number bound has a leading zero, every form is padded to the longer bound's
+ * width, as bash does: `01..03` is `01`, `02`, `03`.
  *
  * @param {string} inside
  * @returns {string[] | null}
@@ -639,15 +647,29 @@ function expandSequence(inside) {
 				(letters?.[1] ?? "").charCodeAt(0),
 				(letters?.[2] ?? "").charCodeAt(0),
 			];
+	const bounds = numbers ? [numbers[1], numbers[2]] : [];
+	const width = bounds.some((bound) => /^-?0\d/.test(bound))
+		? Math.max(...bounds.map((bound) => bound.length))
+		: 0;
 	const step = from <= to ? 1 : -1;
 	/** @type {string[]} */
 	const choices = [];
 	for (let n = from; choices.length < MAX_EXPANSIONS; n += step) {
-		choices.push(numbers ? String(n) : String.fromCharCode(n));
+		choices.push(numbers ? padNumber(n, width) : String.fromCharCode(n));
 		if (n === to) break;
 	}
 
 	return choices;
+}
+
+/**
+ * @param {number} n
+ * @param {number} width
+ */
+function padNumber(n, width) {
+	const sign = n < 0 ? "-" : "";
+
+	return sign + String(Math.abs(n)).padStart(width - sign.length, "0");
 }
 
 // --- Grep arm ---
@@ -1038,16 +1060,30 @@ function literalDenies(word, cwd) {
  * segments hold more copies of than the command spells, as in
  * `echo '.en*'; cat .en''*`.
  *
+ * A quoted spelling counts only when it is a whole shell word, or the whole
+ * value after a word's `=` or `:`. Text in a comment, a heredoc body, a shell
+ * string, or the middle of a longer word is not a copy, so `'.en*'` after a
+ * `#` never quotes a bare `.en*` beside it.
+ *
  * @param {string} word
  * @param {{ command: string, words: string[] }} source
  */
 function quotedInSource(word, { command, words }) {
+	let original;
+	try {
+		original = tokenize(command).tokens;
+	} catch {
+		return false;
+	}
+
 	let spelled = 0;
 	for (
 		let at = command.indexOf(word);
 		at !== -1;
 		at = command.indexOf(word, at + 1)
 	) {
+		if (!spellsWord(original, command, at, word)) continue;
+
 		const before = command[at - 1];
 		const after = command[at + word.length];
 		const wrapped = (before === "'" || before === '"') && after === before;
@@ -1057,8 +1093,60 @@ function quotedInSource(word, { command, words }) {
 	}
 
 	return (
-		spelled > 0 && words.filter((held) => held === word).length <= spelled
+		spelled > 0 &&
+		words.filter((held) => valuesOf(held).includes(word)).length <= spelled
 	);
+}
+
+/**
+ * True when the copy of `word` at `command[at]` is a word on its own, or the
+ * whole value after a `=` or `:` in one, as the tokenizer reads the command.
+ * It swaps the copy for a stand-in and asks which token changed.
+ *
+ * @param {string[]} original
+ * @param {string} command
+ * @param {number} at
+ * @param {string} word
+ */
+function spellsWord(original, command, at, word) {
+	let swapped;
+	try {
+		swapped = tokenize(
+			command.slice(0, at) + STAND_IN + command.slice(at + word.length)
+		).tokens;
+	} catch {
+		return false;
+	}
+	if (swapped.length !== original.length) return false;
+
+	const changed = original.flatMap((token, index) =>
+		token === swapped[index] ? [] : [index]
+	);
+	if (changed.length !== 1) return false;
+
+	const token = original[changed[0]];
+	const prefix = token.slice(0, token.length - word.length);
+
+	return (
+		token.endsWith(word) &&
+		swapped[changed[0]] === prefix + STAND_IN &&
+		(prefix === "" || prefix.endsWith("=") || prefix.endsWith(":"))
+	);
+}
+
+/**
+ * A word, and the values `wordDenies` judges after its first `=` and `:`.
+ *
+ * @param {string} word
+ */
+function valuesOf(word) {
+	const values = [word];
+	for (const cut of ["=", ":"]) {
+		const at = word.indexOf(cut);
+		if (at !== -1) values.push(word.slice(at + 1));
+	}
+
+	return values;
 }
 
 // --- Entry ---
