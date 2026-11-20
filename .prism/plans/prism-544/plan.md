@@ -605,6 +605,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 3 fix (9fe9dff6); option-cluster walk, path depth and quote reading capped so one long word is judged in linear time.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: part 2 shipped as #546 (1a308cd8); part 3 (T11-T17) cut from main.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: Retro candidates from part 2: the read gate credited docs read one at a time but not a parallel `cat` batch, as a verify agent reported. PR review rounds 1 to 3 on #546 each found residue left by the previous round's fix, so a fix that closes the reported trigger must also be checked for its class.
+- 2026-11-20 [huntermcgrew/prism-544-commit-gate]: Part 1's done-marking commit was squashed away with part 2's branch, so this commit names its tasks again (T1 to T6 and T18) for the range after `fdce3e87`.
 
 ## Sessions
 
