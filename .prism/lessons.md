@@ -219,3 +219,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-20 (PRISM-544): the commit-naming exception in `git-conventions.md` said git refuses named paths during a merge, cherry-pick, or revert. A fixture run showed git accepts named paths while a revert is in progress, so the reason was false for one of the three.
 
 **How to apply:** Before a rule gives a reason for each case in a list (merge, cherry-pick, revert), run the tool once per case in a scratch repo, and split the sentence where the reasons differ.
+
+## When a review finds one config-sensitive git read, audit every git read in the module at once
+
+**Why:** 2026-11-20 (PRISM-544): the commit gate's diff and blame calls surfaced one git flag per review round (`--no-ext-diff`, then `--text` and `--inter-hunk-context`, then `--no-textconv`), because each round fixed the call it found and none listed the rest.
+
+**How to apply:** When a finding shows a git call whose output a user's config can change, list every `runGit` call in the module and check each against color, external diff, textconv, ignore-revs, and attributes before the fix lands.
