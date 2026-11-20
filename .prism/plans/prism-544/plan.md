@@ -2,7 +2,9 @@
 title: Agent hooks — shared parser, secrets, brief, commit, and reconcile gates
 ticket: https://github.com/HunterMcGrew/PRISM/issues/544
 stage: plan
-status: draft
+status: approved
+approved_by: auto
+approved_at: 2026-11-19
 ---
 
 Child 8 of the Kitchen Line epic (#499). The design is this folder's `spec.md`, which carries the parts of `.prism/plans/prism-499/spec.md` this child builds: row 8 of the Children table, the Agent hooks, Architect routes for consumer code, and Always-on rule edits sections, and the Swaps. The epic's approved `intent.md` covers this child. `spec.md` names every thrive file this plan ports and the command that reads one at the pinned ref.
