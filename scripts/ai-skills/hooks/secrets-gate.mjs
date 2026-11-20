@@ -94,6 +94,12 @@
 //   written passes.
 // - A brace sequence whose bounds the gate can't read, such as `{$a..$b}`, or
 //   whose forms run past `MAX_EXPANSIONS`, after which it stops expanding.
+// - A file name attached to a short option is read from the first
+//   `MAX_CLUSTER_LETTERS` letters of the option only, so a cluster longer than
+//   that passes.
+// - A path or glob of more than `MAX_PATH_SEGMENTS` segments is resolved as
+//   written, with no on-disk step through a `..`, and a glob that deep isn't
+//   expanded on disk. Both caps keep the time spent on one word linear.
 // - A Grep outside any git repo passes, because there is no file list to
 //   check. Claude's Grep tool exposes no option that disables ignore files,
 //   so no payload field marks one.
@@ -132,6 +138,10 @@
 //   home directory, so the `secrets` folder above the repo shows.
 // - A brace sequence with a step, such as `{1..9..2}`, because the step is
 //   ignored and every form between the bounds is judged.
+// - A glob word in a command longer than `MAX_QUOTE_READ_LENGTH`, or spelled
+//   more than `MAX_QUOTE_READ_COPIES` times, because the quote is read with a
+//   tokenizer pass per copy and past those limits every such word reads as
+//   unquoted.
 // - A quoted glob word inside a shell string, such as `bash -c "ls '.env*'"`,
 //   because the quote is read only in the outer command's own words.
 // - A metadata program beside any command outside the allowed list, or
@@ -178,6 +188,16 @@ const EXECUTABLE_MODE = "100755";
 const MAX_EXPANSIONS = 64;
 const MAX_GLOB_MATCHES = 2000;
 const MAX_WALK = 5000;
+// Real option clusters are a few letters, so a longer word stops being read
+// letter by letter after this many.
+const MAX_CLUSTER_LETTERS = 8;
+// A path with more segments than this is resolved as written, with no on-disk
+// step through a `..`, and a glob that deep is not expanded on disk.
+const MAX_PATH_SEGMENTS = 256;
+// Reading a quote out of a command costs a tokenizer pass per copy of the word,
+// so a command or a copy count past these is read as unquoted.
+const MAX_QUOTE_READ_LENGTH = 8192;
+const MAX_QUOTE_READ_COPIES = 16;
 // Swapped in for a word to find which token of a command spells it.
 const STAND_IN = "\u0001";
 // Shell words take only `/` as a separator, since a backslash in a bash word
@@ -205,6 +225,18 @@ const CURSOR_EVENT_NAMES = new Set([
 	"sessionEnd",
 	"beforeSubmitPrompt",
 ]);
+
+/**
+ * What the shell arm knows about one command's spelling: the text, how many
+ * words hold each value `valuesOf` reads from them, and the answers
+ * `quotedInSource` has given, since a word repeated in the command asks once.
+ *
+ * @typedef {{
+ *   command: string,
+ *   valueCounts: Map<string, number>,
+ *   quoted: Map<string, boolean>,
+ * }} Spelling
+ */
 
 /**
  * What one call knows about its repo: the git toplevel of its `cwd` spelled as
@@ -523,6 +555,8 @@ function expandGlob(pattern, cwd, dotglob) {
 	// An absolute pattern starts after its root, so a Windows drive isn't a segment.
 	const root = path.isAbsolute(pattern) ? path.parse(pattern).root : "";
 	const segments = pattern.slice(root.length).split(/[\\/]+/);
+	if (segments.length > MAX_PATH_SEGMENTS) return [];
+
 	/** @type {string[]} */
 	let bases = [root || (cwd === null ? "" : (realPath(cwd) ?? cwd))];
 	for (const segment of segments) {
@@ -867,9 +901,11 @@ function resolveFrom(cwd, target) {
 	const root = path.parse(target).root;
 	if (root !== "" && !path.isAbsolute(target)) return path.resolve(cwd, target);
 
+	const segments = target.slice(root.length).split(SEPARATOR);
+	if (segments.length > MAX_PATH_SEGMENTS) return path.resolve(cwd, target);
+
 	let current = root || (realPath(cwd) ?? cwd);
-	for (const segment of target.slice(root.length).split(SEPARATOR))
-		current = stepInto(current, segment);
+	for (const segment of segments) current = stepInto(current, segment);
 
 	return current;
 }
@@ -908,7 +944,10 @@ function realPath(target) {
  */
 function judgeShell(command, cwd) {
 	const { segments } = walkSegments(command, { cwd, maxDepth: MAX_DEPTH });
-	const spelling = { command, words: segments.flatMap(({ words }) => words) };
+	const spelling = spellingOf(
+		command,
+		segments.flatMap(({ words }) => words)
+	);
 	/**
 	 * @param {import("./lib/segments.mjs").Segment} segment
 	 * @param {string} written
@@ -933,6 +972,21 @@ function judgeShell(command, cwd) {
 				segment.words.some((written) => deniesIn(segment, written));
 
 	return segments.some(readsSecret);
+}
+
+/**
+ * @param {string} command
+ * @param {string[]} words
+ * @returns {Spelling}
+ */
+function spellingOf(command, words) {
+	/** @type {Map<string, number>} */
+	const valueCounts = new Map();
+	for (const word of words)
+		for (const value of valuesOf(word))
+			valueCounts.set(value, (valueCounts.get(value) ?? 0) + 1);
+
+	return { command, valueCounts, quoted: new Map() };
 }
 
 /**
@@ -1059,7 +1113,7 @@ function stripSubstitutions(word, substitutions) {
  *
  * @param {string} word
  * @param {string | null} cwd
- * @param {{ command: string, words: string[] }} source
+ * @param {Spelling} source
  */
 function wordDenies(word, cwd, source) {
 	if (word === "" || URL_WORD.test(word)) return false;
@@ -1086,7 +1140,7 @@ function wordDenies(word, cwd, source) {
  *
  * @param {string} word
  * @param {string | null} cwd
- * @param {{ command: string, words: string[] }} source
+ * @param {Spelling} source
  */
 function shellPathDenies(word, cwd, source) {
 	const globbing = GLOB_CHAR.test(word) && !quotedInSource(word, source);
@@ -1139,9 +1193,25 @@ function literalDenies(word, cwd) {
  * `#` never quotes a bare `.en*` beside it.
  *
  * @param {string} word
- * @param {{ command: string, words: string[] }} source
+ * @param {Spelling} source
  */
-function quotedInSource(word, { command, words }) {
+function quotedInSource(word, source) {
+	const known = source.quoted.get(word);
+	if (known !== undefined) return known;
+
+	const answer = readQuote(word, source);
+	source.quoted.set(word, answer);
+
+	return answer;
+}
+
+/**
+ * @param {string} word
+ * @param {Spelling} source
+ */
+function readQuote(word, { command, valueCounts }) {
+	if (command.length > MAX_QUOTE_READ_LENGTH) return false;
+
 	let original;
 	try {
 		original = tokenize(command).tokens;
@@ -1150,11 +1220,14 @@ function quotedInSource(word, { command, words }) {
 	}
 
 	let spelled = 0;
+	let copies = 0;
 	for (
 		let at = command.indexOf(word);
 		at !== -1;
 		at = command.indexOf(word, at + 1)
 	) {
+		copies += 1;
+		if (copies > MAX_QUOTE_READ_COPIES) return false;
 		if (!spellsWord(original, command, at, word)) continue;
 
 		const before = command[at - 1];
@@ -1165,10 +1238,7 @@ function quotedInSource(word, { command, words }) {
 		spelled += 1;
 	}
 
-	return (
-		spelled > 0 &&
-		words.filter((held) => valuesOf(held).includes(word)).length <= spelled
-	);
+	return spelled > 0 && (valueCounts.get(word) ?? 0) <= spelled;
 }
 
 /**
@@ -1209,8 +1279,9 @@ function spellsWord(original, command, at, word) {
 
 /**
  * A word, and the values `wordDenies` judges inside it: the text after its
- * first `=` and `:`, and the text after each letter of a short option cluster,
- * as in the `.env` of `-a.env` and of `-0a.env`.
+ * first `=` and `:`, and the text after each of the first `MAX_CLUSTER_LETTERS`
+ * letters of a short option cluster, as in the `.env` of `-a.env` and of
+ * `-0a.env`.
  *
  * @param {string} word
  */
@@ -1220,9 +1291,11 @@ function valuesOf(word) {
 		const at = word.indexOf(cut);
 		if (at !== -1) values.push(word.slice(at + 1));
 	}
-	if (OPTION_CLUSTER.test(word))
-		for (let at = 2; at < word.length && /[A-Za-z0-9]/.test(word[at - 1]); at += 1)
+	if (OPTION_CLUSTER.test(word)) {
+		const last = Math.min(word.length - 1, MAX_CLUSTER_LETTERS + 1);
+		for (let at = 2; at <= last && /[A-Za-z0-9]/.test(word[at - 1]); at += 1)
 			values.push(word.slice(at));
+	}
 
 	return values;
 }

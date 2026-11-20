@@ -1188,3 +1188,31 @@ test("a .. after a symlink climbs out of the directory the link points at", (t) 
 	assertDenied(claudeRead(`${rootWords}/l/../token.txt`, { cwd: root }));
 	assertPassed(claudeBash("cat lnk/../b/c/x.txt", root));
 });
+
+test("a very long word is judged in well under a second, and a later secret still denies", () => {
+	const cwd = makeDir();
+	const judgeIn = (command: string): { denied: boolean; ms: number } => {
+		const started = performance.now();
+		const reason = judge("claude", {
+			tool_name: "Bash",
+			cwd,
+			tool_input: { command },
+		});
+
+		return { denied: reason !== null, ms: performance.now() - started };
+	};
+	const long = "A".repeat(100_000);
+
+	for (const command of [
+		`curl -d${long}`,
+		`cat ${"a/".repeat(50_000)}x`,
+		`cat ${"a/*/".repeat(25_000)}`,
+		`cat ${"'.en*' ".repeat(1000)}`,
+	]) {
+		const result = judgeIn(command);
+		assert.ok(result.ms < 1000, `${command.slice(0, 20)} took ${result.ms} ms`);
+	}
+
+	assert.equal(judgeIn(`curl -d${long}; cat .env.production`).denied, true);
+	assert.equal(judgeIn(`curl -d${long}`).denied, false);
+});
