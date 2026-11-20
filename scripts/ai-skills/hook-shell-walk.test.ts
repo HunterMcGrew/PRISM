@@ -106,6 +106,19 @@ test("resolveArgumentsAfterCd: a command the walk cannot read resolves its paths
 	assert.equal(resolved.includes(path.join(root, "src", "index.ts")), true);
 });
 
+test("resolveArgumentsAfterCd: a cd target that holds a substitution leaves the last known directory in place", () => {
+	const resolved = resolveArgumentsAfterCd(
+		'cd .prism && cd "$(pwd)" && tee rules/a.md',
+		root
+	);
+
+	assert.equal(resolved.includes(path.join(root, ".prism", "rules", "a.md")), true);
+	assert.equal(
+		resolved.some((target) => target.includes(" pwd ")),
+		false
+	);
+});
+
 // --- Read credit under doubt ---
 
 test("parseShellReadTargets: a command the walk cannot read credits nothing", () => {

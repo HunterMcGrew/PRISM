@@ -57,7 +57,7 @@ import {
 	resolveListedToolKind,
 	resolveToolKind,
 } from "./harnesses.mjs";
-import { walkSegments } from "./lib/segments.mjs";
+import { containsSubstitution, walkSegments } from "./lib/segments.mjs";
 
 /**
  * The characters a whole command may contain and still be considered for read
@@ -156,15 +156,17 @@ const CD_PREFIX_WORDS = new Set(["{", "(", "builtin", "command"]);
  * The directory a `cd` segment moves to, `null` when the segment is not a
  * `cd`, or `undefined` when it is one whose target the hook cannot know: a
  * bare `cd`, `cd -`, a `~` path, a flag outside `-L`/`-P`, or more than one
- * operand.
+ * operand, or a target the walk joined from a substitution (`cd "$(pwd)"`),
+ * which the tokenizer flattens so the `$` is no longer in the word.
  *
  * `pushd` counts as a `cd`, and a leading `(`, `{`, `builtin`, or `command`
  * is looked through, because each still moves the commands after it.
  *
  * @param {string[]} tokens
+ * @param {string[]} [substitutions] The segment's `substitutions`.
  * @returns {string | null | undefined}
  */
-function resolveCdTarget(tokens) {
+function resolveCdTarget(tokens, substitutions = []) {
 	const words = [...tokens];
 	words[0] = words[0]?.replace(/^[({]+/, "") ?? "";
 	while (words[0] === "" || CD_PREFIX_WORDS.has(words[0])) {
@@ -182,7 +184,10 @@ function resolveCdTarget(tokens) {
 	}
 
 	const target = operands[0];
-	return target.startsWith("~") || target.includes("$") || target.includes("`")
+	return target.startsWith("~") ||
+		target.includes("$") ||
+		target.includes("`") ||
+		containsSubstitution(target, substitutions)
 		? undefined
 		: target;
 }
@@ -352,7 +357,7 @@ export function parseShellReadTargets(command) {
 		}
 
 		const tokens = segment.words;
-		const cdTarget = resolveCdTarget(tokens);
+		const cdTarget = resolveCdTarget(tokens, segment.substitutions);
 		if (cdTarget !== null) {
 			/** @type {string | undefined} */
 			const next =
@@ -961,8 +966,8 @@ export function resolveArgumentsAfterCd(command, cwd) {
 	const resolved = [];
 	/** @type {string | null} */
 	let current = null;
-	for (const { words: tokens, depth } of walk.segments) {
-		const target = resolveCdTarget(tokens);
+	for (const { words: tokens, depth, substitutions } of walk.segments) {
+		const target = resolveCdTarget(tokens, substitutions);
 		if (target !== null) {
 			if (target !== undefined && depth === 0) {
 				current = path.resolve(current ?? cwd, target);
