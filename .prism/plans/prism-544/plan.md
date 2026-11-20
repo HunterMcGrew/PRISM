@@ -614,6 +614,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T13 ported the commit gate's checks.mjs and test-guard.mjs (config, subject, stops, weakened-tests), adding CONFIG_CHECK, resolveTestGlobs, and the testGlobs config key.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T14 ported the commit gate's entry point (commit-gate.mjs, .d.mts, 49-case test) over the T11-T13 modules.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T15 delivered commit-gate.mjs and its four commit-gate/ modules, added it to the entry points and command patterns, and registered a 21 s PreToolUse group in the Claude and Codex templates and PRISM's own .claude/settings.json.
+- 2026-11-20 [huntermcgrew/prism-544-commit-gate]: T16 made git-conventions, ADR-0081, and its index say the commit gate denies --no-verify for agents; the lead set ends at byte 31,708 of the 32,768 window.
 
 ## Sessions
 
