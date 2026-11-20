@@ -1,10 +1,9 @@
 /**
- * Pins that an update removes the shell splitter the hook runtime stopped
- * shipping.
+ * Pins that `refreshHookRuntime` removes a marked `lib/shell.mjs` from a
+ * consumer's hook runtime and keeps its bytes as a `.bak`.
  *
- * `lib/shell.mjs` was delivered to every consumer before the gates moved onto
- * `lib/segments.mjs`, so a consumer's marked copy has to leave on their next
- * `prism update`, with its bytes kept as a `.bak`.
+ * The runtime does not ship that file, and a marked copy left behind would
+ * read as a live shell splitter next to `lib/segments.mjs`.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
