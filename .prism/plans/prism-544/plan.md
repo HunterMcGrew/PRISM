@@ -710,6 +710,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 fix adds "Anything longer goes into `plan.md` first." to the brief gate's deny text after the shape sentence.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: PR #548 round 1 docs fixes: the Brief gate section of `hook-runtime.md` and its twin say `do not read plan.md` (also `the plan`) denies when it ends a clause or comes before `and`, `or`, `but`, `so`, `just`, or `first`, which is what the pattern does. `compatibility.md` carries the Codex `.codex/` trust caveat for the brief and reconcile gates.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Recorded negated override phrases as an accepted false deny with no guard, and declined the leg 2 plan.md seed nit because T19's text names that test.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: PR #548 round 2 docs fix: the Brief gate section of `hook-runtime.md` and its twin say the `do not read plan.md` pattern also reads a bare `plan` and `the plan`, so "do not read plan first" denies.
 
 ## Sessions
 
