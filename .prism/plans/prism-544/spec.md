@@ -84,7 +84,7 @@ A port of thrive's three arms: Read on the file path, Grep on its `path` and `gl
 
 ### Brief gate
 
-A port of thrive's gate: a brief to a gated role is denied past 15 non-blank lines, or when it matches an override pattern (ignore or disregard the instructions or rules, "you may skip", "do not read the plan"). The deny names the role and says to move the content into `plan.md` and send what the stage reads, the worktree path, and the report shape, then gives the cause.
+A port of thrive's gate: a brief to a gated role is denied past 15 non-blank lines, or when it matches an override pattern (ignore or disregard the instructions or rules, "you may skip", "do not read the plan"). The deny states what the stage reads, the worktree path, and the report shape, says that anything longer goes into `plan.md` first, then gives the cause.
 
 - **Which roles are gated.** `roles.json` gains the optional boolean `gated`. `generate-skills.ts` rejects a non-boolean value. It is set on the roles a plan-folder run dispatches as subagents: `prism-spec`, `prism-challenge`, `prism-verify`, `prism-implement`, `prism-docs`, and `prism-pr-review`. `prism-architect` is left ungated, because a stage sends it a scope idea or a finding in prose by design.
 - **How the gate knows.** A consumer has no `roles.json` on disk, because `prism update` reads the roster from PRISM's package. So `brief-gate.mjs` exports a `GATED_ROLES` constant, and its test asserts the constant equals the `gated: true` IDs in `roles.json`. One source of truth, one runtime file, and no build step.

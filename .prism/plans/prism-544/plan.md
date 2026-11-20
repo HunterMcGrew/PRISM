@@ -699,6 +699,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: The reconcile counter moves into the git directory beside `prism-hooks.jsonl`, because the shared temp directory let a planted symlink redirect the write. The spec's Counting bullet, `hook-runtime.md`, and its twin say so, and the code writer changes the gate.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: The brief-shape sentence in `workflow.md` now names each stage's own input, and `spec.md` says at most three stops in a row. The docs pages say the reconcile gate blocks while reconcile reports the PR unclean.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Declined nits 7, 9, and 10 as port fidelity, as part 2 did.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Round 2 docs fixes: the spec's brief gate bullet and the Brief gate section of `hook-runtime.md` and its twin say the deny states what the stage reads, the worktree path, and the report shape, and that anything longer goes into `plan.md` first. The Reconcile gate section says the git directory is the session's own, unlike a shared temp directory.
 
 ## Sessions
 
