@@ -3,7 +3,7 @@ title: "What PRISM writes"
 description: "The complete inventory of every path prism adopt, update, and eject can create or modify in your repo — grouped by who owns it."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-11-19"
+last_updated: "2026-11-20"
 ---
 
 # What PRISM writes
@@ -44,8 +44,8 @@ These are kept current by `prism update`. Most live under `.prism/`. `REVIEW.md`
 | `.claude/hooks/lib/tokenize.mjs`, `.claude/hooks/lib/segments.mjs` | The shell parser every gate reads commands with. They arrive with the hook runtime on every install. Same replace rule as the row above |
 | `.claude/hooks/plan/approve.mjs` | The script a person runs to approve a plan-chain file, with a keypress in their own terminal or, in an agent session, on a chat approval token. It arrives on every install, so a Cursor user can approve from a terminal. Same replace rule as the row above |
 | `.claude/hooks/plan/chat-approval.mjs` | The chat approval token's file name, prompt parser, and helpers, which `approve.mjs` and the approval guard share. Same replace rule as the row above |
-| `.claude/hooks/approve-guard.mjs` | The approval guard, a hook entry point that denies an agent running `approve.mjs` without your chat approval or editing a chain file's approval lines. It arrives on every install and fires only where `.claude/settings.json` or `.codex/hooks.json` registers it. Same replace rule as the row above |
-| `.claude/hooks/secrets-gate.mjs`, `.claude/hooks/env-keys.mjs` | The secrets gate, which denies an agent reading, searching, or shell access to `.env` files, `secrets/` folders, and `.pem` and `.key` files, and `env-keys.mjs`, which prints a dotenv file's key names and never a value. They arrive on every install, and the gate fires where `.claude/settings.json` or `.codex/hooks.json` registers it. Same replace rule as the row above |
+| `.claude/hooks/approve-guard.mjs` | The approval guard, a hook entry point that denies an agent running `approve.mjs` without your chat approval or editing a chain file's approval lines. It arrives on every install and fires only where `.claude/settings.json` or `.codex/hooks.json` registers it, and on Codex only once you trust the project's `.codex/` layer and review each hook definition. Same replace rule as the row above |
+| `.claude/hooks/secrets-gate.mjs`, `.claude/hooks/env-keys.mjs` | The secrets gate, which denies an agent reading, searching, or shell access to `.env` files, `secrets/` folders, and `.pem` and `.key` files, and `env-keys.mjs`, which prints a dotenv file's key names and never a value. They arrive on every install, and the gate fires where `.claude/settings.json` or `.codex/hooks.json` registers it, and on Codex only once you trust the project's `.codex/` layer and review each hook definition. Same replace rule as the row above |
 | `.githooks/pre-commit`, `.githooks/pre-push` | The two shims git runs. A shim carrying PRISM's marker line is replaced in place with no backup, so a step of your own belongs in a hook without the marker line: a `.githooks` file without it is yours and is never touched, `.bak` included. Delivered only when `hosts` includes `claude` or `codex`, unlike the runtime files above |
 | `.gitattributes` | One appended line, `.prism/metrics/review-misses.jsonl merge=union`, so two branches that each add a review-miss row merge without a conflict. It is added when absent, never rewritten, and follows no `hosts` setting |
 
