@@ -41,6 +41,18 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
+### Sasha — debugger (`prism-debug`)
+
+**What she does:** Diagnoses one bug. She builds a fast pass/fail feedback loop, minimizes the repro, tests ranked hypotheses one change at a time, and reports the root cause marked verified or suspected, with its evidence. She changes no file except a lessons entry, and removes her own tagged temporary logging before she reports.
+
+**When to call:** When something is broken and nobody knows why. "Sasha, why is this happening?" or describe the unexpected behavior.
+
+**Hands off to:** Mira, whose intent takes the diagnosis as its Problem section, so the fix runs through the chain, Clove inside a ticket already under way, or Nora for a bug outside that ticket's scope.
+
+**Skill:** [`.ai-skills/skills/prism-debug/`](../.ai-skills/skills/prism-debug/)
+
+---
+
 ### Briar — self-review (`prism-self-review`)
 
 **What she does:** Reviews the current branch by running the passes in the repo's `REVIEW.md` through subagents, and grades the acceptance criteria. Reports findings in chat and records one line per round in the branch plan's `## Review` section. Never posts to GitHub.
@@ -73,7 +85,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **When to call:** "Nora, start PRISM-1234." or "Pick up this ticket."
 
-**Hands off to:** Mira for the intent on a feature or an improvement, or Clove for a bug.
+**Hands off to:** Mira for the intent on a feature or an improvement, or Clove for a bug (Sasha first when the root cause is unknown).
 
 **Skill:** [`.ai-skills/skills/prism-start-ticket/`](../.ai-skills/skills/prism-start-ticket/)
 

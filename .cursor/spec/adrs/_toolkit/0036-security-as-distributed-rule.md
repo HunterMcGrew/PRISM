@@ -5,7 +5,7 @@ Status: accepted
 Date: 2026-05-22
 ---
 
-> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Sasha is retired, so the distributed security check runs in Eric and Briar only. The pattern stands.
+> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Sasha was retired, so the distributed security check runs in Eric and Briar only. [ADR-0085](./0085-the-debugger-returns-as-prism-debug.md) brings her back as `prism-debug` without that check, so it still does. The pattern stands.
 
 ## Context
 

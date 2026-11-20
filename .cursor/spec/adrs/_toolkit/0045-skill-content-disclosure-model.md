@@ -6,7 +6,7 @@ Date: 2026-05-26
 Superseded-by: 0080
 ---
 
-> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Ren, Theo, and the debugger are retired, so the examples that name them below no longer apply.
+> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Ren, Theo, and the debugger were retired, so the examples that name them below no longer apply. [ADR-0085](./0085-the-debugger-returns-as-prism-debug.md) brings the debugger back under the 120-line cap with no reasoning lens, so its example still does not.
 
 ## Context
 

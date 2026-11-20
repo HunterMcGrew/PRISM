@@ -12,6 +12,8 @@
  *   - every `prism-*` id referenced anywhere in the rule exists in
  *     `roles.json` — no ghost routes
  *   - every persona in `roles.json` appears in `skills-ecosystem.md`'s roster
+ *   - no signal phrase appears in two routing-table rows, and the
+ *     broken-behavior phrases stay in the `prism-debug` row
  *
  * This is the validate-not-generate gate from the routing-completeness
  * evaluation: membership drift between the registry and the hand-maintained
@@ -61,8 +63,8 @@ function extractBacktickedSkillIds(text: string): string[] {
 }
 
 /**
- * Runs the five parity assertions from the routing-completeness evaluation
- * against one rule file (the canonical rule or its install seed twin).
+ * Runs the parity assertions from the routing-completeness evaluation against
+ * one rule file (the canonical rule or its install seed twin).
  */
 async function assertRoutingRuleAgreesWithRoles(
 	rulePath: string,
@@ -115,6 +117,37 @@ async function assertRoutingRuleAgreesWithRoles(
 				`${rulePath}: '${role.id}' is routing: "named-only" but also appears in the routing table or the onboarding-intent section, found ${occurrences}`
 			);
 		}
+	}
+
+	// The router reads the table with no tie-break, so a phrase in two rows
+	// routes ambiguously.
+	const tableRows = routingTableSection
+		.split("\n")
+		.filter((line) => line.startsWith("| "));
+	const rowByPhrase = new Map<string, string>();
+	for (const row of tableRows) {
+		for (const [, phrase] of row.matchAll(/"([^"]+)"/g)) {
+			const earlierRow = rowByPhrase.get(phrase);
+			assert.ok(
+				earlierRow === undefined,
+				`${rulePath}: the phrase "${phrase}" appears in two routing rows:\n${earlierRow}\n${row}`
+			);
+			rowByPhrase.set(phrase, row);
+		}
+	}
+
+	// A report of broken behavior goes to the debugger, not the implementer.
+	const debugRow = tableRows.find((row) => row.includes("`prism-debug`"));
+	for (const phrase of [
+		"this is broken",
+		"why is this happening",
+		"I'm getting an error",
+		"it's not working",
+	]) {
+		assert.ok(
+			debugRow?.includes(`"${phrase}"`),
+			`${rulePath}: the prism-debug routing row must contain the phrase "${phrase}"`
+		);
 	}
 
 	const knownIds = new Set(roles.map((role) => role.id));

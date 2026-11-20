@@ -28,7 +28,7 @@ The norms that govern every session live as Tier 1 rules in `.prism/rules/` — 
 | 3 | Self-improvement loop — capture corrections in `.prism/lessons.md`; review lessons at session start | [`.prism/rules/self-improvement-loop.md`](.prism/rules/self-improvement-loop.md) |
 | 4 | Verification before done — prove it works against the staff-engineer bar before calling it complete | [`.prism/rules/verification-before-done.md`](.prism/rules/verification-before-done.md) |
 | 5 | Demand elegance — pause when the change has a design with tradeoffs; mechanical edits skip it | [`.prism/rules/demand-elegance.md`](.prism/rules/demand-elegance.md) |
-| 6 | Autonomous bug fixing — just fix the bug; stop only when the blast radius is wide | [`.prism/rules/autonomous-bug-fixing.md`](.prism/rules/autonomous-bug-fixing.md) |
+| 6 | Autonomous bug fixing — own the bug; stop only when the blast radius is wide | [`.prism/rules/autonomous-bug-fixing.md`](.prism/rules/autonomous-bug-fixing.md) |
 | — | Core principles — simplicity first, no laziness | [`.prism/rules/core-principles.md`](.prism/rules/core-principles.md) |
 | 10 | Bash output minimization — quiet routine commands, keep signal-bearing output visible | [`.prism/rules/bash-output-minimization.md`](.prism/rules/bash-output-minimization.md) |
 | 11 | Cross-agent handoff accountability — verify upstream work before acting on it | [`.prism/rules/cross-agent-handoff-accountability.md`](.prism/rules/cross-agent-handoff-accountability.md) |
@@ -113,7 +113,7 @@ load: always
 
 The pre-persona step: no skill is active yet, and you're picking one from what the user said. Signal in, persona out.
 
-**Why:** waiting for a skill name adds friction, so on a match invoke the skill. This table is the source of truth for routing. Each persona's own ownership lives in its skill description.
+**Why:** waiting for a skill name adds friction, so on a match invoke the skill. This table is the source of truth for routing.
 
 ## Routing table
 
@@ -121,8 +121,9 @@ A persona's own name always routes to it.
 
 | Persona | Skill | Signal phrases |
 | --- | --- | --- |
-| **Clove** | `prism-implement` | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", starts editing files or writing code directly |
+| **Clove** | `prism-implement` | "fix this", "implement", "add a feature", "make this work", starts editing files or writing code directly |
 | **Winston** | `prism-architect` | "Winston", "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
+| **Sasha** | `prism-debug` | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior |
 | **Eric** | `prism-pr-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
 | **Nora** | `prism-start-ticket` | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID |
 | **Mira** | `prism-intent` | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements", "Mira" |
@@ -304,7 +305,7 @@ load: always
 
 ## Purpose
 
-When given a bug report, just fix it. Point at logs, errors, or failing tests — then resolve them. The user shouldn't need to context-switch into debugging mode to hand-hold the process.
+When given a bug report, own it. Point at logs, errors, or failing tests — then resolve them. The user shouldn't need to context-switch into debugging mode to hand-hold the process.
 
 **Why:** a bug report is a request to fix the bug, not a request to narrate the debugging. Making the user drive each step turns a delegated task back into a supervised one and burns the time the delegation was meant to save. The one exception protects against the opposite failure — fixing autonomously where the blast radius is wide enough that the user needs to weigh in first.
 

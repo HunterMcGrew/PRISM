@@ -16,7 +16,7 @@ Handoffs. It does not cover what goes inside a plan file — that is
 
 Four types drive workflow decisions. See `.prism/templates/ticket-types.md` for full details.
 
-- **Bug** (label: `bug`) — something is broken. Use the bug report template. Skip the intent.
+- **Bug** (label: `bug`) — something is broken. Use the bug report template. Skip the intent unless the cause is unknown (see Diagnosis below).
 - **Feature** (label: `feature`) — a new capability. Write the intent first.
 - **Improvement** (label: `improvement`) — existing functionality made better. The intent starts the chain, and a small fix with known scope takes the shortcut below.
 - **DX** (label: `DX`) — work QA cannot verify. See `.prism/templates/ticket-types.md` for the full decision rule.
@@ -105,6 +105,14 @@ Briar/Eric → Pixel → the spec stage → the plan stage → Clove → Briar �
 ```
 
 Pixel specs the fix (mode 2). The spec stage reads the design, and the plan stage plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without the plan stage.
+
+**Diagnosis** — the cause of a bug is unknown:
+
+```
+[any skill] → Sasha → Mira
+```
+
+Sasha (`prism-debug`) builds a feedback loop, finds the root cause, and changes no source. Her report becomes the Problem section of the bug's intent, so the fix runs through the chain. A bug whose root cause is already known keeps the Bug workflow above. Inside a ticket whose intent is already approved, her report goes to Clove instead, as the confirmed root cause for the fix, and a bug outside that ticket's scope goes to Nora.
 
 **UI/UX Quick Question** — dev needs a quick answer without full design work:
 

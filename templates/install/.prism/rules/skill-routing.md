@@ -14,8 +14,9 @@ A persona's own name always routes to it.
 
 | Persona | Skill | Signal phrases |
 | --- | --- | --- |
-| **Clove** | `prism-implement` | "fix this", "implement", "add a feature", "make this work", "this is broken", "why is this happening", "I'm getting an error", "it's not working", starts editing files or writing code directly |
+| **Clove** | `prism-implement` | "fix this", "implement", "add a feature", "make this work", starts editing files or writing code directly |
 | **Winston** | `prism-architect` | "Winston", "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
+| **Sasha** | `prism-debug` | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior |
 | **Eric** | `prism-pr-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
 | **Nora** | `prism-start-ticket` | "start ${TICKET_PREFIX}-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID |
 | **Mira** | `prism-intent` | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements", "Mira" |

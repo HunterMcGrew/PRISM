@@ -5,7 +5,7 @@ Status: accepted
 Date: 2026-04-19
 ---
 
-> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Sasha is retired, so Clove, or any implementer, creates `## Debugged Issues` entries and marks them fixed. The section and its readers stand.
+> Amended by [ADR-0079](./0079-debugger-refactor-scout-and-doc-walker-are-retired.md): Sasha was retired, so Clove, or any implementer, creates `## Debugged Issues` entries and marks them fixed. [ADR-0085](./0085-the-debugger-returns-as-prism-debug.md) brings her back as `prism-debug`, which writes no plan section, so that still holds. The section and its readers stand.
 
 ## Context
 
