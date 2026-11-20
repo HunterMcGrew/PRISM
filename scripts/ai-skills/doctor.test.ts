@@ -1195,6 +1195,45 @@ test("runDoctor reports an approve-guard registration pointing at a file that is
 	});
 });
 
+test("runDoctor reports a registration naming a secrets-gate.mjs that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(
+				{
+					hooks: {
+						PreToolUse: [
+							{
+								matcher: "Read|Grep|Bash|PowerShell",
+								hooks: [
+									{
+										type: "command",
+										command:
+											'node "$CLAUDE_PROJECT_DIR/.claude/hooks/secrets-gate.mjs" --tool=claude --event=PreToolUse',
+									},
+								],
+							},
+						],
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /secrets-gate\.mjs, which is not on disk/);
+	});
+});
+
 test("runDoctor says the git gates are delivered and off when the config has no hooks block", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await seedGitGatesConsumer(consumerRepoRoot, {});
