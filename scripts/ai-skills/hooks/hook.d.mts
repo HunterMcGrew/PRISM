@@ -1,9 +1,12 @@
 import type { HarnessSpec, HookPayload } from "./harnesses.d.mts";
+import type { walkSegments } from "./lib/segments.mjs";
 
 export interface RouteTarget {
 	filePath: string;
 	credit: boolean;
 }
+
+export function walkLines(command: string): ReturnType<typeof walkSegments>;
 
 export function parseShellReadTargets(
 	command: string | undefined

@@ -255,16 +255,29 @@ function normalizeShellSeparators(command) {
 	return command.replace(/\\(?=[\w.@~+-])/g, "/");
 }
 
+/** @type {{ text: string, walk: ReturnType<typeof walkSegments> } | null} */
+let lastWalk = null;
+
 /**
  * `walkSegments` over a command whose `\r` and `\r\n` line endings read as the
  * line breaks they are on Windows, so a CRLF-joined remedy is several
  * commands and no word carries a trailing `\r`.
  *
+ * The last command walked is kept, so every reader of one command in a hook
+ * call shares one walk. A command the tokenizer cannot read costs a
+ * retokenize per newline (`readablePrefix` in `lib/segments.mjs`), and a
+ * Bash call reaches this three times.
+ *
  * @param {string} command
  * @returns {ReturnType<typeof walkSegments>}
  */
-function walkLines(command) {
-	return walkSegments(command.replace(/\r\n?/g, "\n"));
+export function walkLines(command) {
+	const text = command.replace(/\r\n?/g, "\n");
+	if (lastWalk?.text !== text) {
+		lastWalk = { text, walk: walkSegments(text) };
+	}
+
+	return lastWalk.walk;
 }
 
 /**
@@ -758,8 +771,75 @@ function checkReaderPrecedesIntroducer(command, bodyStart, reader) {
 }
 
 /**
- * The command with every heredoc body cut out whose text only a data reader
- * sees, so the words in a PR comment or a JSON payload are not read as paths.
+ * Where each heredoc body of `segment` sits in `text`, or `null` when they
+ * cannot be placed with certainty.
+ *
+ * The walk reports a body's text and no offset, so the first body is found
+ * by its text and then checked against what the walk knows. It is placed only
+ * when its text is a line of its own exactly once in the command, because a
+ * repeated line could be a command and not the body. The line above it, walked
+ * alone, must open as many heredocs as the segment carries with the same
+ * words, so a `# <<` in a comment or a quote cannot pose as the introducer.
+ * Each later body starts on the line after the previous body's delimiter, so
+ * it is read at that offset and never searched for. A here-string, whose text
+ * is also a word of the segment, is never placed.
+ *
+ * @param {string} text Line breaks already normalized to `\n`.
+ * @param {import("./lib/segments.mjs").Segment} segment
+ * @returns {{ start: number, end: number }[] | null} Each range runs from the
+ *   body's first character to the end of its delimiter line.
+ */
+function locateHeredocBodies(text, segment) {
+	const bodies = segment.stdinTexts;
+	if (bodies.length === 0) {
+		return [];
+	}
+
+	if (bodies.some((body) => segment.words.includes(body))) {
+		return null;
+	}
+
+	if (bodies[0].length === 0) {
+		return bodies.length === 1 ? [] : null;
+	}
+
+	const needle = `\n${bodies[0]}\n`;
+	const at = text.indexOf(needle);
+	if (at < 1 || text.indexOf(needle, at + 1) !== -1) {
+		return null;
+	}
+
+	const header = text.slice(text.lastIndexOf("\n", at - 1) + 1, at);
+	const wordsKey = segment.words.join("\0");
+	const opensBodies = walkSegments(header).segments.some(
+		(opener) =>
+			opener.words.join("\0") === wordsKey &&
+			opener.stdinTexts.length === bodies.length
+	);
+	if (!opensBodies) {
+		return null;
+	}
+
+	const located = [];
+	let start = at + 1;
+	for (const body of bodies) {
+		if (!text.startsWith(`${body}\n`, start)) {
+			return null;
+		}
+
+		const delimiterEnd = text.indexOf("\n", start + body.length + 1);
+		const end = delimiterEnd === -1 ? text.length : delimiterEnd;
+		located.push({ start, end });
+		start = end + 1;
+	}
+
+	return located;
+}
+
+/**
+ * The command, with line breaks normalized to `\n`, and every heredoc body
+ * cut out whose text only a data reader sees, so the words in a PR comment or
+ * a JSON payload are not read as paths.
  *
  * A body stays when any of these holds, because each one lets the text reach
  * something that acts on it:
@@ -777,6 +857,10 @@ function checkReaderPrecedesIntroducer(command, bodyStart, reader) {
  * command line, and `cat > x.sh <<'EOF'` followed by `sh x.sh` runs it a line
  * later. Neither shows in the reader or the pipe.
  *
+ * Every body also stays when any of them cannot be placed
+ * (`locateHeredocBodies`): leaving text in the scan costs a doc read, and
+ * cutting the wrong text lets a write through unseen.
+ *
  * Paths on the command line itself are never cut, so `tee <path> <<'EOF'` and
  * `cat > <path> <<'EOF'` still gate on `<path>`.
  *
@@ -784,13 +868,14 @@ function checkReaderPrecedesIntroducer(command, bodyStart, reader) {
  * @returns {string}
  */
 function removeDataHeredocBodies(command) {
-	if (/[<>]\(/.test(command)) {
-		return command;
+	const text = command.replace(/\r\n?/g, "\n");
+	if (/[<>]\(/.test(text)) {
+		return text;
 	}
 
-	const { segments, unreadable } = walkLines(command);
+	const { segments, unreadable } = walkLines(text);
 	if (unreadable.length > 0) {
-		return command;
+		return text;
 	}
 
 	const runsOnlyKnownHeads = segments.every(
@@ -800,47 +885,47 @@ function removeDataHeredocBodies(command) {
 			SHELL_INSPECTION_COMMANDS.has(head)
 	);
 	if (!runsOnlyKnownHeads) {
-		return command;
+		return text;
 	}
 
-	let kept = "";
-	let cursor = 0;
+	/** @type {{ start: number, end: number }[]} */
+	const cuts = [];
 	for (const segment of segments) {
+		const located = locateHeredocBodies(text, segment);
+		if (located === null) {
+			return text;
+		}
+
+		if (located.length === 0) {
+			continue;
+		}
+
 		const [reader] = segment.words;
 		const pipesOnward = segments.some((other) => other.pipedFrom === segment);
-		for (const body of segment.stdinTexts) {
-			if (body.length === 0) {
-				continue;
+		const readerFirst =
+			DATA_STDIN_READERS.has(reader) &&
+			!pipesOnward &&
+			checkReaderPrecedesIntroducer(text, located[0].start, reader);
+		for (const [index, range] of located.entries()) {
+			if (readerFirst && !/\$\(|`/.test(segment.stdinTexts[index])) {
+				cuts.push(range);
 			}
-
-			// A body is found verbatim, on lines of its own, past the last one
-			// found. One that is not (a here-string, a `<<-` body with its tabs
-			// stripped) leaves the whole command in the scan, which is the
-			// over-deny direction.
-			const start = command.indexOf(`\n${body}\n`, cursor) + 1;
-			if (start === 0) {
-				return command;
-			}
-
-			const bodyEnd = start + body.length;
-			const lineEnd = command.indexOf("\n", bodyEnd + 1);
-			const end = lineEnd === -1 ? command.length : lineEnd;
-			const inert =
-				!/\$\(|`/.test(body) &&
-				DATA_STDIN_READERS.has(reader) &&
-				!pipesOnward &&
-				checkReaderPrecedesIntroducer(command, start, reader);
-			if (inert) {
-				kept += `${command.slice(cursor, start)}\n`;
-			} else {
-				kept += command.slice(cursor, end);
-			}
-
-			cursor = end;
 		}
 	}
 
-	return kept + command.slice(cursor);
+	cuts.sort((a, b) => a.start - b.start);
+	let kept = "";
+	let cursor = 0;
+	for (const cut of cuts) {
+		if (cut.start < cursor) {
+			return text;
+		}
+
+		kept += text.slice(cursor, cut.start);
+		cursor = cut.end;
+	}
+
+	return kept + text.slice(cursor);
 }
 
 /**

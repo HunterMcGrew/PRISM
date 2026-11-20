@@ -1,7 +1,8 @@
 /**
- * Pins that the git gates read a commit or push the shell runs inside a
- * `bash -c` or `sh -c` string. The test spawns the entry point and imports
- * nothing from the runtime, so it runs before the fix lands.
+ * Pins which commits and pushes the git gates see: one the shell runs inside
+ * a `bash -c` or `sh -c` string, under `timeout`, in a subshell, or before a
+ * CRLF line break is held, and one that runs in a container is not. The test
+ * spawns the entry point and imports nothing from the runtime.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
@@ -93,4 +94,31 @@ test("text that only mentions a commit stays silent", async () => {
 	const root = await makeFixtureRepo({ hooks: { commitCleanupPass: true } });
 
 	assert.equal(runGate(root, `bash -c 'echo "git commit"'`), "");
+});
+
+test("the commit hold fires on a commit under timeout", async () => {
+	const root = await makeFixtureRepo({ hooks: { commitCleanupPass: true } });
+	const stdout = runGate(root, "timeout 5 git commit -m x");
+
+	assert.equal(JSON.parse(stdout).hookSpecificOutput.permissionDecision, "deny");
+});
+
+test("the commit hold fires on a commit inside a subshell", async () => {
+	const root = await makeFixtureRepo({ hooks: { commitCleanupPass: true } });
+	const stdout = runGate(root, "(git commit -m x)");
+
+	assert.equal(JSON.parse(stdout).hookSpecificOutput.permissionDecision, "deny");
+});
+
+test("the commit hold fires on a commit ended by a CRLF line break", async () => {
+	const root = await makeFixtureRepo({ hooks: { commitCleanupPass: true } });
+	const stdout = runGate(root, "git commit -m x\r\n");
+
+	assert.equal(JSON.parse(stdout).hookSpecificOutput.permissionDecision, "deny");
+});
+
+test("a commit run in a container stays silent", async () => {
+	const root = await makeFixtureRepo({ hooks: { commitCleanupPass: true } });
+
+	assert.equal(runGate(root, "docker exec app git commit -m x"), "");
 });

@@ -42,10 +42,10 @@ import {
 	parseEventFlag,
 	readStdin,
 	resolveHarnessFromArgv,
+	walkLines,
 } from "./hook.mjs";
 import { readGitHooksState } from "./git-hooks/install.mjs";
 import { asRecord, isCommandNotFound } from "./lib/command.mjs";
-import { walkSegments } from "./lib/segments.mjs";
 
 const STATE_FILE_PREFIX = "git-gates-state.";
 
@@ -132,6 +132,30 @@ function resolveGitInvocation(tokens) {
 }
 
 /**
+ * True when a walked segment runs in a container, or under an `env` that
+ * changed its directory. `segment.cwd` cannot say so alone: an `env -C` to a
+ * relative directory reads as null, the same as no change.
+ *
+ * @param {import("./lib/segments.mjs").Segment} segment
+ * @returns {boolean}
+ */
+function checkRunsOutsideSessionRepo(segment) {
+	if (segment.container !== null) {
+		return true;
+	}
+
+	if (!segment.wrappers.includes("env")) {
+		return false;
+	}
+
+	const wrapperWords = segment.words.slice(0, segment.words.length - segment.argv.length);
+
+	return wrapperWords.some(
+		(word) => word === "-C" || word === "--chdir" || word.startsWith("--chdir=")
+	);
+}
+
+/**
  * The `commit` and `push` segments a shell command runs, in order, one entry
  * per matching segment, each carrying the `-C` directories it was given.
  *
@@ -142,7 +166,10 @@ function resolveGitInvocation(tokens) {
  * `echo "git commit"` are all silent.
  *
  * The walk unwraps `bash -c`, `env`, and `timeout`, and reads a heredoc body
- * as data, so a body line is never a command.
+ * as data unless a shell reads it, so a body line is a command only when
+ * `bash <<'EOF'` runs it. A segment that runs in a container, or after an
+ * `env -C` or `env --chdir`, is skipped: its repo is not the session's, and
+ * no `-C` chain from the session's directory reaches it.
  *
  * @param {string | undefined} command
  * @returns {GitGateSegment[]}
@@ -154,7 +181,11 @@ export function detectGitSegments(command) {
 
 	/** @type {GitGateSegment[]} */
 	const segments = [];
-	for (const segment of walkSegments(command).segments) {
+	for (const segment of walkLines(command).segments) {
+		if (checkRunsOutsideSessionRepo(segment)) {
+			continue;
+		}
+
 		const invocation = resolveGitInvocation(segment.argv);
 		if (invocation === null) {
 			continue;

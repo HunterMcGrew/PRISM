@@ -163,6 +163,60 @@ test("detectGitSegments: recognizes commit and push in every spelling the shippi
 	}
 });
 
+test("detectGitSegments: a CRLF line ending does not hide a commit or push", () => {
+	const rows: Array<[string, string[]]> = [
+		["git push\r\n", ["push"]],
+		["git commit -m x\r\n", ["commit"]],
+		["git add -A\r\ngit commit -m x\r\ngit push\r\n", ["commit", "push"]],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			JSON.stringify(command)
+		);
+	}
+});
+
+test("detectGitSegments: a command that runs in a container or another directory is not this repo's commit or push", () => {
+	const rows: Array<[string, string[]]> = [
+		["docker exec app git push", []],
+		["docker compose exec web git commit -m x", []],
+		["env -C /other git push", []],
+		["env -C sub git push", []],
+		["env --chdir=/other git commit -m x", []],
+		["env FOO=1 git -C sub push", ["push"]],
+		["env FOO=1 git push", ["push"]],
+		["cd /abs && git push", ["push"]],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			command
+		);
+	}
+});
+
+test("detectGitSegments: a wrapper or subshell around a commit or push does not hide it", () => {
+	const rows: Array<[string, string[]]> = [
+		["timeout 5 git push", ["push"]],
+		["(git push)", ["push"]],
+		["(cd sub && git commit -m x)", ["commit"]],
+		["nice -n 5 git commit -m x", ["commit"]],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			command
+		);
+	}
+});
+
 test("detectGitSegments: carries every -C directory a segment was given, in order", () => {
 	assert.deepEqual(detectGitSegments("git -C sub -C deeper commit -m x"), [
 		{ subcommand: "commit", directories: ["sub", "deeper"] },
