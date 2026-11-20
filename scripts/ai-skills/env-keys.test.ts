@@ -80,7 +80,7 @@ const VALUES = [
 	"no-newline-13",
 ];
 
-test("prints each key name once, in file order, and nothing else", () => {
+test("prints each key name in file order, and nothing else", () => {
 	const result = runScript(writeEnv(SEEDED));
 	assert.equal(result.status, 0, result.stderr);
 	assert.deepEqual(result.stdout.split("\n").filter(Boolean), [
@@ -96,6 +96,13 @@ test("prints each key name once, in file order, and nothing else", () => {
 		"EMPTY",
 		"LAST",
 	]);
+});
+
+test("a key the file sets twice prints twice, in file order", () => {
+	const result = runScript(writeEnv("A=1\nB=2\nA=3\n"));
+	assert.equal(result.status, 0, result.stderr);
+	assert.equal(result.stdout, "A\nB\nA\n");
+	assert.deepEqual(listEnvKeys("A=1\nB=2\nA=3\n"), ["A", "B", "A"]);
 });
 
 test("no value and no line inside a multi-line quoted value reaches stdout", () => {

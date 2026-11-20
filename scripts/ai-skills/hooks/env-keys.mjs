@@ -3,16 +3,15 @@
 // is the consumer's own file and is backed up to `.bak` before being replaced.
 // Prints the key names in a dotenv file, one per line, and never a value. The
 // secrets gate denies an agent reading a secret file and points it here, so
-// nothing in this script may print text from the right of an `=`. Ported from the
-// reference implementation's shell script.
+// nothing in this script may print text from the right of an `=`.
 //
 //   node env-keys.mjs <file>
 //
 // Blank lines, `#` lines, and lines that aren't KEY=value are skipped, and an
-// optional `export ` prefix is accepted. A value that opens a single, double,
-// or backtick quote and doesn't close it on the same line runs on until its
-// closing quote, and every line inside it prints nothing, so a key-shaped line
-// in a multi-line value stays hidden.
+// optional `export ` prefix is accepted. A key a file sets twice prints twice.
+// A value that opens a single, double, or backtick quote and doesn't close it
+// on the same line runs on until its closing quote, and every line inside it
+// prints nothing, so a key-shaped line in a multi-line value stays hidden.
 //
 // A file whose name isn't `.env`, `.env.*`, or `*.env`, in any case, is
 // refused before it is read, so a key or token file prints nothing. A symlink
