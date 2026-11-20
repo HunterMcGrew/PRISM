@@ -22,9 +22,12 @@
 // because a base64 line ending in `=` padding reads as a key name, and a PEM
 // export can open with `Bag Attributes` lines before its first block. A PEM
 // block inside a quoted multi-line value is hidden like any other line there.
-// A file holding a line of 20 or more letters and digits that ends in `=` or
-// `==` outside a quoted value is refused for the same reason, since it is the
-// last line of a wrapped base64 value.
+// A file is also refused when, outside a quoted value, a line is a bare run of
+// 16 or more base64 characters with no `=`, or a key whose value is only `=`,
+// as in `Abc==`. Dotenv has no unquoted continuation lines, so these are the
+// middle and the tail of a wrapped base64 value. A value split so that its
+// last line is a single-padded tail with no middle line, such as `Abc=`, reads
+// as an empty key and prints.
 //
 // Exit codes: 0 prints the keys, 1 refuses the file, 2 cannot read it.
 
@@ -34,7 +37,8 @@ import { fileURLToPath } from "node:url";
 
 const KEY_LINE = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/;
 const PEM_LINE = /^\s*-----BEGIN/;
-const BASE64_PADDED_LINE = /^\s*[A-Za-z0-9]{20,}={1,2}\s*$/;
+const BASE64_RUN_LINE = /^\s*[A-Za-z0-9+/]{16,}\s*$/;
+const PADDING_ONLY_VALUE = /^=\s*$/;
 const DOTENV_NAME = /^(?:\.env|\.env\..*|.*\.env)$/i;
 
 /**
@@ -83,11 +87,13 @@ function scanEnvKeys(text) {
 
 		if (PEM_LINE.test(line)) return { refusal: "is a PEM block" };
 
-		if (BASE64_PADDED_LINE.test(line)) return { refusal: "holds a base64 key line" };
+		if (BASE64_RUN_LINE.test(line)) return { refusal: "holds a base64 key line" };
 
 		const match = KEY_LINE.exec(line);
 
 		if (!match) continue;
+
+		if (PADDING_ONLY_VALUE.test(match[2])) return { refusal: "holds a base64 key line" };
 
 		keys.push(match[1]);
 

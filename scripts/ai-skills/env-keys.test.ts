@@ -189,12 +189,32 @@ test("an unquoted base64 continuation line is refused, not printed as a key name
 	assert.equal(listEnvKeys(text), null);
 });
 
-test("a long key name or an empty value alone is not mistaken for base64", () => {
+test("a padded base64 tail is refused whatever its length, and so is an unpadded middle line", () => {
+	for (const text of [
+		"PRIVATE_KEY=MIIEvQIBADANBgkqhkiG9w0BAQEFAASC\nQmFzZTY0VGFpbA==\nNEXT=1\n",
+		"PRIVATE_KEY=MIIEvQIBADANBgkqhkiG9w0BAQEFAASC\nAbCdEf0123+/456789abcdefgh\nIjKlMnOpQr=\nNEXT=1\n",
+		"SHORT==\n",
+	]) {
+		const file = writeEnv(text);
+		const result = runScript(file);
+		assert.equal(result.status, 1, text);
+		assert.equal(result.stdout, "", text);
+		assert.equal(
+			result.stderr,
+			`env-keys: ${file} holds a base64 key line, not a dotenv file\n`
+		);
+	}
+});
+
+test("a long key name with an empty value is a key, not base64", () => {
 	const result = runScript(
-		writeEnv("A_LONG_KEY_NAME_WITH_UNDERSCORES=\nSHORT==\nEMPTY=\n")
+		writeEnv("NEXTPUBLICAPIBASEURL=\nA_LONG_KEY_NAME_WITH_UNDERSCORES=\nEMPTY=\n")
 	);
 	assert.equal(result.status, 0, result.stderr);
-	assert.equal(result.stdout, "A_LONG_KEY_NAME_WITH_UNDERSCORES\nSHORT\nEMPTY\n");
+	assert.equal(
+		result.stdout,
+		"NEXTPUBLICAPIBASEURL\nA_LONG_KEY_NAME_WITH_UNDERSCORES\nEMPTY\n"
+	);
 });
 
 test("a PEM block inside a quoted multi-line value prints the key names", () => {
