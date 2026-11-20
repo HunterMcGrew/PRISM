@@ -102,7 +102,7 @@ Step 4 is owned by Briar (self-review) and runs conditionally based on the diff.
 
 ## Git gates (`.ai-skills/config.json#hooks`)
 
-Two opt-in gates ride the hook runtime. `hooks.commitCleanupPass` holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read; `hooks.pushVerification` runs `{{commands.lint}}` and `{{commands.format}}` before every `git push` and denies on a non-zero exit. `format` is the check-mode command for exactly this reason — the gate must never rewrite files. Both are off until set. `PRISM_HOOK_DISABLE=1` turns off every hook for a session except the secrets gate and the approve guard, which ignore it.
+Two opt-in gates ride the hook runtime. `hooks.commitCleanupPass` holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read; `hooks.pushVerification` runs `{{commands.lint}}` and `{{commands.format}}` before every `git push` and denies on a non-zero exit. `format` is the check-mode command for exactly this reason — the gate must never rewrite files. Both are off until set. `PRISM_HOOK_DISABLE=1` turns off every agent hook for a session except the secrets gate and the approval guard, which ignore it. The git pre-commit and pre-push hooks are not agent hooks, and they read neither switch.
 
 ---
 
