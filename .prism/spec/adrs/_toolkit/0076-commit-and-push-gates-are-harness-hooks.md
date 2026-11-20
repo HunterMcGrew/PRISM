@@ -105,8 +105,9 @@ Alternatives, and why each lost:
   `git push` words instead, and that scan can hold a command that would never
   run, such as a quoted mention. It is a text scan and not a parse, so it
   makes no promise to catch every spelling: a `git` built from a variable or
-  an escape can slip past. An over-hold blocks nothing unless lint actually
-  fails, and a miss is the same gap the write gate's shell arm has.
+  an escape can slip past. An over-hold of a push blocks nothing unless lint
+  actually fails, and one of a commit costs a single retry. A miss is the same
+  gap the write gate's shell arm has.
 
 ## References
 
