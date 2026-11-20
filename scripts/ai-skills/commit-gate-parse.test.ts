@@ -320,7 +320,7 @@ test("readCommit reads an abbreviated long option's value as the value, not a pa
 });
 
 test(
-	"repoRelativePaths reads an absolute path through a symlink as the repo path",
+	"repoRelativePaths reads an absolute path through a symlink outside the repo as the repo path it reaches",
 	{ skip: process.platform === "win32" },
 	() => {
 		const parent = tempDir("commit-gate-parse-link-");
@@ -329,6 +329,7 @@ test(
 		writeFileSync(path.join(repo, "frontend", "a.ts"), "x\n");
 		const link = path.join(parent, "lnk");
 		symlinkSync(repo, link);
+		symlinkSync(path.join(repo, "frontend"), path.join(parent, "frontlnk"));
 		const root = realpathSync.native(repo);
 
 		assert.deepEqual(
@@ -338,11 +339,13 @@ test(
 					paths: [
 						path.join(link, "frontend", "a.ts"),
 						path.join(link, "gone.ts"),
+						link,
+						path.join(parent, "frontlnk"),
 					],
 				},
 				root
 			),
-			["frontend/a.ts", "gone.ts"]
+			["frontend/a.ts", "gone.ts", ".", "frontend"]
 		);
 	}
 );

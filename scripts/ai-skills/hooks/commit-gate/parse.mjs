@@ -53,8 +53,6 @@
 // - `--git-dir`, `--work-tree`, `GIT_DIR`, or `GIT_WORK_TREE` on the command
 //   itself, which leaves the directory unresolved so only the flag denies run;
 //   one exported by an earlier segment is not tracked
-// - a named path that is itself a symlink, which reads as the link and not its
-//   target, so one that names the repo from outside it falls outside the repo
 // - a script of another name, or an unmarked copy of `commit.mjs`, which reads
 //   as no commit though it may commit the same way
 // - a toplevel substitution after a `cd` into another repo, which the hook
@@ -288,7 +286,7 @@ export function repoRelativePaths(commit, repoRoot) {
 	return commit.paths.map(
 		(p) =>
 			path
-				.relative(realRoot, resolveEntry(path.resolve(base, toHostPath(p))))
+				.relative(realRoot, resolveEntry(path.resolve(base, toHostPath(p)), realRoot))
 				.split(path.sep)
 				.join("/") || "."
 	);
@@ -296,17 +294,27 @@ export function repoRelativePaths(commit, repoRoot) {
 
 /**
  * `target` for comparing with git's realpath'd toplevel. The directories above
- * it resolve through symlinks, and so does the leaf unless the leaf is itself a
- * symlink: git adds a committed link as a link, not as its target, so an
- * outside link must stay inside the repo and `self -> .` must not read as the
- * whole repo.
+ * it resolve through symlinks, and so does the leaf unless the leaf is a
+ * symlink that sits inside `realRoot`: git adds a committed link as a link, not
+ * as its target, so an inside link to an outside directory must stay inside
+ * the repo and `self -> .` must not read as the whole repo. A link outside the
+ * repo is not committed content, so it resolves to the path it reaches, and one
+ * that reaches the repo root reads as the root.
  *
  * @param {string} target
+ * @param {string} realRoot
  */
-function resolveEntry(target) {
+function resolveEntry(target, realRoot) {
 	if (!isSymlink(target)) return realPrefix(target);
 
-	return path.join(realPrefix(path.dirname(target)), path.basename(target));
+	const link = path.join(realPrefix(path.dirname(target)), path.basename(target));
+	const fromRoot = path.relative(realRoot, link);
+	const inside =
+		fromRoot !== ".." &&
+		!fromRoot.startsWith(`..${path.sep}`) &&
+		!path.isAbsolute(fromRoot);
+
+	return inside ? link : realPrefix(target);
 }
 
 /** @param {string} target */

@@ -908,6 +908,24 @@ test("a pathspec that takes the whole repo is denied", () => {
 	}
 });
 
+test(
+	"a symlink outside the repo that names the whole repo is denied as a pathspec",
+	{ skip: process.platform === "win32" },
+	() => {
+		const repo = createRepo();
+		change(repo, CARD);
+		const link = path.join(path.dirname(repo), `${path.basename(repo)}-lnk`);
+		symlinkSync(repo, link);
+		TEMP_DIRS.push(link);
+
+		assertDeny(
+			gate(repo, `git commit -m "T1: x" -- ${link}`),
+			"stops",
+			/commits every tracked change/
+		);
+	}
+);
+
 test("a directory below the root passes as a pathspec", () => {
 	const repo = createRepo();
 	change(repo, CARD);
