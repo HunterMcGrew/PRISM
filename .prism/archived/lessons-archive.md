@@ -507,3 +507,51 @@ Lessons that were once active in `.prism/lessons.md` and have been archived by Z
 ---
 
 **Archived:** 2026-11-19 — `prism-retro` lessons exits for PRISM-530: dated before 2026-08-21, and no plan, rule, ADR, or architect doc cited it in the 90 days since.
+
+## Merge authority recorded only in a handoff, state file, or memory needs an in-session grant before the first merge
+
+**Why:** 2026-06-16 — Sol resumed a roadmap run from a handoff whose "Live state" block asserted a standing grant to squash-merge PRISM PRs, and tried to merge PR #174 after a clean review. The Claude Code auto-mode classifier denied it, because the grant lived only in agent-written artifacts and not in any user message in the live session. 2026-06-19 (Epic #212 Wave 2, PR #221) — the same denial recurred for a merge authority recorded in the handoff, `conductor-state.json`, and memory, and again at every later wave merge. `git-conventions.md` § Who merges makes merge the human gate, and a prior-session grant does not satisfy it. (Merged 2026-11-19 from the two entries dated 2026-06-16 and 2026-06-19.)
+
+**How to apply:** Treat a merge authority that lives only in prior-session state as a recommendation to re-confirm, not as authority to act. Drive lanes to merge-ready, surface the ready PR, and get one explicit in-session yes before the first merge. Ask whether it covers just this PR or the rest of the run, so a multi-merge run pauses once, then proceed without re-asking per PR. Subagents hit the same wall on `gh pr edit --add-label` and `gh pr ready`, so the main loop that holds the grant owns the ready-flip and the merge.
+
+**Archived:** 2026-11-20 — `prism-retro` lessons exits for PRISM-544: dated before 2026-08-22, and no plan, rule, ADR, or architect doc cited it in the 90 days since. Its remaining citations sit in plans last changed before the window.
+
+## A worktree-isolated lane branches from origin/main — plans it must read have to be committed there before dispatch, not left uncommitted in the shared checkout
+
+**Why:** 2026-07-21 (Sol backlog run) — Sol dispatched Winston to author six plans with an explicit "do not commit" bound, then dispatched worktree-isolated implementation lanes that branch from `origin/main`. The plan files sat untracked in the shared checkout, invisible to a fresh worktree. One Clove lane copied its plan in as a workaround; the next correctly returned `needs-replan` ("the plan file does not exist anywhere in this worktree"). The `needs-replan` was Sol's dispatch error, not a plan defect — cost a repair segment (chore-commit the five plans to main, then re-dispatch the stalled lane).
+
+**How to apply:** Any artifact a worktree-isolated lane must read — a plan, a fixture, a config — has to exist on `origin/main` (or the lane's base ref) at dispatch time. When a decompose segment writes plans and an implementation segment consumes them, commit-and-push the plans between the two segments; don't dispatch the consumer against uncommitted state. The `isolation: 'worktree'` base is `origin/main`, not the shared working tree, so uncommitted-but-present is the same as absent from the lane's view. Exclude any plan already committed on a separate open-PR branch from the between-segment chore-commit, or it conflicts at that PR's merge. Absence is not always how the lane experiences it: on 2026-08-18 (opus5-port PR 2A) a lane read the uncommitted amendment through an absolute path that resolved into the shared main checkout, got real content, and built a full PR against it before noticing its own worktree carried the superseded version — so the consuming lane should resolve plan paths relative to its own root and treat a plan absent from `git ls-files` as absent, however a read outside the tree happens to succeed.
+
+**Archived:** 2026-11-20 — `prism-retro` lessons exits for PRISM-544: dated before 2026-08-22, and no plan, rule, ADR, or architect doc cited it in the 90 days since. Its remaining citations sit in plans last changed before the window.
+
+## A safety net that writes into the directory it scans will re-select its own output
+
+**Why:** 2026-08-18 (opus5-port PR 2A, PR #461) — a `.bak`-before-delete step was added to `pruneStaleHookRuntimeFiles` to make a marker-keyed deletion recoverable. `backupConsumerFile` copies bytes verbatim, so the backup inherited the marker and landed inside the directory prune enumerates: the next run pruned the backup, backed *it* up, and the name grew one `.bak` per run forever. The fix's own docstring still carried the sentence that had justified the missing filter — "a backup is only ever taken of a file that lacked the marker" — restated intact while the fix invalidated it.
+
+**How to apply:** When a fix writes an artifact into a set that some scan selects from, walk the scan against the artifact before writing the fix — the second iteration is where the loop shows, and one iteration always looks correct. Where a comment states the invariant that makes a missing check safe, that sentence is part of the change: if the code no longer holds it, rewrite it in the same commit rather than leaving a restated invariant the code has stopped honoring.
+
+**Archived:** 2026-11-20 — `prism-retro` lessons exits for PRISM-544: dated before 2026-08-22, and no plan, rule, ADR, or architect doc cited it in the 90 days since. Its remaining citations sit in plans last changed before the window.
+
+## A contract that spans two steps is invisible to a review that reads each step alone
+
+**Why:** 2026-08-18 (opus5-port PR 2A, PR #461) — announce-once marked a doc "announced" from the set the resolver *named*, while `formatNag` then truncated the emission to a byte ceiling. Each function is correct read on its own; together they silenced every truncated doc for the rest of the session without ever emitting its name. Measured on a wide fan-out: 382 named, 500 marked, 118 silenced, and a later read of a silenced doc returned nothing. Self-review, the doc-staleness sweep, and ratification all passed over it — the defect lives in the seam, so no single-function read shows it.
+
+**How to apply:** where one step's full output feeds a second step that caps, filters, or truncates it, read the producing step and the consuming step side by side and name the invariant that ties them ("marked only if emitted"). Then test the boundary, not just the happy path — a fan-out large enough to trigger the cap is the case that separates the two steps' behavior, and every smaller case passes either way.
+
+**Archived:** 2026-11-20 — `prism-retro` lessons exits for PRISM-544: dated before 2026-08-22, and no plan, rule, ADR, or architect doc cited it in the 90 days since. Its remaining citations sit in plans last changed before the window.
+
+## A comment that justifies a rule by listing the shapes it governs will be wrong
+
+**Why:** 2026-08-21 (opus5-port PR 2D, PR #470) — one JSDoc paragraph defending a whole-command credit rule named two positions the rule governs; self-review probed eight. The rewrite named two more and self-review found six others. An inline comment two functions away justified a token-recovery change by naming the two tokens it dropped; measurement over 22 shapes found ten, three of them routed. The reviewer's own suggested replacement ("every lost token is a drive-qualified spelling") failed the same way against a seventeen-shape harness. Four enumerations, four too narrow, in one range — while the sibling paragraph that stated its property without enumerating needed no correction across the whole PR.
+
+**How to apply:** when a comment explains why a rule is written the way it is, write the property and one example, not the set. If you catch yourself listing the cases a rule covers, the list is the draft and the sentence that covers all of them is the comment. Where the property has a real bound, state the bound — "every dropped token keeps a `:` inside it" is checkable and closed; "the ones we lose are all X" is a sample.
+
+**Archived:** 2026-11-20 — `prism-retro` lessons exits for PRISM-544: dated before 2026-08-22, and no plan, rule, ADR, or architect doc cited it in the 90 days since. Its remaining citations sit in plans last changed before the window.
+
+## A measurement over this repo's fixtures cannot bound a claim about code that ships elsewhere
+
+**Why:** 2026-08-21 (opus5-port PR 2D, PR #470) — three independent measurements of a token-recovery loss reported zero routed losses: a seventeen-shape harness, a twenty-two-shape harness, and the safety closure they supported. All three scored routedness against PRISM's own manifest, whose patterns are exact, directory-prefix, or prefix-`**` — the shapes where the first colon-piece always rescues the route. The hook ships into consumer repos, where a manifest pattern is whatever the consumer wrote, and a suffix-anchored glob matches a colon-named file the gate then never fires on. Enumerating harder would not have found it, because every enumeration was scored against the same manifest; it was found by reading the matcher's compiled form, where `*` becomes `[^/]*` and admits `:`.
+
+**How to apply:** when the code under test ships somewhere else, this repo's fixtures are one deployment, not the domain — vary the fixture as well as the input, or state the bound as "against this repo's manifest" and stop there. Better still, when a predicate decides the outcome, read the predicate: a claim about what a route can match is answered by the six characters the pattern compiles to, not by a corpus of inputs run through it.
+
+**Archived:** 2026-11-20 — `prism-retro` lessons exits for PRISM-544: dated before 2026-08-22, and no plan, rule, ADR, or architect doc cited it in the 90 days since. Its remaining citations sit in plans last changed before the window.
