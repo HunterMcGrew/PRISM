@@ -619,6 +619,12 @@ round 4: resolved 1
   - **Chosen approach:** "names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer."
   - **Implementation guidance:** this replaces T22's sentence. The spec, `hook-runtime.md`, its twin, and `workflow.md` with its copies say it, and the deny text in `brief-gate.mjs` mirrors it under the code writer.
 - **Part 4 self-review round 1's nits 7, 9, and 10 are declined as port fidelity, as part 2 declined its port copies.** The gates keep the reference implementation's function names, copy its `parseArgs` and switch preamble, and keep its unclean-report fallback and sanitize-write-rename shape, because each is a few lines and the copies differ in timeout or sync mode.
+- **The brief gate denies a negated override phrase, and that is an accepted false deny: PR #548 round 1.**
+  - **Root cause:** the override patterns match the phrase and never read the words before it, so "do not ignore the rules" denies like "ignore the rules".
+  - **Alternatives considered:** a negation guard on the first two patterns, which adds a lookbehind past the ported patterns and needs its own tests.
+  - **Chosen approach:** no guard, as port fidelity. The cost is one rewritten brief, and a brief that says "do not ignore the rules" is rare.
+  - **Implementation guidance:** negated phrases belong in the gate header's list of accepted false denies, which the code writer owns. The docs say nothing about negation.
+- **PR #548 round 1's nit on the plan.md seed in leg 2 of the brief gate's test is declined.** T19's task text names that test and its seed, so the test is as planned.
 
 ## History
 
@@ -702,6 +708,8 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Round 2 docs fixes: the spec's brief gate bullet and the Brief gate section of `hook-runtime.md` and its twin say the deny states what the stage reads, the worktree path, and the report shape, and that anything longer goes into `plan.md` first. The Reconcile gate section says the git directory is the session's own, unlike a shared temp directory.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 fix words the brief gate's deny text as the workflow rule does and lists two more known misses; T20 fix keeps the reconcile counter in the git directory instead of the OS temp dir.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 fix adds "Anything longer goes into `plan.md` first." to the brief gate's deny text after the shape sentence.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: PR #548 round 1 docs fixes: the Brief gate section of `hook-runtime.md` and its twin say `do not read plan.md` (also `the plan`) denies when it ends a clause or comes before `and`, `or`, `but`, `so`, `just`, or `first`, which is what the pattern does. `compatibility.md` carries the Codex `.codex/` trust caveat for the brief and reconcile gates.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Recorded negated override phrases as an accepted false deny with no guard, and declined the leg 2 plan.md seed nit because T19's text names that test.
 
 ## Sessions
 
