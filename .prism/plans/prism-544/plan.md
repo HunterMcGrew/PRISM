@@ -586,6 +586,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T7 ported thrive's `env-keys.sh` as zero-dependency `hooks/env-keys.mjs` with a `.d.mts` sidecar and a 16-case test; a missing file exits 2, and a repeated key prints twice, as in thrive.
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T8 ported thrive's secrets gate as `hooks/secrets-gate.mjs` with its Read, Grep, and shell arms and a `.d.mts` sidecar, and added `secretPaths` to the config schema. It exports `judge` for the leg 2 test, and the call's git toplevel replaces thrive's `REPO_ROOT` for repo-relative matching.
 - 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T9 delivers `secrets-gate.mjs` and `env-keys.mjs`, registers the gate in both install templates and PRISM's own settings with `timeout: 21`, and widens the claim patterns and the doctor's dead-registration regex. A new `hook-registrations.test.ts` pins every registration, and the `gated` JSDoc in `generate-skills.ts` now names `prism-architect` as ungated.
+- 2026-11-19 [huntermcgrew/prism-544-secrets-gate]: T10 documents the secrets gate in a new `### Secrets gate` section of `hook-runtime.md` and its hand-edited install twin, and corrects the entry-point, switch, and registration prose in `what-prism-writes.md`, `adopting-into-existing-repos.md`, and `compatibility.md`. The `verification-commands.md` switch sentence now names the secrets gate and the approval guard as ignoring `PRISM_HOOK_DISABLE`. The build wrote only the expected platform copies, with no extra files.
 
 ## Sessions
 
