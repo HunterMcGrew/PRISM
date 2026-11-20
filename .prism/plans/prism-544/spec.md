@@ -166,6 +166,7 @@ The Codex host gaps go into `hook-runtime.md` as host limitations: the brief gat
 - **Two paths join Affected systems as scope changes that follow from the outcome.** `.claude/agents/prism-onboard.md` is a generated copy the build rewrites when the onboarding skill changes. `prism-pr-review`'s `shared.md` and its generated copies say the `prism-pr:` line is for "a later reconcile gate", which this child makes false.
 - **`verification-commands.md` joins Affected systems as a scope change that follows from the outcome.** Its line saying `PRISM_HOOK_DISABLE=1` turns every hook off is false once the secrets gate ships, beside the approve guard that already ignored it.
 - **The deny text names the remedy relative to the call's `cwd`, with no absolute fallback.** The Remedy line first wrote `<rel>` from the repo's top level, which prints a command that fails from any subdirectory. The remedy must work wherever the agent runs it, which follows from the intent's outcome, so `<rel>` is the runtime directory relative to the `cwd` in the payload, with `/` separators, in a repo or not. Rejected: keeping the top-level form and an absolute path outside a repo, because the printed command is the one the exempt arm then runs, and it has to resolve from the agent's own directory.
+- **`.prism/rules/branch-plan.md` joins Affected systems as a scope change Hunter approved on 2026-11-20 ("kk that's fine").** Its Landing a plan-only commit step, and the seed twin `templates/install/.prism/rules/branch-plan.md`, show a flat-plan commit with no path, which the commit gate denies in a repo with the manifest because the commit names none. The step now shows the plan path after `--`. Hunter's ruling that the subject is free covers the message only, so the command still names a path and the message can be anything.
 
 ## Affected systems
 
@@ -212,6 +213,8 @@ templates/install/.prism/architect/_toolkit/**
 templates/install/.prism/spec/adrs/_toolkit/README.md
 .prism/rules/workflow.md
 templates/install/.prism/rules/workflow.md
+.prism/rules/branch-plan.md
+templates/install/.prism/rules/branch-plan.md
 .prism/rules/verification-commands.md
 templates/install/.prism/rules/verification-commands.md
 .prism/plans/prism-544/**
