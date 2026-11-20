@@ -558,6 +558,8 @@ round 4: resolved 1
 - **Token-based quote reading adds an accepted false deny, and stepped brace sequences judge every form between the bounds.** A quoted glob inside a shell string, such as `bash -c "ls '.en*'"`, now denies. Both are listed in the gate header's accepted false denies.
 - **`env-keys.mjs` accepts the `Abc=` residue.** A single-padded base64 tail with no middle line reads as an empty key, and a real key with an empty value looks the same, so no structural test can refuse one and keep the other. Refusing it would refuse a file with a real empty key. `hook-runtime.md` names the residue.
 - **The secrets gate caps per-word work, so one long word cannot push it past the hook timeout.** The caps are 8 option-cluster letters, 256 path segments, and quote reads of 8,192 characters or 16 copies. Past the 21-second timeout the call runs with nothing denied, which is worse than a missed or false deny on one word. The cost is the cluster gap, where a file name after more than 8 cluster letters passes, and the quote false deny, where a quoted glob in a long or repetitive command reads as unquoted. `hook-runtime.md` names both.
+- **#546 merged at `5462e75c`, and its confirm record `95b9e484` was cherry-picked onto part 3's branch as `b1161477`.** The record needed no extra CI run on #546 that way.
+- **The per-word caps were accepted at merge.** The confirm pass labelled the trade needs-judgment. It is recorded as a scope point for Hunter's veto in the epic summary.
 
 ## History
 
@@ -601,6 +603,8 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 1 fixes (c58a55ed, 25240560, 0976ab32); Windows paths, nested repos, -z listing, short-option files, real-cwd resolution, env-keys base64 refusal.
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 2 fixes (e17e4388, a31854e0); `..` after a symlink climbs from the real directory, grouped short options judged, env-keys refuses base64 lines by structure, Windows `\.env` search term asserted as a deny.
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 3 fix (9fe9dff6); option-cluster walk, path depth and quote reading capped so one long word is judged in linear time.
+- 2026-11-20 [huntermcgrew/prism-544-commit-gate]: part 2 shipped as #546 (1a308cd8); part 3 (T11-T17) cut from main.
+- 2026-11-20 [huntermcgrew/prism-544-commit-gate]: Retro candidates from part 2: the read gate credited docs read one at a time but not a parallel `cat` batch, as a verify agent reported. PR review rounds 1 to 3 on #546 each found residue left by the previous round's fix, so a fix that closes the reported trigger must also be checked for its class.
 
 ## Sessions
 
