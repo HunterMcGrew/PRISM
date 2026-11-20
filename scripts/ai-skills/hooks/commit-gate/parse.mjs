@@ -33,7 +33,7 @@
 //
 // The denies are `-a`, `-i`, a commit naming no paths, `--no-verify` or `-n`,
 // `-c core.hooksPath=…`, a named path the shell would expand (for `commit.mjs`,
-// also one holding `*` or `?`, which the script would read literally), a
+// also one holding `*`, `?`, or `[`, which the script would read literally), a
 // `git commit` pathspec with `:` magic, and more than one commit in the command. On a push
 // the denies are `--no-verify` and `-c core.hooksPath=…` only. Push's `-n` is
 // `--dry-run`, so it passes.
@@ -158,7 +158,7 @@ const ABBREVIATED = [
 const SHELL_EXPANDS = /\$|^~|\{[^{}]*(,|\.\.)[^{}]*\}/;
 // The characters a `commit.mjs` path may not hold, since the script reads each
 // path literally and the shell would have expanded a glob first.
-const SCRIPT_GLOB = /[*?]/;
+const SCRIPT_GLOB = /[*?[]/;
 // A leading `NAME+=value` word, which the segmenter leaves in argv.
 const APPEND_ASSIGNMENT = /^([A-Za-z_][A-Za-z0-9_]*)\+=/;
 

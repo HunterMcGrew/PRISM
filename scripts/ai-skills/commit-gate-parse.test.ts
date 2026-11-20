@@ -609,6 +609,7 @@ test("readCommit denies a commit.mjs path holding a glob character the shell wou
 	for (const command of [
 		commitMjs("T1: x", "src/*.ts"),
 		commitMjs("T1: x", "src/?.ts"),
+		commitMjs("T1: x", "a/[x].test.ts"),
 		"node " + RUNTIME + "/plan/commit.mjs 'T1: x' 'src/*.ts'",
 	]) {
 		assert.deepEqual(denyIds(command), ["expanded-paths"], command);
