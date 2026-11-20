@@ -22,6 +22,9 @@
 // because a base64 line ending in `=` padding reads as a key name, and a PEM
 // export can open with `Bag Attributes` lines before its first block. A PEM
 // block inside a quoted multi-line value is hidden like any other line there.
+// A file holding a line of 20 or more letters and digits that ends in `=` or
+// `==` outside a quoted value is refused for the same reason, since it is the
+// last line of a wrapped base64 value.
 //
 // Exit codes: 0 prints the keys, 1 refuses the file, 2 cannot read it.
 
@@ -31,6 +34,7 @@ import { fileURLToPath } from "node:url";
 
 const KEY_LINE = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/;
 const PEM_LINE = /^\s*-----BEGIN/;
+const BASE64_PADDED_LINE = /^\s*[A-Za-z0-9]{20,}={1,2}\s*$/;
 const DOTENV_NAME = /^(?:\.env|\.env\..*|.*\.env)$/i;
 
 /**
@@ -56,13 +60,14 @@ function findClose(quote, text) {
 }
 
 /**
- * The key names in dotenv `text`, in file order, or `null` when a line outside
- * a quoted value opens a PEM block.
+ * The key names in dotenv `text`, in file order, or the reason the file is
+ * refused: a line outside a quoted value opens a PEM block or ends a wrapped
+ * base64 value.
  *
  * @param {string} text
- * @returns {string[] | null}
+ * @returns {{ keys: string[] } | { refusal: string }}
  */
-export function listEnvKeys(text) {
+function scanEnvKeys(text) {
 	const keys = [];
 	const lines = text.split("\n");
 	let openQuote = "";
@@ -76,7 +81,9 @@ export function listEnvKeys(text) {
 			continue;
 		}
 
-		if (PEM_LINE.test(line)) return null;
+		if (PEM_LINE.test(line)) return { refusal: "is a PEM block" };
+
+		if (BASE64_PADDED_LINE.test(line)) return { refusal: "holds a base64 key line" };
 
 		const match = KEY_LINE.exec(line);
 
@@ -95,7 +102,20 @@ export function listEnvKeys(text) {
 		}
 	}
 
-	return keys;
+	return { keys };
+}
+
+/**
+ * The key names in dotenv `text`, in file order, or `null` when the file is
+ * refused.
+ *
+ * @param {string} text
+ * @returns {string[] | null}
+ */
+export function listEnvKeys(text) {
+	const scan = scanEnvKeys(text);
+
+	return "keys" in scan ? scan.keys : null;
 }
 
 /** @param {string[]} argv */
@@ -129,16 +149,18 @@ function runCli(argv) {
 
 	// Printed only once the whole file has read clean, so a PEM line found late
 	// leaves nothing on stdout.
-	const keys = listEnvKeys(text);
+	const scan = scanEnvKeys(text);
 
-	if (keys === null) {
-		process.stderr.write(`env-keys: ${file} is a PEM block, not a dotenv file\n`);
+	if ("refusal" in scan) {
+		process.stderr.write(
+			`env-keys: ${file} ${scan.refusal}, not a dotenv file\n`
+		);
 		process.exitCode = 1;
 
 		return;
 	}
 
-	if (keys.length > 0) process.stdout.write(`${keys.join("\n")}\n`);
+	if (scan.keys.length > 0) process.stdout.write(`${scan.keys.join("\n")}\n`);
 }
 
 const isEntryModule =

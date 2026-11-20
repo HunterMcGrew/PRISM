@@ -171,6 +171,32 @@ test("an escaped single quote doesn't close a single-quoted value", () => {
 	assert.equal(stdout, "ESC\nNEXT\n");
 });
 
+test("an unquoted base64 continuation line is refused, not printed as a key name", () => {
+	const text = [
+		"PRIVATE_KEY=MIIEvQIBADANBgkqhkiG9w0BAQEFAASC",
+		"AbCdEf0123456789secretKeyMaterial==",
+		"NEXT=1",
+		"",
+	].join("\n");
+	const file = writeEnv(text);
+	const result = runScript(file);
+	assert.equal(result.status, 1);
+	assert.equal(result.stdout, "");
+	assert.equal(
+		result.stderr,
+		`env-keys: ${file} holds a base64 key line, not a dotenv file\n`
+	);
+	assert.equal(listEnvKeys(text), null);
+});
+
+test("a long key name or an empty value alone is not mistaken for base64", () => {
+	const result = runScript(
+		writeEnv("A_LONG_KEY_NAME_WITH_UNDERSCORES=\nSHORT==\nEMPTY=\n")
+	);
+	assert.equal(result.status, 0, result.stderr);
+	assert.equal(result.stdout, "A_LONG_KEY_NAME_WITH_UNDERSCORES\nSHORT\nEMPTY\n");
+});
+
 test("a PEM block inside a quoted multi-line value prints the key names", () => {
 	const env = [
 		"FIRST=1",
