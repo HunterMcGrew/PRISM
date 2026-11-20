@@ -47,7 +47,8 @@ Atlas runs each step in fixed order so reconfigure and resume behave predictably
 5. Run rule generators in declaration order (`code-standards` → `security` → `framework-guidelines` → `review-stack`). The last one writes the review stack checks into `.prism/review/stack/`.
 6. Write config (`writeOnboardingConfig`).
 7. Anchor content renders at output regeneration time, not as a step Atlas runs — see ADR-0075. Atlas performs no anchor-substitution step of its own.
-8. Emit closing summary listing every file's `written` / `skipped` status.
+8. After regeneration, draft architect docs for the detected source trees on a yes, one per tree, and add each route to the live `manifest.json` only once its doc holds content. A declined or empty doc writes neither file, and `prism doctor` warns on a route to a doc with no content.
+9. Emit closing summary listing every file's `written` / `skipped` status.
 
 Step completion is tracked in `.ai-skills/registry/onboarding-state.json` for resume-from-interruption.
 
