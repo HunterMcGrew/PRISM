@@ -57,6 +57,22 @@ test("parseUnprovenShellPaths: a body fed to a shell stays in the scan", () => {
 	assert.equal(parseUnprovenShellPaths(command).includes(".prism/y.md"), true);
 });
 
+test("parseUnprovenShellPaths: a body that runs a substitution stays in the scan", () => {
+	const substitution = `cat <<EOF\n$(tee ${ROUTED} </dev/null)\nEOF\n`;
+	const backticks = `cat <<EOF\n\`tee ${ROUTED} </dev/null\`\nEOF\n`;
+
+	assert.equal(parseUnprovenShellPaths(substitution).includes(ROUTED), true);
+	assert.equal(parseUnprovenShellPaths(backticks).includes(ROUTED), true);
+});
+
+test("parseUnprovenShellPaths: only the body that runs a substitution stays when two share a line", () => {
+	const command = `cat <<'A' <<EOF\nsee .prism/a.md\nA\n$(tee ${ROUTED} </dev/null)\nEOF\n`;
+	const candidates = parseUnprovenShellPaths(command);
+
+	assert.equal(candidates.includes(ROUTED), true);
+	assert.equal(candidates.includes(".prism/a.md"), false);
+});
+
 // --- Read credit under doubt ---
 
 test("parseShellReadTargets: a command the walk cannot read credits nothing", () => {

@@ -179,13 +179,10 @@ test("detectGitSegments: a CRLF line ending does not hide a commit or push", () 
 	}
 });
 
-test("detectGitSegments: a command that runs in a container or another directory is not this repo's commit or push", () => {
+test("detectGitSegments: a command that runs in a container is not this repo's commit or push", () => {
 	const rows: Array<[string, string[]]> = [
 		["docker exec app git push", []],
 		["docker compose exec web git commit -m x", []],
-		["env -C /other git push", []],
-		["env -C sub git push", []],
-		["env --chdir=/other git commit -m x", []],
 		["env FOO=1 git -C sub push", ["push"]],
 		["env FOO=1 git push", ["push"]],
 		["cd /abs && git push", ["push"]],
@@ -197,6 +194,27 @@ test("detectGitSegments: a command that runs in a container or another directory
 			expected,
 			command
 		);
+	}
+});
+
+test("detectGitSegments: an env directory leads the segment's directories, ahead of git -C", () => {
+	const rows: Array<[string, string[]]> = [
+		["env -C /other git push", ["/other"]],
+		["env -C . git push", ["."]],
+		["env -C sub git push", ["sub"]],
+		["env --chdir=/other git commit -m x", ["/other"]],
+		["env --chdir /other git push", ["/other"]],
+		["env -C sub git -C deeper push", ["sub", "deeper"]],
+		["env X=1 git -C sub push 2>&1", ["sub"]],
+		["env FOO=1 git -C sub push 2>/dev/null", ["sub"]],
+		["env -u HOME -C sub git push", ["sub"]],
+		["timeout 5 env -C sub git push", ["sub"]],
+		["env git push", []],
+	];
+
+	for (const [command, expected] of rows) {
+		const [segment] = detectGitSegments(command);
+		assert.deepEqual(segment?.directories, expected, command);
 	}
 });
 

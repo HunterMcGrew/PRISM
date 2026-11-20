@@ -263,10 +263,9 @@ let lastWalk = null;
  * line breaks they are on Windows, so a CRLF-joined remedy is several
  * commands and no word carries a trailing `\r`.
  *
- * The last command walked is kept, so every reader of one command in a hook
- * call shares one walk. A command the tokenizer cannot read costs a
- * retokenize per newline (`readablePrefix` in `lib/segments.mjs`), and a
- * Bash call reaches this three times.
+ * The last command walked is kept, so every reader of the same command shares
+ * one walk. That matters most for a command the tokenizer cannot read, which
+ * costs a retokenize per newline (`readablePrefix` in `lib/segments.mjs`).
  *
  * @param {string} command
  * @returns {ReturnType<typeof walkSegments>}

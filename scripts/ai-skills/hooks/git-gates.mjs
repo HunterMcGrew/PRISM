@@ -132,27 +132,42 @@ function resolveGitInvocation(tokens) {
 }
 
 /**
- * True when a walked segment runs in a container, or under an `env` that
- * changed its directory. `segment.cwd` cannot say so alone: an `env -C` to a
- * relative directory reads as null, the same as no change.
+ * The directories an `env` wrapper in a segment's words moves to, in order,
+ * from its `-C <dir>`, `--chdir <dir>`, and `--chdir=<dir>` options. `env`
+ * runs before `git`, so each resolves before the `git -C` chain does.
+ *
+ * `segment.cwd` cannot supply these: an `env -C` to a relative directory
+ * reads as null there, the same as no change.
  *
  * @param {import("./lib/segments.mjs").Segment} segment
- * @returns {boolean}
+ * @returns {string[]}
  */
-function checkRunsOutsideSessionRepo(segment) {
-	if (segment.container !== null) {
-		return true;
-	}
-
+function readEnvDirectories(segment) {
 	if (!segment.wrappers.includes("env")) {
-		return false;
+		return [];
 	}
 
-	const wrapperWords = segment.words.slice(0, segment.words.length - segment.argv.length);
+	const { words } = segment;
+	const start = words.findIndex((word) => path.basename(word) === "env");
+	/** @type {string[]} */
+	const directories = [];
+	for (let index = start + 1; start !== -1 && index < words.length; ) {
+		const word = words[index];
+		if (!word.startsWith("-") || word === "--") {
+			break;
+		}
 
-	return wrapperWords.some(
-		(word) => word === "-C" || word === "--chdir" || word.startsWith("--chdir=")
-	);
+		if ((word === "-C" || word === "--chdir") && index + 1 < words.length) {
+			directories.push(words[index + 1]);
+		} else if (word.startsWith("--chdir=")) {
+			directories.push(word.slice("--chdir=".length));
+		}
+
+		const takesValue = ["-u", "--unset", "-C", "--chdir", "-S", "--split-string"].includes(word);
+		index += takesValue ? 2 : 1;
+	}
+
+	return directories;
 }
 
 /**
@@ -166,10 +181,10 @@ function checkRunsOutsideSessionRepo(segment) {
  * `echo "git commit"` are all silent.
  *
  * The walk unwraps `bash -c`, `env`, and `timeout`, and reads a heredoc body
- * as data unless a shell reads it, so a body line is a command only when
- * `bash <<'EOF'` runs it. A segment that runs in a container, or after an
- * `env -C` or `env --chdir`, is skipped: its repo is not the session's, and
- * no `-C` chain from the session's directory reaches it.
+ * as data unless a shell reads it, so a body line is a command only when a
+ * shell reads the heredoc. A segment that runs in a container is skipped: its
+ * repo is not the session's. An `env -C` or `env --chdir` directory leads the
+ * segment's directories, ahead of the `git -C` chain.
  *
  * @param {string | undefined} command
  * @returns {GitGateSegment[]}
@@ -182,7 +197,7 @@ export function detectGitSegments(command) {
 	/** @type {GitGateSegment[]} */
 	const segments = [];
 	for (const segment of walkLines(command).segments) {
-		if (checkRunsOutsideSessionRepo(segment)) {
+		if (segment.container !== null) {
 			continue;
 		}
 
@@ -191,13 +206,14 @@ export function detectGitSegments(command) {
 			continue;
 		}
 
+		const directories = [...readEnvDirectories(segment), ...invocation.directories];
 		if (invocation.subcommand === "commit") {
-			segments.push({ subcommand: "commit", directories: invocation.directories });
+			segments.push({ subcommand: "commit", directories });
 		} else if (
 			invocation.subcommand === "push" &&
 			!invocation.args.some((arg) => arg === "--delete" || arg === "-d")
 		) {
-			segments.push({ subcommand: "push", directories: invocation.directories });
+			segments.push({ subcommand: "push", directories });
 		}
 	}
 
