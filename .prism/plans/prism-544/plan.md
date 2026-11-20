@@ -604,6 +604,22 @@ round 4: resolved 1
   - **Leg 3's temp runtime also copies `architect-route.mjs` and `lib/match.mjs`**, which the copied gate imports.
   - **T19's in-process API is `runGate(payload, { tool })`**, so tests of the brief gate call it that way.
 
+- **The brief gate's override patterns keep their `{1,2}` qualifiers, and the docs say one or two: part 4 self-review round 1, finding 1.**
+  - **Root cause:** `hook-runtime.md` and its twin said "up to two qualifiers", which reads as zero to two, but both `ignore` and `disregard` patterns in `brief-gate.mjs` require at least one. A bare "ignore instructions" passes.
+  - **Alternatives considered:** widening the patterns to `{0,2}`, which changes the ported patterns past a prose fix and needs its own test.
+  - **Chosen approach:** fix the words to match the port. The bare form goes in the gate header's known misses, which the code writer owns.
+  - **Implementation guidance:** the source doc and its twin say "one or two qualifiers", and the build rewrites the platform copies.
+- **The reconcile counter moves from `os.tmpdir()` into the worktree's git directory, beside `prism-hooks.jsonl`: part 4 self-review round 1, finding 3.**
+  - **Root cause:** the counter sat at a fixed path under the shared temp directory. `mkdirSync` reuses a directory another local user created, and the write follows a planted symlink, so a probe overwrote its target.
+  - **Alternatives considered:** a per-user `0o700` directory with an exclusive temp write, which adds permission handling the git directory does not need.
+  - **Chosen approach:** the git directory, which is the session's own and where `appendHookLog` already writes.
+  - **Implementation guidance:** this replaces T20's `DEFAULT_STATE_DIR` line and T23's counter sentence. The Counting bullet of the spec, `hook-runtime.md`, and its twin say the git directory. The code writer changes the gate and its test.
+- **The brief-shape sentence names each stage's own input: part 4 self-review round 1, finding 4.**
+  - **Root cause:** the rule said a gated brief names the plan folder, the task IDs, the worktree path, and the report shape. `prism-pr-review` takes a PR, `prism-challenge` a plan folder and round, and `prism-verify` a plan folder and base ref, so a dispatcher following the rule dropped the PR number.
+  - **Chosen approach:** "names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer."
+  - **Implementation guidance:** this replaces T22's sentence. The spec, `hook-runtime.md`, its twin, and `workflow.md` with its copies say it, and the deny text in `brief-gate.mjs` mirrors it under the code writer.
+- **Part 4 self-review round 1's nits 7, 9, and 10 are declined as port fidelity, as part 2 declined its port copies.** The gates keep the reference implementation's function names, copy its `parseArgs` and switch preamble, and keep its unclean-report fallback and sanitize-write-rename shape, because each is a few lines and the copies differ in timeout or sync mode.
+
 ## History
 
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Wrote the plan, 26 tasks in a five-part stack, with acceptance criteria AC-1 to AC-13 carried from issue #544.
@@ -679,6 +695,10 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T20 ports the reconcile gate (reconcile-gate.mjs, .d.mts, 37-test suite), and the prism-pr-review skill line now says the reconcile gate reads `prism-pr: <n>` to find the PR.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T21 delivers brief-gate.mjs, reconcile-gate.mjs and lib/hook-log.mjs, widens both command patterns and doctor's path regex, and registers the gates in both templates and PRISM's own settings.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T23 documents the brief gate, the reconcile gate, the hook log, and the host limits in hook-runtime.md, its install twin, and three docs pages.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Round 1 fixed the qualifier wording to match the `{1,2}` port and did not widen it, and the hook log paragraph now says when each gate writes a row. The Decision on qualifier wording records why.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: The reconcile counter moves into the git directory beside `prism-hooks.jsonl`, because the shared temp directory let a planted symlink redirect the write. The spec's Counting bullet, `hook-runtime.md`, and its twin say so, and the code writer changes the gate.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: The brief-shape sentence in `workflow.md` now names each stage's own input, and `spec.md` says at most three stops in a row. The docs pages say the reconcile gate blocks while reconcile reports the PR unclean.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Declined nits 7, 9, and 10 as port fidelity, as part 2 did.
 
 ## Sessions
 
