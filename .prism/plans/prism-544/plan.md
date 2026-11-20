@@ -544,7 +544,9 @@ round 4: resolved 1
 - **Part 1 corrects `hook-runtime.md`: a scope change that follows from the outcome.** Its heredoc paragraph did not say that every body stays in the scan when one cannot be placed, and its Git gates section did not say the gates skip a segment run inside a container. Both are behavior part 1 shipped, so a doc part 1 made incomplete is fixed in part 1 rather than waiting for T23. T23 edits other sentences in the same doc, and its text stands.
 - **The five-part split was taken under Hunter's epic-level go-ahead, and he can veto it before part 1's PR opens.** Part 1 is T1 to T6 and T18, part 2 is T7 to T10, part 3 is T11 to T17, part 4 is T19 to T23, and part 5 is T24 to T26. A veto before part 1 opens costs one re-cut of this list; after it opens, the stack is already in review.
 - **The confirm-round brief binds the plan stage through child 8's spec, so `prism-plan`'s skill text is not edited.** Child 8's spec has a Decision on that brief, and it applies to the plan stage directly. The epic spec's older wording, "with the verdict in the brief", stays as history.
-- **OPEN — TBD, needs Hunter input.** ADR-0076's Consequences still lists the deleted splitter's quote gap, which no longer describes the git gates. The ADR is outside this ticket's Affected systems, and the spec leaves ADR-0076 as written. **Default path (used until resolved):** the ADR stays as written, and a follow-up PR off `main` corrects that bullet to the unreadable-text over-hold, listed in the PR body and the closing summary.
+- **ADR-0076 is amended in this PR, and its path joins part 1's files under Hunter's 2026-11-19 ruling.** This PR deleted the splitter, so the ADR's Consequences bullet about the splitter's quote gap became false. Hunter ruled "Amend in #545" over a follow-up PR off `main`. The bullet now names the shared parser's unreadable-text scan and its over-hold, with a dated `Amended` note, and the build wrote the three platform copies (`71fa8515`).
+- **The unreadable-text scan promises no catch of every spelling.** It is a text scan and not a parse, so a `git` built from a variable or an escape can slip past it, and `hook-runtime.md` and ADR-0076 say so instead of claiming it never misses.
+- **`resolveCdTarget` takes a `substitutions` argument, and `checkSegmentWritesNoFile` deliberately omits it.** `checkShellProofSafe` rejects `$` before that caller runs, so a substitution never reaches it.
 
 ## History
 
@@ -573,6 +575,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: PR review round 2 fixes: the cd-resolution tests build their paths with `path.resolve` and `path.join` so windows-latest passes (`f150add1`), and the unreadable-text git scan starts each piece at its first `git` word (`21a0a6b2`).
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: PR review round 3 fix: `hook-runtime.md` scopes the container skip to commands the parser can read and says unreadable text is scanned for commit and push words (`73f9e328`). ADR-0076's stale splitter bullet is recorded as an open Decision, because the ADR is outside Affected systems.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: PR review confirm-pass fixes: a `cd` target that holds a substitution reads as unresolvable in the write gate (`7159cd61`), `hook-harnesses.test.ts` now pins the argv quote escape, the empty cwd, and a non-string command, each mutation-checked (`af5b0521`), and the spec's Shared parser paragraph is in past tense.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Hunter ruled to amend ADR-0076 in this PR, so the open question on its splitter bullet closed. The ADR's Consequences bullet and its three platform copies now describe the shared parser's unreadable-text scan (`71fa8515`).
 
 ## Sessions
 
