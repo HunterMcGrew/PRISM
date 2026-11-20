@@ -397,7 +397,7 @@ test("a flat-plan branch passes a named-path commit and skips the plan checks", 
 	);
 });
 
-test("a flat-plan branch passes a plan: subject naming code, because the subject check needs a plan folder", () => {
+test("a flat-plan branch passes a plan: subject naming code, and so does a folder-plan one", () => {
 	const repo = createRepo({ kind: "legacy" });
 	change(repo, CARD);
 
