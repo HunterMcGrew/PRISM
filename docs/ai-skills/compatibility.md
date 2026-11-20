@@ -1,7 +1,7 @@
 ---
 title: Compatibility
 description: How PRISM's build outputs land across tool namespaces and what gets committed vs ignored.
-last_updated: "2026-11-19"
+last_updated: "2026-11-20"
 ---
 
 # Compatibility
@@ -84,7 +84,9 @@ The write gate also carries the umbrella speed bump. When an edit adds a new hea
 
 A new install's manifest also routes `docs/` to the documentation architect doc, which holds the frontmatter schema and naming rules `prism-docs` follows. If `documentation.location` in `.ai-skills/config.json` points anywhere else, add a route for that directory to `_toolkit/documentation.md` in your own `.prism/architect/manifest.json`. Without it, `prism-docs` writes to your doc root without ever loading those rules.
 
-The same runtime carries two opt-in git gates: a commit-time cleanup pass that holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read, and a push-time verification that runs `commands.lint` and `commands.format` and denies a `git push` on a non-zero exit. Both are off until a `hooks` block in `.ai-skills/config.json` turns them on (`commitCleanupPass`, `pushVerification`). They ride the same delivery as the write gate, so Claude Code and Codex both register them. The shipping flow carries the cleanup pass as a prose step on every host, which is what covers Cursor.
+The same runtime carries two opt-in git gates: a commit-time cleanup pass that holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read, and a push-time verification that runs `commands.lint` and `commands.format` and denies a `git push` on a non-zero exit. Both are off until a `hooks` block in `.ai-skills/config.json` turns them on (`commitCleanupPass`, `pushVerification`). They ride the same delivery as the write gate, so Claude Code and Codex both register them. Codex runs them only once you trust the project's `.codex/` layer and review each hook definition. The shipping flow carries the cleanup pass as a prose step on every host, which is what covers Cursor.
+
+The same runtime carries a secrets gate, on by default wherever Claude Code or Codex is a host, because both install templates register it. A repo whose `hosts` lists only Cursor receives the gate's files but no registration, so the gate does not run there. On Codex it fires only once you trust the project's `.codex/` layer and review each hook definition. It denies an agent reading `.env` files, `secrets/` folders, and key files, and points it at `env-keys.mjs`, which prints key names only. No kill switch turns it off.
 
 `hosts` reaches past the hook, too: a repo that lists its hosts receives the persona skill roster, agent definitions, and rule copies only for those hosts — dropping a host from the list takes its output back out on the next `prism update`, the same way dropping a host takes its hook registration back out. See [`docs/parameterization.md`](../parameterization.md) § Field reference for the key.
 

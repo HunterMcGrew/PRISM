@@ -201,3 +201,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-19 (PRISM-537): self-review round 1 told Sasha's report to land in `## Debugged Issues`, which a folder `plan.md` does not have, so the Decision had to route around it.
 
 **How to apply:** Before a handoff names a plan section, confirm `.prism/templates/plan.md` carries it, or route the content to a section the folder plan does have.
+
+## A PR-review re-run PATCHes the marked summary comment and never POSTs a new one
+
+**Why:** 2026-11-19 (PRISM-544): reconcile reads the verdict only from the latest comment that carries the `code-review-pr-summary` marker, so a second marked summary comment is read and the earlier one goes stale.
+
+**How to apply:** On a re-run, find the marked comment and PATCH it in place; post a new comment only when none carries the marker.
+
+## Linux-only verification lets Windows path failures reach the PR's CI
+
+**Why:** 2026-11-20 (PRISM-544, PR #546): part 2's verify and three self-review rounds all ran on Linux, so the Windows failures in the path-sensitive gate tests first showed up on the PR's CI.
+
+**How to apply:** Before opening a PR, check any test that builds, compares, or matches a path for Windows forms (backslashes, drive letters, `\\?\` prefixes, case-insensitive names), since neither verify nor self-review runs on Windows.

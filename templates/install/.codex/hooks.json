@@ -27,6 +27,16 @@
 						"command": "node \".claude/hooks/approve-guard.mjs\" --tool=codex --event=PreToolUse"
 					}
 				]
+			},
+			{
+				"matcher": "^Bash$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/secrets-gate.mjs\" --tool=codex --event=PreToolUse",
+						"timeout": 21
+					}
+				]
 			}
 		],
 		"UserPromptSubmit": [

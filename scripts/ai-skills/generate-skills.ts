@@ -49,7 +49,7 @@ export interface RoleDefinition {
 	routing?: "auto" | "named-only";
 	/** Skill ids whose content a Claude agent def injects at start. */
 	preloads?: string[];
-	/** True for a role a plan-folder run dispatches as a subagent, whose brief the brief gate, when it ships, reads as a path brief. */
+	/** True for a role whose dispatch brief the brief gate holds to a path brief, wherever that gate is delivered. Roles opt in one by one: `prism-architect` is dispatched as a subagent but stays ungated, because a fit-verdict brief carries its finding in full. */
 	gated?: boolean;
 }
 

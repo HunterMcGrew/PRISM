@@ -641,8 +641,8 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 	return findings;
 }
 
-/** Matches any `hook.mjs`, `git-gates.mjs`, or `approve-guard.mjs` path inside a parsed hook command string. */
-const HOOK_COMMAND_PATH_RE = /(\S*(?:hook|git-gates|approve-guard)\.mjs)/g;
+/** Matches any `hook.mjs`, `git-gates.mjs`, `approve-guard.mjs`, or `secrets-gate.mjs` path inside a parsed hook command string. */
+export const HOOK_COMMAND_PATH_RE =/(\S*(?:hook|git-gates|approve-guard|secrets-gate)\.mjs)/g;
 
 /**
  * Resolves one hook path as written in a hook command string to an absolute

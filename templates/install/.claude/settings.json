@@ -27,6 +27,16 @@
 						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/approve-guard.mjs\" --tool=claude --event=PreToolUse"
 					}
 				]
+			},
+			{
+				"matcher": "Read|Grep|Bash|PowerShell",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/secrets-gate.mjs\" --tool=claude --event=PreToolUse",
+						"timeout": 21
+					}
+				]
 			}
 		],
 		"UserPromptSubmit": [

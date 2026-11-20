@@ -58,6 +58,8 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/plan/watch-ci.mjs",
 	".claude/hooks/review/reconcile.mjs",
 	".claude/hooks/verify/check-report.mjs",
+	".claude/hooks/secrets-gate.mjs",
+	".claude/hooks/env-keys.mjs",
 	".claude/hooks/approve-guard.mjs",
 ];
 
