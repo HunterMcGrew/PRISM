@@ -352,6 +352,7 @@ Owner: Clove (spec content, under `writing-voice.md`).
 - files: .prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md, .prism/architect/_toolkit/git-hooks.md, templates/install/.prism/architect/_toolkit/git-hooks.md, .claude/architect/_toolkit/git-hooks.md, .codex/architect/_toolkit/git-hooks.md, .cursor/architect/_toolkit/git-hooks.md, docs/what-prism-writes.md, docs/adopting-into-existing-repos.md, docs/ai-skills/compatibility.md
 - proof: pnpm exec tsx scripts/ai-skills/build.ts --check && pnpm run prism:crossref-lint && grep -q '### Commit gate' .prism/architect/_toolkit/hook-runtime.md && grep -q 'cleanup-pass hold' .prism/architect/_toolkit/git-hooks.md && ! grep -q 'the commit cleanup pass' .prism/architect/_toolkit/git-hooks.md && grep -q 'commit-gate.mjs' docs/what-prism-writes.md
 - depends on: T10, T16
+- amended: docs/parameterization.md: the `testGlobs` row of its Field reference table, added after self-review round 2 found the key undocumented there
 
 Owner: Eli. Every claim is checked against `commit-gate.mjs` and `commit-gate/*.mjs` as T11 to T14 wrote them.
 
