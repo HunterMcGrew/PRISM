@@ -596,6 +596,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: Part 2's self-review round 2 fixes landed in `df44bf95` (gate), `4721354a` (docs), `2dd894ac` (registration test comment), and `91495a2b` (the `secretPaths` row of the parameterization page, added under Hunter's ruling). T8's deny-text bullet and T10's verification-commands bullet now match what shipped, and T10 lists the parameterization page with an `amended` line.
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: Retro candidates from parts 1 and 2: two subagents tried string-splitting to evade approve-guard false positives, and the classifier blocked both. Confirm passes that posted summaries without the `<!-- code-review-pr-summary -->` marker made reconcile re-apply `review:has-minors`. Part 1's PR review caught write-gate regressions that three self-review rounds missed, so consumers of nested segments must filter by depth and honor `unreadable`, and a review fix that adds a code path must re-read the architect doc describing it.
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: self-review round 3 fixes for part 2 (d17fa670, f37e8272, 75898447); quoted globs read by token, padded brace sequences, cap counts forms, six gate mutants covered.
+- 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 1 fixes (c58a55ed, 25240560, 0976ab32); Windows paths, nested repos, -z listing, short-option files, real-cwd resolution, env-keys base64 refusal.
 
 ## Sessions
 
@@ -762,17 +763,38 @@ head: adfce0cd5e6269d0ad19993d7900971444551775 (part 2 of 5)
   - Round 3 is the cap, so these go to the part 2 PR as open items.
 - pr-review round 1 at 8d4449b5 (part 2 of 5): 0 critical, 2 major, 5 minor, 3 nit
   - Range fdce3e87..8d4449b5, the whole PR, read cold. Every pass swept except Accessibility, n/a with no UI. Findings are posted inline on #546, and the summary carries the verdict line with state 1, so no review labels are applied. Reconcile is clean.
-  - **1. Major, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:724. A path-less Grep passes when an unignored nested git repo holds a secret, because `ls-files` lists the nested repo as one folder entry.
-  - **2. Major, bug.** File: scripts/ai-skills/secrets-gate.test.ts:1004, plus three more cases. Four secrets-gate cases fail on `windows-latest` in run 44701477121. This line's cause is a native `D:\` path inside a command string. The other three get no deny on Windows, and their cause is not yet diagnosed.
-  - **3. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:720. `ls-files` is read without `-z`, so a non-ASCII folder hides a secret.
-  - **4. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:1000. A file name attached to a short option, such as `xargs -a.env.production`, is never judged.
-  - **5. Minor, bug.** File: scripts/ai-skills/hooks/secrets-gate.mjs:810, plus :372, :992, and :1042. Relative paths resolve lexically against a symlinked cwd.
-  - **6. Minor, bug (test gap).** File: scripts/ai-skills/secrets-gate.test.ts:596. The `function` keyword arm of `DEFINES_FUNCTION` is unpinned.
-  - **7. Minor, security risk.** File: scripts/ai-skills/hooks/env-keys.mjs:85. An unquoted base64 continuation line prints as a key name.
-  - **8. nit, performance.** File: scripts/ai-skills/hooks/secrets-gate.mjs:727. One `realpathSync` call per listed file.
-  - **9. nit, nitpick.** File: docs/what-prism-writes.md:94, and docs/adopting-into-existing-repos.md:37. The registration list omits the git gates' `PreToolUse` entry.
-  - **10. nit, code smell.** File: scripts/ai-skills/doctor.ts:645. The entry-point list is spelled by hand in four places.
+  - **1. Major, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:724. A path-less Grep passes when an unignored nested git repo holds a secret, because `ls-files` lists the nested repo as one folder entry. Fixed c58a55ed: the Grep listing descends into nested repos and submodule entries.
+  - **2. Major, bug.** File: scripts/ai-skills/secrets-gate.test.ts:1004, plus three more cases. Four secrets-gate cases fail on `windows-latest` in run 44701477121. This line's cause is a native `D:\` path inside a command string. The other three get no deny on Windows, and their cause is not yet diagnosed. Fixed c58a55ed: Windows `\` separators and drive roots are judged in `namesSecret` and `expandGlob`. The three cases with no diagnosed cause are the under-deny recorded under Debugged Issues.
+  - **3. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:720. `ls-files` is read without `-z`, so a non-ASCII folder hides a secret. Fixed c58a55ed: the listing is read with `-z`.
+  - **4. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:1000. A file name attached to a short option, such as `xargs -a.env.production`, is never judged. Fixed c58a55ed: the text after a short option's letter is judged.
+  - **5. Minor, bug.** File: scripts/ai-skills/hooks/secrets-gate.mjs:810, plus :372, :992, and :1042. Relative paths resolve lexically against a symlinked cwd. Fixed c58a55ed: relative paths resolve against the real directory of the cwd.
+  - **6. Minor, bug (test gap).** File: scripts/ai-skills/secrets-gate.test.ts:596. The `function` keyword arm of `DEFINES_FUNCTION` is unpinned. Fixed c58a55ed: the `function` keyword arm is pinned by a test.
+  - **7. Minor, security risk.** File: scripts/ai-skills/hooks/env-keys.mjs:85. An unquoted base64 continuation line prints as a key name. Fixed 25240560: a file with an unquoted base64 padding line is refused.
+  - **8. nit, performance.** File: scripts/ai-skills/hooks/secrets-gate.mjs:727. One `realpathSync` call per listed file. Partly fixed c58a55ed: only symlinks and untracked entries are resolved, and the speedup is not measured.
+  - **9. nit, nitpick.** File: docs/what-prism-writes.md:94, and docs/adopting-into-existing-repos.md:37. The registration list omits the git gates' `PreToolUse` entry. Fixed 0976ab32.
+  - **10. nit, code smell.** File: scripts/ai-skills/doctor.ts:645. The entry-point list is spelled by hand in four places. Declined: the entry-point list stays hand-written, as declinable.
+  - The secrets-gate section of `hook-runtime.md`, its install twin, and the platform copies follow the gate fixes at a2906d38.
   - AC-2, the secrets half of AC-8, AC-9 for the secrets gate, and the registration half of AC-10: met (executed on Linux). AC-13: unmet, because `windows-latest` is red.
+
+## Debugged Issues
+
+### Windows under-deny in `namesSecret` and `expandGlob`
+
+- **Status:** `fixed` at c58a55ed
+- **Severity:** High
+- **Confidence:** `Medium`
+- **Environment:** `windows-latest`, CI run 44701477121 on #546
+- **File:** `scripts/ai-skills/hooks/secrets-gate.mjs`, `namesSecret` and `expandGlob`
+- **Root cause:** `[Deduced]` a resolved path carries the platform's `\` separator and a drive root, and `namesSecret` split it on `/` only, while `expandGlob` treated a drive such as `D:` as a path segment, so a secret path in Windows form was never matched.
+- **Steps to Reproduce:**
+  1. Run `secrets-gate.test.ts` on a Windows host.
+  2. Cases 1 to 3 of the four failing cases get no deny.
+- **Expected behavior:** a secret path in Windows form is denied.
+- **Actual behavior:** the gate lets it through, an under-deny.
+- **Missing evidence:** no Windows host here, so the cause is confirmed only by reasoning over the code and the run's failures, not by a local repro. The fix is graded by the next `windows-latest` run on this PR.
+- **Recommended fix:** split on the platform separator in `namesSecret` and take a pattern's root from `path.parse` in `expandGlob`.
+- **Suggested tests:** cases with `\` separators and a drive root, which the Linux run cannot fail on.
+- **Ticket:** `N/A`
 
 ## Acceptance Criteria
 
