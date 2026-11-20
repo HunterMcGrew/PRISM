@@ -41,7 +41,7 @@ after(() => {
 });
 
 const denyReason = (cause: string) =>
-	`A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. ${cause}`;
+	`A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. Anything longer goes into \`plan.md\` first. ${cause}`;
 const tooLong = (lines: number) =>
 	`It has ${lines} non-blank lines, over the limit of 15.`;
 const says = (phrase: string) => `It says "${phrase}".`;

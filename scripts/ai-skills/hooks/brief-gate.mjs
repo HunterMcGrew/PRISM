@@ -80,7 +80,7 @@ const OVERRIDE_PATTERNS = [
  * @returns {string}
  */
 function denyReason(causes) {
-	return `A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. ${causes.join(" ")}`;
+	return `A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. Anything longer goes into \`plan.md\` first. ${causes.join(" ")}`;
 }
 
 /**
