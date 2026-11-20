@@ -1383,7 +1383,7 @@ EOF
 )" -- index.tsx MegaMenuInfoBannerBlock.view.tsx
 ```
 
-End the command with `-- <paths>` naming the files this commit changes. The commit gate denies a commit that names none, because it would take whatever the shared index holds. The one exception is concluding a merge, cherry-pick, or revert, where git refuses named paths: stage the resolved files with `git add <path>`, then run `git commit` with no paths, which the gate allows.
+End the command with `-- <paths>` naming the files this commit changes. The commit gate denies a commit that names none, because it would take whatever the shared index holds. The one exception is concluding a merge or cherry-pick, where git refuses named paths, or a revert: stage the resolved files with `git add <path>`, then run `git commit` with no paths, which the gate allows.
 
 ### Not allowed
 
