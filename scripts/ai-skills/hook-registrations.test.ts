@@ -1,8 +1,9 @@
 /**
  * Pins every hook registration in the two install templates and PRISM's own
  * `.claude/settings.json`, by event, matcher, command, and timeout, because
- * each gate's own suite cannot see whether a host calls it. The existing
- * entries carry no timeout, so adding one later is a visible change.
+ * each gate's own suite cannot see whether a host calls it. A row keeps an
+ * absent timeout absent, so adding a timeout to any registration is a visible
+ * change.
  */
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
