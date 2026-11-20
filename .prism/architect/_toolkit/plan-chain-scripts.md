@@ -98,7 +98,7 @@ A step that fails on a held `index.lock` is retried, because a sibling's git cal
 
 ## Shell parser
 
-`lib/segments.mjs` walks a shell command into its simple commands, unwrapping wrappers such as `env`, `timeout`, and `bash -c`, and tracking the directory each one runs in. Inside a container (`docker exec` and the compose forms) a directory resolves as a POSIX path whatever the host is, and `~` and a bare `cd` read as unknown, because the container's home is not the host's. It never runs anything. What a segment means is the calling gate's rule. Every gate that reads a shell command reads it through these two modules, and the runtime ships no other shell splitter. The header of `lib/segments.mjs` lists its accepted false walks and its known misses, such as `xargs`, `find -exec`, `sudo`, and git aliases. A gate built on it has to treat those as unwalked, not as safe.
+`lib/segments.mjs` walks a shell command into its simple commands, unwrapping wrappers such as `env`, `timeout`, and `bash -c`, and tracking the directory each one runs in. Inside a container (`docker exec` and the compose forms) a directory resolves as a POSIX path whatever the host is, and `~` and a bare `cd` read as unknown, because the container's home is not the host's. It never runs anything. What a segment means is the calling gate's rule. The write gate, read credit, and the git gates walk a command with it. The approval guard tokenizes with `lib/tokenize.mjs` but keeps its own frozen segmenting, so it does not read through `lib/segments.mjs`. The header of `lib/segments.mjs` lists its accepted false walks and its known misses, such as `xargs`, `find -exec`, `sudo`, and git aliases. A gate built on it has to treat those as unwalked, not as safe.
 
 ## Hosts
 
