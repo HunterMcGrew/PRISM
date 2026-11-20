@@ -139,12 +139,13 @@ Owner: Clove. The splitter test T3 deletes pinned cases the git gates now read t
 
 ### T5: Pin that an update removes the old shell splitter from a consumer
 
-- files: scripts/ai-skills/update.test.ts
-- proof: pnpm exec tsx --test scripts/ai-skills/update.test.ts
+- files: scripts/ai-skills/update-prune-shell.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/update-prune-shell.test.ts
 - proof fails on main: yes
 - depends on: T3
+- amended: scripts/ai-skills/update-prune-shell.test.ts: the test moves out of update.test.ts, whose import of update.ts gave T5 an edge to T9 and a cycle
 
-Owner: Clove. Append to `update.test.ts` **"refreshHookRuntime backs up and removes a marked lib/shell.mjs the runtime no longer ships"**, built like the existing prune cases: a consumer `.claude/hooks/lib/shell.mjs` carrying `HOOK_RUNTIME_MARKER` is gone after `refreshHookRuntime`, and `.claude/hooks/lib/shell.mjs.bak` holds its bytes. It fails on `main`, where `HOOK_RUNTIME_FILES` still ships the file.
+Owner: Clove. Write the new file `scripts/ai-skills/update-prune-shell.test.ts`, with a header JSDoc saying it pins that an update removes the shell splitter the runtime stopped shipping. It holds one test, **"refreshHookRuntime backs up and removes a marked lib/shell.mjs the runtime no longer ships"**, built like the prune cases in `update.test.ts`, importing `refreshHookRuntime` and `HOOK_RUNTIME_MARKER` from `./update` and the fixture helpers it needs from `node:fs/promises`, `node:os`, and `node:path`: a consumer `.claude/hooks/lib/shell.mjs` carrying `HOOK_RUNTIME_MARKER` is gone after `refreshHookRuntime`, and `.claude/hooks/lib/shell.mjs.bak` holds its bytes. It fails on `main`, where `HOOK_RUNTIME_FILES` still ships the file.
 
 ### T6: Record the shared parser in the docs
 
@@ -525,6 +526,7 @@ round 4: resolved 1
 - **Both gates move off `lib/shell.mjs` in the same task that deletes it.** The bundle check makes a task that edits an importer wait on the owner of the file it imports, so separate migration and deletion tasks formed a cycle. Rejected: leaving the module in place until a later part, which would ship two shell parsers in part 1.
 - **`verification-commands.md`'s switch sentence is corrected in T10: a scope change that follows from the outcome.** Line 105 says `PRISM_HOOK_DISABLE=1` "turns every hook off for a session", which the approve guard already contradicted and the secrets gate makes more false, so it is a doc this child makes false. `spec.md` adds the rule and its curated install twin to Affected systems, and the platform copies were already covered. T10 owns it because it lands with the secrets gate.
 - **`RETRO_PATHS` covers the generated copies a promotion commits: a scope change that follows from the outcome.** The spec defines the set as what `prism-retro` commits, and retro commit `75a131f7` committed the `.claude/`, `.codex/`, and `.cursor/` copies of `architect/` and `rules/`, `AGENTS.md`, and `templates/install/.prism/` beside the canonical files. Without them the commit gate, live in PRISM from T15, denies this ticket's own retro. The `spec/adrs/` copies are added on the same reasoning, since a promotion to an ADR writes them too.
+- **T5's prune test lives in its own new file, not `update.test.ts`.** The bundle check gives a task an edge to the first open owner of any file its listed files import. `update.test.ts` imports `update.ts`, so once T3 finished, T5's edge moved to T9, which already depends on T5, and `bundles.mjs --base e8a2633a` reported `T5 -> T9 -> T5`. A file not yet on disk is not scanned, and once T5 is done it claims nothing, so the new file keeps T5 and its test in part 1 with no edge. Rejected: dropping T9's `depends on: T5`, because T9 would still wait on T5 through T8, T7, and T6, and T5 waiting on T9 closes the same cycle through part 2. Also rejected: moving the test into T9, which would take part 1's proof that consumers lose the old file out of part 1.
 - **The two command patterns and `HOOK_COMMAND_PATH_RE` widen with each gate.** The spec says `mergeHookEventEntries` already claims entries by pattern, but `PRISM_HOOK_COMMAND_PATTERN` and its Codex twin name only `hook`, `git-gates`, and `approve-guard`. Without the widening an update would never replace or remove a new gate's entry, and doctor would not see a dead one. This follows from the approved outcome, so it goes ahead here. The registration test checks every template command against the patterns, so a gate added later without widening fails a test.
 - **`doctor`'s runtime-without-registration check stays on the three existing entry points.** It names each entry point by path, and the spec asks only for the dead-registration direction, which the widened regex covers. Extending it to the four new gates is a follow-up PR off `main` after the stack merges. Rejected for now: adding four more path checks and cases here, which the spec does not name.
 - **The hook log lives in `lib/hook-log.mjs`.** The brief and reconcile gates both write it, so one helper serves two callers. Putting it in `harnesses.mjs` was rejected, because it reads the git directory and has nothing to do with a host's wire format.
@@ -545,6 +547,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T2 added the `dispatch` tool kind, `subagentDispatch`, `subagentStop`, `emitBlockStop`, `readShellCall`, and `writeStdout` to `harnesses.mjs`, with a 12-case `hook-harnesses.test.ts`.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T3 built; both git gates and the write gate read commands through `walkSegments`, `lib/shell.mjs` and its sidecar are deleted, and T1's `bash -c` and `sh -c` cases now pass. A consumer will find `.claude/hooks/lib/shell.mjs.bak` after their next `prism update`, and can delete it.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T3's builder found `commit.mjs` refuses a path already removed with `git rm` (git's pathspec error), so a deleted file is named to it as an unstaged deletion. Left as an open item for a follow-up, since `commit.mjs` is outside this plan.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Re-planned T5 into its own test file `update-prune-shell.test.ts` after `bundles.mjs --base e8a2633a` reported the cycle `T5 -> T9 -> T5`, which appeared once T3 finished.
 
 ## Sessions
 
