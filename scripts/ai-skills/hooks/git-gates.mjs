@@ -42,7 +42,7 @@ import {
 	parseEventFlag,
 	readStdin,
 	resolveHarnessFromArgv,
-	walkLines,
+	walkCommand,
 } from "./hook.mjs";
 import { readGitHooksState } from "./git-hooks/install.mjs";
 import { asRecord, isCommandNotFound } from "./lib/command.mjs";
@@ -186,6 +186,11 @@ function readEnvDirectories(segment) {
  * repo is not the session's. An `env -C` or `env --chdir` directory leads the
  * segment's directories, ahead of the `git -C` chain.
  *
+ * Text the walk could not read is split on shell separators and read piece by
+ * piece, so a stray quote or parenthesis never hides a later commit or push.
+ * That reading holds on a mention such as `echo "git commit` inside the
+ * unreadable text, which costs a held commit and nothing more.
+ *
  * @param {string | undefined} command
  * @returns {GitGateSegment[]}
  */
@@ -196,28 +201,52 @@ export function detectGitSegments(command) {
 
 	/** @type {GitGateSegment[]} */
 	const segments = [];
-	for (const segment of walkLines(command).segments) {
+	const { segments: walked, unreadable } = walkCommand(command);
+	for (const segment of walked) {
 		if (segment.container !== null) {
 			continue;
 		}
 
 		const invocation = resolveGitInvocation(segment.argv);
-		if (invocation === null) {
-			continue;
+		if (invocation !== null) {
+			segments.push(
+				...toGateSegments(invocation, readEnvDirectories(segment))
+			);
 		}
+	}
 
-		const directories = [...readEnvDirectories(segment), ...invocation.directories];
-		if (invocation.subcommand === "commit") {
-			segments.push({ subcommand: "commit", directories });
-		} else if (
-			invocation.subcommand === "push" &&
-			!invocation.args.some((arg) => arg === "--delete" || arg === "-d")
-		) {
-			segments.push({ subcommand: "push", directories });
+	for (const text of unreadable) {
+		for (const piece of text.split(/[;&|()\n]+/)) {
+			const invocation = resolveGitInvocation(
+				piece.replace(/["'`$]/g, "").split(/\s+/).filter(Boolean)
+			);
+			if (invocation !== null) {
+				segments.push(...toGateSegments(invocation, []));
+			}
 		}
 	}
 
 	return segments;
+}
+
+/**
+ * The gate segment a `git` invocation reaches, as a list of zero or one.
+ *
+ * @param {{subcommand: string, args: string[], directories: string[]}} invocation
+ * @param {string[]} envDirectories
+ * @returns {GitGateSegment[]}
+ */
+function toGateSegments(invocation, envDirectories) {
+	const directories = [...envDirectories, ...invocation.directories];
+	if (invocation.subcommand === "commit") {
+		return [{ subcommand: "commit", directories }];
+	}
+
+	const deletes = invocation.args.some((arg) => arg === "--delete" || arg === "-d");
+
+	return invocation.subcommand === "push" && !deletes
+		? [{ subcommand: "push", directories }]
+		: [];
 }
 
 /**

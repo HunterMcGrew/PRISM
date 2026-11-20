@@ -270,7 +270,7 @@ let lastWalk = null;
  * @param {string} command
  * @returns {ReturnType<typeof walkSegments>}
  */
-export function walkLines(command) {
+export function walkCommand(command) {
 	const text = command.replace(/\r\n?/g, "\n");
 	if (lastWalk?.text !== text) {
 		lastWalk = { text, walk: walkSegments(text) };
@@ -338,7 +338,7 @@ export function parseShellReadTargets(command) {
 	/** @type {string | undefined} */
 	let directory = ".";
 	const targets = [];
-	const walk = walkLines(normalized);
+	const walk = walkCommand(normalized);
 	// A command the walk cannot read is doubt, and doubt credits nothing.
 	if (walk.unreadable.length > 0) {
 		return [];
@@ -872,7 +872,7 @@ function removeDataHeredocBodies(command) {
 		return text;
 	}
 
-	const { segments, unreadable } = walkLines(text);
+	const { segments, unreadable } = walkCommand(text);
 	if (unreadable.length > 0) {
 		return text;
 	}
@@ -945,14 +945,20 @@ function removeDataHeredocBodies(command) {
  *
  * This reading leans on `walkSegments` to place each argument, which the
  * whole-command scan does not. A mis-split moves an argument to the wrong
- * directory here, and the `cwd` reading still has it.
+ * directory here, and the `cwd` reading still has it. A command the walk
+ * cannot read is not placed at all: every path it names resolves under every
+ * directory a `cd` in its text names (`resolveArgumentsUnderEveryCd`).
  *
  * @param {string} command
  * @param {string} cwd
  * @returns {string[]}
  */
 export function resolveArgumentsAfterCd(command, cwd) {
-	const walk = walkLines(command);
+	const walk = walkCommand(command);
+	if (walk.unreadable.length > 0) {
+		return resolveArgumentsUnderEveryCd(command, cwd);
+	}
+
 	const resolved = [];
 	/** @type {string | null} */
 	let current = null;
@@ -978,6 +984,31 @@ export function resolveArgumentsAfterCd(command, cwd) {
 	}
 
 	return resolved;
+}
+
+/**
+ * Every path-shaped token of a command the walk cannot read, resolved under
+ * each directory a `cd` in its text names: each one from `cwd`, and each one
+ * chained from the one before it. The text is scanned for `cd <word>` and
+ * nothing else, so the result is wide on purpose, and the write gate takes
+ * the extra reads over a write it could not place.
+ *
+ * @param {string} command
+ * @param {string} cwd
+ * @returns {string[]}
+ */
+function resolveArgumentsUnderEveryCd(command, cwd) {
+	const directories = new Set();
+	let chained = cwd;
+	for (const [, target] of command.matchAll(/\bcd\s+(?:--\s+)?["']?([^\s;&|()"'`$]+)/g)) {
+		chained = path.resolve(chained, target);
+		directories.add(chained);
+		directories.add(path.resolve(cwd, target));
+	}
+
+	return scanPathShapedTokens(command).flatMap((run) =>
+		[...directories].map((directory) => path.resolve(directory, run))
+	);
 }
 
 /**
@@ -1150,7 +1181,7 @@ function checkCommandWritesNoFile(command) {
 		return false;
 	}
 
-	const { segments, unreadable } = walkLines(command);
+	const { segments, unreadable } = walkCommand(command);
 
 	// A command the walk cannot read is doubt, and doubt resolves as a write.
 	if (unreadable.length > 0) {

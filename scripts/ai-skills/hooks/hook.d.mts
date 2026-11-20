@@ -6,7 +6,7 @@ export interface RouteTarget {
 	credit: boolean;
 }
 
-export function walkLines(command: string): ReturnType<typeof walkSegments>;
+export function walkCommand(command: string): ReturnType<typeof walkSegments>;
 
 export function parseShellReadTargets(
 	command: string | undefined

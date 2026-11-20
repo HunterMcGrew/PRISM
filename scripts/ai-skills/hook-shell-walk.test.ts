@@ -11,7 +11,7 @@ import {
 	parseShellReadTargets,
 	parseUnprovenShellPaths,
 	resolveArgumentsAfterCd,
-	walkLines,
+	walkCommand,
 } from "./hooks/hook.mjs";
 
 const ROUTED = ".prism/rules/x.md";
@@ -90,6 +90,15 @@ test("resolveArgumentsAfterCd: a cd inside a substitution or a nested shell does
 	}
 });
 
+test("resolveArgumentsAfterCd: a command the walk cannot read resolves its paths under every cd it names", () => {
+	const resolved = resolveArgumentsAfterCd(
+		'echo "$(echo ")")"; cd src && tee index.ts',
+		"/repo"
+	);
+
+	assert.equal(resolved.includes("/repo/src/index.ts"), true);
+});
+
 // --- Read credit under doubt ---
 
 test("parseShellReadTargets: a command the walk cannot read credits nothing", () => {
@@ -107,7 +116,7 @@ test("parseShellReadTargets: a cat inside a nested shell string credits nothing"
 
 // --- One walk per command ---
 
-test("walkLines: one command is walked once, whatever its line endings", () => {
-	assert.equal(walkLines("cat a.md\ncat b.md"), walkLines("cat a.md\ncat b.md"));
-	assert.equal(walkLines("cat a.md\r\ncat b.md"), walkLines("cat a.md\ncat b.md"));
+test("walkCommand: one command is walked once, whatever its line endings", () => {
+	assert.equal(walkCommand("cat a.md\ncat b.md"), walkCommand("cat a.md\ncat b.md"));
+	assert.equal(walkCommand("cat a.md\r\ncat b.md"), walkCommand("cat a.md\ncat b.md"));
 });

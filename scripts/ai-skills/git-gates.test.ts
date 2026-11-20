@@ -235,6 +235,29 @@ test("detectGitSegments: a wrapper or subshell around a commit or push does not 
 	}
 });
 
+test("detectGitSegments: a command the walk cannot read is scanned for a commit or push", () => {
+	const unreadable = 'echo "$(echo ")")"';
+	const rows: Array<[string, string[]]> = [
+		[`${unreadable}; git push`, ["push"]],
+		[`${unreadable}; git commit -m x`, ["commit"]],
+		[`${unreadable}\ngit add -A && git commit -m x`, ["commit"]],
+		[`${unreadable}; git push --delete origin x`, []],
+		[`${unreadable}; git status`, []],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			command
+		);
+	}
+
+	assert.deepEqual(detectGitSegments(`${unreadable}; git -C sub push`), [
+		{ subcommand: "push", directories: ["sub"] },
+	]);
+});
+
 test("detectGitSegments: carries every -C directory a segment was given, in order", () => {
 	assert.deepEqual(detectGitSegments("git -C sub -C deeper commit -m x"), [
 		{ subcommand: "commit", directories: ["sub", "deeper"] },
