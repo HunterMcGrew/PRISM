@@ -138,4 +138,5 @@ Entering and removing worktrees has its own conventions — an entry decision tr
 - **Never** force-push to `main` or `master`
 - Feature branches: allowed only when the user explicitly requests it
 - Prefer new commits over amending — amending after a failed pre-commit hook targets the wrong commit
-- `--no-verify` and `--no-gpg-sign`: never use unless the user explicitly asks
+- `--no-verify`: never use. The commit gate denies it on `git commit` and `git push`, because a skipped hook protects nothing.
+- `--no-gpg-sign`: never use unless the user explicitly asks

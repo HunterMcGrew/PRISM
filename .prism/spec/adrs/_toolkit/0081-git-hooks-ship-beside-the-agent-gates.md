@@ -6,6 +6,8 @@ Date: 2026-11-18
 ---
 
 > Amended 2026-11-18 by PRISM-522 (`.prism/plans/prism-522/plan.md`, task T6): the git hook modules now reach every install whatever `hosts` holds, so the Cursor-only consequence below is wrong about the modules. Only the shims and the registrations follow `hosts`. A Cursor-only consumer still gets no git hooks, because git runs nothing without a shim.
+>
+> Amended 2026-11-20 by PRISM-544 (`.prism/plans/prism-544/plan.md`, task T16): the commit gate now denies `--no-verify` and an inline `core.hooksPath` for agents, on `git commit` and `git push`, so the Consequences line about `--no-verify` no longer holds for an agent. A person can still pass it.
 
 ## Context
 
