@@ -255,8 +255,8 @@
 		"testGlobs": {
 			"type": "array",
 			"items": { "type": "string" },
-			"description": "The test files the commit gate's weakened-test check reads. A list that is set replaces the default, which covers common test names at the root and at any depth. Braces are not supported.",
-			"examples": [["src/**/*.test.ts"]]
+			"description": "The test files the commit gate's weakened-test check reads. A list that is set replaces the default, which covers common test names at the root and at any depth. Braces are not supported, and `**/` needs at least one directory, so list a root pattern beside it.",
+			"examples": [["src/*.test.ts", "src/**/*.test.ts"]]
 		},
 		"ci": {
 			"type": "object",

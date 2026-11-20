@@ -17,6 +17,7 @@ export interface Context {
 	index: WouldBeIndex;
 	paths: string[];
 	namedTasks: Task[];
+	noTaskNamed: boolean;
 	stopPaths: StopPaths | null;
 	testGlobs: string[];
 	defaultBranch: string;

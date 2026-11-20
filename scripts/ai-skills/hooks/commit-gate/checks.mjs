@@ -12,9 +12,9 @@
  * weakened-tests check read to learn which task owns a file. A subject that
  * names none leaves `namedTasks` empty, so the commit gets no task's
  * allowance: a contract path or a dependency change is denied, and so is a
- * removed test line. A branch is a folder-plan branch when the plan
- * `findPlanForBranch` resolves from the branch name is a chain file directly
- * under `.prism/plans/<folder>/`, so a flat plan, an archived plan, and a
+ * removed test line. A branch is a folder-plan branch when the live plan
+ * `resolvePlan` finds for the ticket ID in the branch name is a chain file
+ * directly under `.prism/plans/<folder>/`, so a flat plan, an archived plan, and a
  * branch with no plan all skip the stop-path and weakened-test checks. The
  * stops check's flag denies run on every branch and read nothing from the
  * config. Its stop-path half runs wherever a task list exists to read. The
@@ -22,8 +22,8 @@
  * weakened tests, and stops in that order.
  *
  * `loadContext` reads `.ai-skills/config.json` before it looks for a plan,
- * because `findPlanForBranch` reads `ticketPrefix` itself and swallows a
- * config it can't parse. A config that doesn't parse, or a `stopPaths` or
+ * because the plan lookup needs `ticketPrefix` and a plan skipped on a config
+ * the gate couldn't read would pass unchecked. A config that doesn't parse, or a `stopPaths` or
  * `testGlobs` value that `resolveStopPaths` or `resolveTestGlobs` rejects,
  * lands in `ctx.configError`, and `CONFIG_CHECK` turns it into a deny, so the
  * gate never skips a check on a config it can't read.
@@ -44,8 +44,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { findPlanForBranch } from "../compact-handoff.mjs";
-import { CHAIN_FILES } from "../plan/lookup.mjs";
+import { CHAIN_FILES, resolvePlan } from "../plan/lookup.mjs";
 import { matchStopPath, resolveStopPaths } from "../plan/stop-paths.mjs";
 import { parseSubject, parseTasks, readPlanConfig } from "../plan/tasks.mjs";
 import {
@@ -72,6 +71,7 @@ import { runGit } from "./tree.mjs";
  * @property {WouldBeIndex} index
  * @property {string[]} paths The files the would-be index changes against HEAD.
  * @property {Task[]} namedTasks The tasks a task or fix subject names that the plan holds.
+ * @property {boolean} noTaskNamed True when the plan holds tasks and the subject names none.
  * @property {StopPaths | null} stopPaths Null when the config couldn't be read.
  * @property {string[]} testGlobs
  * @property {string} defaultBranch
@@ -146,20 +146,25 @@ export const STOPS_CHECK = { name: "stops", run: checkStops };
  *
  * The config is read first, so a config error is held in `configError` and
  * the plan is skipped. The plan comes from the ticket ID in the branch name
- * through `findPlanForBranch`, and counts only when it is a chain file under
- * `.prism/plans/<folder>/`, which sets `planFolder`. `paths` are the files the
+ * through `resolvePlan`, and counts only when it is a chain file under
+ * `.prism/plans/<folder>/`, which sets `planFolder`. A lookup that throws, as
+ * on an unreadable plans folder, writes one line to stderr and reads as no
+ * plan, so the gate fails open on a filesystem fault where the config check
+ * fails closed on a config one. `paths` are the files the
  * would-be index changes against HEAD, so a directory pathspec expands and an
  * unchanged named file drops out. `tasks` is null when the plan folder has no
  * `plan.md`, and empty when its tasks can't be parsed. `subject` is the commit
  * subject as `parseSubject` reads it, or null, and `namedTasks` are the tasks a
- * task or fix subject names that the plan holds.
+ * task or fix subject names that the plan holds. `noTaskNamed` is true when the
+ * plan holds tasks and the subject names none, which every check that asks for
+ * a task subject reads, so none restates the test.
  *
  * @param {{ repoRoot: string, commit: Commit, index: WouldBeIndex }} options
  * @returns {Context}
  */
 export function loadContext({ repoRoot, commit, index }) {
 	const settings = readSettings(repoRoot);
-	const planFolder = settings.configError ? null : findPlanFolder(repoRoot);
+	const planFolder = settings.configError ? null : findPlanFolder(repoRoot, settings.ticketPrefix);
 	const planText = readPlanText(planFolder);
 	/** @type {Task[] | null} */
 	let tasks = null;
@@ -186,7 +191,13 @@ export function loadContext({ repoRoot, commit, index }) {
 		configError: settings.configError,
 	};
 
-	return { ...context, namedTasks: findNamedTasks(context) };
+	const namedTasks = findNamedTasks(context);
+
+	return {
+		...context,
+		namedTasks,
+		noTaskNamed: (tasks?.length ?? 0) > 0 && namedTasks.length === 0,
+	};
 }
 
 // --- Checks ---
@@ -222,7 +233,7 @@ function checkStops(ctx) {
 	if (!tasks || !stopPaths || !paths || !repoRoot || !index) return null;
 
 	const named = ctx.namedTasks ?? [];
-	const unnamed = tasks.length > 0 && named.length === 0;
+	const unnamed = ctx.noTaskNamed ?? false;
 	for (const p of paths) {
 		const stop = matchStopPath(p, stopPaths);
 		if (!stop) continue;
@@ -230,8 +241,12 @@ function checkStops(ctx) {
 		const owners = named.filter((task) => claimsFile(task, p));
 		if (stop.kind === "contract" && owners.length === 0) {
 			return {
-				reason: `${p} is a contract path (${stop.glob}) that no named task lists.`,
-				remedy: `Commit ${p} under the task that lists it, or stop and ask about the contract change.`,
+				reason: `${p} is a contract path (${stop.glob}), and ${
+					unnamed ? NO_TASK_REASON : "no named task lists it"
+				}.`,
+				remedy: unnamed
+					? NO_TASK_REMEDY
+					: `Commit ${p} under the task that lists it, or stop and ask about the contract change.`,
 			};
 		}
 		if (
@@ -279,11 +294,9 @@ function denyText(deny) {
  */
 function changesDependencyEntry(repoRoot, index, file) {
 	const fields = DEPENDENCY_FIELDS.get(path.posix.basename(file).toLowerCase());
-	/** @type {string | null} */
 	const before = runGit(repoRoot, ["show", `HEAD:${file}`], {
 		fallback: null,
 	});
-	/** @type {string | null} */
 	const after = runGit(repoRoot, ["show", `${index.treeHash}:${file}`], {
 		fallback: null,
 	});
@@ -366,21 +379,55 @@ function readSettings(repoRoot) {
  * `.prism/archived/plans/`, so it never matches.
  *
  * @param {string} repoRoot
+ * @param {string | null} prefix The config's `ticketPrefix`.
  * @returns {string | null}
  */
-function findPlanFolder(repoRoot) {
+function findPlanFolder(repoRoot, prefix) {
 	const branch = runGit(repoRoot, ["symbolic-ref", "--short", "-q", "HEAD"], {
 		fallback: "",
 	});
-	const file = findPlanForBranch(repoRoot, branch);
-	if (!file) return null;
+	const id = prefix ? readTicketId(branch, prefix) : null;
+	if (!id) return null;
 
+	/** @type {import("../plan/lookup.mjs").PlanMatch | null} */
+	let match;
+	try {
+		match = resolvePlan(repoRoot, id);
+	} catch (error) {
+		process.stderr.write(
+			`commit gate: plan lookup failed (${error instanceof Error ? error.message : error}), so the plan checks are skipped.\n`
+		);
+
+		return null;
+	}
+	if (!match) return null;
+
+	const file = match.file;
 	const folder = path.posix.dirname(file);
 	const isFolderPlan =
 		CHAIN_FILES.includes(path.posix.basename(file)) &&
 		`${path.posix.dirname(folder)}/` === PLANS_PREFIX;
 
 	return isFolderPlan ? path.join(repoRoot, ...folder.split("/")) : null;
+}
+
+/**
+ * The lowercased ticket ID in `branch` for the config's `ticketPrefix`, or
+ * null. A generic `<letters>-<digits>` match would also hit slug fragments
+ * like `pr-896` in an unrelated branch name.
+ *
+ * @param {string} branch
+ * @param {string} prefix
+ * @returns {string | null}
+ */
+function readTicketId(branch, prefix) {
+	const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const match = new RegExp(
+		`(?:^|[^a-z0-9])(${escaped}-\\d+)(?![0-9])`,
+		"i"
+	).exec(branch);
+
+	return match ? match[1].toLowerCase() : null;
 }
 
 /** @param {string | null} planFolder */

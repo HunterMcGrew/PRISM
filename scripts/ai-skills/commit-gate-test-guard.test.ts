@@ -390,14 +390,14 @@ test("denies a rename that also drops a test line, naming the file it came from"
 	);
 });
 
-test("passes a renamed test file's removal when a named task lists its new path with behavior change", () => {
+test("passes a renamed test file's removal when a named task lists only its new path with behavior change", () => {
 	const repo = createRepo();
 	write(
 		repo,
 		PLAN,
 		read(repo, PLAN).replace(
 			"- files: src/a.test.mjs\n",
-			`- files: src/a.test.mjs, ${RENAMED_TEST_FILE}\n`
+			`- files: ${RENAMED_TEST_FILE}\n`
 		)
 	);
 	git(repo, "mv", TEST_FILE, RENAMED_TEST_FILE);
@@ -441,6 +441,20 @@ test("denies a changed last line in a test file that had no final newline", () =
 	assertDeny(
 		runCheck(repo, commitMjs("T1: Build a", NO_EOL_FILE)),
 		/src\/c\.test\.mjs loses 1 line/
+	);
+});
+
+test("denies moving a no-newline file's assertion out of its test body", () => {
+	const repo = createRepo();
+	write(repo, NO_EOL_FILE, 'test("one", () => {\n\tsetup();\n\tassert.ok(check());\n})');
+	git(repo, "add", NO_EOL_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add c");
+	git(repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+	write(repo, NO_EOL_FILE, 'test("one", () => {\n\tsetup();\n})\n\tassert.ok(check());');
+
+	assertDeny(
+		runCheck(repo, commitMjs("T1: Build a", NO_EOL_FILE)),
+		/src\/c\.test\.mjs loses/
 	);
 });
 
@@ -615,6 +629,24 @@ test("resolveTestGlobs returns a set list in place of the default", () => {
 	assert.deepEqual(resolveTestGlobs({ testGlobs: [] }), []);
 });
 
+test("the config schema's testGlobs example matches a test file at the top of src/ and one below it", () => {
+	const schema = JSON.parse(
+		readFileSync(
+			fileURLToPath(new URL("../../.ai-skills/config.schema.json", import.meta.url)),
+			"utf8"
+		)
+	);
+	const [example] = schema.properties.testGlobs.examples;
+	const matchers = example.map(compileMatcher);
+
+	for (const file of ["src/a.test.ts", "src/x/a.test.ts"]) {
+		assert.ok(
+			matchers.some((matches: (file: string) => boolean) => matches(file)),
+			file
+		);
+	}
+});
+
 test("resolveTestGlobs throws naming testGlobs on a value that is not a list of strings or holds a brace", () => {
 	for (const testGlobs of ["x", [1], ["{a,b}.ts"], null, {}]) {
 		assert.throws(
@@ -684,6 +716,21 @@ test("denies a removed default-branch line when a -diff attribute marks the file
 
 	assertDeny(
 		runCheck(repo, commitMjs("T1: Build a", TEST_FILE)),
+		/src\/a\.test\.mjs loses 1 line/
+	);
+});
+
+test("denies a removed default-branch line when a textconv driver blanks blame's view of the file", () => {
+	const repo = createRepo();
+	write(repo, TEST_FILE, TEST_TEXT.replace("\t\tassert.ok(true);\n", "\t\tassert.ok(true);\n\t\tbranchA();\n"));
+	git(repo, "add", TEST_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add a branch line");
+	git(repo, "config", "diff.blank.textconv", "true");
+	write(repo, ".gitattributes", "*.test.mjs diff=blank\n");
+	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
+
+	assertDeny(
+		runCheck(repo, commitMjs("T1 fix: Trim a", TEST_FILE)),
 		/src\/a\.test\.mjs loses 1 line/
 	);
 });

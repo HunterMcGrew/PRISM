@@ -109,8 +109,7 @@ export function resolveTestGlobs(config) {
  * @returns {{ reason: string, remedy: string } | null}
  */
 function checkWeakenedTests(ctx) {
-	const record = findBehaviorRecord(ctx);
-	if (!record) return null;
+	if (!ctx.planFolder) return null;
 
 	const matchers = ctx.testGlobs.map(compileMatcher);
 	const candidates = ctx.paths.filter((file) =>
@@ -119,11 +118,11 @@ function checkWeakenedTests(ctx) {
 	const base = findBase(ctx);
 	for (const change of readTestChanges(ctx, candidates)) {
 		const removed = countRemovedBaseLines(ctx, base, change);
-		if (removed === 0 || record.permits(change)) continue;
+		if (removed === 0 || permitsRemoval(ctx, change)) continue;
 
 		const label = change.to ? `${change.from} (now ${change.to})` : change.from;
 		const lines = `${removed} line${removed === 1 ? "" : "s"}`;
-		if ((ctx.tasks?.length ?? 0) > 0 && ctx.namedTasks.length === 0) {
+		if (ctx.noTaskNamed) {
 			return {
 				reason: `${label} loses ${lines}, and ${NO_TASK_REASON}.`,
 				remedy: NO_TASK_REMEDY,
@@ -132,7 +131,7 @@ function checkWeakenedTests(ctx) {
 
 		return {
 			reason: `${label} loses ${lines}, and the plan doesn't record a behavior change for it.`,
-			remedy: record.remedy(change.from),
+			remedy: `Restore the removed lines, or add "- behavior change: <what and why>" under the task that lists ${change.from}. Make that edit in its own command, before the commit, since the gate reads the plan before the command runs.`,
 		};
 	}
 
@@ -140,25 +139,18 @@ function checkWeakenedTests(ctx) {
 }
 
 /**
- * Where this branch records a behavior change, as `{ permits(change),
- * remedy(file) }`, or null when the branch has no plan folder.
+ * True when a named task carries `behavior change:` and lists the file the
+ * commit changes, on either side of a rename.
  *
  * @param {Context} ctx
- * @returns {{ permits: (change: Change) => boolean, remedy: (file: string) => string } | null}
+ * @param {Change} change
  */
-function findBehaviorRecord(ctx) {
-	if (!ctx.planFolder) return null;
-
-	return {
-		permits: ({ from, to }) =>
-			ctx.namedTasks.some(
-				(task) =>
-					Boolean(task.behaviorChange) &&
-					[from, to].some((file) => claimsFile(task, file))
-			),
-		remedy: (file) =>
-			`Restore the removed lines, or add "- behavior change: <what and why>" under the task that lists ${file}. Make that edit in its own command, before the commit, since the gate reads the plan before the command runs.`,
-	};
+function permitsRemoval(ctx, { from, to }) {
+	return ctx.namedTasks.some(
+		(task) =>
+			Boolean(task.behaviorChange) &&
+			[from, to].some((file) => claimsFile(task, file))
+	);
 }
 
 /**
@@ -261,6 +253,10 @@ function countRemovedBaseLines(ctx, base, change) {
  * are the lines no commit since `base` added. Blame follows each commit's own
  * diff, so a branch line whose text matches a line of the default branch's
  * stays the branch's, where one diff from `base` to HEAD would pair the two.
+ * Blame passes `--no-textconv`, because a textconv driver an agent sets with an
+ * ungated `git config` changes the text blame compares. Blame's own diff
+ * follows `diff.algorithm` and no flag here pins it, so a config that picks a
+ * different algorithm can attribute an ambiguous line to a different commit.
  * Returns null when blame fails, such as with a `blame.ignoreRevsFile` naming a
  * missing file, so the caller counts every removed line: a failure that
  * passed the commit would let one config line turn the check off.
@@ -273,7 +269,7 @@ function countRemovedBaseLines(ctx, base, change) {
 function readBaseLineNumbers(ctx, base, file) {
 	const blame = runGit(
 		ctx.repoRoot,
-		["blame", "--line-porcelain", `${base}..HEAD`, "--", file],
+		["blame", "--no-textconv", "--line-porcelain", `${base}..HEAD`, "--", file],
 		{ trim: false, fallback: null }
 	);
 	if (typeof blame !== "string") return null;
@@ -294,8 +290,8 @@ function readBaseLineNumbers(ctx, base, file) {
 /**
  * HEAD's line number for each `-` line in the would-be index's zero-context
  * diff against HEAD, read from the hunk headers, so a `---` file header never
- * counts as one. In a hunk that touches a missing final newline, a line the
- * hunk both removes and adds back is unchanged, because only its newline moved.
+ * counts as one. A line next to a missing-final-newline marker that the hunk
+ * adds back with the same text is unchanged, because only its newline moved.
  * The diff passes `--no-color`, `--no-ext-diff`, `--no-textconv`, `--text`,
  * and `--inter-hunk-context=0`, because a config that colors, replaces,
  * converts, or merges the diff, or an attribute that marks the file binary,
@@ -333,53 +329,70 @@ function readRemovedLines(ctx, { from, to }) {
 	/** @type {number[]} */
 	const removed = [];
 	for (const hunk of splitHunks(diff)) {
-		const minus = numberLines(hunk.body, "-", hunk.oldStart);
-		if (hunk.body.includes(NO_NEWLINE_MARKER)) {
-			const plus = numberLines(hunk.body, "+", hunk.newStart);
-			for (const line of [...minus]) {
-				const match = plus.findIndex((entry) => entry.text === line.text);
-				if (match === -1) continue;
-				minus.splice(minus.indexOf(line), 1);
-				plus.splice(match, 1);
-			}
-		}
-		removed.push(...minus.map((entry) => entry.number));
+		const unchanged = findNewlineOnlyLines(hunk.body);
+		let number = hunk.oldStart;
+		hunk.body.forEach((line, index) => {
+			if (!line.startsWith("-")) return;
+			if (!unchanged.has(index)) removed.push(number);
+			number += 1;
+		});
 	}
 
 	return removed;
 }
 
 /**
- * The body lines starting with `sign`, numbered from `start`.
+ * The body indexes of the `-` lines a hunk only re-terminates. A `\ No newline`
+ * marker follows the last line of a file that lacks its final newline, so that
+ * line differs from its twin by the newline alone. Only the two lines beside a
+ * marker pair, and only when their text is equal: after a `-` line, the `+`
+ * line that follows the marker, and after a `+` line, the `-` line just before
+ * that `+` run. A line that merely repeats elsewhere in the hunk is a moved
+ * line, not an unchanged one.
  *
  * @param {string[]} body
- * @param {string} sign
- * @param {number} start
+ * @returns {Set<number>}
  */
-function numberLines(body, sign, start) {
-	return body
-		.filter((line) => line.startsWith(sign))
-		.map((line, offset) => ({ number: start + offset, text: line.slice(1) }));
+function findNewlineOnlyLines(body) {
+	/** @type {Set<number>} */
+	const unchanged = new Set();
+	body.forEach((line, marker) => {
+		if (line !== NO_NEWLINE_MARKER || marker === 0) return;
+
+		const anchor = marker - 1;
+		let twin = -1;
+		if (body[anchor].startsWith("-")) {
+			twin = body[marker + 1]?.startsWith("+") ? marker + 1 : -1;
+		} else if (body[anchor].startsWith("+")) {
+			let runStart = anchor;
+			while (body[runStart - 1]?.startsWith("+")) runStart -= 1;
+			twin = body[runStart - 1]?.startsWith("-") ? runStart - 1 : -1;
+		}
+		if (twin === -1 || body[twin].slice(1) !== body[anchor].slice(1)) return;
+
+		unchanged.add(body[anchor].startsWith("-") ? anchor : twin);
+	});
+
+	return unchanged;
 }
 
 /**
- * Each `@@` hunk in a unified diff, with its header's start lines and its body lines.
+ * Each `@@` hunk in a unified diff, with its header's old start line and its body lines.
  *
  * @param {string} diff
  */
 function splitHunks(diff) {
-	/** @type {{ oldStart: number, newStart: number, body: string[] }[]} */
+	/** @type {{ oldStart: number, body: string[] }[]} */
 	const hunks = [];
-	/** @type {{ oldStart: number, newStart: number, body: string[] } | null} */
+	/** @type {{ oldStart: number, body: string[] } | null} */
 	let current = null;
 	for (const line of diff.split("\n")) {
-		const header = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(line);
+		const header = /^@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@/.exec(line);
 		if (line.startsWith("diff --git ")) {
 			current = null;
 		} else if (header) {
 			current = {
 				oldStart: Number(header[1]),
-				newStart: Number(header[2]),
 				body: [],
 			};
 			hunks.push(current);

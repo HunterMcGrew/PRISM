@@ -7,6 +7,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
+	chmodSync,
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
@@ -26,6 +27,10 @@ import {
 } from "./hooks/commit-gate/checks.mjs";
 import type { Context } from "./hooks/commit-gate/checks.mjs";
 import { readCommit, repoRelativePaths } from "./hooks/commit-gate/parse.mjs";
+import {
+	NO_TASK_REASON,
+	NO_TASK_REMEDY,
+} from "./hooks/commit-gate/test-guard.mjs";
 import { buildWouldBeIndex } from "./hooks/commit-gate/tree.mjs";
 
 const RUNTIME_PATH = fileURLToPath(new URL("./hooks/", import.meta.url));
@@ -289,6 +294,31 @@ test("loadContext finds no plan folder on a flat-plan branch", () => {
 	});
 });
 
+test(
+	"loadContext skips the plan checks and says so on stderr when the plan folder can't be read",
+	{ skip: process.platform === "win32" || process.getuid?.() === 0 },
+	(t) => {
+		const repo = createRepo();
+		change(repo, "src/a.mjs");
+		const written: string[] = [];
+		t.mock.method(process.stderr, "write", (chunk: string | Uint8Array) => {
+			written.push(String(chunk));
+			return true;
+		});
+		const folder = path.join(repo, PLAN_DIR);
+		chmodSync(folder, 0o000);
+		try {
+			withContext(repo, "git commit -m 'T1: x' -- src/a.mjs", (ctx) => {
+				assert.equal(ctx.planFolder, null);
+			});
+		} finally {
+			chmodSync(folder, 0o755);
+		}
+
+		assert.match(written.join(""), /plan lookup failed.*EACCES/);
+	}
+);
+
 test("loadContext finds no plan folder when the config names no ticket prefix", () => {
 	const repo = createRepo({ config: null });
 	change(repo, "src/a.mjs");
@@ -435,6 +465,32 @@ test("a commit whose subject names no task gets no task's allowance", () => {
 			/contract path/
 		);
 	}
+});
+
+test("a contract deny on a commit that names no task asks for a task subject, and on one that names a task asks to commit under its owner", () => {
+	const repo = createRepo({
+		config: {
+			ticketPrefix: "PRISM",
+			stopPaths: { contract: ["frontend/lib/contracts/**"] },
+		},
+	});
+	change(repo, "frontend/lib/contracts/thing.ts");
+
+	const unnamed = runGate(
+		repo,
+		commitMjs("committing plan", "frontend/lib/contracts/thing.ts")
+	);
+	assert.ok(unnamed);
+	assert.ok(unnamed.reason.includes(NO_TASK_REASON), unnamed.reason);
+	assert.equal(unnamed.remedy, NO_TASK_REMEDY);
+
+	const named = runGate(
+		repo,
+		commitMjs("T1: Build a", "frontend/lib/contracts/thing.ts")
+	);
+	assert.ok(named);
+	assert.ok(!named.reason.includes(NO_TASK_REASON), named.reason);
+	assert.match(named.remedy, /under the task that lists it/);
 });
 
 test("a flat-plan branch gets no plan checks, whatever the subject", () => {
