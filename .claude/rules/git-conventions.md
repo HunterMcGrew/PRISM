@@ -52,8 +52,10 @@ The ILink migration missed two files: index.tsx still registered buttonUrl/butto
 as block attributes, and MegaMenuInfoBannerBlock.view.tsx still exported the old prop types.
 Updated both to use link: ILink, matching the featured-banner pattern.
 EOF
-)"
+)" -- index.tsx MegaMenuInfoBannerBlock.view.tsx
 ```
+
+End the command with `-- <paths>` naming the files this commit changes. The commit gate denies a commit that names none, because it would take whatever the shared index holds.
 
 ### Not allowed
 
