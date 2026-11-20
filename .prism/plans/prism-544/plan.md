@@ -760,6 +760,19 @@ head: adfce0cd5e6269d0ad19993d7900971444551775 (part 2 of 5)
   - AC-13: ungradeable, pass-bounded: part 2 has no PR yet, so no CI has run; the full suite passed locally at 2405a85c.
   - AC-1, AC-3 to AC-7, AC-11, AC-12: out of part.
   - Round 3 is the cap, so these go to the part 2 PR as open items.
+- pr-review round 1 at 8d4449b5 (part 2 of 5): 0 critical, 2 major, 5 minor, 3 nit
+  - Range fdce3e87..8d4449b5, the whole PR, read cold. Every pass swept except Accessibility, n/a with no UI. Findings are posted inline on #546, and the summary carries the verdict line with state 1, so no review labels are applied. Reconcile is clean.
+  - **1. Major, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:724. A path-less Grep passes when an unignored nested git repo holds a secret, because `ls-files` lists the nested repo as one folder entry.
+  - **2. Major, bug.** File: scripts/ai-skills/secrets-gate.test.ts:1004, plus three more cases. Four secrets-gate cases fail on `windows-latest` in run 44701477121. This line's cause is a native `D:\` path inside a command string. The other three get no deny on Windows, and their cause is not yet diagnosed.
+  - **3. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:720. `ls-files` is read without `-z`, so a non-ASCII folder hides a secret.
+  - **4. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:1000. A file name attached to a short option, such as `xargs -a.env.production`, is never judged.
+  - **5. Minor, bug.** File: scripts/ai-skills/hooks/secrets-gate.mjs:810, plus :372, :992, and :1042. Relative paths resolve lexically against a symlinked cwd.
+  - **6. Minor, bug (test gap).** File: scripts/ai-skills/secrets-gate.test.ts:596. The `function` keyword arm of `DEFINES_FUNCTION` is unpinned.
+  - **7. Minor, security risk.** File: scripts/ai-skills/hooks/env-keys.mjs:85. An unquoted base64 continuation line prints as a key name.
+  - **8. nit, performance.** File: scripts/ai-skills/hooks/secrets-gate.mjs:727. One `realpathSync` call per listed file.
+  - **9. nit, nitpick.** File: docs/what-prism-writes.md:94, and docs/adopting-into-existing-repos.md:37. The registration list omits the git gates' `PreToolUse` entry.
+  - **10. nit, code smell.** File: scripts/ai-skills/doctor.ts:645. The entry-point list is spelled by hand in four places.
+  - AC-2, the secrets half of AC-8, AC-9 for the secrets gate, and the registration half of AC-10: met (executed on Linux). AC-13: unmet, because `windows-latest` is red.
 
 ## Acceptance Criteria
 
