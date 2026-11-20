@@ -226,6 +226,21 @@ test("a fresh update delivers every plan-chain module with the runtime marker", 
 	});
 });
 
+test(
+	"an update leaves the delivered commit gate executable",
+	{ skip: process.platform === "win32" && "Windows has no executable bit" },
+	async () => {
+		await withRoots(async (roots) => {
+			await update(roots);
+
+			const { mode } = await fs.stat(
+				path.join(roots.consumerRepoRoot, ".claude/hooks/commit-gate.mjs")
+			);
+			assert.equal(mode & 0o111, 0o111);
+		});
+	}
+);
+
 test("the declaration sidecars stay behind", async () => {
 	await withRoots(async (roots) => {
 		await update(roots);
