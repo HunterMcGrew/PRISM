@@ -22,8 +22,12 @@
  * @property {string} [conversation_id]
  * @property {string} [cwd]
  * @property {string} [tool_name]
- * @property {{file_path?: string, path?: string, command?: string, offset?: number, limit?: number, new_string?: string, content?: string, contents?: string}} [tool_input]
+ * @property {{file_path?: string, path?: string, command?: string, offset?: number, limit?: number, new_string?: string, content?: string, contents?: string, subagent_type?: string, prompt?: string}} [tool_input]
  * @property {string} [hook_event_name]
+ * @property {string} [agent_type]
+ * @property {string} [prompt]
+ * @property {string} [last_assistant_message]
+ * @property {boolean} [stop_hook_active]
  */
 
 /**
@@ -44,7 +48,7 @@
  * (ADR-0072).
  *
  * @typedef {Object} HarnessSpec
- * @property {Record<string, "read"|"write"|"search"|"shell">} toolKinds
+ * @property {Record<string, "read"|"write"|"search"|"shell"|"dispatch">} toolKinds
  * @property {(payload: HookPayload) => string | null} scopeId
  * @property {(payload: HookPayload) => string[]} filePaths
  * @property {(payload: HookPayload, filePath: string) => string} editContent
@@ -55,6 +59,14 @@
  * @property {() => unknown} emitNone
  * @property {(reason: string) => unknown} emitDeny
  * @property {(reason: string) => unknown} emitAllow
+ * @property {(payload: HookPayload) => {type?: string, prompt?: string} | null} subagentDispatch
+ *   The subagent type and brief a payload dispatches, or `null` for any
+ *   other call.
+ * @property {(payload: HookPayload) => {agentType?: string, message?: string, active?: boolean} | null} subagentStop
+ *   What a subagent's stop event carries, or `null` on a host with no such event.
+ * @property {(reason: string) => unknown} emitBlockStop
+ *   The reply that sends a stopping subagent back to work, or `null` on a
+ *   host with none.
  */
 
 /**
@@ -164,6 +176,31 @@ export function extractPatchAddedText(command, filePath) {
 	return added.join("\n");
 }
 
+/**
+ * The fields a Claude or Codex `SubagentStop` payload carries.
+ *
+ * @param {HookPayload} payload
+ * @returns {{agentType?: string, message?: string, active?: boolean}}
+ */
+function readSubagentStop(payload) {
+	return {
+		agentType: payload.agent_type,
+		message: payload.last_assistant_message,
+		active: payload.stop_hook_active,
+	};
+}
+
+/**
+ * The reply that blocks a subagent's stop and returns `reason` to it, the
+ * same shape on Claude and Codex.
+ *
+ * @param {string} reason
+ * @returns {{decision: "block", reason: string}}
+ */
+function emitStopBlock(reason) {
+	return { decision: "block", reason };
+}
+
 /** @type {Record<string, HarnessSpec>} */
 export const HARNESSES = {
 	claude: {
@@ -181,6 +218,11 @@ export const HARNESSES = {
 			Edit: "write",
 			Bash: "shell",
 			Grep: "search",
+			// Claude Code dispatches a subagent as `Agent`, and older builds as
+			// `Task`. No registration of `hook.mjs` matches either tool, so the
+			// write gate never sees them.
+			Agent: "dispatch",
+			Task: "dispatch",
 		},
 		// A subagent's events carry the parent's `session_id` verbatim and add
 		// an `agent_id` the parent's events never have, so `session_id` alone
@@ -225,6 +267,15 @@ export const HARNESSES = {
 				permissionDecisionReason: reason,
 			},
 		}),
+		subagentDispatch: (payload) =>
+			resolveListedToolKind(HARNESSES.claude, payload.tool_name) === "dispatch"
+				? {
+						type: payload.tool_input?.subagent_type,
+						prompt: payload.tool_input?.prompt,
+					}
+				: null,
+		subagentStop: readSubagentStop,
+		emitBlockStop: emitStopBlock,
 	},
 	cursor: {
 		// StrReplace (Cursor's edit tool) is deliberately unlisted here — the
@@ -242,6 +293,9 @@ export const HARNESSES = {
 		emitDeny: () => null,
 		// Same reasoning as `emitDeny` — no observed envelope to answer in.
 		emitAllow: () => null,
+		subagentDispatch: () => null,
+		subagentStop: () => null,
+		emitBlockStop: () => null,
 	},
 	codex: {
 		// Codex has no separate read tool — reads run through `Bash` — so
@@ -297,6 +351,15 @@ export const HARNESSES = {
 				permissionDecisionReason: reason,
 			},
 		}),
+		// The `SubagentStart` and `SubagentStop` field names below come from
+		// OpenAI's Codex hook documentation as the reference implementation read
+		// it. They are documentation-read, not live-probed.
+		subagentDispatch: (payload) =>
+			payload.hook_event_name === "SubagentStart"
+				? { type: payload.agent_type, prompt: payload.prompt }
+				: null,
+		subagentStop: readSubagentStop,
+		emitBlockStop: emitStopBlock,
 	},
 };
 
@@ -334,4 +397,86 @@ export function resolveListedToolKind(spec, toolName) {
  */
 export function resolveToolKind(spec, toolName) {
 	return resolveListedToolKind(spec, toolName) ?? "write";
+}
+
+/**
+ * The tool names each host sends for a shell call. `toolKinds` leaves
+ * `PowerShell` out on purpose, so the write gate's shell arm keeps its
+ * current reach, and this list is what lets a gate read a PowerShell call.
+ *
+ * @type {Record<string, string[]>}
+ */
+const SHELL_TOOLS = {
+	claude: ["Bash", "PowerShell"],
+	codex: ["Bash"],
+};
+
+/**
+ * Quotes each argv word in single quotes, so the shared tokenizer reads the
+ * words back unchanged.
+ *
+ * @param {unknown[]} argv
+ * @returns {string}
+ */
+function quoteArgv(argv) {
+	return argv
+		.map((word) => `'${String(word).replaceAll("'", `'\\''`)}'`)
+		.join(" ");
+}
+
+/**
+ * Reads a shell call out of a hook payload as `{ command, cwd }`, or returns
+ * `null` when the payload is not a shell call or carries no command.
+ *
+ * `command` is one string the shared tokenizer reads. A Codex argv array is
+ * quoted word by word, and a Claude `PowerShell` command has its backslashes
+ * turned into slashes, because PowerShell escapes with a backtick and its
+ * backslashes are path separators. `cwd` is the payload's `cwd`, or `null`
+ * when it is missing or empty.
+ *
+ * @param {string} tool the `--tool` value, a key of `HARNESSES`
+ * @param {HookPayload | null | undefined} payload
+ * @returns {{ command: string, cwd: string | null } | null}
+ */
+export function readShellCall(tool, payload) {
+	if (!payload || !Object.hasOwn(SHELL_TOOLS, tool)) {
+		return null;
+	}
+
+	const toolName = payload.tool_name;
+	if (!SHELL_TOOLS[tool]?.includes(toolName ?? "")) {
+		return null;
+	}
+
+	// Codex sends an argv array on some builds, which `HookPayload` does not
+	// type because every other reader wants a string.
+	/** @type {unknown} */
+	const rawCommand = payload.tool_input?.command;
+	const joined = Array.isArray(rawCommand) ? quoteArgv(rawCommand) : rawCommand;
+	if (typeof joined !== "string") {
+		return null;
+	}
+
+	const command =
+		toolName === "PowerShell" ? joined.replaceAll("\\", "/") : joined;
+
+	return {
+		command,
+		cwd: typeof payload.cwd === "string" && payload.cwd ? payload.cwd : null,
+	};
+}
+
+/**
+ * Writes a string as is and JSON-encodes anything else.
+ *
+ * A reader that stops early raises `EPIPE` as a stream event rather than a
+ * throw, so the no-op listener is what keeps a hook's fail-open guarantee
+ * real. Callers never `process.exit()` after this, because exit does not wait
+ * for a pending stdout write to flush.
+ *
+ * @param {unknown} body
+ */
+export function writeStdout(body) {
+	process.stdout.on("error", () => {});
+	process.stdout.write(typeof body === "string" ? body : JSON.stringify(body));
 }

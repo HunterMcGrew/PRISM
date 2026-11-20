@@ -2314,7 +2314,6 @@ const HOOK_RUNTIME_RELATIVE_PATHS = [
 	"compact-handoff.mjs",
 	"harnesses.mjs",
 	"lib/match.mjs",
-	"lib/shell.mjs",
 	"approve-guard.mjs",
 	"plan/approve.mjs",
 	"plan/chat-approval.mjs",

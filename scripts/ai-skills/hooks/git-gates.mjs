@@ -42,10 +42,10 @@ import {
 	parseEventFlag,
 	readStdin,
 	resolveHarnessFromArgv,
+	walkCommand,
 } from "./hook.mjs";
 import { readGitHooksState } from "./git-hooks/install.mjs";
 import { asRecord, isCommandNotFound } from "./lib/command.mjs";
-import { splitShellSegments, unquote } from "./lib/shell.mjs";
 
 const STATE_FILE_PREFIX = "git-gates-state.";
 
@@ -105,7 +105,7 @@ function resolveGitInvocation(tokens) {
 		index++;
 	}
 
-	const head = unquote(tokens[index] ?? "");
+	const head = tokens[index] ?? "";
 	if (head !== "git" && !/[/\\]git$/.test(head)) {
 		return null;
 	}
@@ -120,7 +120,7 @@ function resolveGitInvocation(tokens) {
 		}
 
 		if (token === "-C" && index + 1 < tokens.length) {
-			directories.push(unquote(tokens[index + 1]));
+			directories.push(tokens[index + 1]);
 		}
 
 		const takesValue =
@@ -129,6 +129,45 @@ function resolveGitInvocation(tokens) {
 	}
 
 	return null;
+}
+
+/**
+ * The directories an `env` wrapper in a segment's words moves to, in order,
+ * from its `-C <dir>`, `--chdir <dir>`, and `--chdir=<dir>` options. `env`
+ * runs before `git`, so each resolves before the `git -C` chain does.
+ *
+ * `segment.cwd` cannot supply these: an `env -C` to a relative directory
+ * reads as null there, the same as no change.
+ *
+ * @param {import("./lib/segments.mjs").Segment} segment
+ * @returns {string[]}
+ */
+function readEnvDirectories(segment) {
+	if (!segment.wrappers.includes("env")) {
+		return [];
+	}
+
+	const { words } = segment;
+	const start = words.findIndex((word) => path.basename(word) === "env");
+	/** @type {string[]} */
+	const directories = [];
+	for (let index = start + 1; start !== -1 && index < words.length; ) {
+		const word = words[index];
+		if (!word.startsWith("-") || word === "--") {
+			break;
+		}
+
+		if ((word === "-C" || word === "--chdir") && index + 1 < words.length) {
+			directories.push(words[index + 1]);
+		} else if (word.startsWith("--chdir=")) {
+			directories.push(word.slice("--chdir=".length));
+		}
+
+		const takesValue = ["-u", "--unset", "-C", "--chdir", "-S", "--split-string"].includes(word);
+		index += takesValue ? 2 : 1;
+	}
+
+	return directories;
 }
 
 /**
@@ -141,13 +180,18 @@ function resolveGitInvocation(tokens) {
  * head is not `git`, yields nothing: `gh pr create`, `git merge`, and
  * `echo "git commit"` are all silent.
  *
- * The HEREDOC commit form from `git-conventions.md` § Formatting — `git commit
- * -m "$(cat <<'EOF' … EOF)"` — is one double-quoted token to the splitter, so
- * the head and subcommand read is unaffected. An unquoted heredoc body is
- * skipped by the splitter. One gap is accepted: a `"` inside such a body
- * closes the splitter's quote early and the remainder tokenizes as commands.
- * Only a body line beginning with `git push` could trip a spurious check, and
- * a spurious push check blocks nothing unless lint actually fails.
+ * The walk unwraps `bash -c`, `env`, and `timeout`, and reads a heredoc body
+ * as data unless a shell reads it, so a body line is a command only when a
+ * shell reads the heredoc. A segment that runs in a container is skipped: its
+ * repo is not the session's. An `env -C` or `env --chdir` directory leads the
+ * segment's directories, ahead of the `git -C` chain.
+ *
+ * Text the walk could not read is split on `;`, `&`, `|`, parentheses, and
+ * line breaks, and each piece is read from its first word that is `git` or a
+ * path ending in `/git`. That finds a commit or push behind a wrapper such as
+ * `timeout 60` or a brace, but it is a text scan and not a parse: it also
+ * reads a `git` that only a quoted string or an argument names, which holds
+ * a commit or push that was never going to run.
  *
  * @param {string | undefined} command
  * @returns {GitGateSegment[]}
@@ -159,23 +203,52 @@ export function detectGitSegments(command) {
 
 	/** @type {GitGateSegment[]} */
 	const segments = [];
-	for (const tokens of splitShellSegments(command)) {
-		const invocation = resolveGitInvocation(tokens);
-		if (invocation === null) {
+	const { segments: walked, unreadable } = walkCommand(command);
+	for (const segment of walked) {
+		if (segment.container !== null) {
 			continue;
 		}
 
-		if (invocation.subcommand === "commit") {
-			segments.push({ subcommand: "commit", directories: invocation.directories });
-		} else if (
-			invocation.subcommand === "push" &&
-			!invocation.args.some((arg) => arg === "--delete" || arg === "-d")
-		) {
-			segments.push({ subcommand: "push", directories: invocation.directories });
+		const invocation = resolveGitInvocation(segment.argv);
+		if (invocation !== null) {
+			segments.push(
+				...toGateSegments(invocation, readEnvDirectories(segment))
+			);
+		}
+	}
+
+	for (const text of unreadable) {
+		for (const piece of text.split(/[;&|()\n]+/)) {
+			const words = piece.replace(/["'`$]/g, "").split(/\s+/).filter(Boolean);
+			const gitAt = words.findIndex((word) => /^git$|[/\\]git$/.test(word));
+			const invocation = gitAt === -1 ? null : resolveGitInvocation(words.slice(gitAt));
+			if (invocation !== null) {
+				segments.push(...toGateSegments(invocation, []));
+			}
 		}
 	}
 
 	return segments;
+}
+
+/**
+ * The gate segment a `git` invocation reaches, as a list of zero or one.
+ *
+ * @param {{subcommand: string, args: string[], directories: string[]}} invocation
+ * @param {string[]} envDirectories
+ * @returns {GitGateSegment[]}
+ */
+function toGateSegments(invocation, envDirectories) {
+	const directories = [...envDirectories, ...invocation.directories];
+	if (invocation.subcommand === "commit") {
+		return [{ subcommand: "commit", directories }];
+	}
+
+	const deletes = invocation.args.some((arg) => arg === "--delete" || arg === "-d");
+
+	return invocation.subcommand === "push" && !deletes
+		? [{ subcommand: "push", directories }]
+		: [];
 }
 
 /**

@@ -620,3 +620,32 @@ test("a command word naming an Object.prototype member is no wrapper and does no
 	assert.deepEqual(proto.segments[0]!.argv, ["__proto__", "x"]);
 	assert.deepEqual(find(proto, "git")!.argv, ["git", "push"]);
 });
+
+// --- Separators, heredoc bodies, and continuations ---
+
+test("walkSegments: cuts on every separator, reads heredoc bodies as data, and keeps a continuation in one segment", () => {
+	const argvs = (command: string) => walk(command).segments.map((segment) => segment.argv);
+
+	assert.deepEqual(argvs("a && b"), [["a"], ["b"]]);
+	assert.deepEqual(argvs("a | b"), [["a"], ["b"]]);
+	assert.deepEqual(argvs("a; b"), [["a"], ["b"]]);
+
+	const quoted = walk("tee f <<'E'\nline one\nE\necho after");
+	assert.deepEqual(
+		quoted.segments.map((segment) => segment.argv),
+		[["tee", "f"], ["echo", "after"]],
+		"a quoted delimiter's body is data, never a segment"
+	);
+	assert.deepEqual(quoted.segments[0]!.stdinTexts, ["line one"]);
+
+	assert.deepEqual(
+		argvs("cat <<-E\n\tbody\n\tE\necho x"),
+		[["cat"], ["echo", "x"]],
+		"a <<- body with a tab-indented delimiter is data"
+	);
+	assert.equal(
+		walk("git commit \\\n-m x").segments.length,
+		1,
+		"a backslash-newline continuation does not cut the segment"
+	);
+});

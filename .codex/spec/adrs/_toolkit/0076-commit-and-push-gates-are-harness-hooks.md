@@ -7,6 +7,8 @@ Date: 2026-09-07
 
 > Partly superseded by [ADR-0081](./0081-git-hooks-ship-beside-the-agent-gates.md): its rejection of real git hooks no longer holds; its agent-side gates stand.
 
+> Amended 2026-11-19 by PRISM-544 (`.prism/plans/prism-544/plan.md`): the gates now read commands through the shared shell parser, so the Consequences bullet on the splitter's quote gap no longer described them. It now names the parser's unreadable-text scan and its over-hold.
+
 ## Context
 
 Two asks arrived together (issue #488): an author persona should re-read its
@@ -93,11 +95,19 @@ Alternatives, and why each lost:
   step and nothing else. Codex delivery has since shipped (PRISM #487,
   ADR-0077), so the git gates are now registered for Codex too, unprobed
   there, and Cursor is the remaining gap.
-- Recognizing `commit` and `push` in command text has the same three gaps the
-  write gate's shell arm has: a command built from a variable, a `cd` into a
-  subrepo, and a `"` inside a heredoc body closing the splitter's quote early
-  are each invisible or misread. The last of these can at most trigger a
-  spurious push check, which blocks nothing unless lint actually fails.
+- Recognizing `commit` and `push` in command text is a parse with a fallback,
+  and each half has a cost. The gates read a command through the shared shell
+  parser, which unwraps `bash -c`, `env`, and `timeout`, and reads a heredoc
+  body as data unless a shell reads it. A `cd` before the command is not
+  followed: the gates use only the `-C` and `env -C` directories the `git`
+  call carries, so `cd sub && git push` is judged from the session's
+  directory. Text the parser can't read is scanned for `git commit` and
+  `git push` words instead, and that scan can hold a command that would never
+  run, such as a quoted mention. It is a text scan and not a parse, so it
+  makes no promise to catch every spelling: a `git` built from a variable or
+  an escape can slip past. An over-hold of a push blocks nothing unless lint
+  actually fails, and one of a commit costs a single retry. A miss is the same
+  gap the write gate's shell arm has.
 
 ## References
 

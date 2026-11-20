@@ -1127,7 +1127,6 @@ const HOOK_RUNTIME_FILES = [
 	"compact-handoff.mjs",
 	"harnesses.mjs",
 	"lib/match.mjs",
-	"lib/shell.mjs",
 	"lib/command.mjs",
 	"git-hooks/pre-commit.mjs",
 	"git-hooks/pre-push.mjs",

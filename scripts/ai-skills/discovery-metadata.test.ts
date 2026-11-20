@@ -353,3 +353,27 @@ test("generated codex agent TOML files start with the managed header", async () 
 		);
 	}
 });
+
+test("buildRoleMap rejects a non-boolean gated value", () => {
+	// Built via JSON.parse to mirror the production path — roles.json arrives
+	// as an unchecked cast, so a string reaches buildRoleMap at runtime even
+	// though the compile-time type forbids it.
+	const definitions = JSON.parse(
+		'{"skills": [{"id": "prism-spec", "type": "agent", "routing": "named-only", "gated": "yes"}]}'
+	) as RolesDefinitions;
+	assert.throws(
+		() => buildRoleMap(definitions),
+		/Role 'prism-spec' in \.ai-skills\/definitions\/roles\.json has a non-boolean gated value/
+	);
+});
+
+test("buildRoleMap accepts a boolean gated value", () => {
+	const roleMap = buildRoleMap({
+		skills: [
+			{ id: "prism-spec", type: "agent", routing: "named-only", gated: true },
+			{ id: "prism-design", persona: "Pixel", routing: "auto", gated: false },
+		],
+	});
+	assert.equal(roleMap.get("prism-spec")?.gated, true);
+	assert.equal(roleMap.get("prism-design")?.gated, false);
+});

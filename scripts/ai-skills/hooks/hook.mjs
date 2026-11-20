@@ -57,12 +57,12 @@ import {
 	resolveListedToolKind,
 	resolveToolKind,
 } from "./harnesses.mjs";
-import { splitShellSegments, unquote } from "./lib/shell.mjs";
+import { containsSubstitution, walkSegments } from "./lib/segments.mjs";
 
 /**
  * The characters a whole command may contain and still be considered for read
  * credit: letters, digits, `_ . / - @ + = , : ~`, both quote characters (so
- * `unquote` keeps working), space and tab, and `;` and line breaks as the only
+ * `walkSegments` can read a quoted word), space and tab, and `;` and line breaks as the only
  * command separators. A command carrying anything else parses to zero targets,
  * in its entirety.
  *
@@ -90,7 +90,7 @@ import { splitShellSegments, unquote } from "./lib/shell.mjs";
  * crediting, and one unparseable clause costs the whole command rather than
  * itself.
  *
- * `;` and line breaks are in the class because `splitShellSegments` cuts on
+ * `;` and line breaks are in the class because `walkSegments` cuts on
  * them and the commands they separate each run unconditionally, printing to
  * the same transcript. A multi-line remedy is several commands, not one
  * unparseable one.
@@ -156,15 +156,17 @@ const CD_PREFIX_WORDS = new Set(["{", "(", "builtin", "command"]);
  * The directory a `cd` segment moves to, `null` when the segment is not a
  * `cd`, or `undefined` when it is one whose target the hook cannot know: a
  * bare `cd`, `cd -`, a `~` path, a flag outside `-L`/`-P`, or more than one
- * operand.
+ * operand, or a target the walk joined from a substitution (`cd "$(pwd)"`),
+ * which the tokenizer flattens so the `$` is no longer in the word.
  *
  * `pushd` counts as a `cd`, and a leading `(`, `{`, `builtin`, or `command`
  * is looked through, because each still moves the commands after it.
  *
  * @param {string[]} tokens
+ * @param {string[]} [substitutions] The segment's `substitutions`.
  * @returns {string | null | undefined}
  */
-function resolveCdTarget(tokens) {
+function resolveCdTarget(tokens, substitutions = []) {
 	const words = [...tokens];
 	words[0] = words[0]?.replace(/^[({]+/, "") ?? "";
 	while (words[0] === "" || CD_PREFIX_WORDS.has(words[0])) {
@@ -181,8 +183,11 @@ function resolveCdTarget(tokens) {
 		return undefined;
 	}
 
-	const target = unquote(operands[0]);
-	return target.startsWith("~") || target.includes("$") || target.includes("`")
+	const target = operands[0];
+	return target.startsWith("~") ||
+		target.includes("$") ||
+		target.includes("`") ||
+		containsSubstitution(target, substitutions)
 		? undefined
 		: target;
 }
@@ -255,6 +260,30 @@ function normalizeShellSeparators(command) {
 	return command.replace(/\\(?=[\w.@~+-])/g, "/");
 }
 
+/** @type {{ text: string, walk: ReturnType<typeof walkSegments> } | null} */
+let lastWalk = null;
+
+/**
+ * `walkSegments` over a command whose `\r` and `\r\n` line endings read as the
+ * line breaks they are on Windows, so a CRLF-joined remedy is several
+ * commands and no word carries a trailing `\r`.
+ *
+ * The last command walked is kept, so every reader of the same command shares
+ * one walk. That matters most for a command the tokenizer cannot read, which
+ * costs a retokenize per newline (`readablePrefix` in `lib/segments.mjs`).
+ *
+ * @param {string} command
+ * @returns {ReturnType<typeof walkSegments>}
+ */
+export function walkCommand(command) {
+	const text = command.replace(/\r\n?/g, "\n");
+	if (lastWalk?.text !== text) {
+		lastWalk = { text, walk: walkSegments(text) };
+	}
+
+	return lastWalk.walk;
+}
+
 /**
  * Extracts the paths a shell read command names, and whether reading them
  * that way delivered the whole file.
@@ -292,7 +321,7 @@ function normalizeShellSeparators(command) {
  * test above it is: a rewrite is a property of the command text rather than
  * of any one operand, so only a whole-command test sees a `\` sitting outside
  * the operand being credited. `cat <doc> other\x.md` is the shortest example,
- * and every separator `splitShellSegments` cuts on puts the same `\` a whole
+ * and every separator `walkSegments` cuts on puts the same `\` a whole
  * segment away.
  *
  * @param {string | undefined} command
@@ -314,8 +343,21 @@ export function parseShellReadTargets(command) {
 	/** @type {string | undefined} */
 	let directory = ".";
 	const targets = [];
-	for (const tokens of splitShellSegments(normalized)) {
-		const cdTarget = resolveCdTarget(tokens);
+	const walk = walkCommand(normalized);
+	// A command the walk cannot read is doubt, and doubt credits nothing.
+	if (walk.unreadable.length > 0) {
+		return [];
+	}
+
+	for (const segment of walk.segments) {
+		// A command inside `bash -c` or a substitution is not the read the
+		// agent's own shell ran at the top level, so it credits nothing.
+		if (segment.depth > 0) {
+			continue;
+		}
+
+		const tokens = segment.words;
+		const cdTarget = resolveCdTarget(tokens, segment.substitutions);
 		if (cdTarget !== null) {
 			/** @type {string | undefined} */
 			const next =
@@ -377,7 +419,7 @@ function parseSegmentReadTargets(tokens) {
 			continue;
 		}
 
-		operands.push(unquote(arg));
+		operands.push(arg);
 	}
 
 	// Only `cat` credits, and only unflagged. Everything else — a `head`
@@ -715,8 +757,93 @@ function scanPathShapedTokens(command) {
 }
 
 /**
- * The command with every heredoc body cut out whose text only a data reader
- * sees, so the words in a PR comment or a JSON payload are not read as paths.
+ * True when the command word that reads a heredoc stands before its `<<`
+ * introducer on the line that opens the body. `<<'EOF' cat` opens its
+ * segment with the introducer, and its body stays in the scan like any body
+ * with no reader named.
+ *
+ * @param {string} command
+ * @param {number} bodyStart Index of the body's first character.
+ * @param {string} reader
+ * @returns {boolean}
+ */
+function checkReaderPrecedesIntroducer(command, bodyStart, reader) {
+	const lineStart = command.lastIndexOf("\n", bodyStart - 2) + 1;
+	const header = command.slice(lineStart, bodyStart - 1);
+	const readerAt = header.indexOf(reader);
+	return readerAt !== -1 && readerAt < header.search(/<<-?/);
+}
+
+/**
+ * Where each heredoc body of `segment` sits in `text`, or `null` when they
+ * cannot be placed with certainty.
+ *
+ * The walk reports a body's text and no offset, so the first body is found
+ * by its text and then checked against what the walk knows. It is placed only
+ * when its text is a line of its own exactly once in the command, because a
+ * repeated line could be a command and not the body. The line above it, walked
+ * alone, must open as many heredocs as the segment carries with the same
+ * words, so a `# <<` in a comment or a quote cannot pose as the introducer.
+ * Each later body starts on the line after the previous body's delimiter, so
+ * it is read at that offset and never searched for. A here-string, whose text
+ * is also a word of the segment, is never placed.
+ *
+ * @param {string} text Line breaks already normalized to `\n`.
+ * @param {import("./lib/segments.mjs").Segment} segment
+ * @returns {{ start: number, end: number }[] | null} Each range runs from the
+ *   body's first character to the end of its delimiter line.
+ */
+function locateHeredocBodies(text, segment) {
+	const bodies = segment.stdinTexts;
+	if (bodies.length === 0) {
+		return [];
+	}
+
+	if (bodies.some((body) => segment.words.includes(body))) {
+		return null;
+	}
+
+	if (bodies[0].length === 0) {
+		return bodies.length === 1 ? [] : null;
+	}
+
+	const needle = `\n${bodies[0]}\n`;
+	const at = text.indexOf(needle);
+	if (at < 1 || text.indexOf(needle, at + 1) !== -1) {
+		return null;
+	}
+
+	const header = text.slice(text.lastIndexOf("\n", at - 1) + 1, at);
+	const wordsKey = segment.words.join("\0");
+	const opensBodies = walkSegments(header).segments.some(
+		(opener) =>
+			opener.words.join("\0") === wordsKey &&
+			opener.stdinTexts.length === bodies.length
+	);
+	if (!opensBodies) {
+		return null;
+	}
+
+	const located = [];
+	let start = at + 1;
+	for (const body of bodies) {
+		if (!text.startsWith(`${body}\n`, start)) {
+			return null;
+		}
+
+		const delimiterEnd = text.indexOf("\n", start + body.length + 1);
+		const end = delimiterEnd === -1 ? text.length : delimiterEnd;
+		located.push({ start, end });
+		start = end + 1;
+	}
+
+	return located;
+}
+
+/**
+ * The command, with line breaks normalized to `\n`, and every heredoc body
+ * cut out whose text only a data reader sees, so the words in a PR comment or
+ * a JSON payload are not read as paths.
  *
  * A body stays when any of these holds, because each one lets the text reach
  * something that acts on it:
@@ -734,6 +861,10 @@ function scanPathShapedTokens(command) {
  * command line, and `cat > x.sh <<'EOF'` followed by `sh x.sh` runs it a line
  * later. Neither shows in the reader or the pipe.
  *
+ * Every body also stays when any of them cannot be placed
+ * (`locateHeredocBodies`): leaving text in the scan costs a doc read, and
+ * cutting the wrong text lets a write through unseen.
+ *
  * Paths on the command line itself are never cut, so `tee <path> <<'EOF'` and
  * `cat > <path> <<'EOF'` still gate on `<path>`.
  *
@@ -741,44 +872,64 @@ function scanPathShapedTokens(command) {
  * @returns {string}
  */
 function removeDataHeredocBodies(command) {
-	if (/[<>]\(/.test(command)) {
-		return command;
+	const text = command.replace(/\r\n?/g, "\n");
+	if (/[<>]\(/.test(text)) {
+		return text;
 	}
 
-	/** @type {import("./lib/shell.mjs").HeredocBody[]} */
-	const heredocs = [];
-	const segments = splitShellSegments(command, heredocs);
+	const { segments, unreadable } = walkCommand(text);
+	if (unreadable.length > 0) {
+		return text;
+	}
+
 	const runsOnlyKnownHeads = segments.every(
-		([head]) =>
+		({ words: [head] }) =>
 			head === "cd" ||
-			DATA_STDIN_READERS.has(unquote(head)) ||
-			SHELL_INSPECTION_COMMANDS.has(unquote(head))
+			DATA_STDIN_READERS.has(head) ||
+			SHELL_INSPECTION_COMMANDS.has(head)
 	);
 	if (!runsOnlyKnownHeads) {
-		return command;
+		return text;
 	}
 
-	let kept = "";
-	let cursor = 0;
-	for (const { start, end, readers } of heredocs) {
-		const body = command.slice(start, end);
-		const inert =
-			!/\$\(|`/.test(body) &&
-			readers.every(
-				(reader) =>
-					reader.head !== undefined &&
-					DATA_STDIN_READERS.has(unquote(reader.head)) &&
-					!reader.piped
-			);
-		if (!inert) {
+	/** @type {{ start: number, end: number }[]} */
+	const cuts = [];
+	for (const segment of segments) {
+		const located = locateHeredocBodies(text, segment);
+		if (located === null) {
+			return text;
+		}
+
+		if (located.length === 0) {
 			continue;
 		}
 
-		kept += `${command.slice(cursor, start)}\n`;
-		cursor = end;
+		const [reader] = segment.words;
+		const pipesOnward = segments.some((other) => other.pipedFrom === segment);
+		const readerFirst =
+			DATA_STDIN_READERS.has(reader) &&
+			!pipesOnward &&
+			checkReaderPrecedesIntroducer(text, located[0].start, reader);
+		for (const [index, range] of located.entries()) {
+			if (readerFirst && !/\$\(|`/.test(segment.stdinTexts[index])) {
+				cuts.push(range);
+			}
+		}
 	}
 
-	return kept + command.slice(cursor);
+	cuts.sort((a, b) => a.start - b.start);
+	let kept = "";
+	let cursor = 0;
+	for (const cut of cuts) {
+		if (cut.start < cursor) {
+			return text;
+		}
+
+		kept += text.slice(cursor, cut.start);
+		cursor = cut.end;
+	}
+
+	return kept + text.slice(cursor);
 }
 
 /**
@@ -793,22 +944,32 @@ function removeDataHeredocBodies(command) {
  * resolve (`resolveCdTarget`) leaves the last known directory in place, which
  * keeps this reading over-wide rather than empty.
  *
- * This reading leans on `splitShellSegments` to place each argument, which the
+ * Only a `cd` at the top level moves the directory. One inside a
+ * substitution or a nested shell string runs in a shell of its own.
+ *
+ * This reading leans on `walkSegments` to place each argument, which the
  * whole-command scan does not. A mis-split moves an argument to the wrong
- * directory here, and the `cwd` reading still has it.
+ * directory here, and the `cwd` reading still has it. A command the walk
+ * cannot read is not placed at all: every path it names resolves under every
+ * directory a `cd` in its text names (`resolveArgumentsUnderEveryCd`).
  *
  * @param {string} command
  * @param {string} cwd
  * @returns {string[]}
  */
-function resolveArgumentsAfterCd(command, cwd) {
+export function resolveArgumentsAfterCd(command, cwd) {
+	const walk = walkCommand(command);
+	if (walk.unreadable.length > 0) {
+		return resolveArgumentsUnderEveryCd(command, cwd);
+	}
+
 	const resolved = [];
 	/** @type {string | null} */
 	let current = null;
-	for (const tokens of splitShellSegments(command)) {
-		const target = resolveCdTarget(tokens);
+	for (const { words: tokens, depth, substitutions } of walk.segments) {
+		const target = resolveCdTarget(tokens, substitutions);
 		if (target !== null) {
-			if (target !== undefined) {
+			if (target !== undefined && depth === 0) {
 				current = path.resolve(current ?? cwd, target);
 			}
 			continue;
@@ -827,6 +988,31 @@ function resolveArgumentsAfterCd(command, cwd) {
 	}
 
 	return resolved;
+}
+
+/**
+ * Every path-shaped token of a command the walk cannot read, resolved under
+ * each directory a `cd` in its text names: each one from `cwd`, and each one
+ * chained from the one before it. The text is scanned for `cd <word>` and
+ * nothing else, so the result is wide on purpose, and the write gate takes
+ * the extra reads over a write it could not place.
+ *
+ * @param {string} command
+ * @param {string} cwd
+ * @returns {string[]}
+ */
+function resolveArgumentsUnderEveryCd(command, cwd) {
+	const directories = new Set();
+	let chained = cwd;
+	for (const [, target] of command.matchAll(/\bcd\s+(?:--\s+)?["']?([^\s;&|()"'`$]+)/g)) {
+		chained = path.resolve(chained, target);
+		directories.add(chained);
+		directories.add(path.resolve(cwd, target));
+	}
+
+	return scanPathShapedTokens(command).flatMap((run) =>
+		[...directories].map((directory) => path.resolve(directory, run))
+	);
 }
 
 /**
@@ -941,7 +1127,7 @@ function checkFlagsAreInert(args, inertFlags) {
  * manifest route matches.
  *
  * The proof reuses the read arm's own `SHELL_READ_SAFE_CHARACTERS` class and
- * `splitShellSegments`, and it is all-or-nothing over the whole command: one
+ * `walkSegments`, and it is all-or-nothing over the whole command: one
  * character outside the class, or one segment whose head is not a known
  * read-only command, and nothing is proven. That is what makes the five
  * shapes this arm used to miss unreachable rather than handled — an
@@ -999,7 +1185,14 @@ function checkCommandWritesNoFile(command) {
 		return false;
 	}
 
-	return splitShellSegments(command).every(checkSegmentWritesNoFile);
+	const { segments, unreadable } = walkCommand(command);
+
+	// A command the walk cannot read is doubt, and doubt resolves as a write.
+	if (unreadable.length > 0) {
+		return false;
+	}
+
+	return segments.every(({ words }) => checkSegmentWritesNoFile(words));
 }
 
 /**

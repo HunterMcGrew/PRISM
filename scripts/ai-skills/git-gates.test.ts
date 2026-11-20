@@ -1,9 +1,8 @@
 /**
  * Regression suite for the git gates (ADR-0076): the `commit`/`push` segment
  * detector, the once-per-HEAD commit hold, the push gate's deny and fail-open
- * paths, every inert path that must write nothing, the spawned entry point's
- * argv dispatch, and the shared shell splitter's branches that only these
- * gates reach.
+ * paths, every inert path that must write nothing, and the spawned entry point's
+ * argv dispatch.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
@@ -21,7 +20,6 @@ import {
 	runGitGatesArm,
 } from "./hooks/git-gates.mjs";
 import { HARNESSES } from "./hooks/harnesses.mjs";
-import { splitShellSegments } from "./hooks/lib/shell.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const claude = HARNESSES.claude;
@@ -163,6 +161,103 @@ test("detectGitSegments: recognizes commit and push in every spelling the shippi
 			command
 		);
 	}
+});
+
+test("detectGitSegments: a CRLF line ending does not hide a commit or push", () => {
+	const rows: Array<[string, string[]]> = [
+		["git push\r\n", ["push"]],
+		["git commit -m x\r\n", ["commit"]],
+		["git add -A\r\ngit commit -m x\r\ngit push\r\n", ["commit", "push"]],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			JSON.stringify(command)
+		);
+	}
+});
+
+test("detectGitSegments: a command that runs in a container is not this repo's commit or push", () => {
+	const rows: Array<[string, string[]]> = [
+		["docker exec app git push", []],
+		["docker compose exec web git commit -m x", []],
+		["env FOO=1 git -C sub push", ["push"]],
+		["env FOO=1 git push", ["push"]],
+		["cd /abs && git push", ["push"]],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			command
+		);
+	}
+});
+
+test("detectGitSegments: an env directory leads the segment's directories, ahead of git -C", () => {
+	const rows: Array<[string, string[]]> = [
+		["env -C /other git push", ["/other"]],
+		["env -C . git push", ["."]],
+		["env -C sub git push", ["sub"]],
+		["env --chdir=/other git commit -m x", ["/other"]],
+		["env --chdir /other git push", ["/other"]],
+		["env -C sub git -C deeper push", ["sub", "deeper"]],
+		["env X=1 git -C sub push 2>&1", ["sub"]],
+		["env FOO=1 git -C sub push 2>/dev/null", ["sub"]],
+		["env -u HOME -C sub git push", ["sub"]],
+		["timeout 5 env -C sub git push", ["sub"]],
+		["env git push", []],
+	];
+
+	for (const [command, expected] of rows) {
+		const [segment] = detectGitSegments(command);
+		assert.deepEqual(segment?.directories, expected, command);
+	}
+});
+
+test("detectGitSegments: a wrapper or subshell around a commit or push does not hide it", () => {
+	const rows: Array<[string, string[]]> = [
+		["timeout 5 git push", ["push"]],
+		["(git push)", ["push"]],
+		["(cd sub && git commit -m x)", ["commit"]],
+		["nice -n 5 git commit -m x", ["commit"]],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			command
+		);
+	}
+});
+
+test("detectGitSegments: a command the walk cannot read is scanned for a commit or push", () => {
+	const unreadable = 'echo "$(echo ")")"';
+	const rows: Array<[string, string[]]> = [
+		[`${unreadable}; git push`, ["push"]],
+		[`${unreadable}; git commit -m x`, ["commit"]],
+		[`${unreadable}\ngit add -A && git commit -m x`, ["commit"]],
+		[`${unreadable}; timeout 60 git push`, ["push"]],
+		[`${unreadable}; { git push; }`, ["push"]],
+		[`${unreadable}; git push --delete origin x`, []],
+		[`${unreadable}; git status`, []],
+	];
+
+	for (const [command, expected] of rows) {
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			command
+		);
+	}
+
+	assert.deepEqual(detectGitSegments(`${unreadable}; git -C sub push`), [
+		{ subcommand: "push", directories: ["sub"] },
+	]);
 });
 
 test("detectGitSegments: carries every -C directory a segment was given, in order", () => {
@@ -749,27 +844,4 @@ test("the spawned entry point dispatches only on --event=PreToolUse", async () =
 		assert.equal(announceOnly.status, 0, announceOnly.stderr);
 		assert.equal(announceOnly.stdout, "", "without the event flag nothing is written");
 	});
-});
-
-// --- lib/shell.mjs ---
-
-test("splitShellSegments: cuts on every separator, skips heredoc bodies, and keeps a continuation in one segment", () => {
-	assert.deepEqual(splitShellSegments("a && b"), [["a"], ["b"]]);
-	assert.deepEqual(splitShellSegments("a | b"), [["a"], ["b"]]);
-	assert.deepEqual(splitShellSegments("a; b"), [["a"], ["b"]]);
-	assert.deepEqual(
-		splitShellSegments("tee f <<'E'\nline one\nE\necho after"),
-		[["tee", "f"], ["echo", "after"]],
-		"a quoted delimiter's body is skipped whole"
-	);
-	assert.deepEqual(
-		splitShellSegments("cat <<-E\n\tbody\n\tE\necho x"),
-		[["cat"], ["echo", "x"]],
-		"a <<- body with a tab-indented delimiter is skipped"
-	);
-	assert.equal(
-		splitShellSegments("git commit \\\n-m x").length,
-		1,
-		"a backslash-newline continuation does not cut the segment"
-	);
 });
