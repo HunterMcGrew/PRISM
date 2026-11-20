@@ -543,6 +543,8 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T18 added the optional `gated` flag to `RoleDefinition`, a boolean check in `buildRoleMap`, and `"gated": true` on the six dispatched roles in roles.json.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T1,T4 built; T1's `bash -c` and `sh -c` git-gate test fails on main by design until T3, and T4 carries the splitter assertions onto `walkSegments`.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T2 added the `dispatch` tool kind, `subagentDispatch`, `subagentStop`, `emitBlockStop`, `readShellCall`, and `writeStdout` to `harnesses.mjs`, with a 12-case `hook-harnesses.test.ts`.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T3 built; both git gates and the write gate read commands through `walkSegments`, `lib/shell.mjs` and its sidecar are deleted, and T1's `bash -c` and `sh -c` cases now pass. A consumer will find `.claude/hooks/lib/shell.mjs.bak` after their next `prism update`, and can delete it.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T3's builder found `commit.mjs` refuses a path already removed with `git rm` (git's pathspec error), so a deleted file is named to it as an unstaged deletion. Left as an open item for a follow-up, since `commit.mjs` is outside this plan.
 
 ## Sessions
 
