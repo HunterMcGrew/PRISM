@@ -13,6 +13,5 @@ export function runGate(
 			callback: (error: Error | null, stdout: string, stderr: string) => void
 		) => unknown;
 		now?: () => Date;
-		stateDir?: string;
 	}
 ): Promise<{ decision: "pass" } | { decision: "block"; reason: string }>;

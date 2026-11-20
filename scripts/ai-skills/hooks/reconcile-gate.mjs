@@ -26,10 +26,13 @@
 // reconcile's, under the developer's own login.
 //
 // It blocks at most 3 stops in a row. The count and the PR live at
-// `<os.tmpdir()>/prism-hooks/reconcile/<tool>/<session>.json`, because
-// `stop_hook_active` is a boolean and can't count. A stop carrying it as false
-// starts the count over. The fourth unclean stop passes and appends a
-// `reconcile:unclean` line to `prism-hooks.jsonl` in the git directory.
+// `prism-reconcile/<tool>/<session>.json` in the git directory, beside
+// `prism-hooks.jsonl`, because `stop_hook_active` is a boolean and can't count.
+// The git directory is the checkout's own, so a session in another worktree
+// never reads this one's count, and no `.gitignore` line is needed. A stop
+// carrying `stop_hook_active` as false starts the count over. The fourth
+// unclean stop passes and appends a `reconcile:unclean` line to
+// `prism-hooks.jsonl`.
 //
 // The hook exits at once, before it reads stdin, when `PRISM_HOOK_DISABLE` or
 // `PRISM_HOOK_DENY_DISABLE` is `1` in its own environment, as `hook.mjs` does.
@@ -37,8 +40,9 @@
 // timeout, because a harness that kills a hook discards its reply and the
 // stop passes unchecked.
 //
-// It fails open. Reconcile output that isn't a report, a counter it can't
-// write, and any error in the hook itself all pass the stop, because a stop
+// It fails open. Reconcile output that isn't a report, a repo with no git
+// directory, a counter it can't write, and any error in the hook itself all
+// pass the stop, because a stop
 // gate that breaks on its own bug can trap a session.
 //
 // Known misses:
@@ -58,13 +62,12 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { findRepoRoot } from "./architect-route.mjs";
 import { HARNESSES, writeStdout } from "./harnesses.mjs";
-import { appendHookLog } from "./lib/hook-log.mjs";
+import { appendHookLog, findGitDir } from "./lib/hook-log.mjs";
 
 /**
  * @typedef {import("./harnesses.mjs").HookPayload} HookPayload
@@ -80,7 +83,7 @@ const RECONCILE_SCRIPT = fileURLToPath(
 );
 const MISSES_LOG = ".prism/metrics/review-misses.jsonl";
 const RECONCILE_TIMEOUT_MS = 90_000;
-const DEFAULT_STATE_DIR = path.join(os.tmpdir(), "prism-hooks", "reconcile");
+const STATE_DIR_NAME = "prism-reconcile";
 const SUBAGENT_STOP_EVENT = "SubagentStop";
 const PR_LINE = /^prism-pr:\s*#?(\d+)$/;
 /** @type {Decision} */
@@ -93,18 +96,17 @@ const ASK_FOR_PR_LINE =
  * "block", reason }`. The caller writes the block envelope.
  *
  * `exec` has the callback signature of `execFile`, so tests pass a stub.
- * `now` returns the Date stamped on the `reconcile:unclean` log line, and
- * `stateDir` holds the per-harness counter directories. A harness with no stop
- * event, or a payload with no agent type, never matches the review agent and
- * passes.
+ * `now` returns the Date stamped on the `reconcile:unclean` log line. A
+ * harness with no stop event, or a payload with no agent type, never matches
+ * the review agent and passes.
  *
  * @param {HookPayload} payload
- * @param {{ tool: string, exec: Exec, now?: () => Date, stateDir?: string }} options
+ * @param {{ tool: string, exec: Exec, now?: () => Date }} options
  * @returns {Promise<Decision>}
  */
 export async function runGate(
 	payload,
-	{ tool, exec, now = () => new Date(), stateDir = DEFAULT_STATE_DIR }
+	{ tool, exec, now = () => new Date() }
 ) {
 	const stop = HARNESSES[tool]?.subagentStop(payload);
 	if (
@@ -118,8 +120,12 @@ export async function runGate(
 		typeof payload.cwd === "string" ? await findRepoRoot(payload.cwd) : null;
 	if (!repoRoot) return PASS;
 
+	const gitDir = findGitDir(repoRoot);
+	if (gitDir === null) return PASS;
+
 	const counterPath = path.join(
-		stateDir,
+		gitDir,
+		STATE_DIR_NAME,
 		tool,
 		`${safeName(payload.session_id)}.json`
 	);

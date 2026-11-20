@@ -59,11 +59,9 @@ const askAgain = (pr: number) =>
 	`End your report with the line "prism-pr: ${pr}", so the next stop checks the same PR.`;
 
 const TEMP_ROOTS: string[] = [];
-const SPAWNED_COUNTERS: string[] = [];
 
 after(() => {
 	for (const root of TEMP_ROOTS) rmSync(root, { recursive: true, force: true });
-	for (const file of SPAWNED_COUNTERS) rmSync(file, { force: true });
 });
 
 function makeTemp(prefix: string) {
@@ -73,7 +71,7 @@ function makeTemp(prefix: string) {
 	return root;
 }
 
-/** A git repo the gate reads as this repo's root, plus a state dir. */
+/** A git repo the gate reads as this repo's root. */
 function makeRepo() {
 	const repoRoot = makeTemp("reconcile-gate-repo-");
 	const git = (...args: string[]) =>
@@ -87,7 +85,6 @@ function makeRepo() {
 
 	return {
 		repoRoot,
-		stateDir: makeTemp("reconcile-gate-state-"),
 		logPath: path.join(makeTemp("reconcile-gate-misses-"), "misses.jsonl"),
 	};
 }
@@ -167,7 +164,7 @@ type Stub = { file: string; args: string[]; cwd: string | undefined };
  * `report()`, exiting 1 the way reconcile does when the report is unclean.
  */
 function stubExec({
-	report = () => ({ ...EMPTY_REPORT, clean: true }) as unknown,
+	report = () => ({ ...EMPTY_REPORT, clean: true }),
 }: { report?: () => unknown } = {}) {
 	const calls: Stub[] = [];
 	const timeouts: unknown[] = [];
@@ -201,8 +198,13 @@ function readHookLog(repoRoot: string): Record<string, unknown>[] {
 		.map((line) => JSON.parse(line));
 }
 
-function seedCounter(stateDir: string, tool: string, session: string, state: unknown) {
-	const file = path.join(stateDir, tool, `${session}.json`);
+/** The counter file the gate keeps in the repo's git directory. */
+function counterFile(repoRoot: string, tool: string, session: string) {
+	return path.join(repoRoot, ".git", "prism-reconcile", tool, `${session}.json`);
+}
+
+function seedCounter(repoRoot: string, tool: string, session: string, state: unknown) {
+	const file = counterFile(repoRoot, tool, session);
 	mkdirSync(path.dirname(file), { recursive: true });
 	writeFileSync(file, JSON.stringify(state));
 
@@ -212,7 +214,7 @@ function seedCounter(stateDir: string, tool: string, session: string, state: unk
 // --- Three legs ---
 
 test("reconcile gate leg 1: an unclean report blocks and lists each item", async () => {
-	const { repoRoot, stateDir, logPath } = makeRepo();
+	const { repoRoot, logPath } = makeRepo();
 	const { exec, calls } = stubExec({
 		report: () => liveReport("same-login-human", logPath),
 	});
@@ -220,7 +222,6 @@ test("reconcile gate leg 1: an unclean report blocks and lists each item", async
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, {
@@ -241,8 +242,8 @@ test("reconcile gate leg 1: an unclean report blocks and lists each item", async
 });
 
 test("reconcile gate leg 2: a counter seeded at 3 lets the stop through and logs reconcile:unclean", async () => {
-	const { repoRoot, stateDir } = makeRepo();
-	const counter = seedCounter(stateDir, "claude", "s-1", { count: 3, pr: PR });
+	const { repoRoot } = makeRepo();
+	const counter = seedCounter(repoRoot, "claude", "s-1", { count: 3, pr: PR });
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
 	const at = new Date("2026-11-02T15:00:00.000Z");
 
@@ -250,7 +251,6 @@ test("reconcile gate leg 2: a counter seeded at 3 lets the stop through and logs
 		tool: "claude",
 		exec,
 		now: () => at,
-		stateDir,
 	});
 
 	assert.deepEqual(result, { decision: "pass" });
@@ -293,7 +293,7 @@ function runSpawnedGate(
 	gate: string,
 	tool: string,
 	body: unknown,
-	{ report = EMPTY_REPORT as unknown, env = {}, raw = null }: {
+	{ report = EMPTY_REPORT, env = {}, raw = null }: {
 		report?: unknown;
 		env?: Record<string, string>;
 		raw?: string | null;
@@ -317,19 +317,11 @@ function runSpawnedGate(
 	return child;
 }
 
-/** The counter file a spawned gate uses, which lives under the shared temp dir. */
-function spawnedCounter(tool: string, session: string) {
-	const file = path.join(os.tmpdir(), "prism-hooks", "reconcile", tool, `${session}.json`);
-	SPAWNED_COUNTERS.push(file);
-
-	return file;
-}
-
 test("reconcile gate leg 3: a clean reconcile run through the spawned gate passes and deletes the counter", () => {
 	const gate = makeRuntimeCopy();
 	const { repoRoot } = makeRepo();
 	const session = `leg3-${process.pid}`;
-	const counter = spawnedCounter("claude", session);
+	const counter = counterFile(repoRoot, "claude", session);
 	mkdirSync(path.dirname(counter), { recursive: true });
 	writeFileSync(counter, JSON.stringify({ count: 1, pr: PR }));
 
@@ -347,7 +339,7 @@ test("reconcile gate leg 3: a clean reconcile run through the spawned gate passe
 // --- Block text ---
 
 test("a seeded clean report passes the stop", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({
 		report: () => ({ ...EMPTY_REPORT, clean: true }),
 	});
@@ -355,21 +347,19 @@ test("a seeded clean report passes the stop", async () => {
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, { decision: "pass" });
 });
 
 test("appending the miss row the block asked for clears the next stop", async () => {
-	const { repoRoot, stateDir, logPath } = makeRepo();
+	const { repoRoot, logPath } = makeRepo();
 	const { exec } = stubExec({
 		report: () => liveReport("replied-thread", logPath),
 	});
 	const first = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 	assert.equal(first.decision, "block");
 
@@ -389,14 +379,13 @@ test("appending the miss row the block asked for clears the next stop", async ()
 	const retry = await runGate(stopPayload(repoRoot, { active: true }), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(retry, { decision: "pass" });
 });
 
 test("a thread needing a reply blocks with that thread's URL", async () => {
-	const { repoRoot, stateDir, logPath } = makeRepo();
+	const { repoRoot, logPath } = makeRepo();
 	const { exec } = stubExec({
 		report: () => liveReport("bot-thread", logPath),
 	});
@@ -404,7 +393,6 @@ test("a thread needing a reply blocks with that thread's URL", async () => {
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, {
@@ -417,7 +405,7 @@ test("a thread needing a reply blocks with that thread's URL", async () => {
 });
 
 test("the block relays URLs and never a comment body", async () => {
-	const { repoRoot, stateDir, logPath } = makeRepo();
+	const { repoRoot, logPath } = makeRepo();
 	const { exec } = stubExec({
 		report: () => liveReport("replied-thread", logPath),
 	});
@@ -425,7 +413,6 @@ test("the block relays URLs and never a comment body", async () => {
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.equal(result.decision, "block");
@@ -436,13 +423,12 @@ test("the block relays URLs and never a comment body", async () => {
 });
 
 test("an unclean report with every list empty blocks and says a write failed", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
 
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, {
@@ -455,7 +441,7 @@ test("an unclean report with every list empty blocks and says a write failed", a
 });
 
 test("failed writes get their own sentence beside the other findings", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const refused = `resolve the thread at ${DISCUSSION(1001)}: HTTP 422 Validation Failed`;
 	const { exec } = stubExec({
 		report: () => ({
@@ -468,7 +454,6 @@ test("failed writes get their own sentence beside the other findings", async () 
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, {
@@ -482,7 +467,7 @@ test("failed writes get their own sentence beside the other findings", async () 
 });
 
 test("missing headings, bad log lines, and truncated threads each get a sentence", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({
 		report: () => ({
 			...EMPTY_REPORT,
@@ -495,7 +480,6 @@ test("missing headings, bad log lines, and truncated threads each get a sentence
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, {
@@ -512,7 +496,7 @@ test("missing headings, bad log lines, and truncated threads each get a sentence
 // --- Retry count ---
 
 test("three unclean stops block, the fourth passes and logs reconcile:unclean", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
 	const at = new Date("2026-11-02T15:00:00.000Z");
 	const stop = (active: boolean) =>
@@ -520,7 +504,6 @@ test("three unclean stops block, the fourth passes and logs reconcile:unclean", 
 			tool: "claude",
 			exec,
 			now: () => at,
-			stateDir,
 		});
 
 	const decisions = [];
@@ -543,13 +526,12 @@ test("three unclean stops block, the fourth passes and logs reconcile:unclean", 
 });
 
 test("a stop with stop_hook_active false starts the count over", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
 	const stop = (active: boolean) =>
 		runGate(stopPayload(repoRoot, { active }), {
 			tool: "claude",
 			exec,
-			stateDir,
 		});
 
 	await stop(false);
@@ -565,43 +547,39 @@ test("a stop with stop_hook_active false starts the count over", async () => {
 
 test("a counter it can't write lets the stop through", async () => {
 	const { repoRoot } = makeRepo();
-	const blocker = path.join(makeTemp("reconcile-gate-file-"), "not-a-dir");
-	writeFileSync(blocker, "");
+	const counterDir = path.dirname(path.dirname(counterFile(repoRoot, "claude", "s-1")));
+	writeFileSync(counterDir, "");
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
 
-	const result = await runGate(stopPayload(repoRoot), {
-		tool: "claude",
-		exec,
-		stateDir: blocker,
-	});
+	const result = await runGate(stopPayload(repoRoot), { tool: "claude", exec });
 
 	assert.deepEqual(result, { decision: "pass" });
 });
 
 test("the counter is written through a temp file that is renamed away", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
 
-	await runGate(stopPayload(repoRoot), { tool: "claude", exec, stateDir });
+	await runGate(stopPayload(repoRoot), { tool: "claude", exec });
 
-	const dir = path.join(stateDir, "claude");
+	const counter = counterFile(repoRoot, "claude", "s-1");
 	assert.deepEqual(
-		JSON.parse(readFileSync(path.join(dir, "s-1.json"), "utf8")),
+		JSON.parse(readFileSync(counter, "utf8")),
 		{ count: 1, pr: PR }
 	);
-	assert.deepEqual(readdirSync(dir), ["s-1.json"]);
+	assert.deepEqual(readdirSync(path.dirname(counter)), ["s-1.json"]);
 });
 
 // --- Scope ---
 
 test("a main-session Stop passes without a reconcile call", async () => {
 	for (const message of [null, `prism-pr: ${PR}`]) {
-		const { repoRoot, stateDir } = makeRepo();
+		const { repoRoot } = makeRepo();
 		const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 		const result = await runGate(
 			stopPayload(repoRoot, { event: "Stop", agentType: null, message }),
-			{ tool: "claude", exec, stateDir }
+			{ tool: "claude", exec }
 		);
 
 		assert.deepEqual(result, { decision: "pass" }, String(message));
@@ -610,12 +588,12 @@ test("a main-session Stop passes without a reconcile call", async () => {
 });
 
 test("a stop from another agent type passes without a reconcile call", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	const result = await runGate(
 		stopPayload(repoRoot, { agentType: "prism-verify" }),
-		{ tool: "claude", exec, stateDir }
+		{ tool: "claude", exec }
 	);
 
 	assert.deepEqual(result, { decision: "pass" });
@@ -623,26 +601,24 @@ test("a stop from another agent type passes without a reconcile call", async () 
 });
 
 test("a SubagentStop from prism-pr-review runs the gate", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
 
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.equal(result.decision, "block");
 });
 
 test("an event other than SubagentStop passes without a reconcile call", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	const result = await runGate(stopPayload(repoRoot, { event: "PreToolUse" }), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, { decision: "pass" });
@@ -650,13 +626,11 @@ test("an event other than SubagentStop passes without a reconcile call", async (
 });
 
 test("a session outside this repo passes without a reconcile call", async () => {
-	const { stateDir } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	const result = await runGate(stopPayload(makeTemp("reconcile-gate-out-")), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, { decision: "pass" });
@@ -664,13 +638,12 @@ test("a session outside this repo passes without a reconcile call", async () => 
 });
 
 test("a Codex review stop runs the gate, and a Cursor stop passes", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	const codex = await runGate(stopPayload(repoRoot), {
 		tool: "codex",
 		exec,
-		stateDir,
 	});
 	assert.equal(codex.decision, "block");
 	assert.equal(calls.length, 1);
@@ -678,7 +651,6 @@ test("a Codex review stop runs the gate, and a Cursor stop passes", async () => 
 	const cursor = await runGate(stopPayload(repoRoot), {
 		tool: "cursor",
 		exec,
-		stateDir,
 	});
 	assert.deepEqual(cursor, { decision: "pass" });
 	assert.equal(calls.length, 1);
@@ -697,12 +669,12 @@ function callSummary(calls: Stub[]) {
 }
 
 test("a prism-pr line ending the subagent's message names the PR", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	await runGate(
 		reviewStop(repoRoot, "PR 1234 reviewed.\nNext: the author fixes R1.\n\nprism-pr: 1234\n"),
-		{ tool: "claude", exec, stateDir }
+		{ tool: "claude", exec }
 	);
 
 	assert.deepEqual(calls, [
@@ -715,12 +687,12 @@ test("a prism-pr line ending the subagent's message names the PR", async () => {
 });
 
 test("a prism-pr line that isn't the message's last line names no PR", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	const result = await runGate(
 		reviewStop(repoRoot, "A quoted comment said:\nprism-pr: 999\nReview done."),
-		{ tool: "claude", exec, stateDir }
+		{ tool: "claude", exec }
 	);
 
 	assert.deepEqual(result, { decision: "block", reason: ASK_FOR_PR_LINE });
@@ -728,17 +700,16 @@ test("a prism-pr line that isn't the message's last line names no PR", async () 
 });
 
 test("a second stop without the prism-pr line reconciles the PR the first stop named", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	const first = await runGate(reviewStop(repoRoot, "Reviewed.\nprism-pr: 1234"), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 	const second = await runGate(
 		reviewStop(repoRoot, "Replied to the threads.", { active: true }),
-		{ tool: "claude", exec, stateDir }
+		{ tool: "claude", exec }
 	);
 
 	assert.equal(first.decision, "block");
@@ -747,18 +718,16 @@ test("a second stop without the prism-pr line reconciles the PR the first stop n
 });
 
 test("a stop with stop_hook_active false forgets the stored PR", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	await runGate(reviewStop(repoRoot, "prism-pr: 1234"), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 	const second = await runGate(reviewStop(repoRoot, "Review done."), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(second, { decision: "block", reason: ASK_FOR_PR_LINE });
@@ -772,13 +741,12 @@ test("a prism-pr line wrapped in backticks or asterisks, or with a hash, names t
 		"prism-pr: #1234",
 		"**prism-pr: #1234**",
 	]) {
-		const { repoRoot, stateDir } = makeRepo();
+		const { repoRoot } = makeRepo();
 		const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 		await runGate(reviewStop(repoRoot, `Review done.\n${line}\n`), {
 			tool: "claude",
 			exec,
-			stateDir,
 		});
 
 		assert.deepEqual(callSummary(calls), ["reconcile 1234"], line);
@@ -787,13 +755,12 @@ test("a prism-pr line wrapped in backticks or asterisks, or with a hash, names t
 
 test("a PR line with another prefix or a non-number names no PR", async () => {
 	for (const line of ["review-pr: 1234", "pr: 1234", "prism-pr: abc"]) {
-		const { repoRoot, stateDir } = makeRepo();
+		const { repoRoot } = makeRepo();
 		const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 		const result = await runGate(reviewStop(repoRoot, `Review done.\n${line}`), {
 			tool: "claude",
 			exec,
-			stateDir,
 		});
 
 		assert.deepEqual(result, { decision: "block", reason: ASK_FOR_PR_LINE }, line);
@@ -802,17 +769,16 @@ test("a PR line with another prefix or a non-number names no PR", async () => {
 });
 
 test("a first SubagentStop with no prism-pr line blocks once asking for it, with no reconcile call", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	const first = await runGate(reviewStop(repoRoot, "Review done."), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 	const second = await runGate(
 		reviewStop(repoRoot, "Still no line.", { active: true }),
-		{ tool: "claude", exec, stateDir }
+		{ tool: "claude", exec }
 	);
 
 	assert.deepEqual(first, { decision: "block", reason: ASK_FOR_PR_LINE });
@@ -821,38 +787,35 @@ test("a first SubagentStop with no prism-pr line blocks once asking for it, with
 });
 
 test("a second SubagentStop with no prism-pr line removes the stored state", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({ report: () => EMPTY_REPORT });
-	const counter = path.join(stateDir, "claude", "s-1.json");
+	const counter = counterFile(repoRoot, "claude", "s-1");
 
 	await runGate(reviewStop(repoRoot, "Review done."), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 	assert.ok(existsSync(counter));
 
 	await runGate(reviewStop(repoRoot, "Still no line.", { active: true }), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.equal(existsSync(counter), false);
 });
 
 test("answering the ask with a prism-pr line reconciles that PR", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, calls } = stubExec({ report: () => EMPTY_REPORT });
 
 	await runGate(reviewStop(repoRoot, "Review done."), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 	const answer = await runGate(
 		reviewStop(repoRoot, "Review done.\nprism-pr: 1234", { active: true }),
-		{ tool: "claude", exec, stateDir }
+		{ tool: "claude", exec }
 	);
 
 	assert.equal(answer.decision, "block");
@@ -860,22 +823,21 @@ test("answering the ask with a prism-pr line reconciles that PR", async () => {
 });
 
 test("a clean pass removes the stored count and PR", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	let clean = false;
 	const { exec } = stubExec({ report: () => ({ ...EMPTY_REPORT, clean }) });
-	const counter = path.join(stateDir, "claude", "s-1.json");
+	const counter = counterFile(repoRoot, "claude", "s-1");
 
 	await runGate(reviewStop(repoRoot, "prism-pr: 1234"), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 	assert.ok(existsSync(counter));
 
 	clean = true;
 	const result = await runGate(
 		reviewStop(repoRoot, "prism-pr: 1234", { active: true }),
-		{ tool: "claude", exec, stateDir }
+		{ tool: "claude", exec }
 	);
 
 	assert.deepEqual(result, { decision: "pass" });
@@ -883,7 +845,7 @@ test("a clean pass removes the stored count and PR", async () => {
 });
 
 test("a SubagentStop block ends by asking for the prism-pr line", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({
 		report: () => ({
 			...EMPTY_REPORT,
@@ -894,7 +856,6 @@ test("a SubagentStop block ends by asking for the prism-pr line", async () => {
 	const result = await runGate(reviewStop(repoRoot, "prism-pr: 1234"), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, {
@@ -909,12 +870,12 @@ test("a SubagentStop block ends by asking for the prism-pr line", async () => {
 // --- Reconcile call ---
 
 test("the gate's inner time limit fits under a 120 s registration with 10 s spare", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec, timeouts } = stubExec({
 		report: () => ({ ...EMPTY_REPORT, clean: true }),
 	});
 
-	await runGate(stopPayload(repoRoot), { tool: "claude", exec, stateDir });
+	await runGate(stopPayload(repoRoot), { tool: "claude", exec });
 
 	assert.equal(timeouts.length, 1);
 	const [timeout] = timeouts;
@@ -923,13 +884,12 @@ test("the gate's inner time limit fits under a 120 s registration with 10 s spar
 });
 
 test("reconcile output that isn't a report passes the stop", async () => {
-	const { repoRoot, stateDir } = makeRepo();
+	const { repoRoot } = makeRepo();
 	const { exec } = stubExec({ report: () => "Error: gh api failed\n" });
 
 	const result = await runGate(stopPayload(repoRoot), {
 		tool: "claude",
 		exec,
-		stateDir,
 	});
 
 	assert.deepEqual(result, { decision: "pass" });
@@ -943,7 +903,6 @@ test("the spawned gate writes the block envelope for the harness it serves", () 
 
 	for (const tool of ["claude", "codex"]) {
 		const session = `envelope-${tool}-${process.pid}`;
-		spawnedCounter(tool, session);
 
 		const child = runSpawnedGate(gate, tool, stopPayload(repoRoot, { session }));
 
@@ -963,7 +922,7 @@ test("leg 1's payload passes under each kill switch", () => {
 
 	for (const switchName of ["PRISM_HOOK_DISABLE", "PRISM_HOOK_DENY_DISABLE"]) {
 		const session = `switch-${switchName}-${process.pid}`;
-		const counter = spawnedCounter("claude", session);
+		const counter = counterFile(repoRoot, "claude", session);
 
 		const child = runSpawnedGate(gate, "claude", stopPayload(repoRoot, { session }), {
 			env: { [switchName]: "1" },
