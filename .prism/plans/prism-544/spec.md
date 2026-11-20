@@ -163,6 +163,7 @@ The Codex host gaps go into `hook-runtime.md` as host limitations: the brief gat
 - **The commit gate reads `commit.mjs` calls.** Every folder-plan stage commits through `commit.mjs`, which spawns git with no shell, so a gate reading only `git commit` would miss them. The script path is matched through the native realpath, as in the approve guard. `tree.mjs` passes `--literal-pathspecs` when it builds the temporary index for such a call. Winston's fit verdict: proceed with changes.
 - **The old hold is renamed "the cleanup-pass hold".** `hook-runtime.md` and the opening line of `git-hooks.md` use the new name. ADR-0076 and ADR-0081's Consequences line are left as written. ADR-0081 gets a second amendment note, and the ADR-0081 row in `.prism/spec/adrs/_toolkit/README.md` is corrected along with its generated copies. Winston's fit verdict: proceed with changes.
 - **Two paths join Affected systems as scope changes that follow from the outcome.** `.claude/agents/prism-onboard.md` is a generated copy the build rewrites when the onboarding skill changes. `prism-pr-review`'s `shared.md` and its generated copies say the `prism-pr:` line is for "a later reconcile gate", which this child makes false.
+- **`verification-commands.md` joins Affected systems as a scope change that follows from the outcome.** Its line saying `PRISM_HOOK_DISABLE=1` turns every hook off is false once the secrets gate ships, beside the approve guard that already ignored it.
 
 ## Affected systems
 
@@ -209,6 +210,8 @@ templates/install/.prism/architect/_toolkit/**
 templates/install/.prism/spec/adrs/_toolkit/README.md
 .prism/rules/workflow.md
 templates/install/.prism/rules/workflow.md
+.prism/rules/verification-commands.md
+templates/install/.prism/rules/verification-commands.md
 .prism/plans/prism-544/**
 .prism/lessons.md
 AGENTS.md
