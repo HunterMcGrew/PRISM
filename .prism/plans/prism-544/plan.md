@@ -557,6 +557,7 @@ round 4: resolved 1
 - **#545's last Minor was fixed in place in `0e183936`, not deferred to a follow-up PR.** It was the one-sentence ADR-0076 commit-cost scope, and Hunter ruled that fixing a nit does not need another full review round.
 - **Token-based quote reading adds an accepted false deny, and stepped brace sequences judge every form between the bounds.** A quoted glob inside a shell string, such as `bash -c "ls '.en*'"`, now denies. Both are listed in the gate header's accepted false denies.
 - **`env-keys.mjs` accepts the `Abc=` residue.** A single-padded base64 tail with no middle line reads as an empty key, and a real key with an empty value looks the same, so no structural test can refuse one and keep the other. Refusing it would refuse a file with a real empty key. `hook-runtime.md` names the residue.
+- **The secrets gate caps per-word work, so one long word cannot push it past the hook timeout.** The caps are 8 option-cluster letters, 256 path segments, and quote reads of 8,192 characters or 16 copies. Past the 21-second timeout the call runs with nothing denied, which is worse than a missed or false deny on one word. The cost is the cluster gap, where a file name after more than 8 cluster letters passes, and the quote false deny, where a quoted glob in a long or repetitive command reads as unquoted. `hook-runtime.md` names both.
 
 ## History
 
@@ -599,6 +600,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: self-review round 3 fixes for part 2 (d17fa670, f37e8272, 75898447); quoted globs read by token, padded brace sequences, cap counts forms, six gate mutants covered.
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 1 fixes (c58a55ed, 25240560, 0976ab32); Windows paths, nested repos, -z listing, short-option files, real-cwd resolution, env-keys base64 refusal.
 - 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 2 fixes (e17e4388, a31854e0); `..` after a symlink climbs from the real directory, grouped short options judged, env-keys refuses base64 lines by structure, Windows `\.env` search term asserted as a deny.
+- 2026-11-20 [huntermcgrew/prism-544-secrets-gate]: PR #546 round 3 fix (9fe9dff6); option-cluster walk, path depth and quote reading capped so one long word is judged in linear time.
 
 ## Sessions
 
@@ -790,7 +792,8 @@ head: 85800fb69f66b32baf918e5805c125a30aa8ab58 (part 2 of 5)
 - pr-review round 3 at a4fa578e (part 2 of 5): 0 critical, 0 major, 1 minor, 0 nit
   - Range 041aa8c7..a4fa578e for the fix commits, and fdce3e87..a4fa578e for Regressions and Docs. Every pass swept except Accessibility, which is n/a with no UI. The finding is posted inline on #546. The summary is updated in place with verdict state 2, and `effort:deep` and `review:has-minors` are applied. Reconcile is clean.
   - Round 2 findings 1 to 3 are confirmed fixed at e17e4388, and finding 4 at a31854e0. Their threads are resolved. Finding 5's decline is accepted and its thread resolved. `secrets-gate.test.ts` and `env-keys.test.ts` pass locally at a4fa578e, 113 of 113.
-  - **1. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:1224, plus :1074 and :1170. The short-option cluster walk in `valuesOf` pushes one value per letter, and each value costs filesystem calls, so the gate's time grows with the square of the word length. `curl -d<50,000 base64 chars>` takes 10.4 s at a4fa578e and 35 ms at b5fc08c6. At 80,000 characters, with `; cat .env.production` after, the deny takes 25.4 s, past the 21 s registration timeout. The call then runs with nothing denied. That outcome is deduced, not run end to end. Fix: cap the walk at a few letters, name the cap in the header, and add a timing test. Round 3 is the cap, so this goes to the PR as an open item.
+  - **1. Minor, security risk.** File: scripts/ai-skills/hooks/secrets-gate.mjs:1224, plus :1074 and :1170. The short-option cluster walk in `valuesOf` pushes one value per letter, and each value costs filesystem calls, so the gate's time grows with the square of the word length. `curl -d<50,000 base64 chars>` takes 10.4 s at a4fa578e and 35 ms at b5fc08c6. At 80,000 characters, with `; cat .env.production` after, the deny takes 25.4 s, past the 21 s registration timeout. The call then runs with nothing denied. That outcome is deduced, not run end to end. Fix: cap the walk at a few letters, name the cap in the header, and add a timing test. Round 3 is the cap, so this goes to the PR as an open item. Fixed 9fe9dff6: the cluster walk, path depth, and quote reads are capped (see the Decision on per-word caps).
+  - The secrets-gate section of `hook-runtime.md`, its install twin, and the platform copies follow the fix at 71689cc9.
   - CI on run 44707611519: `ubuntu-latest` and `windows-latest` both passed. AC-2, the secrets half of AC-8, AC-9 for the secrets gate, the registration half of AC-10, and AC-13: met (executed).
 
 ## Debugged Issues
