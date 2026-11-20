@@ -914,3 +914,89 @@ test("a repo with no config passes the config check", () => {
 
 	assert.equal(runGate(repo, commitMjs("T1: Build a", "src/a.mjs")), null);
 });
+
+// --- Review fixes ---
+
+test("the subject check never quotes an -F file's text, and names the file", () => {
+	const repo = createRepo();
+	change(repo, "src/a.mjs");
+	write(repo, "msg.txt", "sk-secret-token-123\n");
+
+	const result = runGate(repo, "git commit -F msg.txt -- src/a.mjs");
+
+	assertDeny(result, "subject", /msg\.txt/);
+	assert.doesNotMatch(result?.reason ?? "", /sk-secret-token-123/);
+});
+
+test("the stops check passes a contract path a named task amends onto its list", () => {
+	const repo = createRepo({
+		config: {
+			ticketPrefix: "PRISM",
+			stopPaths: { contract: ["frontend/lib/contracts/**"] },
+		},
+	});
+	insertAfter(
+		repo,
+		PLAN,
+		"- files: src/c.mjs",
+		"- amended: frontend/lib/contracts/thing.ts: the contract moved with c"
+	);
+	commitDirect(repo, "plan: Amend T3", PLAN);
+	change(repo, "frontend/lib/contracts/thing.ts");
+
+	assert.equal(
+		runGate(repo, commitMjs("T3: Build c", "frontend/lib/contracts/thing.ts")),
+		null
+	);
+});
+
+test("an archived plan folder gives its branch no subject check", () => {
+	const repo = createRepo();
+	mkdirSync(path.join(repo, ".prism/archived/plans"), { recursive: true });
+	git(repo, "mv", PLAN_DIR, ".prism/archived/plans/prism-9");
+	git(repo, "commit", "-q", "-m", "plan: Archive");
+	change(repo, "src/a.mjs");
+
+	assert.equal(
+		runGate(repo, "git commit -m 'PRISM-9: Build a' -- src/a.mjs"),
+		null
+	);
+});
+
+test("the stops check reads a composer.json require-dev change as a dependency change", () => {
+	const repo = createRepo();
+	write(repo, "composer.json", '{"name":"a/b","require-dev":{"php":"^8.1"}}\n');
+	commitDirect(repo, "T1: Seed composer.json", "composer.json");
+	write(
+		repo,
+		"composer.json",
+		'{"name":"a/b","require-dev":{"php":"^8.1","x/y":"1.0"}}\n'
+	);
+
+	assertDeny(
+		runGate(repo, commitMjs("T1: Build a", "composer.json")),
+		"stops",
+		/composer\.json is a dependency file/
+	);
+});
+
+test("the stops check passes a manifest whose dependencies were only re-sorted", () => {
+	const repo = createRepo();
+	const manifest = "package.json";
+	write(
+		repo,
+		manifest,
+		'{"name":"t","dependencies":{"a":"1.0.0","b":"1.0.0"}}\n'
+	);
+	commitDirect(repo, "T1: Seed manifest", manifest);
+	write(
+		repo,
+		manifest,
+		'{"name":"t","dependencies":{"b":"1.0.0","a":"1.0.0"},"scripts":{"x":"y"}}\n'
+	);
+
+	assert.equal(
+		runGate(repo, commitMjs("T2: Add a dependency", manifest)),
+		null
+	);
+});

@@ -1,3 +1,4 @@
+import type { Task } from "../plan/tasks.mjs";
 import type { CheckResult, Context } from "./checks.mjs";
 
 export const DEFAULT_TEST_GLOBS: string[];
@@ -10,3 +11,5 @@ export const TEST_GUARD_CHECK: {
 export function resolveTestGlobs(
 	config: Record<string, unknown> | null | undefined
 ): string[];
+
+export function claimsFile(task: Task, file: string | null): boolean;

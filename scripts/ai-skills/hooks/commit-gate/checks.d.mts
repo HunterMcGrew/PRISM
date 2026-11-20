@@ -1,5 +1,5 @@
 import type { StopPaths } from "../plan/stop-paths.mjs";
-import type { Task } from "../plan/tasks.mjs";
+import type { parseSubject, Task } from "../plan/tasks.mjs";
 import type { Commit } from "./parse.mjs";
 import type { WouldBeIndex } from "./tree.mjs";
 
@@ -13,10 +13,7 @@ export interface Context {
 	planFolder: string | null;
 	tasks: Task[] | null;
 	commit: Commit;
-	subject:
-		| { kind: "task" | "fix"; ids: string[] }
-		| { kind: "plan" | "retro" | "ticket" }
-		| null;
+	subject: ReturnType<typeof parseSubject>;
 	index: WouldBeIndex;
 	paths: string[];
 	namedTasks: Task[];

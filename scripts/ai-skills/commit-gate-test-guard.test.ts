@@ -10,6 +10,7 @@ import { execFileSync } from "node:child_process";
 import {
 	mkdirSync,
 	mkdtempSync,
+	readdirSync,
 	readFileSync,
 	rmSync,
 	unlinkSync,
@@ -27,6 +28,7 @@ import {
 	TEST_GUARD_CHECK,
 } from "./hooks/commit-gate/test-guard.mjs";
 import { buildWouldBeIndex } from "./hooks/commit-gate/tree.mjs";
+import { compileMatcher } from "./hooks/lib/match.mjs";
 
 const RUNTIME_PATH = fileURLToPath(new URL("./hooks/", import.meta.url));
 // Forward slashes on every platform, because `tokenize` reads a `\` in a
@@ -601,4 +603,70 @@ test("resolveTestGlobs throws naming testGlobs on a value that is not a list of 
 			JSON.stringify(testGlobs)
 		);
 	}
+});
+
+// --- Config that shapes git's own output ---
+
+test("denies a removed default-branch line under each git config that changes diff output", () => {
+	for (const [key, value] of [
+		["color.ui", "always"],
+		["diff.external", "echo"],
+	] as const) {
+		const repo = createRepo();
+		git(repo, "config", key, value);
+		removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
+
+		assertDeny(
+			runCheck(repo, commitMjs("T1: Build a", TEST_FILE)),
+			/src\/a\.test\.mjs loses 1 line/
+		);
+	}
+});
+
+test("denies a removed default-branch line when a textconv driver blanks the diff", () => {
+	const repo = createRepo();
+	git(repo, "config", "diff.blank.textconv", "true");
+	write(repo, ".gitattributes", "*.test.mjs diff=blank\n");
+	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
+
+	assertDeny(
+		runCheck(repo, commitMjs("T1: Build a", TEST_FILE)),
+		/src\/a\.test\.mjs loses 1 line/
+	);
+});
+
+test("denies a removed line when blame can't run, instead of passing it", () => {
+	const repo = createRepo();
+	write(repo, "src/other.mjs", "export const other = 1;\n");
+	git(repo, "add", "src/other.mjs");
+	git(repo, "commit", "-q", "-m", "T1: Add other");
+	git(repo, "config", "blame.ignoreRevsFile", path.join(repo, "missing-revs"));
+	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
+
+	assertDeny(
+		runCheck(repo, commitMjs("T1 fix: Trim a", TEST_FILE)),
+		/src\/a\.test\.mjs loses 1 line/
+	);
+});
+
+test("PRISM's own testGlobs cover every test file run-tests.ts discovers", () => {
+	const root = path.resolve(RUNTIME_PATH, "../../..");
+	const { testGlobs } = JSON.parse(
+		readFileSync(path.join(root, ".ai-skills/config.json"), "utf8")
+	);
+	const matchers = resolveTestGlobs({ testGlobs }).map(compileMatcher);
+	const discovered = readdirSync(path.join(root, "scripts/ai-skills"), {
+		recursive: true,
+	})
+		.filter(
+			(entry): entry is string =>
+				typeof entry === "string" && entry.endsWith(".test.ts")
+		)
+		.map((entry) => `scripts/ai-skills/${entry.split(path.sep).join("/")}`);
+
+	assert.ok(discovered.some((file) => file.split("/").length > 3));
+	const missed = discovered.filter(
+		(file) => !matchers.some((matches) => matches(file))
+	);
+	assert.deepEqual(missed, []);
 });

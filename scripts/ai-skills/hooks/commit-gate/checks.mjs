@@ -35,6 +35,9 @@
  *   dependency or contract change unasked
  * - a dependency file other than the npm and composer manifests counts on any
  *   change, since the gate reads no other manifest format
+ * - a detached HEAD has no branch name to read a ticket from, so it reads as
+ *   having no plan and skips the subject, stop-path, and weakened-test checks,
+ *   a `plan:` commit's path check included
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -43,7 +46,7 @@ import { findPlanForBranch } from "../compact-handoff.mjs";
 import { CHAIN_FILES } from "../plan/lookup.mjs";
 import { matchStopPath, resolveStopPaths } from "../plan/stop-paths.mjs";
 import { parseSubject, parseTasks, readPlanConfig } from "../plan/tasks.mjs";
-import { resolveTestGlobs } from "./test-guard.mjs";
+import { claimsFile, resolveTestGlobs } from "./test-guard.mjs";
 import { runGit } from "./tree.mjs";
 
 /**
@@ -92,7 +95,7 @@ export const RETRO_PATHS = [
 	"AGENTS.md",
 	"templates/install/.prism/",
 ];
-// The manifest fields the stops check reads as dependency entries. A file not listed here is a lockfile.
+// The manifest fields the stops check reads as dependency entries. Any other dependency file counts on any change, since the gate reads no other manifest format.
 const DEPENDENCY_FIELDS = new Map([
 	[
 		"package.json",
@@ -234,8 +237,14 @@ function checkSubject(ctx) {
 	const parsed = ctx.subject;
 	if (!parsed || parsed.kind === "ticket") {
 		if (ctx.commit.subject !== null) {
+			// A subject read from `-F` is named by its file and never quoted, since
+			// the file is the agent's to name and may hold anything.
+			const source = ctx.commit.subjectFile
+				? `The subject in ${ctx.commit.subjectFile}`
+				: `"${ctx.commit.subject}"`;
+
 			return {
-				reason: `"${ctx.commit.subject}" isn't a folder-plan subject.`,
+				reason: `${source} isn't a folder-plan subject.`,
 				remedy: SUBJECT_FORMS,
 			};
 		}
@@ -299,7 +308,7 @@ function checkStops(ctx) {
 		const stop = matchStopPath(p, stopPaths);
 		if (!stop) continue;
 
-		const owners = named.filter((task) => task.files.includes(p));
+		const owners = named.filter((task) => claimsFile(task, p));
 		if (stop.kind === "contract" && owners.length === 0) {
 			return {
 				reason: `${p} is a contract path (${stop.glob}) that no named task lists.`,
@@ -360,13 +369,30 @@ function changesDependencyEntry(repoRoot, index, file) {
 
 		const manifest = JSON.parse(text);
 
-		return Object.fromEntries(fields.map((field) => [field, manifest[field]]));
+		return Object.fromEntries(
+			fields.map((field) => [field, sortKeys(manifest[field])])
+		);
 	};
 	try {
 		return JSON.stringify(entries(before)) !== JSON.stringify(entries(after));
 	} catch {
 		return true;
 	}
+}
+
+/**
+ * An object's entries in key order, so a re-sorted dependency list compares
+ * equal. Any other value passes through.
+ *
+ * @param {unknown} value
+ */
+function sortKeys(value) {
+	if (typeof value !== "object" || value === null || Array.isArray(value))
+		return value;
+
+	return Object.fromEntries(
+		Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+	);
 }
 
 // --- Context readers ---

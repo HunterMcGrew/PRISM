@@ -142,12 +142,13 @@ function findBehaviorRecord(ctx) {
 }
 
 /**
- * True when `file` is on the task's file list or amended onto it.
+ * True when `file` is on the task's file list or amended onto it. Every check
+ * that asks whether a task owns a file reads it through here.
  *
  * @param {import("../plan/tasks.mjs").Task} task
  * @param {string | null} file
  */
-function claimsFile(task, file) {
+export function claimsFile(task, file) {
 	return (
 		file !== null &&
 		(task.files.includes(file) ||
@@ -230,6 +231,7 @@ function countRemovedBaseLines(ctx, base, change) {
 	if (removedNow.length === 0 || base === "HEAD") return removedNow.length;
 
 	const baseLineNumbers = readBaseLineNumbers(ctx, base, change.from);
+	if (baseLineNumbers === null) return removedNow.length;
 
 	return removedNow.filter((line) => baseLineNumbers.has(line)).length;
 }
@@ -239,18 +241,22 @@ function countRemovedBaseLines(ctx, base, change) {
  * are the lines no commit since `base` added. Blame follows each commit's own
  * diff, so a branch line whose text matches a line of the default branch's
  * stays the branch's, where one diff from `base` to HEAD would pair the two.
+ * Returns null when blame fails, such as with a `blame.ignoreRevsFile` naming a
+ * missing file, so the caller counts every removed line: a failure that
+ * passed the commit would let one config line turn the check off.
  *
  * @param {Context} ctx
  * @param {string} base
  * @param {string} file
- * @returns {Set<number>}
+ * @returns {Set<number> | null}
  */
 function readBaseLineNumbers(ctx, base, file) {
 	const blame = runGit(
 		ctx.repoRoot,
 		["blame", "--line-porcelain", `${base}..HEAD`, "--", file],
-		{ trim: false }
+		{ trim: false, fallback: null }
 	);
+	if (typeof blame !== "string") return null;
 
 	/** @type {Set<number>} */
 	const lines = new Set();
@@ -270,6 +276,9 @@ function readBaseLineNumbers(ctx, base, file) {
  * diff against HEAD, read from the hunk headers, so a `---` file header never
  * counts as one. In a hunk that touches a missing final newline, a line the
  * hunk both removes and adds back is unchanged, because only its newline moved.
+ * The diff passes `--no-color`, `--no-ext-diff`, and `--no-textconv`, because
+ * a config that colors, replaces, or converts the diff would change the text
+ * this parses, and an agent can set any of them with an ungated `git config`.
  *
  * @param {Context} ctx
  * @param {Change} change
@@ -282,6 +291,9 @@ function readRemovedLines(ctx, { from, to }) {
 			"-c",
 			"core.quotePath=false",
 			"diff",
+			"--no-color",
+			"--no-ext-diff",
+			"--no-textconv",
 			"--cached",
 			"-M",
 			"-U0",
