@@ -1054,7 +1054,8 @@ The issue's criteria, with IDs and evidence.
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-11-19 | plan stage | Wrote AC-1 to AC-13 from issue #544's thirteen criteria, adding IDs and Evidence only; the wording matches the issue | written | synced |
-| 2026-11-20 | Eli, on the coordinator's relay of Hunter's ruling | AC-5 dropped its subject, `plan:`, and `retro:` clauses | adjusted | synced |
+| 2026-11-20 | Eli, on the coordinator's relay of Hunter's ruling | AC-5 dropped its subject, `plan:`, and `retro:` clauses | adjusted | not synced |
+| 2026-11-20 | Eli, on the coordinator's request | Synced AC-5's adjusted text to issue #544's body, with no subject, `plan:`, or `retro:` clauses | adjusted | synced |
 
 ### AC Adjustments
 
