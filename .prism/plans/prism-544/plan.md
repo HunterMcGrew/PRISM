@@ -540,6 +540,9 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Fixed challenge round 1's six findings: T11's fixture, T3's line 65 comment, T13's config order, T20's temp runtime, T23's registered-events sentence, and the `verification-commands.md` switch sentence, now T10's.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Fixed challenge round 2's four findings: T18's proof is `build.ts --check`, T13's `RETRO_PATHS` covers the generated copies, T8, T11, and T14 spell the runtime path with forward slashes, and T25 and T26 run the route step after regeneration.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Fixed challenge round 3's three findings: T4's `stdinTexts` assertion, T3's quoted grep globs, and T3's `checkCommandWritesNoFile` and line 749 type rewrites.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T18 added the optional `gated` flag to `RoleDefinition`, a boolean check in `buildRoleMap`, and `"gated": true` on the six dispatched roles in roles.json.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T1,T4 built; T1's `bash -c` and `sh -c` git-gate test fails on main by design until T3, and T4 carries the splitter assertions onto `walkSegments`.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T2 added the `dispatch` tool kind, `subagentDispatch`, `subagentStop`, `emitBlockStop`, `readShellCall`, and `writeStdout` to `harnesses.mjs`, with a 12-case `hook-harnesses.test.ts`.
 
 ## Sessions
 
