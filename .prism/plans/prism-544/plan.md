@@ -638,6 +638,14 @@ head: 067da565cba278a1791f2fd6f087f597a6f4a93a (part 1 of 5)
   - AC-3: gated flag met (executed, discovery-metadata.test.ts "rejects a non-boolean gated value" fails on base code and passes at head); the brief gate half is out of part (part 4).
   - AC-13: ungradeable, pass-bounded: part 1 has no PR yet, so no CI has run; local verify passed at de7a3e78, and every later commit touches only the plan.
   - AC-2, AC-4 to AC-12: out of part.
+- pr-review round 1 at 6cc418a4 (part 1 of 5): 0 critical, 1 major, 1 minor, 4 nit
+  - **1. Major, bug (regression).** File: scripts/ai-skills/hooks/hook.mjs:954. In resolveArgumentsAfterCd, a `cd` inside `$(...)` or `bash -c` moves `current`, so `ROOT=$(cd scripts && pwd); cd src && tee index.ts` passes the write gate and base denies it. Fix: only `depth === 0` segments move `current`.
+  - **2. Minor, bug (regression).** File: scripts/ai-skills/hooks/git-gates.mjs:199, also hook.mjs:954. Both loops ignore `.unreadable`, so a quoted `)` inside `$( )` hides a later `git push` or write. Fix: read the unreadable text conservatively.
+  - **3. nit, bug.** File: scripts/ai-skills/hooks/hook.mjs:811. Two data-reader heredocs opened on one line in separate segments over-deny.
+  - **4. nit, code smell.** File: scripts/ai-skills/hooks/harnesses.mjs:409. The shell-tool list, the PowerShell rewrite, and writeStdout have twins in the approval guard. Recommend declining, and correcting the Decision's reason.
+  - **5. nit, code smell.** File: scripts/ai-skills/hooks/hook.mjs:273. The name `walkLines` does not say it returns the cached whole-command walk.
+  - **6. nit, nitpick.** File: scripts/ai-skills/generate-skills.ts:52. The gated JSDoc's membership rule also covers prism-architect. Fold the fix into T19.
+  - AC-1: met (executed); findings 1 and 2 sit outside its Evidence. AC-3: the gated half is met. AC-13: met for part 1, with both CI legs green at 6cc418a4. AC-2, AC-4 to AC-12: out of part.
 
 ## Acceptance Criteria
 
