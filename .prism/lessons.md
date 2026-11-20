@@ -213,3 +213,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-20 (PRISM-544, PR #546): part 2's verify and three self-review rounds all ran on Linux, so the Windows failures in the path-sensitive gate tests first showed up on the PR's CI.
 
 **How to apply:** Before opening a PR, check any test that builds, compares, or matches a path for Windows forms (backslashes, drive letters, `\\?\` prefixes, case-insensitive names), since neither verify nor self-review runs on Windows.
+
+## Verify a tool's behavior for each case a prose exception lists before writing it as the reason
+
+**Why:** 2026-11-20 (PRISM-544): the commit-naming exception in `git-conventions.md` said git refuses named paths during a merge, cherry-pick, or revert. A fixture run showed git accepts named paths while a revert is in progress, so the reason was false for one of the three.
+
+**How to apply:** Before a rule gives a reason for each case in a list (merge, cherry-pick, revert), run the tool once per case in a scratch repo, and split the sentence where the reasons differ.
