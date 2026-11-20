@@ -903,6 +903,41 @@ head: 0e899bac4556321ff9a79834beca7a705bd0df92 (part 3 of 5)
   - AC-10: commit-gate registration half met (executed). hook-registrations.test.ts passes.
   - AC-12: met (read). The two lines stand in .prism/rules/git-conventions.md, and the verify build check passed at 3a45c444.
   - AC-13: ungradeable, pass-bounded: part 3 has no PR yet, so no CI has run.
+- pr-review round 1 at abab5db3 (part 3 of 5): 0 critical, 3 major, 14 minor, 3 nit
+  - Range: the full PR, 1a308cd8..abab5db3, since no review existed on GitHub. Five subagents covered the passes, and every finding was confirmed at its cited line at abab5db3. Inline comments and summary comment 7044990959 are on #547. No labels were applied, because a Major stands. Reconcile was clean on its first run. CI run 44772579391 passed on ubuntu-latest and failed 18 tests on windows-latest.
+  - Coverage: every pass swept except Accessibility, which is n/a (no UI). The summary comment lists each pass's enumeration.
+  - **1. Major, bug.** File: scripts/ai-skills/hooks/commit-gate.mjs:130. `realpathSync` keeps Windows 8.3 names, while git's toplevel is the long name. Named paths then read as outside the repository, `runGate` throws, and the gate fails open. This causes 12 of the 18 Windows failures. Fix: `realpathSync.native`.
+  - **2. Major, bug.** File: scripts/ai-skills/commit-gate-parse.test.ts:93, plus :103, :277, :289, and commit-gate-tree.test.ts:147 and :160. The parse tests expect POSIX paths, and the tree tests create `x*.txt`, a name Windows forbids. These are the other 6 Windows failures. Fix: build the expected values with `path.resolve`, and skip the two tree tests on win32 or use `[`.
+  - **3. Major, security risk.** File: scripts/ai-skills/hooks/commit-gate/test-guard.mjs:276. `git blame` runs without `--no-textconv`, so a textconv driver an agent can set blanks blame, and a removed base test line passes. Fix: pass `--no-textconv`, and add a test with a branch commit.
+  - **Minor, in scripts/ai-skills/hooks/commit-gate/parse.mjs:**
+    - 4, at :613: an abbreviated long option swallows its value as a path, and the gate fails open.
+    - 5, at :268: a symlinked absolute path relativizes outside the repo, and the gate fails open.
+    - 6, a security risk, at :367: `--git-dir`, `--work-tree`, and `GIT_DIR` are not followed, so the `--no-verify` deny is dropped.
+    - 7, at :706: `-F` on a FIFO blocks the gate.
+    - 8, at :96: the kill-switch reader misses `local -x`, `mapfile`, and `${VAR:=1}`.
+    - 13, at :470: a second git-argv reader disagrees with `git-gates.mjs`.
+  - **Minor, in the other gate modules:**
+    - 9, at test-guard.mjs:337: the no-newline pairing is too broad.
+    - 10, at tree.d.mts:13: `runGit` under-declares its return type.
+    - 14, at checks.mjs:47: plan lookup through `compact-handoff.mjs` swallows fs errors.
+    - 15, at checks.mjs:225: the no-task predicate is computed at two sites, and the contract deny skips its text.
+  - **Minor, in tests, config, and the plan:**
+    - 11, at .ai-skills/config.schema.json:259: the `testGlobs` example misses root-level files.
+    - 12, at commit-gate-test-guard.test.ts:400: the rename test never exercises the new-path allowance.
+    - 16, at .prism/plans/prism-544/spec.md:102 and :106: two design bullets contradict the shipped gate.
+    - 17, at plan.md:292: T13's `testGlobs` value is stale. It is left as written.
+  - **nit:**
+    - parse.mjs:88: an unused `flags` field.
+    - test-guard.mjs:149: a single-strategy object.
+    - docs/what-prism-writes.md:49: the row is narrower than the gate.
+    - checks.mjs:142: every flag deny is labelled `(stops)`, which self-review round 1 already declined as nit 20.
+  - Decision item: `"testGlobs": []` silently turns off the weakened-test check. The recommendation is to document it, matching `stopPaths`.
+  - AC-4: met (executed). The parse deny-id cases and leg 1 pass on ubuntu-latest.
+  - AC-5: met (executed) as adjusted. Finding 3 is a gap outside the Evidence.
+  - AC-6: met on Linux (executed). On windows-latest, leg 2 fails, and leg 3 passes only through fail-open (finding 1).
+  - AC-8, AC-9, AC-10: the commit halves are met (executed).
+  - AC-12: met (inspected) at .prism/rules/git-conventions.md:143.
+  - AC-13: unmet. windows-latest failed in run 44772579391.
 
 ## Debugged Issues
 
