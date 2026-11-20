@@ -28,10 +28,13 @@
 // - Read: Claude's Read tool, on its `file_path`.
 // - Grep: Claude's Grep tool. A `path` or `glob` naming a secret shape denies.
 //   Otherwise the gate lists the files under the search root with
-//   `git ls-files -co --exclude-standard`, because Grep's ripgrep honors
+//   `git ls-files -z -s -co --exclude-standard`, because Grep's ripgrep honors
 //   `.gitignore` the same way, and denies only when that list holds a secret
-//   path. `.env`, `.env.local`, and `*.pem` are usually ignored, while
-//   `.env.production`, `*.key`, and `secrets/` folders are not. A root that is
+//   path. A nested repo or submodule is one entry in its parent's list, so
+//   the gate lists it in turn, up to `MAX_DEPTH` levels. A listed symlink, and
+//   an untracked entry, resolves to its real path before it is judged. `.env`,
+//   `.env.local`, and `*.pem` are usually ignored, while `.env.production`,
+//   `*.key`, and `secrets/` folders are not. A root that is
 //   itself gitignored lists nothing, and ripgrep still searches a root it is
 //   handed, so that root is walked on disk instead, up to `MAX_WALK` entries.
 // - Shell: Claude's Bash and PowerShell, and Codex's Bash, read through
@@ -40,7 +43,8 @@
 //   including those in the shell strings, fed heredocs, `eval`s, and
 //   substitutions its header lists, with the directory each one runs in. Every
 //   word is judged as a path, including redirect targets, the value after a
-//   `=`, the path after a `rev:` colon, and brace expansions. An unquoted glob
+//   `=`, the path after a `rev:` colon, the text after a short option's
+//   letter such as the `.env` of `-a.env`, and brace expansions. An unquoted glob
 //   word expands against the segment's cwd, and one that could match a secret
 //   name (`.en*`, `*.k?y`) denies even when nothing matches on disk. A
 //   filename filter, the value of `-g`, `--glob`, `--iglob`, or `--include`,
@@ -157,9 +161,15 @@ const CONFIG_FILE = ".ai-skills/config.json";
 // Stand-ins for each secret name, used to ask whether a glob could match one.
 const BASENAME_PROBES = [".env", ".env.local", "a.pem", "a.key"];
 const GLOB_CHAR = /[*?[]/;
+const SHORT_OPTION = /^-[A-Za-z](.+)$/s;
 const URL_WORD = /^[a-z][a-z0-9+.-]*:\/\//i;
 const KEY_SUFFIX = /.\.(pem|key)$/i;
 const MAX_DEPTH = 6;
+// A tracked entry in `git ls-files -s` form: mode, object name, stage, then a tab.
+const STAGED_ENTRY = /^(\d{6}) [0-9a-f]+ \d\t/;
+const GITLINK_MODE = "160000";
+const FILE_MODE = "100644";
+const EXECUTABLE_MODE = "100755";
 const MAX_EXPANSIONS = 64;
 const MAX_GLOB_MATCHES = 2000;
 const MAX_WALK = 5000;
@@ -232,12 +242,18 @@ function loadContext(cwd) {
 	const roots = [toplevel];
 	try {
 		// A `cwd` reached through a symlink spells the toplevel differently
-		// from git, which prints the real path.
+		// from git, which prints the real path. The climb from the link only
+		// lands on the toplevel when the link sits above it, so a spelling that
+		// resolves elsewhere is dropped.
 		const given = path.resolve(
 			cwd,
 			path.relative(realpathSync.native(cwd), toplevel)
 		);
-		if (given !== toplevel) roots.unshift(given);
+		if (
+			given !== toplevel &&
+			path.resolve(realpathSync.native(given)) === path.resolve(toplevel)
+		)
+			roots.unshift(given);
 	} catch {
 		// a cwd that can't resolve leaves git's spelling alone
 	}
@@ -369,7 +385,7 @@ export function judge(tool, payload) {
 function pathDenies(target, cwd, { dotglob = false } = {}) {
 	for (const variant of expandBraces(target)) {
 		if (!path.isAbsolute(variant) && matchesSecretPath(variant)) return true;
-		if (secretAt(path.resolve(cwd, variant))) return true;
+		if (secretAt(resolveFrom(cwd, variant))) return true;
 		if (GLOB_CHAR.test(variant) && globDenies(variant, cwd, dotglob))
 			return true;
 	}
@@ -426,11 +442,13 @@ function secretAt(absolute, options) {
  */
 function namesSecret(absolute, options) {
 	const form = repoForm(absolute);
-	if (matchesSecretPath(form, options)) return true;
+	// A resolved path carries the platform's separator, so a Windows `\` is a
+	// folder break here even where a word as written reads it as a letter.
+	const slashed = form.split(path.sep).join("/");
+	if (matchesSecretPath(slashed, options)) return true;
 	if (form === absolute) return false;
 
-	const lowered = form.split(path.sep).join("/").toLowerCase();
-	return context.extra.some((matches) => matches(lowered));
+	return context.extra.some((matches) => matches(slashed.toLowerCase()));
 }
 
 /**
@@ -497,9 +515,11 @@ function segmentRegex(segment, dotglob) {
  * @returns {string[]}
  */
 function expandGlob(pattern, cwd, dotglob) {
-	const segments = pattern.split(/[\\/]+/);
+	// An absolute pattern starts after its root, so a Windows drive isn't a segment.
+	const root = path.isAbsolute(pattern) ? path.parse(pattern).root : "";
+	const segments = pattern.slice(root.length).split(/[\\/]+/);
 	/** @type {string[]} */
-	let bases = [path.isAbsolute(pattern) ? path.parse(pattern).root : (cwd ?? "")];
+	let bases = [root || (cwd ?? "")];
 	for (const segment of segments) {
 		if (segment === "") continue;
 
@@ -706,9 +726,14 @@ function globNamesSecret(glob) {
 }
 
 /**
+ * True when `root` holds a secret that git lists, or is itself ignored and
+ * holds one on disk. A nested repo or submodule is one entry in its parent's
+ * list, so it is searched through its own list.
+ *
  * @param {string} root
+ * @param {number} [depth]
  */
-function rootHoldsVisibleSecret(root) {
+function rootHoldsVisibleSecret(root, depth = 0) {
 	let gitCwd = root;
 	try {
 		if (!statSync(root).isDirectory()) gitCwd = path.dirname(root);
@@ -716,17 +741,29 @@ function rootHoldsVisibleSecret(root) {
 		return false;
 	}
 
+	// `-z` keeps a non-ASCII name unquoted, and `-s` gives each tracked entry
+	// its mode, so only a symlink needs its real path resolved.
 	const listing = runGit(
-		["ls-files", "-co", "--exclude-standard", "--", root],
+		["ls-files", "-z", "-s", "-co", "--exclude-standard", "--", root],
 		gitCwd
 	);
 	if (listing === null) return false;
-	if (
-		listing
-			.split("\n")
-			.some((file) => file !== "" && secretAt(path.resolve(gitCwd, file)))
-	)
-		return true;
+
+	for (const entry of listing.split("\0")) {
+		const staged = STAGED_ENTRY.exec(entry);
+		const file = staged ? entry.slice(staged[0].length) : entry;
+		if (file === "") continue;
+
+		const full = path.resolve(gitCwd, file);
+		const mode = staged?.[1];
+		if (mode === GITLINK_MODE || file.endsWith("/")) {
+			if (namesSecret(full)) return true;
+			if (depth < MAX_DEPTH && rootHoldsVisibleSecret(full, depth + 1))
+				return true;
+		} else if (mode === FILE_MODE || mode === EXECUTABLE_MODE) {
+			if (namesSecret(full)) return true;
+		} else if (secretAt(full)) return true;
+	}
 
 	return (
 		runGit(["check-ignore", "-q", "--", root], gitCwd) !== null &&
@@ -807,8 +844,20 @@ function runsEnvKeys(command, cwd) {
 	if (parsed.substitutions.length > 0 || parsed.bodies.size > 0) return false;
 	if (parsed.tokens[0] !== "node") return false;
 
-	const script = realPath(path.resolve(cwd, parsed.tokens[1]));
+	const script = realPath(resolveFrom(cwd, parsed.tokens[1]));
 	return script !== null && script === realPath(ENV_KEYS_PATH);
+}
+
+/**
+ * Resolves a relative path against the real directory of `cwd`, the way the
+ * kernel does. A `..` in the path climbs out of the directory a symlinked `cwd`
+ * points at, not out of the link's own parent.
+ *
+ * @param {string} cwd
+ * @param {string} target
+ */
+function resolveFrom(cwd, target) {
+	return path.resolve(realPath(cwd) ?? cwd, target);
 }
 
 /**
@@ -989,17 +1038,13 @@ function wordDenies(word, cwd, source) {
 	if (/\s/.test(word)) {
 		if (cwd === null) return false;
 
-		const absolute = path.resolve(cwd, word);
+		const absolute = resolveFrom(cwd, word);
 		return existsSync(absolute) && secretAt(absolute, SHELL_FORM);
 	}
 
 	try {
-		if (shellPathDenies(word, cwd, source)) return true;
-		for (const cut of ["=", ":"]) {
-			const at = word.indexOf(cut);
-			if (at !== -1 && shellPathDenies(word.slice(at + 1), cwd, source))
-				return true;
-		}
+		if (valuesOf(word).some((value) => shellPathDenies(value, cwd, source)))
+			return true;
 	} catch {
 		return false;
 	}
@@ -1039,7 +1084,7 @@ function literalDenies(word, cwd) {
 		? word
 		: cwd === null
 			? null
-			: path.resolve(cwd, word);
+			: resolveFrom(cwd, word);
 	const named =
 		(!path.isAbsolute(word) && matchesSecretPath(word, SHELL_FORM)) ||
 		(absolute !== null && secretAt(absolute, SHELL_FORM));
@@ -1135,7 +1180,9 @@ function spellsWord(original, command, at, word) {
 }
 
 /**
- * A word, and the values `wordDenies` judges after its first `=` and `:`.
+ * A word, and the values `wordDenies` judges inside it: the text after its
+ * first `=` and `:`, and the text after a short option's letter, as in the
+ * `.env` of `-a.env`.
  *
  * @param {string} word
  */
@@ -1145,6 +1192,8 @@ function valuesOf(word) {
 		const at = word.indexOf(cut);
 		if (at !== -1) values.push(word.slice(at + 1));
 	}
+	const attached = SHORT_OPTION.exec(word)?.[1];
+	if (attached !== undefined) values.push(attached);
 
 	return values;
 }

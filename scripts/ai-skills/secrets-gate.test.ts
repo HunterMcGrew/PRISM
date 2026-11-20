@@ -600,6 +600,7 @@ test("a metadata program shadowed by a function in the command is judged", () =>
 	])
 		assertDenied(claudeBash(command, cwd));
 	assertDenied(claudeBash('show() { echo "$@"; }; stat .env', cwd));
+	assertDenied(claudeBash('function stat { echo "$(< "$1")"; }; stat .env', cwd));
 });
 
 test("a metadata program named by a path, or found through a changed PATH or hash, is judged", () => {
@@ -1001,7 +1002,8 @@ test("secretPaths patterns judge repo-relative paths, never a path outside the r
 	const outside = makeDir();
 	assertDenied(claudeRead(path.join(root, "src/creds/a.json"), { cwd: root }));
 	assertPassed(claudeRead(path.join(outside, "src/creds/a.json"), { cwd: root }));
-	assertPassed(claudeBash(`cat ${outside}/src/creds/a.json`, root));
+	const outsideWords = outside.split(path.sep).join("/");
+	assertPassed(claudeBash(`cat ${outsideWords}/src/creds/a.json`, root));
 });
 
 test("a filter glob with no literal character selects no secret by name", () => {
@@ -1043,4 +1045,112 @@ test("the brace expansion cap counts the forms produced, not the groups opened",
 		claudeBash("cat {a,b,c,d,e,f,g,h,i,j,k,secrets}/{x,y}{x,y}", cwd)
 	);
 	assertPassed(claudeBash("cat {a,b,c,d,e,f,g,h,i,j,k,l}/{x,y}{x,y}", cwd));
+});
+
+test("a path-less Grep sees a secret inside a nested repo that git lists as one folder", () => {
+	const root = makeRepo({ "a.txt": "x" });
+	const nested = path.join(root, "vendor/lib");
+	mkdirSync(nested, { recursive: true });
+	execFileSync("git", ["init", "-q"], { cwd: nested });
+	place(root, "vendor/lib/server.key", "PRIVATE\n");
+	assertDenied(claudeGrep({}, root));
+
+	const clean = makeRepo({ "a.txt": "x" });
+	mkdirSync(path.join(clean, "vendor/lib"), { recursive: true });
+	execFileSync("git", ["init", "-q"], { cwd: path.join(clean, "vendor/lib") });
+	place(clean, "vendor/lib/readme.txt", "hello\n");
+	assertPassed(claudeGrep({}, clean));
+});
+
+test("a path-less Grep sees a secret inside a submodule entry", () => {
+	const root = makeRepo({ "a.txt": "x" });
+	const sub = path.join(root, "subm");
+	mkdirSync(sub, { recursive: true });
+	execFileSync("git", ["init", "-q"], { cwd: sub });
+	place(root, "subm/server.key", "PRIVATE\n");
+	execFileSync(
+		"git",
+		["update-index", "--add", "--cacheinfo", `160000,${"1".repeat(40)},subm`],
+		{ cwd: root }
+	);
+	assertDenied(claudeGrep({}, root));
+});
+
+test("a path-less Grep reads git's file list whole, so a non-ASCII folder can't hide a secret", () => {
+	const root = makeRepo({ "déploy/server.key": "PRIVATE\n" });
+	assertDenied(claudeGrep({}, root));
+
+	const clean = makeRepo({ "déploy/readme.txt": "hello\n" });
+	assertPassed(claudeGrep({}, clean));
+});
+
+test("a path-less Grep resolves a tracked symlink to a secret", (t) => {
+	const root = makeRepo({ ".gitignore": ".env\n", ".env": "KEY=1\n" });
+	try {
+		symlinkSync(".env", path.join(root, "notes.txt"));
+	} catch {
+		t.skip("symlinks are unavailable here");
+		return;
+	}
+	execFileSync("git", ["add", "notes.txt"], { cwd: root });
+	assertDenied(claudeGrep({}, root));
+});
+
+test("a file name attached to a short option is judged as a path", () => {
+	const cwd = makeDir();
+	for (const command of [
+		"xargs -a.env.production echo",
+		"tar -cf /dev/null -T.env.production",
+		"xargs -a.en*",
+	])
+		assertDenied(claudeBash(command, cwd));
+
+	for (const command of ["sort -k1,2 notes.txt", "head -n5 notes.txt", "xargs -n1 echo"])
+		assertPassed(claudeBash(command, cwd));
+});
+
+test("a relative path resolves against the real directory of a symlinked cwd", (t) => {
+	const root = makeRepo({
+		".ai-skills/config.json": JSON.stringify({ secretPaths: ["a/b/config/**"] }),
+		"a/b/c/x.txt": "x",
+		"a/b/config/prod.json": "{}",
+		"a/b/config/p d.json": "{}",
+	});
+	const link = path.join(root, "lnk");
+	try {
+		symlinkSync(path.join("a", "b", "c"), link, "dir");
+	} catch {
+		t.skip("symlinks are unavailable here");
+		return;
+	}
+
+	assertDenied(claudeRead("../config/prod.json", { cwd: link }));
+	assertDenied(claudeBash("cat ../config/prod.json", link));
+	assertDenied(claudeBash('cat "../config/p d.json"', link));
+	assertPassed(claudeBash("cat ../c/x.txt", link));
+});
+
+test("secrets gate leg 3: the remedy passes from a symlinked cwd nested deeper than its target", (t) => {
+	const real = path.join(makeDir(), "repo");
+	mkdirSync(real);
+	execFileSync("git", ["init", "-q"], { cwd: real });
+	place(real, ".env", "API_KEY=sk-test-123\n");
+	// A link nested deeper than its target makes a lexical `..` count land
+	// somewhere other than the real directory's.
+	const link = path.join(makeDir(), "a", "b", "c", "link");
+	mkdirSync(path.dirname(link), { recursive: true });
+	try {
+		symlinkSync(real, link, "dir");
+	} catch {
+		t.skip("symlinks are unavailable here");
+		return;
+	}
+
+	const denied = claudeRead(path.join(link, ".env"), { cwd: link });
+	assertDenied(denied);
+
+	const reason: string = JSON.parse(denied.stdout).hookSpecificOutput
+		.permissionDecisionReason;
+	const script = /Run node (\S+) <file>/.exec(reason)?.[1] ?? "";
+	assertPassed(claudeBash(`node ${script} .env`, link));
 });
