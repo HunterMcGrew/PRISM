@@ -491,6 +491,27 @@ test("the stops check denies a dependency file whose task carries no new depende
 	);
 });
 
+test("the dependency deny on a commit that names no task asks for a task subject, and on one that names a task asks for the plan line", () => {
+	const repo = createRepo();
+	change(repo, "package.json");
+
+	const unnamed = runGate(
+		repo,
+		commitMjs("plan: Add a dependency", "package.json")
+	);
+	assertDeny(
+		unnamed,
+		"stops",
+		/package\.json is a dependency file .*, and the commit's subject names no task the plan holds/
+	);
+	assert.match(unnamed?.remedy ?? "", /"T<n>: <summary>"/);
+	assert.match(unnamed?.remedy ?? "", /-m or a heredoc/);
+	assert.doesNotMatch(unnamed?.remedy ?? "", /new dependency:/);
+
+	const named = runGate(repo, commitMjs("T2: Add a dependency", "package.json"));
+	assert.match(named?.remedy ?? "", /- new dependency:/);
+});
+
 test("the stops check passes when seeded tasks carry a new dependency line", () => {
 	const repo = createRepo();
 	change(repo, "package.json");

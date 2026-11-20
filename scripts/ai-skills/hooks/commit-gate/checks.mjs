@@ -48,7 +48,12 @@ import { findPlanForBranch } from "../compact-handoff.mjs";
 import { CHAIN_FILES } from "../plan/lookup.mjs";
 import { matchStopPath, resolveStopPaths } from "../plan/stop-paths.mjs";
 import { parseSubject, parseTasks, readPlanConfig } from "../plan/tasks.mjs";
-import { claimsFile, resolveTestGlobs } from "./test-guard.mjs";
+import {
+	claimsFile,
+	NO_TASK_REASON,
+	NO_TASK_REMEDY,
+	resolveTestGlobs,
+} from "./test-guard.mjs";
 import { runGit } from "./tree.mjs";
 
 /**
@@ -217,6 +222,7 @@ function checkStops(ctx) {
 	if (!tasks || !stopPaths || !paths || !repoRoot || !index) return null;
 
 	const named = ctx.namedTasks ?? [];
+	const unnamed = tasks.length > 0 && named.length === 0;
 	for (const p of paths) {
 		const stop = matchStopPath(p, stopPaths);
 		if (!stop) continue;
@@ -234,8 +240,15 @@ function checkStops(ctx) {
 			changesDependencyEntry(repoRoot, index, p)
 		) {
 			return {
-				reason: `${p} is a dependency file (${stop.glob}), and no named task lists it with a new dependency: line.`,
-				remedy: `Add "- new dependency: <package and why>" under the task that lists ${p}, or stop and ask.`,
+				reason: `${p} is a dependency file (${stop.glob}), and ${
+					unnamed
+						? NO_TASK_REASON
+						: "no named task lists it with a new dependency: line"
+				}.`,
+				remedy:
+					unnamed
+						? NO_TASK_REMEDY
+						: `Add "- new dependency: <package and why>" under the task that lists ${p}, or stop and ask.`,
 			};
 		}
 	}

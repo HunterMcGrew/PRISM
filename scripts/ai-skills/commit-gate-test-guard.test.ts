@@ -217,6 +217,26 @@ test("denies a removed test line on a task with no behavior change", () => {
 	);
 });
 
+test("a removal on a commit that names no task says so and asks for a task subject, not a behavior change line", () => {
+	const repo = createRepo();
+	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
+
+	for (const command of [
+		commitMjs("plan: Trim a", TEST_FILE),
+		commitMjs("T99: A task the plan lacks", TEST_FILE),
+		`git commit -F msg.txt -- ${TEST_FILE}`,
+	]) {
+		const denied = runCheck(repo, command);
+		assertDeny(
+			denied,
+			/src\/a\.test\.mjs loses 1 line, and the commit's subject names no task the plan holds/
+		);
+		assert.match(denied.remedy, /"T<n>: <summary>"/);
+		assert.match(denied.remedy, /-m or a heredoc/);
+		assert.doesNotMatch(denied.remedy, /behavior change/);
+	}
+});
+
 test("passes the same removal on a task that lists the file with behavior change", () => {
 	const repo = createRepo();
 	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
@@ -627,6 +647,39 @@ test("denies a removed default-branch line when a textconv driver blanks the dif
 	const repo = createRepo();
 	git(repo, "config", "diff.blank.textconv", "true");
 	write(repo, ".gitattributes", "*.test.mjs diff=blank\n");
+	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
+
+	assertDeny(
+		runCheck(repo, commitMjs("T1: Build a", TEST_FILE)),
+		/src\/a\.test\.mjs loses 1 line/
+	);
+});
+
+test("denies a removed default-branch line that sits within diff.interHunkContext of a removed branch line", () => {
+	const repo = createRepo();
+	const branchText = TEST_TEXT.replace(
+		"\t\tassert.ok(true);\n",
+		"\t\tassert.ok(true);\n\t\tbranchA();\n\t\tbranchB();\n"
+	);
+	write(repo, TEST_FILE, branchText);
+	git(repo, "add", TEST_FILE);
+	git(repo, "commit", "-q", "-m", "T1: Add branch lines");
+	git(repo, "config", "diff.interHunkContext", "3");
+	write(
+		repo,
+		TEST_FILE,
+		branchText.replace("\t\tbranchA();\n", "").replace("\t});\n", "")
+	);
+
+	assertDeny(
+		runCheck(repo, commitMjs("T1 fix: Trim a", TEST_FILE)),
+		/src\/a\.test\.mjs loses 1 line/
+	);
+});
+
+test("denies a removed default-branch line when a -diff attribute marks the file binary", () => {
+	const repo = createRepo();
+	write(repo, ".git/info/attributes", "*.test.mjs -diff\n");
 	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
 
 	assertDeny(

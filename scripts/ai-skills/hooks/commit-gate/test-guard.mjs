@@ -56,6 +56,16 @@ export const DEFAULT_TEST_GLOBS = [
 /** @typedef {import("./checks.mjs").Context} Context */
 /** @typedef {{ from: string, to: string | null }} Change */
 
+// What a deny says when the plan holds tasks and the commit names none: the
+// plan's `behavior change:` and `new dependency:` lines hang off a task, so
+// asking for one would send the agent to edit a plan that may already have it.
+// A plan with no tasks keeps the plan-line remedy, because no subject can name
+// a task there.
+export const NO_TASK_REASON =
+	"the commit's subject names no task the plan holds";
+export const NO_TASK_REMEDY =
+	'Name the task in the subject as "T<n>: <summary>", passed with -m or a heredoc in this command, because a -F file written in the same command is not there when the gate reads it.';
+
 export const TEST_GUARD_CHECK = {
 	name: "weakened tests",
 	run: checkWeakenedTests,
@@ -112,9 +122,16 @@ function checkWeakenedTests(ctx) {
 		if (removed === 0 || record.permits(change)) continue;
 
 		const label = change.to ? `${change.from} (now ${change.to})` : change.from;
+		const lines = `${removed} line${removed === 1 ? "" : "s"}`;
+		if ((ctx.tasks?.length ?? 0) > 0 && ctx.namedTasks.length === 0) {
+			return {
+				reason: `${label} loses ${lines}, and ${NO_TASK_REASON}.`,
+				remedy: NO_TASK_REMEDY,
+			};
+		}
 
 		return {
-			reason: `${label} loses ${removed} line${removed === 1 ? "" : "s"}, and the plan doesn't record a behavior change for it.`,
+			reason: `${label} loses ${lines}, and the plan doesn't record a behavior change for it.`,
 			remedy: record.remedy(change.from),
 		};
 	}
@@ -279,9 +296,11 @@ function readBaseLineNumbers(ctx, base, file) {
  * diff against HEAD, read from the hunk headers, so a `---` file header never
  * counts as one. In a hunk that touches a missing final newline, a line the
  * hunk both removes and adds back is unchanged, because only its newline moved.
- * The diff passes `--no-color`, `--no-ext-diff`, and `--no-textconv`, because
- * a config that colors, replaces, or converts the diff would change the text
- * this parses, and an agent can set any of them with an ungated `git config`.
+ * The diff passes `--no-color`, `--no-ext-diff`, `--no-textconv`, `--text`,
+ * and `--inter-hunk-context=0`, because a config that colors, replaces,
+ * converts, or merges the diff, or an attribute that marks the file binary,
+ * would change the text this parses, and an agent can set any of them with an
+ * ungated `git config` or a write to `.git/info/attributes`.
  *
  * @param {Context} ctx
  * @param {Change} change
@@ -297,9 +316,11 @@ function readRemovedLines(ctx, { from, to }) {
 			"--no-color",
 			"--no-ext-diff",
 			"--no-textconv",
+			"--text",
 			"--cached",
 			"-M",
 			"-U0",
+			"--inter-hunk-context=0",
 			"--diff-algorithm=histogram",
 			"HEAD",
 			"--",
