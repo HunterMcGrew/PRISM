@@ -225,3 +225,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-20 (PRISM-544): the commit gate's diff and blame calls surfaced one git flag per review round (`--no-ext-diff`, then `--text` and `--inter-hunk-context`, then `--no-textconv`), because each round fixed the call it found and none listed the rest.
 
 **How to apply:** When a finding shows a git call whose output a user's config can change, list every `runGit` call in the module and check each against color, external diff, textconv, ignore-revs, and attributes before the fix lands.
+
+## A review's prescribed fix is spec, so state its boundary as precisely as the defect
+
+**Why:** 2026-11-20 (PRISM-544, PR #547): round 1 prescribed "realpath the longest existing prefix of each path" and "pair only the lines next to the markers". The author applied both literally. The first also resolved a symlink leaf and left `repoRoot` unresolved, so the gate failed open on a committed outside link and 74 Windows tests went red. The second over-denied an ordinary insert. Each regression traced to the fix text, not to the author.
+
+**How to apply:** When a finding's fix touches path canonicalization or diff pairing, name what stays untouched (the leaf, the other operand, the adjacent run) and the case the fix must still pass, so the fix carries its own regression test.
