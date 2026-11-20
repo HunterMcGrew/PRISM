@@ -87,9 +87,9 @@ const COMMIT_DENY_REASON = [
  * Leading `NAME=value` assignments and a leading `env` are skipped, so
  * `MSYS_NO_PATHCONV=1 git commit` reads as a commit. The head token must be
  * `git` or a path ending in `git`. Between the head and the subcommand, `-C
- * <dir>`, `-c <k=v>`, `--git-dir`, and `--work-tree` consume their value and
- * every other `-`-prefixed token is skipped; the first bare token is the
- * subcommand. `-C` values are kept because they move the repo the commit
+ * <dir>`, `-c <k=v>`, `--git-dir`, `--work-tree`, `--namespace`, and
+ * `--config-env` consume their value and every other `-`-prefixed token is
+ * skipped; the first bare token is the subcommand. `-C` values are kept because they move the repo the commit
  * lands in; `--git-dir` and `--work-tree` also do, and are an accepted gap —
  * a commit spelled that way is keyed on the working directory's HEAD.
  *
@@ -123,8 +123,14 @@ function resolveGitInvocation(tokens) {
 			directories.push(tokens[index + 1]);
 		}
 
-		const takesValue =
-			token === "-C" || token === "-c" || token === "--git-dir" || token === "--work-tree";
+		const takesValue = [
+			"-C",
+			"-c",
+			"--git-dir",
+			"--work-tree",
+			"--namespace",
+			"--config-env",
+		].includes(token);
 		index += takesValue ? 2 : 1;
 	}
 
