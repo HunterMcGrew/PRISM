@@ -541,6 +541,12 @@ round 4: resolved 1
 - **Heredoc bodies are placed by verified text and offset, not by `walkSegments` positions.** `walkSegments` and the tokenizer return no offsets, so `locateHeredocBodies` places a segment's first body only when its text is a line of its own exactly once and the line above opens the same heredocs, and reads each later body at the offset after the previous delimiter. Anything that fails to place stays in the scan, so the residual cases (two bodies with identical text, a `<<-` body with stripped tabs) over-deny and never under-deny. T3's task text still describes `command.indexOf(body, cursor)`; this entry supersedes it.
 - **The quadratic walk on an unreadable command is reduced, not removed.** One walk is now shared per hook call, which takes a 2,000-line unreadable command from about 142 ms and 106 ms to about 60 ms and 63 ms. The rest is `readablePrefix` in `lib/segments.mjs`, which retokenizes at every newline. Rejected for this ticket: rewriting the ported parser's prefix search, which no task lists and which changes parser behavior every gate depends on. It ships as a follow-up PR off `main` after the epic, and part 1's PR body lists it under open items.
 - **Part 1 corrects `hook-runtime.md`: a scope change that follows from the outcome.** Its heredoc paragraph did not say that every body stays in the scan when one cannot be placed, and its Git gates section did not say the gates skip a segment run inside a container. Both are behavior part 1 shipped, so a doc part 1 made incomplete is fixed in part 1 rather than waiting for T23. T23 edits other sentences in the same doc, and its text stands.
+- **The five-part split was taken under Hunter's epic-level go-ahead, and he can veto it before part 1's PR opens.** Part 1 is T1 to T6 and T18, part 2 is T7 to T10, part 3 is T11 to T17, part 4 is T19 to T23, and part 5 is T24 to T26. A veto before part 1 opens costs one re-cut of this list; after it opens, the stack is already in review.
+- **The confirm-round brief binds the plan stage through child 8's spec, so `prism-plan`'s skill text is not edited.** Child 8's spec has a Decision on that brief, and it applies to the plan stage directly. The epic spec's older wording, "with the verdict in the brief", stays as history.
+- **Retro candidates from the part 1 run.**
+  - Plan-prescribed prose was wrong twice: the "no other shell splitter" sentence and the git-gates JSDoc. The builder caught each against the code.
+  - The plan-folder citation lint is not run by the challenge rounds or by the plan auto-approval script, so the plan was approved carrying section signs.
+  - `bundles.mjs` import edges re-resolve to the next owner when a task finishes, so a cycle can appear mid-build, as T5 showed.
 
 ## History
 
@@ -562,6 +568,7 @@ round 4: resolved 1
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: T3 fix for round 1 findings 2 to 7: the git gates normalize CRLF and skip container and `env -C` segments, heredoc bodies are placed by verified text and offset, and one walk is shared per hook call.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Self-review round 2 plan edits: T19 now also fixes the `gated` comment, the quadratic-walk follow-up is a PR off `main`, `hook-runtime.md` joins part 1 as a scope change, and `spec.md` no longer calls `update.ts` an importer of the old splitter. Nits 9 and 10 are declined, since no under-deny was found and T2 specified the ported function.
 - 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Round 2 fixes: `hook-runtime.md` says an unplaceable heredoc body keeps every body in the scan and that the git gates skip container segments, and the git gates fold an `env -C` directory into the segment's directory chain, with the heredoc substitution guard now pinned by tests.
+- 2026-11-19 [huntermcgrew/prism-544-agent-hooks]: Recorded the stack split, the confirm-round brief binding, and retro candidates.
 
 ## Sessions
 
