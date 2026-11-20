@@ -104,6 +104,12 @@ function claudeRows(command: (script: string, flags: string) => string): HookRow
 			matcher: "startup|resume|compact",
 			command: command("hook.mjs", "--tool=claude --event=SessionStart"),
 		},
+		{
+			event: "SubagentStop",
+			matcher: "^prism-pr-review$",
+			command: command("reconcile-gate.mjs", "--tool=claude --event=SubagentStop"),
+			timeout: 120,
+		},
 	];
 }
 
@@ -128,6 +134,17 @@ function withCommitGate(rows: HookRow[], row: HookRow): HookRow[] {
 }
 
 const CLAUDE_COMMIT_MATCHER = "Bash|PowerShell";
+
+/** Inserts the brief gate row after the commit gate PreToolUse row, where each Claude file carries it. */
+function withBriefGate(rows: HookRow[], row: HookRow): HookRow[] {
+	const at = rows.findIndex(
+		(r) => r.event === "PreToolUse" && r.command.includes("commit-gate.mjs"),
+	);
+
+	return [...rows.slice(0, at + 1), row, ...rows.slice(at + 1)];
+}
+
+const CLAUDE_BRIEF_MATCHER = "Agent|Task";
 
 const CODEX_ROWS: HookRow[] = [
 	{
@@ -175,20 +192,39 @@ const CODEX_ROWS: HookRow[] = [
 		event: "PostCompact",
 		command: codexTemplate("hook.mjs", "--tool=codex --event=PostCompact"),
 	},
+	{
+		event: "SubagentStart",
+		command: codexTemplate("brief-gate.mjs", "--tool=codex --event=SubagentStart"),
+		timeout: 21,
+	},
+	{
+		event: "SubagentStop",
+		matcher: "^prism-pr-review$",
+		command: codexTemplate("reconcile-gate.mjs", "--tool=codex --event=SubagentStop"),
+		timeout: 120,
+	},
 ];
 
 test("the Claude install template registers each hook with the matcher and timeout it ships", async () => {
-	const expected = withCommitGate(
-		withSecretsGate(claudeRows(claudeTemplate), {
-			event: "PreToolUse",
-			matcher: CLAUDE_SECRETS_MATCHER,
-			command: claudeTemplate("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
-			timeout: 21,
-		}),
+	const expected = withBriefGate(
+		withCommitGate(
+			withSecretsGate(claudeRows(claudeTemplate), {
+				event: "PreToolUse",
+				matcher: CLAUDE_SECRETS_MATCHER,
+				command: claudeTemplate("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
+				timeout: 21,
+			}),
+			{
+				event: "PreToolUse",
+				matcher: CLAUDE_COMMIT_MATCHER,
+				command: claudeTemplate("commit-gate.mjs", "--tool=claude --event=PreToolUse"),
+				timeout: 21,
+			},
+		),
 		{
 			event: "PreToolUse",
-			matcher: CLAUDE_COMMIT_MATCHER,
-			command: claudeTemplate("commit-gate.mjs", "--tool=claude --event=PreToolUse"),
+			matcher: CLAUDE_BRIEF_MATCHER,
+			command: claudeTemplate("brief-gate.mjs", "--tool=claude --event=PreToolUse"),
 			timeout: 21,
 		},
 	);
@@ -202,17 +238,25 @@ test("the Codex install template registers each hook with the matcher and timeou
 
 test("PRISM's own Claude settings register each hook from scripts/ai-skills/hooks", async () => {
 	const rows = await readRows(".claude/settings.json");
-	const expected = withCommitGate(
-		withSecretsGate(claudeRows(claudeOwn), {
-			event: "PreToolUse",
-			matcher: CLAUDE_SECRETS_MATCHER,
-			command: claudeOwn("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
-			timeout: 21,
-		}),
+	const expected = withBriefGate(
+		withCommitGate(
+			withSecretsGate(claudeRows(claudeOwn), {
+				event: "PreToolUse",
+				matcher: CLAUDE_SECRETS_MATCHER,
+				command: claudeOwn("secrets-gate.mjs", "--tool=claude --event=PreToolUse"),
+				timeout: 21,
+			}),
+			{
+				event: "PreToolUse",
+				matcher: CLAUDE_COMMIT_MATCHER,
+				command: claudeOwn("commit-gate.mjs", "--tool=claude --event=PreToolUse"),
+				timeout: 21,
+			},
+		),
 		{
 			event: "PreToolUse",
-			matcher: CLAUDE_COMMIT_MATCHER,
-			command: claudeOwn("commit-gate.mjs", "--tool=claude --event=PreToolUse"),
+			matcher: CLAUDE_BRIEF_MATCHER,
+			command: claudeOwn("brief-gate.mjs", "--tool=claude --event=PreToolUse"),
 			timeout: 21,
 		},
 	);

@@ -2873,3 +2873,81 @@ test("runDoctor does not check REVIEW.md before the repo has adopted", async () 
 		assert.deepEqual(findings, []);
 	});
 });
+
+test("runDoctor reports a registration naming a brief-gate.mjs that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(
+				{
+					hooks: {
+						PreToolUse: [
+							{
+								matcher: "Agent|Task",
+								hooks: [
+									{
+										type: "command",
+										command:
+											'node "$CLAUDE_PROJECT_DIR/.claude/hooks/brief-gate.mjs" --tool=claude --event=PreToolUse',
+									},
+								],
+							},
+						],
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /brief-gate\.mjs, which is not on disk/);
+	});
+});
+
+test("runDoctor reports a registration naming a reconcile-gate.mjs that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(
+				{
+					hooks: {
+						SubagentStop: [
+							{
+								matcher: "^prism-pr-review$",
+								hooks: [
+									{
+										type: "command",
+										command:
+											'node "$CLAUDE_PROJECT_DIR/.claude/hooks/reconcile-gate.mjs" --tool=claude --event=SubagentStop',
+									},
+								],
+							},
+						],
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /reconcile-gate\.mjs, which is not on disk/);
+	});
+});
