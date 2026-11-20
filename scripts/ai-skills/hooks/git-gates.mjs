@@ -469,7 +469,7 @@ function serializeEnvelope(envelope) {
 }
 
 /**
- * The commit gate: one deny per HEAD per scope. Save-before-deny is what makes
+ * The cleanup-pass hold: one deny per HEAD per scope. Save-before-deny is what makes
  * the retry go through — if the save itself fails (a read-only `.prism/`), the
  * commit is allowed with a stderr line rather than held forever.
  *
