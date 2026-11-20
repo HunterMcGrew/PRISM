@@ -11,10 +11,11 @@ Before #538, the workflow treated each child of an epic as a standard ticket wit
 
 Hunter's ruling on 2026-11-19: "if there is an epic like this, i approve the epic, i dont want to have to approve each child. If i want an agent or agents to work overnight, over 2 nights, on an approved epic, i dont want to have to check every hour."
 
-Two shapes were weighed against the one chosen:
+Three alternatives were weighed against the one chosen:
 
 - **An intent per child.** This was the status quo, and it is the per-child approval the ruling rejects.
 - **A stub child `intent.md` stamped from the epic's approval.** Every reader of `intent.md` would stay unchanged. But it puts an approval stamp the person never gave on a file, which is what the approve guard exists to stop.
+- **The child's acceptance criteria in a section of its `spec.md`.** This would change `REVIEW.md`, `.prism/review/intent-scope.md`, and `prism-self-review`, which read a folder's criteria from `intent.md` or `plan.md`. The review already reads `plan.md`'s `## Acceptance Criteria` for a folder with no intent, and every PRISM-499 child kept its criteria there.
 
 ## Decision
 

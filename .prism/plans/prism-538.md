@@ -182,6 +182,15 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 - pr-review round 3 at 58bd694d (part 1 of 2): clean
 - pr-review round 3 at c20e98d0 (part 2 of 2): clean
 - close fidelity check 2026-11-19: AC-1 to AC-7 met on the merged diff (graded in self-review round 1 and both PR reviews), CI green on ubuntu and windows at 58bd694d (#539) and c20e98d0 (#540), and every review thread resolved
+- pr-review round 1 at c4631638 (#543): 0 critical, 0 major, 1 minor, 0 nit
+
+### ADR-0086 leaves out a rejected alternative (#543)
+
+- **Severity:** `minor`
+- **Status:** `fixed` in the next commit on #543
+- **File:** `.prism/spec/adrs/_toolkit/0086-an-approved-epic-carries-its-children.md:14`
+- **Problem:** the Decision keeping a child's criteria in `plan.md` is promoted to ADR-0086, but its rejected alternative (criteria in the child spec) was not in the ADR's Context.
+- **Suggested fix:** a third alternative bullet with Winston's reason.
 
 ### Three pass files read the intent without the epic route (#540, nit)
 
@@ -247,10 +256,10 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 - **Problem:** the resume table's `standard,` rows depend on it.
 - **Suggested fix:** one sentence on the epic bullet, and reword `prism-spec`'s child line.
 
-### Still open (decision items)
+### Decision items from self-review (both resolved)
 
-- **An `epic:` line names any approved intent.** `checkIntent` accepts any sibling folder whose `intent.md` reads `status: approved`, so a spec written by the agent can point at an unrelated approved ticket. It is still tighter than main, which checked no intent. Recommend adding one condition: the named intent reads `size: epic`.
-- **The hedge scan blocks real approvals.** `I read the epic and it's what I wanted, approved <file>.md`, `looks good and should be fine, approved <file>.md`, and `it will cost one more night, but approved` all return no approval, because the scan covers the whole sentence. Recommend keeping the Decision as written, and dropping `wanted` from `HEDGES` since it reports a past fact.
+- **Resolved** by the Decision "A child's `epic:` must name an intent that reads `size: epic`", then tightened by "A child must be listed in its epic's `## Children`". **An `epic:` line names any approved intent.** `checkIntent` accepts any sibling folder whose `intent.md` reads `status: approved`, so a spec written by the agent can point at an unrelated approved ticket. It is still tighter than main, which checked no intent. Recommend adding one condition: the named intent reads `size: epic`.
+- **Resolved** by the Decision "`wanted` is not a hedge, and `'d` is". **The hedge scan blocks real approvals.** `I read the epic and it's what I wanted, approved <file>.md`, `looks good and should be fine, approved <file>.md`, and `it will cost one more night, but approved` all return no approval, because the scan covers the whole sentence. Recommend keeping the Decision as written, and dropping `wanted` from `HEDGES` since it reports a past fact.
 
 ## Debugged Issues
 
@@ -276,7 +285,7 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 
 ## PR Readiness
 
-- [x] No critical or major issues (four minor open)
+- [x] No critical or major issues (every finding fixed)
 - [x] Types correct (`pnpm run prism:check` includes `check-types`)
 - [x] No stray debug artifacts
 - [x] Tests written for new logic (the guard, parser, intent condition, and spec anchor each have cases)
