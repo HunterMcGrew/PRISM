@@ -129,6 +129,41 @@ test("readShellCall quotes a Codex argv array so tokenize reads the words back",
 	]);
 });
 
+test("readShellCall quotes a Codex argv word that holds a single quote so tokenize reads it back", () => {
+	const call = readShellCall("codex", {
+		tool_name: "Bash",
+		cwd: "/repo",
+		tool_input: { command: ["echo", "it's a b"] as unknown as string },
+	});
+
+	assert.ok(call);
+	assert.deepEqual(tokenize(call.command).tokens, ["echo", "it's a b"]);
+});
+
+test("readShellCall reads an empty cwd as null", () => {
+	assert.equal(
+		readShellCall("claude", {
+			tool_name: "Bash",
+			cwd: "",
+			tool_input: { command: "ls" },
+		})?.cwd,
+		null
+	);
+});
+
+test("readShellCall returns null when the command is neither a string nor an argv array", () => {
+	for (const command of [42, { a: 1 }, null]) {
+		assert.equal(
+			readShellCall("claude", {
+				tool_name: "Bash",
+				cwd: "/repo",
+				tool_input: { command: command as unknown as string },
+			}),
+			null
+		);
+	}
+});
+
 test("readShellCall returns null for a Read call, a missing command, and an unknown host", () => {
 	assert.equal(
 		readShellCall("claude", {
