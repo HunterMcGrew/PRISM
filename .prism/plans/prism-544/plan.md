@@ -597,6 +597,12 @@ round 4: resolved 1
   - **Root cause:** the runbook's `git commit -m "chore: bump version ..."` names no paths, so the commit gate's `no-paths` deny now stops it.
   - **Chosen approach:** the fix is `-- package.json` on that command, made under child 9. No task in this plan lists the file, so a part 3 edit to it would be unplanned scope.
   - **Implementation guidance:** the tracker's AC-5 text carried the subject clause the ruling removed, and the AC sync of 2026-11-20 on issue #544 made the same edit.
+- **T20's build calls differ from the task text in five places.**
+  - **`MISSES_LOG` stays.** T20 said to drop it if nothing else read it, and the block text reads it.
+  - **The block text names the reconcile script by an absolute path with `/` separators**, so the same spelling works on every platform.
+  - **Leg 3's stub prints `{"clean":true}`**, because `{}` carries no boolean `clean` for the gate to read.
+  - **Leg 3's temp runtime also copies `architect-route.mjs` and `lib/match.mjs`**, which the copied gate imports.
+  - **T19's in-process API is `runGate(payload, { tool })`**, so tests of the brief gate call it that way.
 
 ## History
 
@@ -670,6 +676,8 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Synced AC-5's adjusted text to issue #544's body, so the tracker no longer lists the subject, `plan:`, and `retro:` denies; the AC Sync Log row reads synced.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T22 added the path-brief sentence to the Limits paragraph of `workflow.md`, and the build wrote the twin and the three platform copies and `AGENTS.md`. The lead set now ends at byte 31,879 of the 32,768 window, up from 31,708.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 ported the brief gate and the hook log (brief-gate.mjs, lib/hook-log.mjs, their sidecars, brief-gate.test.ts), with a GATED_ROLES constant held equal to roles.json by test; the registration and HOOK_RUNTIME_FILES edits stay with T21.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T20 ports the reconcile gate (reconcile-gate.mjs, .d.mts, 46-test suite), and the prism-pr-review skill line now says the reconcile gate reads `prism-pr: <n>` to find the PR.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T21 delivers brief-gate.mjs, reconcile-gate.mjs and lib/hook-log.mjs, widens both command patterns and doctor's path regex, and registers the gates in both templates and PRISM's own settings.
 
 ## Sessions
 
