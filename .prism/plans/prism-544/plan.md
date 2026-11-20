@@ -700,6 +700,8 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: The brief-shape sentence in `workflow.md` now names each stage's own input, and `spec.md` says at most three stops in a row. The docs pages say the reconcile gate blocks while reconcile reports the PR unclean.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Declined nits 7, 9, and 10 as port fidelity, as part 2 did.
 - 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Round 2 docs fixes: the spec's brief gate bullet and the Brief gate section of `hook-runtime.md` and its twin say the deny states what the stage reads, the worktree path, and the report shape, and that anything longer goes into `plan.md` first. The Reconcile gate section says the git directory is the session's own, unlike a shared temp directory.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 fix words the brief gate's deny text as the workflow rule does and lists two more known misses; T20 fix keeps the reconcile counter in the git directory instead of the OS temp dir.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: T19 fix adds "Anything longer goes into `plan.md` first." to the brief gate's deny text after the shape sentence.
 
 ## Sessions
 
