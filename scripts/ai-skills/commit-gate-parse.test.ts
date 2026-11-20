@@ -574,3 +574,58 @@ test("readKillSwitch returns null for a command that only mentions a name", () =
 		assert.equal(readKillSwitch(command, CWD), null, command);
 	}
 });
+
+test("readCommit denies a commit.mjs path holding a glob character the shell would expand", () => {
+	for (const command of [
+		commitMjs("T1: x", "src/*.ts"),
+		commitMjs("T1: x", "src/?.ts"),
+		"node " + RUNTIME + "/plan/commit.mjs 'T1: x' 'src/*.ts'",
+	]) {
+		assert.deepEqual(denyIds(command), ["expanded-paths"], command);
+	}
+});
+
+test("readCommit leaves a git commit glob to git's own pathspec", () => {
+	assert.deepEqual(read("git commit -m x -- 'src/*.ts'").denies, []);
+});
+
+test("readCommit names the -F file a subject came from, and no file for a -m or stdin subject", () => {
+	const dir = tempDir("commit-gate-parse-subjectfile-");
+	writeFileSync(path.join(dir, "msg.txt"), "retro: Promote\n");
+
+	assert.equal(read("git commit -F msg.txt -- a", dir).subjectFile, "msg.txt");
+	assert.equal(read("git commit --file=msg.txt -- a", dir).subjectFile, "msg.txt");
+	assert.equal(read("git commit -m 'plan: x' -- a", dir).subjectFile, null);
+	assert.equal(read("echo 'plan: x' | git commit -F - -- a", dir).subjectFile, null);
+	assert.equal(read(commitMjs("T1: x", "a"), dir).subjectFile, null);
+});
+
+test("readKillSwitch reads an append assignment, printf -v, and read", () => {
+	for (const [command, flag] of [
+		["PRISM_HOOK_DISABLE+=1 ls", "PRISM_HOOK_DISABLE"],
+		["A=1 PRISM_HOOK_DENY_DISABLE+=1 ls", "PRISM_HOOK_DENY_DISABLE"],
+		["export PRISM_HOOK_DISABLE+=1", "PRISM_HOOK_DISABLE"],
+		["declare -x PRISM_HOOK_DENY_DISABLE+=1", "PRISM_HOOK_DENY_DISABLE"],
+		["printf -v PRISM_HOOK_DISABLE 1", "PRISM_HOOK_DISABLE"],
+		["printf -vPRISM_HOOK_DENY_DISABLE 1", "PRISM_HOOK_DENY_DISABLE"],
+		["read PRISM_HOOK_DISABLE <<< 1", "PRISM_HOOK_DISABLE"],
+		["read -r PRISM_HOOK_DENY_DISABLE", "PRISM_HOOK_DENY_DISABLE"],
+	] as const) {
+		assert.deepEqual(
+			readKillSwitch(command, CWD),
+			{ id: "kill-switch", flag },
+			command
+		);
+	}
+});
+
+test("readKillSwitch passes printf -v and read on another variable", () => {
+	for (const command of [
+		"printf -v OTHER 1",
+		"read OTHER <<< 1",
+		"printf '%s' PRISM_HOOK_DISABLE",
+		"OTHER+=1 ls",
+	]) {
+		assert.equal(readKillSwitch(command, CWD), null, command);
+	}
+});

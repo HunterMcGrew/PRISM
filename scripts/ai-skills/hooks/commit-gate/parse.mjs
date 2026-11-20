@@ -8,8 +8,8 @@
 // reports the subject, the named paths, the directory the commit runs in, and
 // the forms the gate denies outright. For a push it reports only the forms
 // that skip the pre-push hook. `readKillSwitch` reads, on any command, an
-// assignment or export of `PRISM_HOOK_DISABLE` or `PRISM_HOOK_DENY_DISABLE`.
-// It never runs anything.
+// assignment (`NAME=` or `NAME+=`), export, `printf -v`, or `read` of
+// `PRISM_HOOK_DISABLE` or `PRISM_HOOK_DENY_DISABLE`. It never runs anything.
 //
 // It walks the command with `walkSegments` from `lib/segments.mjs`, so shell
 // grammar, wrappers (`env`, `command`, `nice`, `nohup`, `timeout`), nested
@@ -31,8 +31,9 @@
 // a `:` path there is a file name and gets no magic-pathspec deny.
 //
 // The denies are `-a`, `-i`, a commit naming no paths, `--no-verify` or `-n`,
-// `-c core.hooksPath=…`, a named path the shell would expand, a `git commit`
-// pathspec with `:` magic, and more than one commit in the command. On a push
+// `-c core.hooksPath=…`, a named path the shell would expand (for `commit.mjs`,
+// also one holding `*` or `?`, which the script would read literally), a
+// `git commit` pathspec with `:` magic, and more than one commit in the command. On a push
 // the denies are `--no-verify` and `-c core.hooksPath=…` only. Push's `-n` is
 // `--dry-run`, so it passes.
 //
@@ -51,8 +52,8 @@
 // - git config reaching core.hooksPath through `GIT_CONFIG_*` variables or an
 //   earlier `git config` segment
 // - `--pathspec-from-file`, whose paths the gate can't see, reads as no paths
-// - a glob path is read the way git reads a pathspec, not the way the shell
-//   expands it
+// - a `git commit` glob path is read the way git reads a pathspec, not the way
+//   the shell expands it
 // - a quoted path holding a literal `$` is denied as one the shell expands
 // - a path starting with `:` under git's `--literal-pathspecs` is denied as
 //   magic, though git would read it literally
@@ -73,7 +74,7 @@ import {
 /**
  * @typedef {import("../lib/segments.mjs").Segment} Segment
  * @typedef {{ id: string, flag: string }} Deny
- * @typedef {{ form: "git" | "commit.mjs", subject: string | null, paths: string[], cwd: string | null, flags: string[], denies: Deny[] }} Commit
+ * @typedef {{ form: "git" | "commit.mjs", subject: string | null, subjectFile?: string | null, paths: string[], cwd: string | null, flags: string[], denies: Deny[] }} Commit
  * @typedef {{ cPaths: string[], configs: string[], sub: string | null, args: string[] }} GitSegment
  * @typedef {{ paths: string[], flags: string[], messages: string[], messageFile: string | null, all: string | null, include: string | null, noVerify: string | null }} CommitArgs
  */
@@ -146,6 +147,11 @@ const ABBREVIATED = [
 // A word the shell rewrites before git sees it: a parameter expansion, a
 // leading `~`, or a `{a,b}` or `{1..3}` brace expansion.
 const SHELL_EXPANDS = /\$|^~|\{[^{}]*(,|\.\.)[^{}]*\}/;
+// The characters a `commit.mjs` path may not hold, since the script reads each
+// path literally and the shell would have expanded a glob first.
+const SCRIPT_GLOB = /[*?]/;
+// A leading `NAME+=value` word, which the segmenter leaves in argv.
+const APPEND_ASSIGNMENT = /^([A-Za-z_][A-Za-z0-9_]*)\+=/;
 
 /**
  * Returns the first commit in `command`, or null when it holds none or the
@@ -270,17 +276,50 @@ export function repoRelativePaths(commit, repoRoot) {
  * @param {Segment} segment
  */
 function killSwitchIn(segment) {
+	const { argv } = segment;
 	for (const assignment of segment.assignments) {
 		const name = KILL_SWITCHES.find((n) => assignment.startsWith(`${n}=`));
 		if (name) return name;
 	}
-	if (!EXPORT_COMMANDS.has(path.basename(segment.argv[0] ?? ""))) return null;
+	for (const word of argv) {
+		const appended = APPEND_ASSIGNMENT.exec(word)?.[1];
+		if (appended === undefined) break;
+		if (KILL_SWITCHES.includes(appended)) return appended;
+	}
 
-	for (const operand of segment.argv.slice(1)) {
+	const command = path.basename(argv[0] ?? "");
+	if (command === "printf") return printfTarget(argv);
+	if (command === "read") {
+		return KILL_SWITCHES.find((n) => argv.slice(1).includes(n)) ?? null;
+	}
+	if (!EXPORT_COMMANDS.has(command)) return null;
+
+	for (const operand of argv.slice(1)) {
 		const name = KILL_SWITCHES.find(
-			(n) => operand === n || operand.startsWith(`${n}=`)
+			(n) =>
+				operand === n ||
+				operand.startsWith(`${n}=`) ||
+				operand.startsWith(`${n}+=`)
 		);
 		if (name) return name;
+	}
+
+	return null;
+}
+
+/**
+ * The kill-switch variable `printf -v <name>` assigns, in `-v NAME` or
+ * `-vNAME` form, or null.
+ *
+ * @param {string[]} argv
+ */
+function printfTarget(argv) {
+	for (let i = 1; i < argv.length; i += 1) {
+		const word = argv[i];
+		if (word === "-v") return KILL_SWITCHES.find((n) => n === argv[i + 1]) ?? null;
+		if (word.startsWith("-v"))
+			return KILL_SWITCHES.find((n) => n === word.slice(2)) ?? null;
+		if (!word.startsWith("-")) break;
 	}
 
 	return null;
@@ -438,10 +477,11 @@ function readScriptCommit(argv, segment) {
 	return {
 		form: "commit.mjs",
 		subject: argv[1] === undefined ? null : firstLine(argv[1]),
+		subjectFile: null,
 		paths,
 		cwd: segment.cwd,
 		flags: [],
-		denies: expansionDenies(paths, segment),
+		denies: expansionDenies(paths, segment, SCRIPT_GLOB),
 	};
 }
 
@@ -467,6 +507,7 @@ function readGitCommit(git, cwd, segment) {
 	return {
 		form: "git",
 		subject: readSubject(args, cwd, segment),
+		subjectFile: readSubjectFile(args),
 		paths: args.paths,
 		cwd,
 		flags: args.flags,
@@ -479,14 +520,20 @@ function readGitCommit(git, cwd, segment) {
  * gate builds its tree from the words as written and would judge a different
  * set of files than git commits.
  *
+ * `glob` also denies a path that holds those characters, for a script that
+ * reads each path literally.
+ *
  * @param {string[]} paths
  * @param {Segment} segment
+ * @param {RegExp} [glob]
  * @returns {Deny[]}
  */
-function expansionDenies(paths, segment) {
+function expansionDenies(paths, segment, glob) {
 	const expanded = paths.find(
 		(p) =>
-			SHELL_EXPANDS.test(p) || containsSubstitution(p, segment.substitutions)
+			SHELL_EXPANDS.test(p) ||
+			glob?.test(p) === true ||
+			containsSubstitution(p, segment.substitutions)
 	);
 
 	return expanded === undefined
@@ -592,6 +639,20 @@ function abbreviates(name, option) {
 		name.length >= entry.shortest.length &&
 		option.startsWith(name)
 	);
+}
+
+/**
+ * The file `-F` names when the subject came from it, or null when a `-m`
+ * message or stdin gave the subject. The gate names the file in a deny and
+ * never quotes its text.
+ *
+ * @param {CommitArgs} args
+ * @returns {string | null}
+ */
+function readSubjectFile(args) {
+	if (args.messages.length > 0) return null;
+
+	return args.messageFile && args.messageFile !== "-" ? args.messageFile : null;
 }
 
 /**
