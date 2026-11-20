@@ -289,7 +289,7 @@ Owner: Clove. Port thrive's `checks.mjs` and `test-guard.mjs`. Changes:
 - **Weakened tests.** `MAIN_REF` becomes `origin/<defaultBranch>`. A removed line counts when its file matches `testGlobs` and `git blame` dates it before `git merge-base origin/<defaultBranch> HEAD`. thrive's flat-plan allowance goes.
 - **`resolveTestGlobs(config)`**, exported from `test-guard.mjs`: an absent `testGlobs` gives `DEFAULT_TEST_GLOBS`, `["*.test.*", "**/*.test.*", "*.spec.*", "**/*.spec.*", "__tests__/**", "**/__tests__/**", "test/**", "**/test/**", "tests/**", "**/tests/**"]`. A set array of strings replaces it. A value that is not an array of strings, or an entry holding `{`, throws an `Error` naming `testGlobs`.
 - **Schema.** `.ai-skills/config.schema.json` gains, after `secretPaths`: `"testGlobs": { "type": "array", "items": { "type": "string" }, "description": "The test files the commit gate's weakened-test check reads. A list that is set replaces the default, which covers common test names at the root and at any depth. Braces are not supported.", "examples": [["src/**/*.test.ts"]] }`.
-- **`.ai-skills/config.json`** gains `"testGlobs": ["scripts/ai-skills/*.test.ts"]` after `"hooks"`.
+- **`.ai-skills/config.json`** gains `"testGlobs": ["scripts/ai-skills/*.test.ts", "scripts/ai-skills/**/*.test.ts"]` after `"hooks"`.
 
 The two test files port thrive's `checks.test.mjs` and `test-guard.test.mjs`, with fixture plans under `.prism/plans/prism-9/` on a branch `u/prism-9-x` and a config whose `ticketPrefix` is `PRISM`. Add: `resolveTestGlobs` returns the default for an absent key, the list for a set one, and throws on `"x"`, `[1]`, and `["{a,b}.ts"]`; a config that does not parse denies with the config check; and a flat-plan branch gets no stop-path or weakened-test check.
 
@@ -580,6 +580,10 @@ round 4: resolved 1
   - **Chosen approach:** deny, since the allowance a task gives is the only way past either check.
   - **Also removed or changed in the same fix:** `subjectFile`, the parser's record of a subject read from `-F`, is removed because it was unused once the subject check went. `GIT_LITERAL_PATHSPECS=1` is set on the weakened-tests check's diffs, because a path starting with `:` was read as a magic pathspec and a real weakening passed.
   - **Implementation guidance:** the commit gate docs say this in `hook-runtime.md` and its twin, and in the `what-prism-writes.md` row and the `compatibility.md` sentence.
+- **An empty `testGlobs` list turns the weakened-test check off, kept as-is and documented.** PR review round 1 flagged it as a decision item, and recommended documenting it.
+  - **Root cause:** `resolveTestGlobs` accepts any array of strings, so `[]` matches no file and the check finds no candidate, the same way a set `stopPaths` list that is empty replaces the default and stops nothing.
+  - **Alternatives considered:** rejecting `[]` as a config error. Rejected because it would make the two keys behave differently for the same shape, and a team that wants only this check off has no per-check switch.
+  - **Chosen approach:** keep the behavior to match `stopPaths`, and say so in `hook-runtime.md` (and its twin) and in the `testGlobs` row of `docs/parameterization.md`.
 
 ## History
 
@@ -638,6 +642,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: The code writer fixed round 2's code findings: a `commit.mjs` path holding a `[` glob is denied (`24c02d85`), the removed-lines diff is read as text and unmerged and the deny names a missing task (`44fecb69`), the delivery test pins the commit gate's executable bit (`2edb54c1`), and `git-gates.mjs` calls the hold by its name (`6499db5c`, JSDoc only). Nit 10 is declined because `claimsFile` stays in `test-guard.mjs`, where both callers already import from.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: Docs fixed round 2's findings 1, 2, 6, 7, and 8: the no-paths deny order and the `resolveTestGlobs` validator in `hook-runtime.md` and its twin (`aa39c7e6`), the merge, cherry-pick, and revert exception in `git-conventions.md` and its copies (`29f16946`), the `testGlobs` row in `docs/parameterization.md` (`aa39c7e6`), and the spec's branch-plan twin claim and `testGlobs` globs (`15a24b3c`). T17 amends `docs/parameterization.md` onto its files.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: Round 3's nit is fixed: the merge, cherry-pick, and revert exception now says git refuses named paths only for a merge or cherry-pick, after a fixture run showed git takes them during a revert (`8cf3147f`). A lesson on checking each listed case before writing its reason landed in `35bbaaa4`.
+- 2026-11-20 [huntermcgrew/prism-544-commit-gate]: PR review round 1's docs and plan fixes: an empty `testGlobs` list is documented as turning the weakened-test check off, `what-prism-writes.md` matches the Commit gate section, the spec's Folder-plan branch and Would-be tree bullets match the shipped gate, and T13's `testGlobs` value is corrected. The Decision on an empty `testGlobs` list records why it stays as is.
 
 ## Sessions
 
