@@ -1,5 +1,8 @@
 # Plan: prism-538
 
+> Closed: 2026-11-19
+> Retro: declined — ticket grain; the close fidelity check under ## Review Issues found every criterion met on the merged diff, with CI and PR review clean on both parts
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/538
@@ -40,32 +43,48 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
 - **Flat plan, not a plan folder.**
   - **Root cause:** a folder plan opens with an `intent.md` only the person can approve, and the scope here was already set by Hunter's ruling and the side-session brief of 2026-11-19.
   - **Chosen approach:** a flat plan per `branch-plan.md`'s legacy template, so the run doesn't stop on an intent approval for work whose scope is fixed.
+  - → no promotion needed (a choice for this ticket's run only)
 - **The guard hands the event to the session checkout's own copy instead of changing the registration command.**
   - **Root cause:** `$CLAUDE_PROJECT_DIR` is the directory the session started in, so a worktree session ran the main checkout's guard. That copy pinned the allowed command to the main checkout's `approve.mjs` (`node ../../../scripts/…`), and when the file was missing, node exited 1 as a non-blocking hook error nobody saw.
   - **Alternatives considered:** resolve the script from the hook's working directory in the command (`$(git rev-parse --show-toplevel)`), which the hooks docs don't pin down; change the consumer registration shape, which `PRISM_HOOK_COMMAND_PATTERN` in `update.ts` and `doctor.ts` match exactly, a shared-utility change.
   - **Chosen approach:** the payload's `cwd` is documented as the worktree root, so the guard reads it and delegates. Consumers commit `.claude/hooks/`, so their worktrees get the fix with no registration change.
   - **Implementation guidance:** delegation happens only when the session copy exists and isn't this file by realpath, so a checkout without a copy, and every existing test fixture, runs the old path.
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **Only PRISM's own `UserPromptSubmit` registration gets the fail-loud wrapper.** The prompt arm is where an approval is lost. A missing guard on `PreToolUse` fails open, which the guard already accepts, and consumer registrations stay in the shape `PRISM_HOOK_COMMAND_PATTERN` claims.
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **An epic child is a folder with `spec.md` and `plan.md` and no intent, and its spec's `epic:` line names the epic whose approved intent covers it.**
   - **Root cause:** Hunter's 2026-11-19 ruling: approving the epic approves its children. The workflow read every child as a standard ticket with its own intent, and with no child `spec.md`, `auto-approve.mjs` always exited 1, so every child plan went to the person.
   - **Alternatives considered:** an intent per child (the status quo the ruling rejects); a stub child `intent.md` auto-stamped from the epic, which keeps every reader unchanged but puts an approval stamp the person never gave on a file, the thing the approve guard exists to stop.
   - **Chosen approach:** Winston's design (fit verdict 2026-11-19, proceed with changes). Lookup, bundles, `approve.mjs`, and `chat-approval.mjs` already handle a folder with no intent. `auto-approve.mjs` gains the intent check, which also closes the gap where a standard folder with a draft intent auto-approved.
   - **Implementation guidance:** ADR candidate at close: it passes all three gates in `.prism/references/triple-gated-adr-criterion.md`.
+  - → promoted to ADR-0086
 - **A child's acceptance criteria stay in `plan.md`, not in its spec.** Winston proposed a `## Acceptance criteria` section in the child spec, which would change `REVIEW.md`, `.prism/review/intent-scope.md`, and `prism-self-review`. `intent-scope.md` already reads a folder with no intent from `plan.md`'s `## Acceptance Criteria`, and every PRISM-499 child already did that. The one rulebook edit is in `intent-scope.md`'s criterion-defect route, which names `prism-plan` as the owner on an epic child's folder.
+  - → promoted to ADR-0086
 - **A child's `epic:` must name an intent that reads `size: epic`.** Self-review found any approved sibling intent satisfied the check, so an agent-written spec could borrow an unrelated ticket's approval. The size line is already in every intent, so the check costs one read.
+  - → promoted to .prism/architect/_toolkit/plan-chain-scripts.md
 - **`wanted` is not a hedge, and `'d` is.** "it's what I wanted, approved" reports a past fact and approves, and "I'd approve this one" is a condition, the same as "I would".
+  - → no promotion needed (word-level tuning, held by `HEDGES` and its test cases)
 - **The hedge check scans the whole sentence before the match, not three words.** "if there is an epic like this, i approve the epic" puts the condition seven words back. A false negative costs the person one more message, and a false approval stamps a file.
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **The guard compares paths through `realpathSync.native`.**
   - **Root cause:** `[Deduced]` from CI run 44587940829. The Windows temp dir is `C:\Users\RUNNER~1`, an 8.3 short name that JS `realpathSync` keeps, so the delegated copy's long `APPROVE_SCRIPT` never equals the payload's short spelling. The prompt arm passed and the execution arm failed, which fits a path-spelling mismatch.
   - **Chosen approach:** `.native` in `isChatApproveCommand`, `findSessionCopy`, and `findCheckout`, which expands short names. Not reproduced locally; the Windows leg passed at 830991fc (run 44589622597).
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **The guard delegates only to a checkout of the same repository.** Eric found delegation reached any checkout holding a guard copy. Both checkouts must share `git rev-parse --git-common-dir`, and the tests use a real `git worktree add` pair plus a negative case for an unrelated repo.
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **The `workflow.md` hedge clause lands in part 2, not part 1.** Eric asked for it on #539, but part 2 rewrites the same paragraph, and part 1's `AGENTS.md` lead sections ended at byte 31,737, 7 bytes under the 31,744 working line PRISM-522 and PRISM-530 set (1 KiB under Codex's 32,768). `agents-md-budget.test.ts` enforces only 32,768, so by the test part 1 had 1,031 bytes; the working line is a convention no test holds.
+  - → no promotion needed (a sequencing call for this stack)
 - **Part 1 is merged into part 2, not rebased,** because part 2 was already pushed and `git-conventions.md` forbids rebasing a shared branch.
+  - → no promotion needed (`git-conventions.md` § Keeping a Branch Current already says it)
 - **A child must be listed in its epic's `## Children`.** Eric found `checkIntent` proved the named folder was an approved epic but never read `child:`. `auto-approve.mjs` now requires a `## Children` row in the epic's `spec.md` whose first cell, backticks aside, equals `child:`, so an agent-written spec can't claim an unrelated approved epic.
+  - → promoted to .prism/architect/_toolkit/plan-chain-scripts.md
 - **On an epic child, "the intent" every review reader names is the epic's `intent.md`.** One sentence in `.prism/review/intent-scope.md` covers every pass file, and `prism-self-review` and `prism-challenge` name the epic route where they read the intent. A pass subagent reads only its own file, so `.prism/review/regressions.md`, `.prism/review/security.md`, and `.prism/review/contracts.md` name it too.
+  - → promoted to ADR-0086
 - **A child's acceptance criteria are agent-written in `plan.md` with no person-approved source.** Eric's decision item, accepted as shipped: Hunter's 2026-11-19 ruling says approving the epic approves its children, and every PRISM-499 child already worked this way.
+  - → promoted to ADR-0086
 - **Trailing hedges still approve** ("approve it if the tests pass"). Eric's observation, left as is: the reported messages put the hedge first, and a condition after the verb is arguably an approval. A follow-up PR off `main` if it bites.
 
+  - → no promotion needed (a known parser limit, left until it costs something)
 ---
 
 ## History
@@ -74,6 +93,7 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
 - 2026-11-19 [huntermcgrew/prism-538-epic-children-approve-guard]: Part A tasks 5–13: epic child folders, the intent condition in `auto-approve.mjs`, and the `spec.md` anchor in `tasks.mjs`; see Decision: An epic child is a folder with `spec.md` and `plan.md` and no intent.
 - 2026-11-19 [huntermcgrew/prism-538-epic-children]: Fixed PR-review round 1 on both parts: Windows path spelling and same-repo delegation (part 1), `## Children` membership, epic intent routes in review readers, and the hedge clause in `workflow.md` (part 2).
 - 2026-11-19 [huntermcgrew/prism-538-epic-children]: Part 1 (#539) squash-merged as fd6ddcd6 after a clean round 3; part 2 retargeted to `main` and took `origin/main` by merge, with no force-push, because the merged tree matched its own.
+- 2026-11-19 [huntermcgrew/prism-538-followup-plan-close]: #540 squash-merged as 5909597c after a clean round 3. Plan closed: Decision verdicts written, the child-folder shape promoted to ADR-0086, retro declined at ticket grain.
 
 ---
 
@@ -81,23 +101,23 @@ A child folder `.prism/plans/<child>/` holds `spec.md` and `plan.md` and no `int
 
 ### Behavioral
 
-- [ ] **AC-1** Given Hunter's two 2026-11-19 messages that discuss approval, When the prompt arm reads them, Then neither writes a token.
+- [x] **AC-1** Given Hunter's two 2026-11-19 messages that discuss approval, When the prompt arm reads them, Then neither writes a token.
   - Evidence (machine): `npx tsx --test scripts/ai-skills/plan-chat-approval.test.ts` passes, and the same two strings return `{ path: null }` from `main`'s parser.
-- [ ] **AC-2** Given a session whose `cwd` is a checkout holding its own guard, When the guard runs from another checkout, Then the prompt reply and the deny text name `scripts/ai-skills/hooks/plan/approve.mjs` in the session checkout, and the chat command for that script passes under a token.
+- [x] **AC-2** Given a session whose `cwd` is a checkout holding its own guard, When the guard runs from another checkout, Then the prompt reply and the deny text name `scripts/ai-skills/hooks/plan/approve.mjs` in the session checkout, and the chat command for that script passes under a token.
   - Evidence (machine): the "another checkout" tests in `scripts/ai-skills/approve-guard.test.ts` pass, and fail with `main`'s guard swapped in.
-- [ ] **AC-3** Given PRISM's settings and a project dir with no guard file, When the `UserPromptSubmit` command runs, Then it exits 0 and prints JSON with a `systemMessage` saying approvals aren't recorded.
+- [x] **AC-3** Given PRISM's settings and a project dir with no guard file, When the `UserPromptSubmit` command runs, Then it exits 0 and prints JSON with a `systemMessage` saying approvals aren't recorded.
   - Evidence (machine): the warning test in `scripts/ai-skills/approve-guard-registration.test.ts`.
 
-- [ ] **AC-5** Given an epic child folder with `spec.md` naming an approved epic intent on its `epic:` line and no `intent.md`, When `auto-approve.mjs` runs on a plan meeting every other condition, Then it approves; with a draft epic intent, a missing epic folder, or no `epic:` line, it exits 1 naming the file.
+- [x] **AC-5** Given an epic child folder with `spec.md` naming an approved epic intent on its `epic:` line and no `intent.md`, When `auto-approve.mjs` runs on a plan meeting every other condition, Then it approves; with a draft epic intent, a missing epic folder, or no `epic:` line, it exits 1 naming the file.
   - Evidence (machine): the intent cases in `scripts/ai-skills/plan-auto-approve.test.ts` pass, and the draft and missing cases fail on `main`'s script, which approves them.
-- [ ] **AC-6** Given a child folder with `spec.md` and no intent, stacked on a sibling branch's `T1:` commit, When `tasks.mjs` reads it, Then its own `T1` is open.
+- [x] **AC-6** Given a child folder with `spec.md` and no intent, stacked on a sibling branch's `T1:` commit, When `tasks.mjs` reads it, Then its own `T1` is open.
   - Evidence (machine): the stacked-child test in `scripts/ai-skills/plan-tasks.test.ts` passes and fails on `main`'s script.
-- [ ] **AC-7** `AGENTS.md`'s lead sections still end inside the working line after the `workflow.md` edits.
+- [x] **AC-7** `AGENTS.md`'s lead sections still end inside the working line after the `workflow.md` edits.
   - Evidence (machine): `npx tsx --test scripts/ai-skills/agents-md-budget.test.ts` passes.
 
 ### Non-behavioral
 
-- [ ] **AC-4** `pnpm run prism:check` passes.
+- [x] **AC-4** `pnpm run prism:check` passes.
   - Evidence (machine): the command exits 0 on the PR head.
 
 ### AC Adjustments
@@ -160,6 +180,8 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 - pr-review round 2 at 830991fc (part 1 of 2): 0 critical, 0 major, 1 minor open (stale delegation header comment)
 - pr-review round 2 at 4761e654 (part 2 of 2): 0 critical, 0 major, 0 minor, 1 nit
 - pr-review round 3 at 58bd694d (part 1 of 2): clean
+- pr-review round 3 at c20e98d0 (part 2 of 2): clean
+- close fidelity check 2026-11-19: AC-1 to AC-7 met on the merged diff (graded in self-review round 1 and both PR reviews), CI green on ubuntu and windows at 58bd694d (#539) and c20e98d0 (#540), and every review thread resolved
 
 ### Three pass files read the intent without the epic route (#540, nit)
 
@@ -260,7 +282,7 @@ AC grades: AC-1 met (executed: parser test passes, and main's guard records appr
 - [x] Tests written for new logic (the guard, parser, intent condition, and spec anchor each have cases)
 - [x] All debugged issues resolved (none recorded)
 - [x] Build passes, last run 2026-11-19 (`pnpm run prism:check` exit 0)
-- [ ] PR description up to date (no PR yet)
-- [ ] Lasting decisions promoted (at close; the epic-child decision is an ADR candidate)
+- [x] PR description up to date (#539 and #540 bodies synced at merge)
+- [x] Lasting decisions promoted (ADR-0086, `hook-runtime.md`, `plan-chain-scripts.md`)
 
 **Last updated:** 2026-11-19
