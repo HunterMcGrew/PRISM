@@ -795,6 +795,8 @@ async function writeArchitectFixture(
 
 	for (const doc of docs) {
 		await writeFile(contentRoot, `architect/${doc}`, `# ${doc}\n`);
+		// A prose line keeps each fixture doc from reading as empty to the architect-route content check
+		await fs.appendFile(path.join(contentRoot, `architect/${doc}`), "One line of prose.\n", "utf8");
 	}
 }
 
@@ -2949,5 +2951,59 @@ test("runDoctor reports a registration naming a reconcile-gate.mjs that is not o
 		const messages = hookFindings(report.findings);
 		assert.equal(messages.length, 1);
 		assert.match(messages[0], /reconcile-gate\.mjs, which is not on disk/);
+	});
+});
+
+test("runDoctor warns on a route to a doc holding only headings and comments", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ "src/**": "billing.md" },
+			["billing.md"]
+		);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/billing.md",
+			"# Billing\n\n<!-- Describe the billing flow. -->\n\n## Data flow\n\n<!--\nTODO: fill in\n-->\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const emptyDoc = report.findings.filter(
+			(f) => f.check === "architect-route" && /holds no content/.test(f.message)
+		);
+		assert.equal(emptyDoc.length, 1);
+		assert.equal(emptyDoc[0].severity, "warning");
+		assert.equal(
+			emptyDoc[0].message,
+			".prism/architect/billing.md is routed but holds no content besides headings and comments — write the doc or remove its route, because the write gate holds an edit until it is read."
+		);
+	});
+});
+
+test("runDoctor stays quiet on a route to a doc with one line of prose", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ "src/**": "billing.md" },
+			["billing.md"]
+		);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/billing.md",
+			"# Billing\n\n<!-- Describe the billing flow. -->\n\nInvoices are issued once a month.\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(architectMessages(report.findings), []);
 	});
 });

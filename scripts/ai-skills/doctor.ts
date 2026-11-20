@@ -544,7 +544,9 @@ function findStructuralRouteFaults(
 /**
  * Reports both halves of architect-route integrity: docs on disk that no
  * manifest route names (orphans), and routes naming a doc that is not on disk
- * (dead routes).
+ * (dead routes). It also warns on a doc the live manifest routes that holds
+ * only headings and comments, because the write gate holds an edit until a
+ * routed doc is read and such a doc gives the reader nothing.
  *
  * The two directions together are what replaces per-doc frontmatter as the
  * route-integrity mechanism. Without the orphan half, a doc can be authored
@@ -636,6 +638,28 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 			severity: "warning",
 			message: `${deadRoutes.length} manifest route(s) name an architect doc that is not on disk: ${deadRoutes.join(", ")}`,
 		});
+	}
+
+	for (const doc of [...collectRoutedDocs(manifest)].sort()) {
+		if (!onDiskSet.has(doc)) {
+			continue;
+		}
+
+		const withoutComments = (await fs.readFile(path.join(architectDir, doc), "utf8")).replace(
+			/<!--[\s\S]*?-->/g,
+			""
+		);
+		const holdsOnlyHeadings = withoutComments
+			.split("\n")
+			.every((line) => line.trim() === "" || line.trim().startsWith("#"));
+
+		if (holdsOnlyHeadings) {
+			findings.push({
+				check: "architect-route",
+				severity: "warning",
+				message: `.prism/architect/${doc} is routed but holds no content besides headings and comments — write the doc or remove its route, because the write gate holds an edit until it is read.`,
+			});
+		}
 	}
 
 	return findings;
