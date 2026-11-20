@@ -665,6 +665,7 @@ round 4: resolved 1
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: PR #547 round 2 code fixes landed in `51250057` (T11) and `87ce1de4` (T13), and the round 2 findings are marked fixed under `## Review`. Finding 2 used an `lstat` check on the leaf, and finding 7 goes to child 9.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: round 3 fixes: an outside symlink to the repo root reads as the root again, and the backward twin walk is pinned.
 - 2026-11-20 [huntermcgrew/prism-544-commit-gate]: PR #547 round 3 code fixes landed in `c1a75694` (T11) and `e1a7fa59` (T13), and the round 3 findings are marked fixed under `## Review`. The round 3 Major was a regression from round 2's `lstat` fix.
+- 2026-11-20 [huntermcgrew/prism-544-brief-reconcile-gates]: Part 3 (T11 to T17) shipped as #547, squash `fd1d1393`. Part 4 builds from `main` after it. The commit that marks it done lists every ID (`T11,T12,T13,T14,T15,T16,T17`), because the subject parser reads a range or a list and not both in one subject.
 
 ## Sessions
 
