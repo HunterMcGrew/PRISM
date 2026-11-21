@@ -313,6 +313,9 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T1 added the paths to the publishing guide's commit, T2 listed all 12 doctor checks in run order in adopt-prism.md, and T4 added Atlas's architect-doc offer and the intent-first start to getting-started.md.
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T5 rewrote docs/workflow.md around the plan-folder chain, with the two touches, stages, sizes, resuming, a persona table with Sasha and Winston as consult, and flat plans still working.
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T7 added the "A PRISM hook denied an agent's command" section to docs/troubleshooting.md, one row per gate in hook-runtime.md and git-hooks.md, including the cleanup-pass hold and push gate.
+- 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T3 replaced the doctor paragraph in what-prism-writes.md with one summary that links to the full list in adopt-prism.md.
+- 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T6 removed the stale Winston-plans, user-story and prism-review-loop lines from README, overview, parker and CONTEXT, and the sweep and retired-ID greps print nothing.
+- 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T8 wrote the 1.0.0 migration note into CHANGELOG.md in the spec's nine parts, with absolute links to the troubleshooting and workflow pages.
 
 ## Sessions
 
