@@ -3,7 +3,7 @@ title: "Publishing PRISM to npm"
 description: "The release ritual for PRISM maintainers — version bump, pre-publish gates, leak audit, and npm publish."
 category: "operations"
 audience: "dev"
-last_updated: "2026-09-02"
+last_updated: "2026-11-20"
 ---
 
 # Publishing PRISM to npm
@@ -56,7 +56,7 @@ Commit the version bump on its own:
 
 ```bash
 git add package.json
-git commit -m "chore: bump version to 1.1.0"
+git commit -m "chore: bump version to 1.1.0" -- package.json
 ```
 
 PRISM follows semver. Patch releases fix bugs without changing the consumer-facing interface; minor releases add backwards-compatible behavior (new personas, new rules); major releases include breaking changes to the adopt/update contract.

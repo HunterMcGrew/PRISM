@@ -3,7 +3,7 @@ title: "Getting Started"
 description: "How to install PRISM into a new or existing repository."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-09-02"
+last_updated: "2026-11-20"
 ---
 
 # Getting Started
@@ -46,7 +46,8 @@ Atlas will:
 2. Ask a few questions about your team's setup (org name, ticket prefix, GitHub repo, docs location, etc.)
 3. Generate per-team engineering rules from patterns in your actual code
 4. Write your team's `.ai-skills/config.json` and rerun `prism update` — the update is what renders your team's content, like your product domain, into the persona roster
-5. Track its progress in `.ai-skills/registry/onboarding-state.json` so an interrupted session can resume
+5. Offer to draft architect docs for the main areas of your code and route them in `.prism/architect/manifest.json`, so agents read them before editing there. You can decline the offer.
+6. Track its progress in `.ai-skills/registry/onboarding-state.json` so an interrupted session can resume
 
 If you already have engineering standards (ESLint configs, style guides, existing conventions), tell Atlas — it reads them and decides where each belongs in the tier system.
 
@@ -54,7 +55,8 @@ If you already have engineering standards (ESLint configs, style guides, existin
 
 From inside your target repo, invoke personas by name or by intent:
 
-- **Planning architecture:** "Winston, plan this out." or describe an architecture question
+- **Starting work:** "Mira, write the intent." She asks one question at a time, and once you approve the intent the stages after it run on their own.
+- **Approach questions:** "Winston, is this the right approach?" or describe an architecture question
 - **Implementing:** "Clove, implement this." or start writing about a feature
 - **Reviewing:** "Briar, review my changes." before opening a PR
 - **Documenting:** "Eli, document this." after shipping a feature
