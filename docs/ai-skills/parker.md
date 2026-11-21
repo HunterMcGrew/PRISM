@@ -3,7 +3,7 @@ title: "Parker — the PRD persona"
 description: "How Parker drafts initiative-grain Product Requirements Documents — two modes, stakes-calibrated, with a parallel reviewer rubric."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-10-18"
+last_updated: "2026-11-20"
 ---
 
 ## What Parker does
@@ -18,7 +18,7 @@ The output is `.prism/prds/<slug>.md` (always) plus `.prism/prds/<slug>.decision
 ## When to use Parker
 
 - **Before Mira.** When you're about to ask Mira to write the intent but you realize you don't have a PRD to decompose from. Parker first, Mira second.
-- **Before Winston.** When you're about to ask Winston to plan an initiative but the scope is fuzzy. The PRD pins the scope; Winston plans against it.
+- **Before an approach question.** When you want Winston's read on an initiative but the scope is fuzzy. The PRD pins the scope; Winston judges the approach against it.
 - **Documenting an existing feature.** Brownfield mode catches the gap where features ship without a PRD and the absence makes onboarding, scope debates, and rewrites harder.
 
 ## How Parker works
@@ -63,11 +63,11 @@ Both get numbered inline AND enumerated in `## Open questions` so nothing slips 
 | Persona | Grain | Direction | Output |
 | --- | --- | --- | --- |
 | **Parker** | Initiative | Product → engineering | PRD + optional decision log |
-| **Mira** | User story | Initiative → tickets | User stories with AC hints |
+| **Mira** | Ticket | Initiative → intents | `intent.md` with acceptance criteria |
 | **Nora** | Ticket | Story → Linear | Linear ticket + branch |
-| **Winston** | Implementation | Ticket → plan | Branch plan + implementation tasks |
+| **`prism-plan`** | Implementation | Intent → plan | `plan.md` tasks |
 
-Parker → Mira → Nora → Winston is the typical product-to-engineering descent. Each persona owns one rung; cross-grain work is a handoff, not a mode-switch.
+Parker → Mira → Nora → the spec and plan stages is the typical product-to-engineering descent. Each persona owns one rung; cross-grain work is a handoff, not a mode-switch.
 
 ## See also
 

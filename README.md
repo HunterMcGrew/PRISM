@@ -4,11 +4,11 @@ A multi-platform AI toolkit for Claude Code, Codex, and Cursor. Named-persona sk
 
 ## Overview
 
-PRISM gives AI tools a set of named personas — specialists with defined roles, defined inputs, and defined outputs. When Winston plans architecture, Clove implements it, Briar reviews it, and Eli documents it, each picks up where the last left off. The branch plan carries context across sessions; a tiered rule system carries conventions across the codebase.
+PRISM gives AI tools a set of named personas — specialists with defined roles, defined inputs, and defined outputs. When Mira writes the intent, the spec and plan stages turn it into tasks, Clove builds them, and Briar and Eric review the result, each picks up where the last left off. The plan folder carries context across sessions; a tiered rule system carries conventions across the codebase.
 
 **What you get:**
 
-- **Named personas across the dev lifecycle** — architect (Winston), implementer (Clove), self-reviewer (Briar), PR reviewer (Eric), doc writer (Eli), ticket writer (Nora), QA planner (Reese), and more. Each has a defined scope, defined inputs, and a definition of done.
+- **Named personas across the dev lifecycle** — intent writer (Mira), implementer (Clove), self-reviewer (Briar), PR reviewer (Eric), architect consult (Winston), debugger (Sasha), doc writer (Eli), ticket writer (Nora), QA planner (Reese), and more. Each has a defined scope, defined inputs, and a definition of done.
 - **Multi-platform skill sync** — one canonical skill source (`.ai-skills/`) builds to Claude Code, Codex, and Cursor. `pnpm prism:build` regenerates all platform outputs; `pnpm prism:check` catches drift on CI.
 - **Drop-in adoption for existing repos** — `npx @huntermcgrew/prism adopt` seeds `.prism/` and projects the persona roster into any codebase. A local-checkout path is also available for air-gapped environments and contributors.
 
