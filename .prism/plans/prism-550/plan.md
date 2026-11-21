@@ -265,6 +265,13 @@ round 2: resolved 2
 - **T6 waits for T2, T4, and T5.** Its sweep proof only runs clean once those three have removed their stale lines, and a proof that can't pass when its task lands proves nothing.
 - **Acceptance criteria are the spec's Requirements, one for one.** The plan stage writes an epic child's criteria. Numbering them in the spec's order keeps "AC-n" equal to "Requirement n", so the review grades against the spec without a lookup table.
 - **Adjacent stale lines left alone.** `docs/overview.md:29` still says PRISM lives as a sibling repo, and `docs/distribution.md:65` and `:66` say Winston generates architect docs in Phase 3. Neither is named by a requirement, and `docs/distribution.md` is outside Affected systems, so both are a follow-up PR after the release.
+- **Review rounds replaced wording that six task lines still prescribe, and the shipped docs follow the review.** The task text stays as approved, because editing `## Tasks` sends the plan back through approval for no change in outcome.
+  - T2 item 6 ("matches no file"): self-review round 1 found doctor has no such check, so adopt-prism.md lists the real architect-route checks.
+  - T5 item 2 ("three things add a touch"): round 1 found missing stops, so workflow.md lists more and says "a few things".
+  - T6 (`Parker → Mira → Nora`): round 1 found Nora runs first, so parker.md reads Parker → Nora → Mira.
+  - T7 opening ("names its gate", "Cursor gets no hooks"): round 1 found only the commit gate names itself and git hooks still run, so troubleshooting.md says a deny names what clears it and scopes the Cursor line to agent hooks.
+  - T7 umbrella row ("or in a rule file"): round 1 found it holds only when `umbrellas` lists the rule files, and troubleshooting.md says so.
+  - T8 Part 7 ("governs PRISM's own merges and a consumer leaves it unset"): round 2 found it contradicts git-conventions.md, so CHANGELOG.md says the key stays off unless you set it.
 - **Spurious `.bak` files on upgrade get a CHANGELOG note, and the code fix is a follow-up PR.**
   - **Root cause:** not diagnosed. T9's release proof shows `prism update` from an unedited 0.10.0 install keeps `.prism/architect/guides/writing-a-skill.md` and `writing-an-architect-doc.md` as `.bak` files byte-identical to the 0.10.0 seed, so update treats an untouched seed copy as edited.
   - **Alternatives considered:** fixing update's ownership check in this PR; leaving it unmentioned.
