@@ -4,6 +4,100 @@ PRISM uses semantic versioning; this file tracks evolution by phase and epic, mo
 
 ---
 
+## [1.0.0] — 2026-11-20
+
+### Who this is for
+
+PRISM 1.0.0 is a clean break. Run `npx @huntermcgrew/prism@1.0.0 update`, then `npx @huntermcgrew/prism@1.0.0 doctor`.
+
+- Anyone on 0.10.0 or earlier should read this entry before updating.
+- Left alone: flat plans, your own skills and plans, and a `core.hooksPath` that isn't PRISM's.
+- Versions 0.7.0 to 0.10.0 are not recorded in this file.
+
+### New hooks stop agents on day one
+
+Claude Code and Codex get the hooks on `prism update`. Cursor gets none, so nothing denies there.
+
+- The commit gate denies a commit with `-a`, `--no-verify`, or no paths named, and more than one commit in a command.
+- The secrets gate denies reading a `.env` file other than `.env.example`, a `.pem` or `.key` file, or anything under a `secrets` folder. Its remedy is `node .claude/hooks/env-keys.mjs <file>`, which prints the key names without values.
+- The brief gate denies a subagent brief to a workflow stage over 15 non-blank lines. On Codex it only logs.
+- The approve guard denies an agent running the approval script or editing a chain file's approval lines.
+- The reconcile gate holds a PR-review subagent from stopping while reconcile still reports unanswered or unlogged comments.
+- `PRISM_HOOK_DENY_DISABLE=1` turns off every deny except the secrets gate's and the approve guard's. `PRISM_HOOK_DISABLE=1` stops every hook except those two. The secrets gate and the approve guard ignore both switches.
+
+A deny message names its gate and the fix. The [troubleshooting page](https://github.com/HunterMcGrew/PRISM/blob/main/docs/troubleshooting.md#a-prism-hook-denied-an-agents-command) lists what clears each one.
+
+### Git hooks
+
+- `prism adopt`, `prism update`, and the agent's session start set `core.hooksPath` to `.githooks`, which holds PRISM's `pre-commit` and `pre-push` shims. They are delivered when `claude` or `codex` is in `hosts`.
+- A `core.hooksPath` that isn't PRISM's, or hooks already in `.git/hooks`, are left alone, and `prism doctor` reports it as info.
+- A hook with no command in the `gitHooks` key of `.ai-skills/config.json` skips with a notice and exits 0.
+
+### Skill renames and removals
+
+`prism update` removes the old skill directories, and the persona names still route to their new skills.
+
+| Old skill                | Now                  | Persona |
+| ------------------------ | -------------------- | ------- |
+| `devils-advocate`        | `prism-challenge`    | none    |
+| `prism-code-dev`         | `prism-implement`    | Clove   |
+| `prism-code-review-pr`   | `prism-pr-review`    | Eric    |
+| `prism-code-review-self` | `prism-self-review`  | Briar   |
+| `prism-data`             | `prism-metrics`      | Tess    |
+| `prism-debugger`         | `prism-debug`        | Sasha   |
+| `prism-documentation`    | `prism-docs`         | Eli     |
+| `prism-founder`          | `prism-strategy`     | Vera    |
+| `prism-onboarding`       | `prism-onboard`      | Atlas   |
+| `prism-qa-test-plan`     | `prism-qa-plan`      | Reese   |
+| `prism-skill-forge`      | `prism-forge-skill`  | none    |
+| `prism-standup-summary`  | `prism-standup`      | Lilac   |
+| `prism-surface-audit`    | `prism-audit`        | Zoe     |
+| `prism-ticket-start`     | `prism-start-ticket` | Nora    |
+| `prism-user-stories`     | `prism-intent`       | Mira    |
+
+- Retired with no replacement: `prism-conductor` (Sol), `prism-refactor-scout` (Ren), `prism-doc-walker` (Theo), and `prism-review-loop`. Sol, Ren, and Theo no longer route.
+- New with no predecessor: `prism-plan`, `prism-spec`, and `prism-verify`.
+- Winston (`prism-architect`) planned work at 0.10.0 and is now a consult that answers approach questions. "Plan this out" now routes to `prism-plan`.
+
+### The new workflow
+
+Work runs through a plan folder at `.prism/plans/<ticket>/`: intent, design when needed, spec, plan, two challenge rounds, implement, verify, review, draft PR, PR review, and retro.
+
+- You touch it twice: approve the intent, then read the PR. Approval is `approve` in chat, or the approval script run in a terminal.
+- Stages commit their own work. The session pushes and opens the PR.
+- Flat plans keep working and are not migrated.
+
+[`docs/workflow.md`](https://github.com/HunterMcGrew/PRISM/blob/main/docs/workflow.md) walks through each stage.
+
+### Review and verify
+
+- `REVIEW.md` sits at the repo root and is the rulebook every review stage reads. While its first line starts with `<!-- prism:review`, `prism update` keeps it current. Delete that line and the file is yours.
+- Reviews log what a human caught that the agent missed in `.prism/metrics/review-misses.jsonl`. `prism adopt` and `prism update` add `.prism/metrics/review-misses.jsonl merge=union` to `.gitattributes`, so two branches that each append a row merge cleanly.
+- `prism-verify` runs every automated check the repo configures and records the results under `## Verification` in the plan.
+- The retro (`prism-retro`) is a fixed last stage of a plan folder.
+
+### New optional config keys
+
+`stopPaths`, `testGlobs`, `secretPaths`, `importAliases`, `ci.requiredCheck`, `gitHooks`, and `hooks` are new in `.ai-skills/config.json`. None of them were in the schema at 0.10.0, and an existing config stays valid.
+
+Two keys changed:
+
+- `features.conductorMayMerge` is now `features.mainSessionMayMerge`. Rename the key to keep the setting. It governs PRISM's own merges, and a consumer leaves it unset.
+- `modelTiers.top` and `modelTiers.worker` are gone and can be deleted. `modelTiers.overrides` stays, and only its `eric` entry is read.
+
+### Codex
+
+PRISM sets `project_doc_max_bytes` in `.codex/config.toml` so Codex reads past the default 32 KiB of `AGENTS.md`. The repo-level key is not yet verified in a live Codex run. `prism doctor` warns when `AGENTS.md` is over the limit.
+
+### Also since 0.10.0
+
+- On Claude Code, compaction keeps its place: a summary template runs before a compact, and a note after it sends the session back to its plan. Codex gets neither.
+- An umbrella speed bump denies, once, a new heading in a doc on the manifest's `umbrellas` list or in a rule file, so a section about one subsystem gets its own routed doc. New installs get the list. An existing install adds an `umbrellas` key to `.prism/architect/manifest.json` by hand.
+- Atlas offers to draft architect docs for the main areas of your code during onboarding, and you can decline.
+- `prism doctor` runs more checks than it did at 0.10.0. [`docs/adopt-prism.md`](https://github.com/HunterMcGrew/PRISM/blob/main/docs/adopt-prism.md#check-install-health-with-prism-doctor) lists them in run order.
+
+---
+
 ## [Epic C — First-Contact Reconciliation] — 2026-06-16
 
 Epic tracking issue: #195
