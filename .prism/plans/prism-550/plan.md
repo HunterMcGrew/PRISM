@@ -327,6 +327,23 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
 
 ## Verification
 
+verdict: done
+base: 09e24a226bf63841741b9063e9e499b4a2876ed1
+head: 03dcb3bafaaf99d60c0ae4b5ad7e8990ca05ccd1
+
+| check | result | evidence |
+| --- | --- | --- |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/typecheck.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/lint.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/test.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/build.log |
+| format | n/a: not configured | none |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/spec.log |
+
+### Failures
+
+- none
+
 ## Release proof
 
 Run 2026-11-20 against `huntermcgrew-prism-1.0.0.tgz`, packed from the T9 commit `6afcb8d9`, in three scratch repos (`fresh`, `up`, `husky`) under the session scratchpad. `up` and `husky` were adopted at `0.10.0`, given a consumer skill `acme-notes` and a flat plan `acme-1.md`, and given `features.conductorMayMerge: false` by hand, then updated from the tarball.
