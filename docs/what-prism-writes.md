@@ -100,7 +100,7 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 
 ## What `prism doctor` does — nothing gets written
 
-`prism doctor` is read-only. It validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports drift between your sync manifest and what's actually on disk (including pairing diverged files with any `.bak` siblings already sitting there from a prior update), confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` were actually delivered under those names rather than left as their seed names, checks the root `REVIEW.md` once the repo has adopted, checks your installed version against the latest on npm, and reports whether PRISM's git hooks are installed in this clone, left alone because another hooks path is in force, or delivered but not yet installed. It never writes a file — running `prism doctor` as often as you like is always safe.
+`prism doctor` is read-only: it checks your config, your sync state, the files and hooks PRISM delivered, and your installed version, then prints every finding in one pass. The full list of checks, in the order they run, is in [Check install health with `prism doctor`](./adopt-prism.md#check-install-health-with-prism-doctor). It never writes a file, so running `prism doctor` as often as you like is always safe.
 
 ## What `prism eject` removes
 
