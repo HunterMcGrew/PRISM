@@ -65,7 +65,7 @@ A deny message names what clears it. The [troubleshooting page](https://github.c
 Work runs through a plan folder at `.prism/plans/<ticket>/`: intent, design when needed, spec, plan, two challenge rounds, implement, verify, review, draft PR, PR review, and retro.
 
 - You usually touch it twice: approve the intent, then read the PR. Approval is `approve` in chat, or the approval script run in a terminal.
-- Four things add a touch: a design marked for approval, a plan that fails auto-approve, a `blocked` report or a second `needs-replan` on one task, and a review pause. `REVIEW.md` lists the four review pause triggers.
+- A few things add a touch: a design marked for approval, a plan that fails auto-approve, a `blocked` report or a second `needs-replan` on one task, a change the architect confirms is intent-level, and a review pause. `REVIEW.md` lists the four review pause triggers.
 - Stages commit their own work. The session pushes and opens the PR.
 - Flat plans keep working and are not migrated.
 
@@ -84,7 +84,7 @@ Work runs through a plan folder at `.prism/plans/<ticket>/`: intent, design when
 
 Two keys changed:
 
-- `features.conductorMayMerge` is now `features.mainSessionMayMerge`. Rename the key to keep the setting. It governs PRISM's own merges, and a consumer leaves it unset.
+- `features.conductorMayMerge` is now `features.mainSessionMayMerge`. Rename the key to keep the setting. It lets the main session merge once the final review is clean, and it stays off unless you set it.
 - `modelTiers.top` and `modelTiers.worker` are gone and can be deleted. `modelTiers.overrides` stays, and only its `eric` entry is read.
 
 ### Codex
@@ -94,7 +94,7 @@ PRISM sets `project_doc_max_bytes` in `.codex/config.toml` so Codex reads past t
 ### Also since 0.10.0
 
 - On Claude Code, compaction keeps its place: a summary template runs before a compact, and a note after it sends the session back to its plan. Codex gets neither.
-- An umbrella speed bump denies, once, a new heading in a doc on the manifest's `umbrellas` list or in a rule file, so a section about one subsystem gets its own routed doc. New installs get the list. `prism update` never rewrites `.prism/architect/manifest.json`, so an existing install adds an `umbrellas` key by hand. Copy the other new routes from `templates/install/.prism/architect/manifest.stub.json` in the same pass, such as `REVIEW.md`, `.prism/review/**`, and `.githooks/**`. Replace the `prism-qa-test-plan` route with `prism-qa-plan`, and drop `.prism/skills/**`, which routes nothing now.
+- An umbrella speed bump denies, once, a new heading in a doc on the manifest's `umbrellas` list, so a section about one subsystem gets its own routed doc. New installs get a list that names the rule files too. `prism update` never rewrites `.prism/architect/manifest.json`, so an existing install adds an `umbrellas` key by hand, and lists the rule files in it to cover them. Copy the other new routes from `templates/install/.prism/architect/manifest.stub.json` in the same pass, such as `REVIEW.md`, `.prism/review/**`, and `.githooks/**`. Replace the `prism-qa-test-plan` route with `prism-qa-plan`, and drop `.prism/skills/**`, which routes nothing now.
 - Atlas offers to draft architect docs for the main areas of your code during onboarding, and you can decline.
 - `prism doctor` runs more checks than it did at 0.10.0. [`docs/adopt-prism.md`](https://github.com/HunterMcGrew/PRISM/blob/main/docs/adopt-prism.md#check-install-health-with-prism-doctor) lists them in run order.
 
