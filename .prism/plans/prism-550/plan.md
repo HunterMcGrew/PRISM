@@ -265,6 +265,11 @@ round 2: resolved 2
 - **T6 waits for T2, T4, and T5.** Its sweep proof only runs clean once those three have removed their stale lines, and a proof that can't pass when its task lands proves nothing.
 - **Acceptance criteria are the spec's Requirements, one for one.** The plan stage writes an epic child's criteria. Numbering them in the spec's order keeps "AC-n" equal to "Requirement n", so the review grades against the spec without a lookup table.
 - **Adjacent stale lines left alone.** `docs/overview.md:29` still says PRISM lives as a sibling repo, and `docs/distribution.md:65` and `:66` say Winston generates architect docs in Phase 3. Neither is named by a requirement, and `docs/distribution.md` is outside Affected systems, so both are a follow-up PR after the release.
+- **Spurious `.bak` files on upgrade get a CHANGELOG note, and the code fix is a follow-up PR.**
+  - **Root cause:** not diagnosed. T9's release proof shows `prism update` from an unedited 0.10.0 install keeps `.prism/architect/guides/writing-a-skill.md` and `writing-an-architect-doc.md` as `.bak` files byte-identical to the 0.10.0 seed, so update treats an untouched seed copy as edited.
+  - **Alternatives considered:** fixing update's ownership check in this PR; leaving it unmentioned.
+  - **Chosen approach:** one CHANGELOG bullet telling upgraders they can delete the two files if they never edited the guides. The fix lives in update code outside Affected systems, and the files are harmless copies, so it doesn't hold the release.
+  - **Implementation guidance:** a follow-up PR diagnoses update's divergence check for these seeds and adds a regression test.
 
 ## Acceptance Criteria
 
@@ -316,6 +321,7 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T3 replaced the doctor paragraph in what-prism-writes.md with one summary that links to the full list in adopt-prism.md.
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T6 removed the stale Winston-plans, user-story and prism-review-loop lines from README, overview, parker and CONTEXT, and the sweep and retired-ID greps print nothing.
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T8 wrote the 1.0.0 migration note into CHANGELOG.md in the spec's nine parts, with absolute links to the troubleshooting and workflow pages.
+- 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T9 bumped package.json to 1.0.0, and the release proof from the packed tarball passed in the fresh, upgrade and husky repos, with results under the Release proof section.
 
 ## Sessions
 
