@@ -11,7 +11,7 @@ last_updated: "2026-11-20"
 Start here whenever `prism adopt`, `prism update`, or a build step doesn't do what you expected.
 
 > [!TIP]
-> Run `npx @huntermcgrew/prism doctor` first, before anything else on this page. It's read-only — it never writes a file — and in one pass it validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports any drift between your sync manifest and what's actually on disk (pairing diverged files with `.bak` siblings already sitting there), and compares your installed version against the latest on npm. Most of the failures below show up in `doctor`'s findings before you'd otherwise notice them.
+> Run `npx @huntermcgrew/prism doctor` first, before anything else on this page. It's read-only — it never writes a file — and it runs every check in one pass, so most of the failures below show up in its findings before you'd otherwise notice them. See [Check install health with `prism doctor`](./adopt-prism.md#check-install-health-with-prism-doctor) for what it checks.
 
 ## `prism adopt` refuses to run
 
@@ -67,18 +67,19 @@ If you're adopting PRISM into a Windows-based repo and see unexpected file-drift
 
 ## A PRISM hook denied an agent's command
 
-On Claude Code and Codex, PRISM's hooks stop some agent actions before they run, and the deny message names the gate and the fix. Cursor gets no hook registration, so nothing denies there.
+On Claude Code and Codex, PRISM's agent hooks stop some agent actions before they run, and the deny message names what clears it. Cursor gets no agent-hook registration, so nothing denies there. Git hooks are separate and run on every host. On Codex, a hook fires only once you trust the project's `.codex/` layer and review each hook definition.
 
 | Gate | What it stops | What clears it |
 | --- | --- | --- |
 | Write gate | An edit, delete, or command on a path a manifest route covers, before the route's docs are read | Run each `cat` the message names as its own command, or a `Read` with no offset or limit |
-| Umbrella speed bump | A new heading in a doc on the manifest's `umbrellas` list, or in a rule file | Retry the same edit, after asking whether the section belongs in its own routed doc |
+| Umbrella speed bump | A new heading in a doc on the manifest's `umbrellas` list. A fresh install lists the rule files there, so a new heading in a rule file stops too | Retry the same edit, after asking whether the section belongs in its own routed doc |
 | Secrets gate | Reading a `.env` file other than `.env.example`, a `.pem` or `.key` file, or anything under a `secrets` folder | `node .claude/hooks/env-keys.mjs <file>` prints the key names without values, or read `.env.example` |
-| Commit gate | A commit with `-a`, `--no-verify`, or no paths named, or more than one commit in a command; a push with `--no-verify`. On a folder-plan branch, also a removed test line, a contract-path change, or a dependency change with no task allowing it | Name the paths after `--`, or commit through `node .claude/hooks/plan/commit.mjs "<subject>" <paths>`. For the task checks, list the file under a task with `behavior change:` or `new dependency:`, or under any task for a contract path |
+| Commit gate | A commit with `-a`, `--no-verify`, or no paths named, or more than one commit in a command; a push with `--no-verify`; a `.ai-skills/config.json` that doesn't parse, or a rejected `stopPaths` or `testGlobs` value. On a folder-plan branch, also a removed test line, a contract-path change, or a dependency change with no task allowing it | Name the paths after `--`, or commit through `node .claude/hooks/plan/commit.mjs "<subject>" <paths>`. For the task checks, list the file under a task with `behavior change:` or `new dependency:`, or under any task for a contract path, and give the commit a `T<n>:` subject, because a subject that names no task gets no allowance. Fix `.ai-skills/config.json` when the gate names an unparsable file or a rejected `stopPaths` or `testGlobs` value |
 | Approve guard | An agent running the approval script, or editing a chain file's approval lines | The person says `approve` in chat, then the agent runs exactly `node .claude/hooks/plan/approve.mjs <file>`. Or the person runs it in a terminal and presses `y` |
 | Brief gate | A subagent brief to a workflow stage over 15 non-blank lines, or with an override phrase | A short brief naming what the stage reads, the worktree, and the report shape, with longer detail moved into `plan.md`. On Codex it only logs |
 | Reconcile gate | A PR-review subagent stopping while reconcile still reports unanswered or unlogged comments | Handle the comments it names, and end with a `prism-pr: <n>` line. It lets the stop through after three blocks |
 | Cleanup-pass hold and push gate | The first commit on each HEAD is held once, and a push is denied when lint or format fails. Both are off until `hooks.commitCleanupPass` or `hooks.pushVerification` is set in `.ai-skills/config.json` | Read `.prism/references/cleanup-pass.md` and retry the commit, and fix what lint or format reports before pushing |
+| Git hook failure | Not a deny from an agent hook. The configured `gitHooks.preCommit` command failed on a staged file, or the `gitHooks.prePush` command failed, so the commit or push stops | Fix what the command printed, such as running the `fix` command the message shows, then commit or push again. Don't reach for `--no-verify` |
 | Git hooks skipping | Not a deny. The pre-commit or pre-push hook prints a skip notice because `gitHooks` has no block, no `command`, or no `globs` in `.ai-skills/config.json`, or the tool isn't installed | Set `command` and `globs` under `gitHooks.preCommit` or `gitHooks.prePush`, or install the tool |
 | Git hooks left alone | Not a deny. `prism doctor` reports another hooks setup, such as `core.hooksPath` set to `.husky`, so PRISM's git hooks are not active by design | Keep your setup, or remove the other hooks path and run `prism hooks install` |
 
