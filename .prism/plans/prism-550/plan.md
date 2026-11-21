@@ -329,7 +329,7 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
 
 verdict: done
 base: 09e24a226bf63841741b9063e9e499b4a2876ed1
-head: 03dcb3bafaaf99d60c0ae4b5ad7e8990ca05ccd1
+head: f46fbfeb423f8864728ffce5e30857aca4eabef7
 
 | check | result | evidence |
 | --- | --- | --- |
