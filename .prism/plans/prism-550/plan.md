@@ -231,7 +231,24 @@ The `git init` and `git commit --allow-empty -m init` lines stay: they run befor
 
 After the proof, #544's AC-11 human check (AC-16) is a person's step in `$S/fresh`: leave the scratch repo in place, name its path in the build report, and don't run onboarding yourself.
 
-A retired skill left on disk or a duplicated hook registration is a code defect: report `needs-replan` with the evidence, and don't work around it in docs. Record the results in this plan under a `## Release proof` section placed after `## Verification`: one bullet per check above with what it printed, and every WARN and INFO line doctor printed in each directory with a one-line reason. Commit that as `plan: Record the release proof`.
+A retired skill left on disk or a duplicated hook registration is a code defect: report `needs-replan` with the evidence, and don't work around it in docs. Record the results in this plan under a `## Release proof` section placed after `## Verification
+
+verdict: done
+base: 09e24a226bf63841741b9063e9e499b4a2876ed1
+head: 9dc643599bc5f6059f3c870d1855d265559cc410
+
+| check | result | evidence |
+| --- | --- | --- |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/typecheck5.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/lint5.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/test5.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/build5.log |
+| format | n/a: not configured | none |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/spec5.log |
+
+### Failures
+
+- none
 
 ## Challenge
 
