@@ -155,7 +155,7 @@ Both checks apply whether or not `--dry-run` is set.
 
 ## Check install health with `prism doctor`
 
-`prism doctor` runs the same config and git-repo checks as `adopt`/`update`, plus a sync-state and version report, and prints every finding in one pass — instead of a bad config only surfacing later as an opaque leftover-token build failure.
+`prism doctor` runs every check below, including the config and git-repo checks `adopt`/`update` run, and prints every finding in one pass — instead of a bad config only surfacing later as an opaque leftover-token build failure.
 
 ```bash
 npx @huntermcgrew/prism doctor
