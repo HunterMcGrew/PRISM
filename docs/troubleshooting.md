@@ -67,7 +67,7 @@ If you're adopting PRISM into a Windows-based repo and see unexpected file-drift
 
 ## A PRISM hook denied an agent's command
 
-On Claude Code and Codex, PRISM's agent hooks stop some agent actions before they run, and the deny message names what clears it. Cursor gets no agent-hook registration, so nothing denies there. Git hooks are separate and run on every host. On Codex, a hook fires only once you trust the project's `.codex/` layer and review each hook definition.
+On Claude Code and Codex, PRISM's agent hooks stop some agent actions before they run, and the deny message names what clears it. Cursor gets no agent-hook registration, so nothing denies there. Git hooks are separate: they run for anyone who commits once they are installed, and installing them needs `claude` or `codex` in `hosts`. On Codex, a hook fires only once you trust the project's `.codex/` layer and review each hook definition.
 
 | Gate | What it stops | What clears it |
 | --- | --- | --- |
