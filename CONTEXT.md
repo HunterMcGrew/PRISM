@@ -48,7 +48,7 @@ A name a skill answers to — Winston the architect, Clove the implementer, Eric
 An invokable capability in the ecosystem — `prism-plan`, `prism-implement`, `prism-handoff`. A skill is authored once in canonical form and built into per-runtime adapters (Claude, Codex, Cursor). Two kinds exist, set by the `type` discriminator in `roles.json` (ADR-0046):
 
 - **Persona skill** (the default) — carries a [persona](#persona), a name, a lane, and a short Voice block, with no reasoning lens; the build generates a Codex agent adapter.
-- **Utility skill** — `type: "utility"`; an action any persona can run (`prism-handoff`, `prism-review-loop`). No persona, no voice of its own, no agent adapter — it runs in the invoking persona's voice.
+- **Utility skill** — `type: "utility"`; an action any persona can run (`prism-handoff`, `prism-plan`). No persona, no voice of its own, no agent adapter — it runs in the invoking persona's voice.
 
 Owned by `.prism/rules/skill-authoring.md` and the Tier 4 definition in `.prism/SPEC.md`.
 
@@ -111,7 +111,7 @@ An entry in a plan's `## Decisions` section: a choice made during a ticket, reco
 
 - **Avoid:** "ADR" as a synonym (an ADR is the durable, promoted form; a plan decision is ticket-scoped), "note", "rationale" used standalone.
 - **Relationships:**
-  - Many decisions per [plan](#plan); written by Winston, read by all (ADR-0014).
+  - Many decisions per [plan](#plan); written by the plan stage (`prism-plan`), read by all (ADR-0014).
   - Each decision carries a verdict at close (promoted / no-promotion-needed) — the Decision verdict gate (`branch-plan.md`). Not to be confused with a [Zoe verdict](#zoe-verdict).
   - The open-question variant (`OPEN — TBD, needs <name> input`) records a decision that can't yet resolve, with a default path.
 
@@ -184,7 +184,7 @@ A per-Decision classification Zoe (`prism-audit`) issues during her cadence audi
 - **Avoid:** "audit verdict" used ambiguously with the Decision verdict gate, "status" (a Decision's own status is separate), "Zoe's call".
 - **Relationships:**
   - One Zoe verdict per [plan decision](#decision-plan-decision) per audit run; verdicts age across runs.
-  - Distinct from the **Decision verdict gate** at plan close (promoted / no-promotion-needed), which Winston runs — see [Flagged ambiguities](#flagged-ambiguities).
+  - Distinct from the **Decision verdict gate** at plan close (promoted / no-promotion-needed), which `prism-retro` runs on a folder plan and the plan stage on a flat one — see [Flagged ambiguities](#flagged-ambiguities).
 
 ---
 
@@ -196,7 +196,7 @@ Overloaded words that genuinely collided across the roster, and how each was res
 
 - **"decision" — plan Decision vs ADR** — both record a choice with reasoning, and the word "decision" appears in both. **Resolution:** a [plan decision](#decision-plan-decision) is ticket-scoped (spec Tier 5), lives in a plan's `## Decisions`, and is an implicit do-not-undo for that ticket. An [ADR](#adr) is the durable, promoted, numbered form of a cross-cutting decision. A plan decision graduates _into_ an ADR at close when it proves durable; they are not the same record.
 
-- **"verdict" — Zoe verdict vs Decision verdict gate** — both attach a verdict to a plan's `## Decisions`. **Resolution:** the **Decision verdict gate** runs at plan _close_ (Winston), recording whether each decision was promoted or intentionally stays local. A **[Zoe verdict](#zoe-verdict)** runs on _cadence_ (Zoe's audit), classifying each decision `live` / `archive-candidate` / `overdue-archive` / `open-stale`. Different actor, different trigger, different vocabulary.
+- **"verdict" — Zoe verdict vs Decision verdict gate** — both attach a verdict to a plan's `## Decisions`. **Resolution:** the **Decision verdict gate** runs at plan _close_ (`prism-retro` on a folder plan, the plan stage on a flat one), recording whether each decision was promoted or intentionally stays local. A **[Zoe verdict](#zoe-verdict)** runs on _cadence_ (Zoe's audit), classifying each decision `live` / `archive-candidate` / `overdue-archive` / `open-stale`. Different actor, different trigger, different vocabulary.
 
 - **"tier" — rule-loading tier vs spec tier** — two unrelated tier systems. **Resolution:** the [rule-loading tier](#rule-loading-tier) (ADR-0035) is a three-level model for _when a rule loads_. The **spec tier** (`.prism/SPEC.md`) is a five-level hierarchy for _what binds whom_ (Constitution → Durable Rules → Architectural Context → Skill Behavior → Plans). Always qualify which one you mean.
 

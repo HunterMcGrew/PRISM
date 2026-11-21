@@ -3,7 +3,7 @@ title: "Adopt PRISM into your repo"
 description: "How to adopt PRISM into a consumer repo — via npx (recommended), or via a local checkout for air-gapped environments and contributors."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-11-18"
+last_updated: "2026-11-20"
 ---
 
 # Adopt PRISM into your repo
@@ -34,7 +34,7 @@ cd your-repo
 npx @huntermcgrew/prism adopt
 ```
 
-After this runs, open Claude Code in `your-repo` and the personas are available: "Winston, plan this out." "Clove, implement this." "Briar, review my changes."
+After this runs, open Claude Code in `your-repo` and the personas are available: "Mira, write the intent." "Winston, is this the right approach?" "Briar, review my changes."
 
 **Steady state.** Once your repo is adopted, keep it current:
 
@@ -155,7 +155,7 @@ Both checks apply whether or not `--dry-run` is set.
 
 ## Check install health with `prism doctor`
 
-`prism doctor` runs the same config and git-repo checks as `adopt`/`update`, plus a sync-state and version report, and prints every finding in one pass — instead of a bad config only surfacing later as an opaque leftover-token build failure.
+`prism doctor` runs every check below, including the config and git-repo checks `adopt`/`update` run, and prints every finding in one pass — instead of a bad config only surfacing later as an opaque leftover-token build failure.
 
 ```bash
 npx @huntermcgrew/prism doctor
@@ -167,6 +167,13 @@ npx @huntermcgrew/prism doctor
 - **Git repo.** Confirms the target is inside a git repository.
 - **Sync state.** Reads `.prism/.sync-manifest.json` and reports how many recorded files are PRISM-owned vs. consumer-owned, which PRISM-owned files have diverged from their recorded base (paired with any `.bak` siblings already on disk), and which recorded files are missing entirely. A repo that hasn't run `adopt` yet reports no manifest as informational, not an error.
 - **Seed delivery.** For an already-adopted repo, confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` are actually on disk under those names rather than their seed names (`manifest.stub.json`, `SPEC.md.tmpl`). A repo that adopted before this check existed gets an error with the exact `mv` command to fix it; a repo that hasn't adopted yet is skipped, since it was never delivered a renamed file to be missing.
+- **Rule load declarations.** Warns on each rule in `.prism/rules/` or the `.prism/custom/` overlay that has no valid `load:` declaration, labeling overlay rules `custom/<name>`.
+- **Architect routes.** Warns on an architect doc no route names, a route that names a missing doc, and a routed doc that holds only headings. Errors on a catch-all route (one that matches every path), on a route written with a brace glob (such as `src/{a,b}/**`), and on a `manifest.json` or `_toolkit/manifest.base.json` that isn't valid JSON. The catch-all and brace-glob checks run on both manifests.
+- **Hook registration.** Per host, whether the hook runtime is installed and registered. It flags a runtime with no registration, a registration pointing at a missing file, and a dropped host's registration still on disk.
+- **Git hooks.** Whether PRISM's git hooks are installed in this clone, delivered but not installed, or left alone because another hooks setup is in force (reported as info). Its findings print under the `hook-registration` label.
+- **Codex doc limit.** For adopted repos whose `hosts` includes `codex`: warns when `AGENTS.md` is larger than the `project_doc_max_bytes` Codex will read.
+- **`REVIEW.md`.** For adopted repos only: reports whether the root rulebook is absent, current, behind PRISM's copy, or unmarked (your own, which `update` leaves alone).
+- **Host output.** Warns when a host dropped from `hosts` still has PRISM output on disk.
 - **Version.** Compares the installed PRISM version against the latest published on npm. When the network is unavailable or the package hasn't been published yet, this check degrades to "unavailable" rather than failing the whole command.
 
 Unlike `adopt`/`update`, `doctor` doesn't stop at the first problem — every check runs regardless of what the others found, so you see everything wrong in one pass. It exits `0` when healthy and non-zero with the findings list printed when it isn't, which makes it a natural fit for a CI health-check step.

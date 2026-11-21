@@ -1,56 +1,76 @@
 ---
 title: "The PRISM Workflow"
-description: "How work moves from ticket to ship in PRISM: who to call, when, and what each persona hands off."
+description: "How work moves from intent to merged PR in PRISM: the plan folder, its stages, and where you step in."
 category: "workflow"
 audience: "developer-user"
-last_updated: "2026-10-17"
+last_updated: "2026-11-20"
 ---
 
 # The PRISM Workflow
 
-A ticket in PRISM moves through five phases: start, plan, implement, review, and ship. Each phase has a persona that owns it. The branch plan — a file in `.prism/plans/` — carries context across all five, so every persona picks up where the last one left off.
+A ticket runs through a plan folder at `.prism/plans/<ticket>/`. You approve the intent and read the PR. Everything between those two touches runs on its own, with each stage writing its output into the folder so the next stage picks it up.
 
-## The five phases
+The enforceable spec for every stage, cap, and stop is [`.prism/rules/workflow.md`](../.prism/rules/workflow.md). This page is the onboarding narrative.
 
-### 1. Start — Nora picks up the ticket
+## Your two touches
 
-When you're ready to start a ticket, say: "Nora, start PRISM-1234." or "Start this ticket."
+1. **Approve `intent.md`.** Say `approve` in chat, or run the approval script in a terminal (`node .claude/hooks/plan/approve.mjs <path to the file>`) and press `y`. The intent sets the run's goal, so once you approve it the stages after it start without asking again.
+2. **Read the draft PR, flip it ready, and merge.** The run ends with a reviewed draft PR. CI ran on its last push, and any failure is fixed or listed on the PR. Merging stays a human step unless your repo sets `features.mainSessionMayMerge: true` in `.ai-skills/config.json`, which lets the main session merge once the final review comes back clean.
 
-Nora reads the ticket, confirms scope, and sets up the branch. The plan file that the later steps build up becomes the shared memory for everyone who touches the ticket.
+A few things add a touch:
 
-**Nora hands off to:** Winston (if architectural planning is needed) or Clove (if the path is already clear).
+- A design the intent marks as needing your approval.
+- A plan that fails automatic approval.
+- A change that would alter the approved intent, such as a different acceptance criterion, or a plan-challenge finding the architect confirms is intent-level.
+- A stage that stays `blocked` after its re-dispatches, or a second re-plan of the same task.
+- A review that would touch a file outside the plan, add a dependency, change a shared type or public API, or need destructive git.
 
-### 2. Plan — Winston designs the approach
+Anything else a stage can't settle lands on the draft PR as a comment and in the closing summary, so you can still veto it there.
 
-For anything non-trivial — three or more steps, or a real architectural decision — Winston plans before anyone writes code.
+## The stages
 
-Say: "Winston, plan this out." or ask an architecture question.
+1. **Intent** (Mira, `prism-intent`) interviews you one question at a time and writes `intent.md`: the problem, the proposed outcome, and the acceptance criteria.
+2. **Design**, when the intent says it's needed (Pixel, `prism-design`), writes `design.md`.
+3. **Spec** (`prism-spec`, a subagent) reads the intent and the code and writes `spec.md`: requirements, design, and the systems the work may touch.
+4. **Plan** (`prism-plan`) writes `plan.md`: ordered tasks, each with its files and a proof.
+5. **Two challenge rounds** (`prism-challenge`, subagents) try to break the plan before any code exists. The plan then auto-approves or asks you.
+6. **Implement** (Clove, `prism-implement`) builds the code tasks, and **docs** (Eli, `prism-docs`) writes the docs tasks.
+7. **Verify** (`prism-verify`, a subagent) runs every automated check the repo configures and records the results in `plan.md`.
+8. **Self-review** (Briar, `prism-self-review`) reviews the branch against `REVIEW.md` and grades the acceptance criteria.
+9. **Draft PR** opens from the branch.
+10. **PR review** (Eric, `prism-pr-review`, a subagent) posts inline comments and a summary on the PR. Eric never approves or merges.
+11. **Retro** (Iris, `prism-retro`) compares the plan against what shipped, records a verdict on each decision, and closes the plan.
 
-Winston reads the branch plan, evaluates the approach against codebase patterns, makes decisions, and writes ordered implementation tasks into `## Implementation Tasks`. Each task is specific enough that Clove can execute it without judgment calls.
+Stages commit their own work. The session pushes and opens the PR for them.
 
-**Winston hands off to:** Clove for implementation.
+## Sizes
 
-### 3. Implement — Clove writes the code
+Standard is the default: one plan folder, the stages above, shipped as one PR or a stack of dependent PRs. An epic is work split into several parts under one tracker parent. Its folder holds `intent.md` and `spec.md`, and each child gets its own folder that runs the standard stages from its spec onward. The intent proposes the size, and your approval of the intent confirms it.
 
-Say: "Clove, implement this." or describe what you want built.
+## Picking up where a session left off
 
-Clove reads the branch plan, works through the implementation tasks in order, and updates the plan after each meaningful change. When work surfaces a design question, Clove loops in Pixel. When a bug surfaces mid-implementation, Clove confirms the root cause and records it in `## Debugged Issues` before fixing it.
+A fresh session reads the plan folder and runs the first stage whose output is missing. No handoff note is needed, because the folder holds the state. The table that maps folder state to the next stage is in [`.prism/rules/workflow.md`](../.prism/rules/workflow.md).
 
-**Clove hands off to:** Briar for self-review before opening a PR.
+## Asking for help along the way
 
-### 4. Review — Briar then Eric
+These personas work outside the stage chain, and you can call them at any point.
 
-**Self-review (Briar):** Before opening a PR, say "Briar, review my changes." Briar checks types, logic, accessibility, and tests. Findings go into `## Review Issues` in the branch plan. Briar never posts to GitHub.
+| Persona                         | Call when                                                                  |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| **Winston** (`prism-architect`) | You have an approach question at any time. No plan folder is needed.       |
+| **Sasha** (`prism-debug`)       | A bug's cause is unknown. Her report becomes the intent's Problem section. |
+| **Nora** (`prism-start-ticket`) | You need a ticket set up and a branch created                              |
+| **Parker** (`prism-prd`)        | You need a PRD at initiative grain                                         |
+| **Reese** (`prism-qa-plan`)     | You need a QA checklist                                                    |
+| **Sage** (`prism-changelog`)    | You need a changelog between releases                                      |
+| **Lilac** (`prism-standup`)     | You need a standup summary                                                 |
+| **Zoe** (`prism-audit`)         | You want a cadence audit of stale decisions and open plans                 |
 
-**PR review (Eric):** After the PR is open, say "Eric, review PR #123." Eric posts inline comments and severity-ranked findings directly to the GitHub PR. Eric never approves — approval is a human responsibility.
+See [personas.md](./personas.md) for what each persona owns, what it needs, and what it hands off.
 
-**Briar hands off to:** Clove for fixes, then back to Briar until clean. When documentation gaps surface during review, Briar can route to Eli instead.
+## Flat plans still work
 
-**Eric hands off to:** Clove for fixes.
-
-### 5. Ship — Clove pushes and opens the PR
-
-When the branch is ready, Clove commits, pushes, and opens the PR. Eli documents the feature. Sage generates the changelog entry when the release is ready.
+An existing `.prism/plans/<ticket>.md` keeps resolving and keeps its own shape. Nothing is migrated.
 
 ---
 
@@ -60,37 +80,6 @@ The tier system is built so rules load at the right scope rather than all at onc
 
 ---
 
-## Other personas and when to call them
-
-| Persona | Call when |
-|---------|-----------|
-| **Mira** | Writing user stories before planning |
-| **Pixel** | You need a UI/UX design, a mock, or layout direction |
-| **Reese** | You need a QA test plan or release checklist |
-| **Parker** | Writing a PRD from scratch or synthesizing one from existing code |
-| **Lilac** | Generating a standup summary |
-| **Sage** | Generating a changelog between releases |
-| **Zoe** | Running a cadence audit to surface stale decisions and open plans |
-
-See [personas.md](./personas.md) for what each persona owns, what it needs, and what it hands off.
-
----
-
-## The branch plan
-
-Every ticket has one plan file at `.prism/plans/<ticket-id>.md`. It contains:
-
-- **`## Goal`** — one sentence, what this ticket achieves
-- **`## Implementation Tasks`** — ordered tasks by persona (Winston writes; Clove executes)
-- **`## Decisions`** — choices made and why, each an implicit do-not-undo
-- **`## History`** — append-only log of what happened on the branch
-- **`## Review Issues`** — findings from Briar and Eric
-- **`## Acceptance Criteria`** — the bar the implementation must meet
-
-Plans persist after tickets close — they're the durable record of what was built and why. See [AGENTS.md](../AGENTS.md) § Plan Rule for the full plan lifecycle.
-
----
-
 ## Going deeper
 
-The behavioral norms behind this workflow — why authors ship and reviewers don't, why plans are never deleted, why cross-agent handoffs require verification — are documented in the ADRs under [`.prism/spec/adrs/`](../.prism/spec/adrs/). The tier system, promotion pathways, and spec ownership model are in [`.prism/SPEC.md`](../.prism/SPEC.md).
+The behavioral norms behind this workflow — why authors ship and reviewers don't, why plans are never deleted, why cross-agent handoffs require verification — are documented in the ADRs under [`.prism/spec/adrs/`](../.prism/spec/adrs/). The stage definitions, caps, and resume table are in [`.prism/rules/workflow.md`](../.prism/rules/workflow.md). The tier system, promotion pathways, and spec ownership model are in [`.prism/SPEC.md`](../.prism/SPEC.md).

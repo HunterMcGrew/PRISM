@@ -4,11 +4,11 @@ A multi-platform AI toolkit for Claude Code, Codex, and Cursor. Named-persona sk
 
 ## Overview
 
-PRISM gives AI tools a set of named personas — specialists with defined roles, defined inputs, and defined outputs. When Winston plans architecture, Clove implements it, Briar reviews it, and Eli documents it, each picks up where the last left off. The branch plan carries context across sessions; a tiered rule system carries conventions across the codebase.
+PRISM gives AI tools a set of named personas — specialists with defined roles, defined inputs, and defined outputs. When Mira writes the intent, the spec and plan stages turn it into tasks, Clove builds them, and Briar and Eric review the result, each picks up where the last left off. The plan folder carries context across sessions; a tiered rule system carries conventions across the codebase.
 
 **What you get:**
 
-- **Named personas across the dev lifecycle** — architect (Winston), implementer (Clove), self-reviewer (Briar), PR reviewer (Eric), doc writer (Eli), ticket writer (Nora), QA planner (Reese), and more. Each has a defined scope, defined inputs, and a definition of done.
+- **Named personas across the dev lifecycle** — intent writer (Mira), implementer (Clove), self-reviewer (Briar), PR reviewer (Eric), architect consult (Winston), debugger (Sasha), doc writer (Eli), ticket writer (Nora), QA planner (Reese), and more. Each has a defined scope, defined inputs, and a definition of done.
 - **Multi-platform skill sync** — one canonical skill source (`.ai-skills/`) builds to Claude Code, Codex, and Cursor. `pnpm prism:build` regenerates all platform outputs; `pnpm prism:check` catches drift on CI.
 - **Drop-in adoption for existing repos** — `npx @huntermcgrew/prism adopt` seeds `.prism/` and projects the persona roster into any codebase. A local-checkout path is also available for air-gapped environments and contributors.
 
@@ -127,8 +127,8 @@ PRISM/
 │   ├── adopt-prism.md            # adopt + update reference (npx, vendor, global link)
 │   ├── adopting-into-existing-repos.md  # coexisting with existing AI tooling + .bak conflicts
 │   ├── what-prism-writes.md      # full inventory of every path adopt/update/eject can touch
-│   ├── troubleshooting.md        # common adopt/update/build failures and how to resolve them
-│   ├── workflow.md               # ticket → plan → implement → review → ship
+│   ├── troubleshooting.md        # adopt/update/build failures, and agent commands a PRISM hook denied
+│   ├── workflow.md               # intent → plan folder → stages → PR → retro, and where you step in
 │   ├── personas.md               # what each persona does and when to call them
 │   └── parameterization.md       # config keys + token reference
 │
@@ -165,7 +165,7 @@ These are the commands a consumer repo uses after adopting PRISM. Run from your 
 | `npx @huntermcgrew/prism init` | Writes `.ai-skills/config.json` for a cold consumer — run this before `adopt`. Prompts for project name, ticket prefix, ticket system, and GitHub repo; detects your stack automatically. |
 | `npx @huntermcgrew/prism adopt` | Seeds `.prism/` and projects the persona roster into `.claude/`, `.codex/`, and `.cursor/`. First-contact command; refuses to run if `.prism/` already has a sync record. |
 | `npx @huntermcgrew/prism update` | Pulls PRISM's latest canonical content into an already-adopted repo. Overwrites PRISM-owned files when unchanged; backs up diverged files with `.bak`. |
-| `npx @huntermcgrew/prism doctor` | Reports install health in one pass: validates `.ai-skills/config.json` against its schema, confirms the target is a git repo, reports sync-manifest drift (diverged/missing files vs. their `.bak` siblings), and compares the installed version against the latest on npm. Read-only — never writes. Exits 0 when healthy, non-zero with a findings list otherwise. |
+| `npx @huntermcgrew/prism doctor` | Reports install health in one pass and never writes. Exits 0 when healthy, non-zero with a findings list otherwise. The checks are listed in [Check install health with `prism doctor`](./docs/adopt-prism.md#check-install-health-with-prism-doctor). |
 | `npx @huntermcgrew/prism hooks install` | Points git at PRISM's `pre-commit` and `pre-push` hooks in this clone by setting `core.hooksPath` to `.githooks`. `adopt` and `update` run the same step; a fresh clone needs it once. Leaves another hooks setup alone (husky, lefthook, a team-wide path, or hooks in `.git/hooks`) and says so. Exits 0 either way. |
 | `npx @huntermcgrew/prism eject` | Removes PRISM-owned `.prism/` files and projected `prism-*` skills/agents, then the sync manifest. Requires `--yes`; dry-run by default. Preserves consumer-owned content and backs up any diverged PRISM-owned file to `.bak` before removing it — never destroys unrecoverable edits. |
 | `pnpm prism:adopt` | Same as `npx ... adopt` but run from inside a local PRISM checkout. Use when you've cloned PRISM as a sibling or vendored it inside your repo. |
