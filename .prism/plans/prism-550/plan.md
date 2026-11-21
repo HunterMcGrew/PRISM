@@ -165,7 +165,7 @@ Open with two sentences: on Claude Code and Codex, PRISM's hooks stop some agent
 - **Brief gate.** A subagent brief to a workflow stage over 15 non-blank lines or with an override phrase. Clears: a short brief naming what the stage reads, the worktree, and the report shape, with anything longer moved into `plan.md`. On Codex it only logs.
 - **Reconcile gate.** A PR-review subagent stopping while reconcile still reports unanswered or unlogged comments. Clears: handle the comments it names and end with a `prism-pr: <n>` line. It lets the stop through after three blocks.
 - **Cleanup-pass hold and push gate.** Off until `hooks.commitCleanupPass` or `hooks.pushVerification` is set in `.ai-skills/config.json`. The first commit on each HEAD is held once; a push is denied when lint or format fails. Clears: read `.prism/references/cleanup-pass.md` and retry; fix what lint or format reports.
-- **Git hooks skipping.** The pre-commit or pre-push hook prints a skip notice. Not a deny: the hook has no `gitHooks` command and globs in `.ai-skills/config.json`, or the tool isn't installed. Clears: set `gitHooks.preCommit` or `gitHooks.prePush`, or install the tool.
+- **Git hooks skipping.** The pre-commit or pre-push hook prints a skip notice. Not a deny: the hook has no `gitHooks` command and globs in `.ai-skills/config.json`, or the tool isn't installed. Clears: set `command` and `globs` under `gitHooks.preCommit` or `gitHooks.prePush`, or install the tool.
 - **Git hooks left alone.** `prism doctor` reports another hooks setup, such as `core.hooksPath` set to `.husky`. PRISM's git hooks are not active, by design. Clears: keep your setup, or remove the other hooks path and run `prism hooks install`.
 
 After the table, one paragraph on the kill switches: `PRISM_HOOK_DENY_DISABLE=1` turns off every deny except the secrets gate's and the approve guard's; `PRISM_HOOK_DISABLE=1` stops every hook except those two. The commit gate denies a command that sets either. The git hooks read neither. Close with one sentence linking to `hook-runtime.md` for detail, as a link to `../.prism/architect/_toolkit/hook-runtime.md`.
@@ -190,7 +190,8 @@ The entry follows the spec's Migration note outline, its nine parts in order, ea
   - Retired with no replacement: `prism-conductor` (Sol), `prism-refactor-scout` (Ren), `prism-doc-walker` (Theo), `prism-review-loop`.
   - New with no predecessor: `prism-plan`, `prism-spec`, `prism-verify`.
   - One line under the table: `prism update` removes the old skill directories, and the persona names above still route to their new skills. Sol, Ren, and Theo no longer route.
-- Part 7 lists `stopPaths`, `testGlobs`, `secretPaths`, `importAliases`, `ci.requiredCheck`, `gitHooks`, and `hooks`, each absent from `.ai-skills/config.schema.json` at `7441c073` (checked 2026-11-20), and says an existing config stays valid. It adds two changed keys: `features.conductorMayMerge` is now `features.mainSessionMayMerge` (rename the key to keep the setting; it governs PRISM's own merges and a consumer leaves it unset), and `modelTiers.top` and `modelTiers.worker` are gone and can be deleted. T9's release proof checks what `prism doctor` says about a config that still carries the old keys; if it reports more than nothing or an info line, change this bullet to match before the PR opens, committed as `T8 fix: <summary>`.
+  - One more line: Winston (`prism-architect`) planned work at `0.10.0` and is now a consult that answers approach questions; "plan this out" now routes to `prism-plan`.
+- Part 7 lists `stopPaths`, `testGlobs`, `secretPaths`, `importAliases`, `ci.requiredCheck`, `gitHooks`, and `hooks`, each absent from `.ai-skills/config.schema.json` at `7441c073` (checked 2026-11-20), and says an existing config stays valid. It adds two changed keys: `features.conductorMayMerge` is now `features.mainSessionMayMerge` (rename the key to keep the setting; it governs PRISM's own merges and a consumer leaves it unset), and `modelTiers.top` and `modelTiers.worker` are gone and can be deleted, while `modelTiers.overrides` stays and only its `eric` entry is read. T9's release proof checks what `prism doctor` says about a config that still carries the old keys; if it reports more than nothing or an info line, change this bullet to match before the PR opens, committed as `T8 fix: <summary>`.
 - Part 8 says the repo-level `project_doc_max_bytes` key is not yet verified in a live Codex run, and `prism doctor` warns when `AGENTS.md` is over the limit.
 
 Every persona name in the routing table of `.prism/rules/skill-routing.md` maps to a directory under `.ai-skills/skills/` (checked at `2cb1633a`: `for s in $(grep -oE '\`prism-[a-z-]+\`' .prism/rules/skill-routing.md | tr -d '\`' | sort -u); do [ -d .ai-skills/skills/$s ] || echo MISSING $s; done` prints nothing). Rerun that check before committing; any output means a renamed skill lost its route, which is a re-plan, not a changelog edit.
@@ -224,6 +225,8 @@ The `git init` and `git commit --allow-empty -m init` lines stay: they run befor
 - `git config core.hooksPath` prints `.githooks` in `$S/fresh` and `$S/up`, and `.husky` in `$S/husky`, where doctor prints an info line saying the hooks were left alone.
 - `.claude/hooks/plan/approve.mjs` and `.claude/hooks/commit-gate.mjs` exist in `$S/fresh` and `$S/up`.
 
+After the proof, #544's AC-11 human check (AC-16) is a person's step in `$S/fresh`: leave the scratch repo in place, name its path in the build report, and don't run onboarding yourself.
+
 A retired skill left on disk or a duplicated hook registration is a code defect: report `needs-replan` with the evidence, and don't work around it in docs. Record the results in this plan under a `## Release proof` section placed after `## Verification`: one bullet per check above with what it printed, and every WARN and INFO line doctor printed in each directory with a one-line reason. Commit that as `plan: Record the release proof`.
 
 ## Challenge
@@ -235,6 +238,14 @@ round 1: blocking 2
   - plan (non-blocking): the published 0.10.0's `gitHead` is `f569c57c`, not `7441c073`
   - T6 (non-blocking): its full sweep proof runs clean only after T2, T4, and T5, with no ordering stated
   - T2 (non-blocking): the text says four existing bullets and lists five
+round 2: resolved 2
+  - AC-3 and T8 (non-blocking): `comm -3` on the C-sorted rosters needs `LC_ALL=C` too, or it prints 39 lines with a spurious `prism-prd` and the AC-3 loop reports a false `MISSING`
+  - AC-4 (non-blocking): the `grep -E 'Sol|Ren|Theo'` evidence also matches words like "Renamed", so it can pass with the retired personas unnamed
+  - T8 (non-blocking): Part 7 says `modelTiers.top` and `worker` are gone but not that `overrides` stays and now only `overrides.eric` is read
+  - T8 (non-blocking): the note never says `prism-architect` (Winston) existed at 0.10.0 as the planner and is now a consult, so a consumer's "Winston, plan this out" habit is left unexplained
+  - AC-2 (non-blocking): the human evidence opens `blob/main` anchors that do not exist until the PR merges
+  - T9 (non-blocking): AC-16's person step lives only in Decisions, so a builder reading T9 never sees it
+  - T7 (non-blocking): the git-hooks skip row names `gitHooks.preCommit` and `gitHooks.prePush` where the keys are their `command` and `globs` fields
 
 ## Decisions
 
@@ -260,11 +271,11 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
   - Evidence (machine): `node -p "require('./package.json').version"` prints `1.0.0`, and `git diff origin/main -- package.json` shows exactly one removed and one added line, both the `"version"` line · UNMET looks like: any other line in the diff, or a `v1.0.0` tag created by `npm version`.
 - [ ] **AC-2** `CHANGELOG.md` opens with a dated `## [1.0.0]` entry above every existing entry, holding the migration note, and every link in it resolves. (T8)
   - Evidence (machine): the first `## [` line of `CHANGELOG.md` matches `^## \[1.0.0\] — [0-9]{4}-[0-9]{2}-[0-9]{2}$`, and T8's link loop prints nothing · UNMET looks like: Epic C above it, or a `MISSING` line.
-  - Evidence (human): each anchor in the entry opens the named heading on GitHub.
+  - Evidence (human): each anchor in the entry names a heading that exists in the branch's copy of the linked file; on GitHub's `blob/main` the anchors resolve only after merge.
 - [ ] **AC-3** The rename table lists every skill ID present at `0.10.0` and absent at `1.0.0`, each with its replacement or marked retired, and every skill ID added since. (T8)
-  - Evidence (machine): every ID from `comm -3` of the two `LC_ALL=C sort`ed rosters in T8 appears in the `[1.0.0]` entry: `for id in $(comm -3 old new | tr -d '\t'); do grep -q "\`$id\`" CHANGELOG.md || echo "MISSING $id"; done` prints nothing · UNMET looks like: one of the 37 IDs missing.
+  - Evidence (machine): every ID from `comm -3` of the two `LC_ALL=C sort`ed rosters in T8 appears in the `[1.0.0]` entry: `for id in $(LC_ALL=C comm -3 old new | tr -d '\t'); do grep -q "\`$id\`" CHANGELOG.md || echo "MISSING $id"; done` prints nothing · UNMET looks like: one of the 37 IDs missing.
 - [ ] **AC-4** Every persona name that maps to a current skill still routes to it in `.prism/rules/skill-routing.md`, and a name with no current skill is named retired in the migration note. (T8)
-  - Evidence (machine): T8's routing loop prints nothing, and `grep -E 'Sol|Ren|Theo' CHANGELOG.md` matches inside the `[1.0.0]` entry · UNMET looks like: a `MISSING prism-*` line, or Sol, Ren, or Theo absent from the note.
+  - Evidence (machine): T8's routing loop prints nothing, and `grep -wE 'Sol|Ren|Theo' CHANGELOG.md`, run on the entry alone, finds all three names matches inside the `[1.0.0]` entry · UNMET looks like: a `MISSING prism-*` line, or Sol, Ren, or Theo absent from the note.
 - [ ] **AC-5** A fresh repo that runs `prism init` and `prism adopt` from the packed `1.0.0` tarball gets a `prism doctor` exit of 0 with no ERROR line. (T9)
   - Evidence (machine): `## Release proof` records `exit=0` and no `[ERROR]` line for `$S/fresh` · UNMET looks like: a non-zero exit or an `[ERROR]` line.
 - [ ] **AC-6** A repo adopted at `0.10.0` and updated from the packed tarball gets a doctor exit of 0 with no ERROR, and meets every upgrade check in spec Requirement 6. (T9)
