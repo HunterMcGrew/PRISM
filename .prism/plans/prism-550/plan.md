@@ -7,6 +7,7 @@ approved_by: Hunter McGrew
 approved_at: 2026-11-20
 approved_via: chat
 ---
+> Closed: 2026-11-20
 
 Child 9 of the Kitchen Line epic (#499), and the last to merge. The design is this folder's `spec.md`. The epic's approved `intent.md` (`.prism/plans/prism-499/intent.md`) covers this child through its Release decision and its Regression surface.
 
@@ -253,18 +254,31 @@ round 2: resolved 2
 ## Decisions
 
 - **Nine tasks, one PR, numbered T1 to T9.** Winston's checked list ran T1 to T8 and T10 with no T9. The IDs here are this plan's own and run without a gap, so T9 is his T10. One PR because nearly all of it is prose with one job; a split, if review asks, cuts after T7.
+  - → no promotion needed (task numbering and the PR cut for this ticket)
 - **The sweep grep has no `docs/personas.md` exception.** Winston's T6 proof allowed `docs/personas.md:158`. That line reads "Plan this out." with a capital P, which the case-sensitive grep never matches, so the spec's clean-output check stands (re-run 2026-11-20 at `2cb1633a`).
+  - → no promotion needed (a proof detail for this ticket; the sweep grep is silent at `caf0a645`)
 - **`docs/ai-skills/parker.md:21` and `:68` and `:70` are fixed with `:66`.** Line 21 says Winston plans an initiative, and lines 68 and 70 put Winston on the ticket-to-plan rung, which requirement 11 rules out. They are in a file Affected systems already lists.
+  - → no promotion needed (scope bookkeeping: lines a requirement made false, corrected in place)
 - **`CONTEXT.md` lines 114, 187, and 199 are fixed with line 51.** They say Winston writes plan Decisions and runs the verdict gate. The plan stage writes Decisions and `prism-retro` writes the verdicts on a folder plan, per `.prism/rules/branch-plan.md`, and requirement 11 rules out a doc saying Winston plans. Same file, same sweep, so this follows from the approved outcome.
+  - → no promotion needed (scope bookkeeping: lines a requirement made false, corrected in place)
 - **T7 has a row for the cleanup-pass hold and push gate.** The spec's row list leaves them out, but requirement 13 asks for every gate `hook-runtime.md` documents, and its Git gates section documents both. The requirement wins over the list.
+  - → no promotion needed (the rows now live in `docs/troubleshooting.md`; requirement over list was a call about this spec)
 - **Changelog links are absolute GitHub URLs.** `CHANGELOG.md` ships in the tarball and `docs/` doesn't, so a relative `docs/...` link would be dangling for a consumer reading `node_modules`. Relative links lost because they only resolve in a checkout.
+  - → promoted to `.prism/architect/_toolkit/npm-packaging.md`, under Distribution: npm (a changelog link is an absolute GitHub URL, because `CHANGELOG.md` ships and `docs/` doesn't)
 - **The changelog entry is dated by the T8 commit.** The publish date isn't known when T8 lands, and the publish follows the merge by hand. Leaving a placeholder lost because a placeholder would ship if the publish ran from the merged tree.
+  - → no promotion needed (the date of this one entry)
 - **The release proof is recorded under `## Release proof`, not `## Verification`.** `## Verification` belongs to `prism-verify`, and `plan.md` is not inside Affected systems, so the record is a `plan:` commit and not a task's file.
+  - → no promotion needed (where this plan keeps its release record)
 - **#544's AC-11 human check (decline Atlas's architect-doc offer) runs in `$S/fresh` after T9 and is a person's step.** Requirement 16 needs a person to run onboarding and decline the offer, which no task can do. If no person has run it when the PR opens, it is listed on the PR body and in the closing summary as an open item, with the scratch repo's path, and its result goes under `## Release proof` when it runs.
+  - → no promotion needed (a one-time person's check, still open on PR #551)
 - **`7441c073` stays the `0.10.0` baseline.** The published `0.10.0` tarball's `gitHead` is `f569c57c` (#486), a descendant whose only change from `7441c073` is `docs/publishing-prism.md`, which doesn't ship. The roster and schema diffs are the same from either commit, so swapping would change no output.
+  - → no promotion needed (the baseline commit for this release's diffs)
 - **T6 waits for T2, T4, and T5.** Its sweep proof only runs clean once those three have removed their stale lines, and a proof that can't pass when its task lands proves nothing.
+  - → no promotion needed (task ordering for this plan)
 - **Acceptance criteria are the spec's Requirements, one for one.** The plan stage writes an epic child's criteria. Numbering them in the spec's order keeps "AC-n" equal to "Requirement n", so the review grades against the spec without a lookup table.
+  - → no promotion needed (numbering for this plan's criteria)
 - **Adjacent stale lines left alone.** `docs/overview.md:29` still says PRISM lives as a sibling repo, and `docs/distribution.md:65` and `:66` say Winston generates architect docs in Phase 3. Neither is named by a requirement, and `docs/distribution.md` is outside Affected systems, so both are a follow-up PR after the release.
+  - → no promotion needed (a deferred fix, carried as an action item in the retro report)
 - **Review rounds replaced wording that six task lines still prescribe, and the shipped docs follow the review.** The task text stays as approved, because editing `## Tasks` sends the plan back through approval for no change in outcome.
   - T2 item 6 ("matches no file"): self-review round 1 found doctor has no such check, so adopt-prism.md lists the real architect-route checks.
   - T5 item 2 ("three things add a touch"): round 1 found missing stops, so workflow.md lists more and says "a few things".
@@ -272,11 +286,13 @@ round 2: resolved 2
   - T7 opening ("names its gate", "Cursor gets no hooks"): round 1 found only the commit gate names itself and git hooks still run, so troubleshooting.md says a deny names what clears it and scopes the Cursor line to agent hooks.
   - T7 umbrella row ("or in a rule file"): round 1 found it holds only when `umbrellas` lists the rule files, and troubleshooting.md says so.
   - T8 Part 7 ("governs PRISM's own merges and a consumer leaves it unset"): round 2 found it contradicts git-conventions.md, so CHANGELOG.md says the key stays off unless you set it.
+  - → no promotion needed (a record of where this plan's task text and the shipped docs part ways)
 - **Spurious `.bak` files on upgrade get a CHANGELOG note, and the code fix is a follow-up PR.**
   - **Root cause:** not diagnosed. T9's release proof shows `prism update` from an unedited 0.10.0 install keeps `.prism/architect/guides/writing-a-skill.md` and `writing-an-architect-doc.md` as `.bak` files byte-identical to the 0.10.0 seed, so update treats an untouched seed copy as edited.
   - **Alternatives considered:** fixing update's ownership check in this PR; leaving it unmentioned.
   - **Chosen approach:** one CHANGELOG bullet telling upgraders they can delete the two files if they never edited the guides. The fix lives in update code outside Affected systems, and the files are harmless copies, so it doesn't hold the release.
   - **Implementation guidance:** a follow-up PR diagnoses update's divergence check for these seeds and adds a regression test.
+  - → no promotion needed (the upgrader note is in `CHANGELOG.md`, and the code fix is a follow-up PR carried as an action item in the retro report)
 
 ## Acceptance Criteria
 
@@ -329,8 +345,11 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T6 removed the stale Winston-plans, user-story and prism-review-loop lines from README, overview, parker and CONTEXT, and the sweep and retired-ID greps print nothing.
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T8 wrote the 1.0.0 migration note into CHANGELOG.md in the spec's nine parts, with absolute links to the troubleshooting and workflow pages.
 - 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: T9 bumped package.json to 1.0.0, and the release proof from the packed tarball passed in the fresh, upgrade and husky repos, with results under the Release proof section.
+- 2026-11-20 [huntermcgrew/prism-550-release-1-0-0]: Retro wrote the Decision verdicts, promoted the changelog-link rule to `npm-packaging.md`, and closed the plan; the report is `.prism/retros/prism-499/prism-550.md`.
 
 ## Sessions
+
+- 2026-11-20 [huntermcgrew/prism-550-release-1-0-0] open: Intent — light per-ticket retro of PR #551; Bounds — verdicts, Retro and Closed lines, lessons exits, report, one `retro:` commit, no push, no epic retro; Approach — grade against the plan, PR #551, and CI at `caf0a645` · close: scope held
 
 ## Verification
 
@@ -467,4 +486,4 @@ AC-16 (#544's AC-11, declining Atlas's architect-doc offer) is a person's step i
 
 ## PR Readiness
 
-Retro:
+Retro: .prism/retros/prism-499/prism-550.md

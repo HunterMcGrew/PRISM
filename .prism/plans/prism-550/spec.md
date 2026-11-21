@@ -129,12 +129,22 @@ docs/ai-skills/parker.md
 ## Decisions
 
 - **`package.json`, `CHANGELOG.md`, `README.md`, and `CONTEXT.md` join Affected systems as scope changes that follow from the outcome.** The intent's systems list names `docs/` but none of these four. The version lives only in `package.json`, the migration note the intent requires lives in `CHANGELOG.md`, and `README.md` and `CONTEXT.md` carry lines this release makes false. Winston's fit verdict: proceed with changes.
+  - → no promotion needed (scope bookkeeping for this ticket)
 - **`package.json` sends `plan.md` to Hunter for approval.** It is on the default dependency stop path, so `auto-approve.mjs` exits 1. Hunter's approval of `plan.md` is the go-ahead for the version bump.
+  - → no promotion needed (already how plan approval works: `package.json` is on the default dependency stop path `auto-approve.mjs` reads)
 - **The migration note covers `0.10.0` → `1.0.0`, not only children 2 to 8.** npm `latest` predates phase 1, so phase 1, PRISM-477, PRISM-488, PRISM-492, PRISM-513, and #534 have never reached a consumer either. Winston's fit verdict: proceed with changes.
+  - → no promotion needed (the range this one release note covers)
 - **One PR.** About a dozen files, nearly all prose with one job. If review needs a split, the cut is the docs first, then the changelog, the version, and the proof.
+  - → no promotion needed (the PR cut for this ticket)
 - **Publishing and the epic retro follow the merge.** Hunter publishes by hand per `docs/publishing-prism.md`. The epic retro then appends `## Retro` to `.prism/plans/prism-499/spec.md`, after the publish, so it can cite the published version.
+  - → no promotion needed (the order of this epic's last steps; the epic retro is still to run)
 - **No committed pack → adopt → doctor test in this release.** Rejected for now: it would add a networked, slow test to `prism:check` on the release ticket. It is a follow-up PR after the release.
+  - → no promotion needed (a deferred test, carried as an action item in the retro report)
 - **OPEN — TBD, needs Hunter input.** Whether the migration note lives only in `CHANGELOG.md` or is also copied into a `docs/` page. **Default path (used until resolved):** `CHANGELOG.md` only, because it is the one copy that ships, and the docs link to it.
+  - → no promotion needed (still open; the default shipped, and PR #551's Notes list it as D1 for Hunter)
 - **OPEN — TBD, needs Hunter input.** Whether `CHANGELOG.md` backfills entries for `0.7.0` to `0.10.0`, which it never recorded. **Default path (used until resolved):** no backfill; the `[1.0.0]` entry carries one line saying those versions are not tracked here.
+  - → no promotion needed (still open; the default shipped, and PR #551's Notes list it as D2 for Hunter)
 - **OPEN — TBD, needs Hunter input.** Whether `docs/publishing-prism.md` gains a `git tag v<version>` step. Tags stopped at `v0.8.0`, and Sage (`prism-changelog`) and Reese (`prism-qa-plan`) key on tags. **Default path (used until resolved):** no tag step is added; the only edit to the guide is the commit path.
+  - → no promotion needed (still open; the default shipped, and PR #551's Notes list it as D3 for Hunter)
 - **OPEN — TBD, needs Hunter input.** The intent says "old persona names keep routing", and Sol, Ren, and Theo have no current skill to route to. **Default path (used until resolved):** every persona name with a current skill routes, as requirement 4 states, and the migration note names Sol, Ren, and Theo as retired with no replacement.
+  - → no promotion needed (still open; the default shipped, and PR #551's Notes list it as D4 for Hunter)
