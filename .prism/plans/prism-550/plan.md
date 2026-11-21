@@ -2,7 +2,10 @@
 title: Release 1.0.0 — version bump, migration note, and docs
 ticket: https://github.com/HunterMcGrew/PRISM/issues/550
 stage: plan
-status: draft
+status: approved
+approved_by: Hunter McGrew
+approved_at: 2026-11-20
+approved_via: chat
 ---
 
 Child 9 of the Kitchen Line epic (#499), and the last to merge. The design is this folder's `spec.md`. The epic's approved `intent.md` (`.prism/plans/prism-499/intent.md`) covers this child through its Release decision and its Regression surface.
