@@ -14,14 +14,16 @@ The enforceable spec for every stage, cap, and stop is [`.prism/rules/workflow.m
 
 ## Your two touches
 
-1. **Approve `intent.md`.** Say `approve` in chat, or run the approval script in a terminal (`node scripts/ai-skills/hooks/plan/approve.mjs <path to the file>`) and press `y`. The intent sets the run's goal, so once you approve it the stages after it start without asking again.
-2. **Read the draft PR, flip it ready, and merge.** The run ends with a reviewed draft PR whose CI is green. Merging stays a human step.
+1. **Approve `intent.md`.** Say `approve` in chat, or run the approval script in a terminal (`node .claude/hooks/plan/approve.mjs <path to the file>`) and press `y`. The intent sets the run's goal, so once you approve it the stages after it start without asking again.
+2. **Read the draft PR, flip it ready, and merge.** The run ends with a reviewed draft PR. CI ran on its last push, and any failure is fixed or listed on the PR. Merging stays a human step unless your repo sets `features.mainSessionMayMerge: true` in `.ai-skills/config.json`, which lets the main session merge once the final review comes back clean.
 
-Three things add a touch:
+A few things add a touch:
 
 - A design the intent marks as needing your approval.
 - A plan that fails automatic approval.
-- A change that would alter the approved intent, such as a different acceptance criterion.
+- A change that would alter the approved intent, such as a different acceptance criterion, or a plan-challenge finding the architect confirms is intent-level.
+- A stage that stays `blocked` after its re-dispatches, or a second re-plan of the same task.
+- A review that would touch a file outside the plan, add a dependency, change a shared type or public API, or need destructive git.
 
 Anything else a stage can't settle lands on the draft PR as a comment and in the closing summary, so you can still veto it there.
 
