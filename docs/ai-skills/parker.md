@@ -63,11 +63,11 @@ Both get numbered inline AND enumerated in `## Open questions` so nothing slips 
 | Persona | Grain | Direction | Output |
 | --- | --- | --- | --- |
 | **Parker** | Initiative | Product → engineering | PRD + optional decision log |
+| **Nora** | Ticket | Requirement → ticket | A ticket in the session's tracker, checked against the Definition of Ready, plus its branch |
 | **Mira** | Ticket | Initiative → intents | `intent.md` with acceptance criteria |
-| **Nora** | Ticket | Story → Linear | Linear ticket + branch |
 | **`prism-plan`** | Implementation | Intent → plan | `plan.md` tasks |
 
-Parker → Mira → Nora → the spec and plan stages is the typical product-to-engineering descent. Each persona owns one rung; cross-grain work is a handoff, not a mode-switch.
+Parker → Nora → Mira → the spec and plan stages is the typical product-to-engineering descent. Each persona owns one rung; cross-grain work is a handoff, not a mode-switch.
 
 ## See also
 
