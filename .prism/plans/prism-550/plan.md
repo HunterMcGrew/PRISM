@@ -355,20 +355,22 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
 
 verdict: done
 base: 09e24a226bf63841741b9063e9e499b4a2876ed1
-head: 8d782b306ab5a40b68b052a3ddf5592030dc0422
+head: cea73b179603732a95a68d2ee12eee7fcfcf7529
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/typecheck3.log |
-| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/lint3.log |
-| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/test3.log |
-| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/build3.log |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/typecheck4.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/lint4.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/test4.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/build4.log |
 | format | n/a: not configured | none |
-| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/spec3.log |
+| spec | fail | /tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/spec4-committed.log |
 
 ### Failures
 
-- none
+- spec: .claude/architect/_toolkit/npm-packaging.md
+- spec: .codex/architect/_toolkit/npm-packaging.md
+- spec: .cursor/architect/_toolkit/npm-packaging.md
 
 ## Release proof
 
