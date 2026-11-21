@@ -12,6 +12,7 @@ PRISM 1.0.0 is a clean break. Run `npx @huntermcgrew/prism@1.0.0 update`, then `
 
 - Anyone on 0.10.0 or earlier should read this entry before updating.
 - Left alone: flat plans, your own skills and plans, and a `core.hooksPath` that isn't PRISM's.
+- Upgrading from 0.10.0 may leave `.prism/architect/guides/writing-a-skill.md.bak` and `.prism/architect/guides/writing-an-architect-doc.md.bak` behind. If you never edited those two guides, delete the `.bak` files.
 - Versions 0.7.0 to 0.10.0 are not recorded in this file.
 
 ### New hooks stop agents on day one
