@@ -17,16 +17,16 @@ PRISM 1.0.0 is a clean break. Run `npx @huntermcgrew/prism@1.0.0 update`, then `
 
 ### New hooks stop agents on day one
 
-Claude Code and Codex get the hooks on `prism update`. Cursor gets none, so nothing denies there.
+Claude Code and Codex get the agent hooks on `prism update`. Codex runs them only once you trust the project's `.codex/` layer. Cursor gets no agent hooks, so none of them deny there. The git hooks below run under any tool.
 
 - The commit gate denies a commit with `-a`, `--no-verify`, or no paths named, and more than one commit in a command.
 - The secrets gate denies reading a `.env` file other than `.env.example`, a `.pem` or `.key` file, or anything under a `secrets` folder. Its remedy is `node .claude/hooks/env-keys.mjs <file>`, which prints the key names without values.
 - The brief gate denies a subagent brief to a workflow stage over 15 non-blank lines. On Codex it only logs.
 - The approve guard denies an agent running the approval script or editing a chain file's approval lines.
 - The reconcile gate holds a PR-review subagent from stopping while reconcile still reports unanswered or unlogged comments.
-- `PRISM_HOOK_DENY_DISABLE=1` turns off every deny except the secrets gate's and the approve guard's. `PRISM_HOOK_DISABLE=1` stops every hook except those two. The secrets gate and the approve guard ignore both switches.
+- `PRISM_HOOK_DENY_DISABLE=1` turns off every deny except the secrets gate's and the approve guard's. `PRISM_HOOK_DISABLE=1` stops every hook except those two. The secrets gate and the approve guard ignore both switches. The git hooks read neither.
 
-A deny message names its gate and the fix. The [troubleshooting page](https://github.com/HunterMcGrew/PRISM/blob/main/docs/troubleshooting.md#a-prism-hook-denied-an-agents-command) lists what clears each one.
+A deny message names what clears it. The [troubleshooting page](https://github.com/HunterMcGrew/PRISM/blob/main/docs/troubleshooting.md#a-prism-hook-denied-an-agents-command) lists what clears each one.
 
 ### Git hooks
 
@@ -64,7 +64,8 @@ A deny message names its gate and the fix. The [troubleshooting page](https://gi
 
 Work runs through a plan folder at `.prism/plans/<ticket>/`: intent, design when needed, spec, plan, two challenge rounds, implement, verify, review, draft PR, PR review, and retro.
 
-- You touch it twice: approve the intent, then read the PR. Approval is `approve` in chat, or the approval script run in a terminal.
+- You usually touch it twice: approve the intent, then read the PR. Approval is `approve` in chat, or the approval script run in a terminal.
+- Four things add a touch: a design marked for approval, a plan that fails auto-approve, a `blocked` report or a second `needs-replan` on one task, and a review pause. `REVIEW.md` lists the four review pause triggers.
 - Stages commit their own work. The session pushes and opens the PR.
 - Flat plans keep working and are not migrated.
 
@@ -93,7 +94,7 @@ PRISM sets `project_doc_max_bytes` in `.codex/config.toml` so Codex reads past t
 ### Also since 0.10.0
 
 - On Claude Code, compaction keeps its place: a summary template runs before a compact, and a note after it sends the session back to its plan. Codex gets neither.
-- An umbrella speed bump denies, once, a new heading in a doc on the manifest's `umbrellas` list or in a rule file, so a section about one subsystem gets its own routed doc. New installs get the list. An existing install adds an `umbrellas` key to `.prism/architect/manifest.json` by hand.
+- An umbrella speed bump denies, once, a new heading in a doc on the manifest's `umbrellas` list or in a rule file, so a section about one subsystem gets its own routed doc. New installs get the list. `prism update` never rewrites `.prism/architect/manifest.json`, so an existing install adds an `umbrellas` key by hand. Copy the other new routes from `templates/install/.prism/architect/manifest.stub.json` in the same pass, such as `REVIEW.md`, `.prism/review/**`, and `.githooks/**`. Replace the `prism-qa-test-plan` route with `prism-qa-plan`, and drop `.prism/skills/**`, which routes nothing now.
 - Atlas offers to draft architect docs for the main areas of your code during onboarding, and you can decline.
 - `prism doctor` runs more checks than it did at 0.10.0. [`docs/adopt-prism.md`](https://github.com/HunterMcGrew/PRISM/blob/main/docs/adopt-prism.md#check-install-health-with-prism-doctor) lists them in run order.
 
