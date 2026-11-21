@@ -1,9 +1,9 @@
 ---
 title: "Troubleshooting"
-description: "Fixes for the most common prism adopt, update, and build failures — start with prism doctor."
+description: "Fixes for the most common prism adopt, update, and build failures, and for an agent command a PRISM hook denied — start with prism doctor."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-09-02"
+last_updated: "2026-11-20"
 ---
 
 # Troubleshooting
@@ -64,6 +64,25 @@ For the full walkthrough — including how to preview which files would get a `.
 PRISM's CI runs a full check on both `ubuntu-latest` and `windows-latest` (see `.github/workflows/prism-check.yml`), and the repo carries a `.gitattributes` entry (`* text=auto eol=lf`) that normalizes line endings to LF on checkout — including on Windows, where git's default `core.autocrlf=true` would otherwise convert files to CRLF. This matters because PRISM's build does a byte-exact comparison between generated output and committed source; without the LF normalization, a Windows checkout could show phantom drift purely from line-ending differences that have nothing to do with actual content changes.
 
 If you're adopting PRISM into a Windows-based repo and see unexpected file-drift findings from `prism doctor` or a `prism:check`-style build comparison, confirm your own repo's line-ending handling (`.gitattributes` or `core.autocrlf`) isn't fighting PRISM's LF normalization before assuming it's a real content divergence.
+
+## A PRISM hook denied an agent's command
+
+On Claude Code and Codex, PRISM's hooks stop some agent actions before they run, and the deny message names the gate and the fix. Cursor gets no hook registration, so nothing denies there.
+
+| Gate | What it stops | What clears it |
+| --- | --- | --- |
+| Write gate | An edit, delete, or command on a path a manifest route covers, before the route's docs are read | Run each `cat` the message names as its own command, or a `Read` with no offset or limit |
+| Umbrella speed bump | A new heading in a doc on the manifest's `umbrellas` list, or in a rule file | Retry the same edit, after asking whether the section belongs in its own routed doc |
+| Secrets gate | Reading a `.env` file other than `.env.example`, a `.pem` or `.key` file, or anything under a `secrets` folder | `node .claude/hooks/env-keys.mjs <file>` prints the key names without values, or read `.env.example` |
+| Commit gate | A commit with `-a`, `--no-verify`, or no paths named, or more than one commit in a command; a push with `--no-verify`. On a folder-plan branch, also a removed test line, a contract-path change, or a dependency change with no task allowing it | Name the paths after `--`, or commit through `node .claude/hooks/plan/commit.mjs "<subject>" <paths>`. For the task checks, list the file under a task with `behavior change:` or `new dependency:`, or under any task for a contract path |
+| Approve guard | An agent running the approval script, or editing a chain file's approval lines | The person says `approve` in chat, then the agent runs exactly `node .claude/hooks/plan/approve.mjs <file>`. Or the person runs it in a terminal and presses `y` |
+| Brief gate | A subagent brief to a workflow stage over 15 non-blank lines, or with an override phrase | A short brief naming what the stage reads, the worktree, and the report shape, with longer detail moved into `plan.md`. On Codex it only logs |
+| Reconcile gate | A PR-review subagent stopping while reconcile still reports unanswered or unlogged comments | Handle the comments it names, and end with a `prism-pr: <n>` line. It lets the stop through after three blocks |
+| Cleanup-pass hold and push gate | The first commit on each HEAD is held once, and a push is denied when lint or format fails. Both are off until `hooks.commitCleanupPass` or `hooks.pushVerification` is set in `.ai-skills/config.json` | Read `.prism/references/cleanup-pass.md` and retry the commit, and fix what lint or format reports before pushing |
+| Git hooks skipping | Not a deny. The pre-commit or pre-push hook prints a skip notice because `gitHooks` has no block, no `command`, or no `globs` in `.ai-skills/config.json`, or the tool isn't installed | Set `command` and `globs` under `gitHooks.preCommit` or `gitHooks.prePush`, or install the tool |
+| Git hooks left alone | Not a deny. `prism doctor` reports another hooks setup, such as `core.hooksPath` set to `.husky`, so PRISM's git hooks are not active by design | Keep your setup, or remove the other hooks path and run `prism hooks install` |
+
+Two environment switches turn gates off. `PRISM_HOOK_DENY_DISABLE=1` turns off every deny except the secrets gate's and the approve guard's, and `PRISM_HOOK_DISABLE=1` stops every hook except those two. The commit gate denies a command that sets either one, and the git hooks read neither. For the detail behind each gate, see [hook-runtime.md](../.prism/architect/_toolkit/hook-runtime.md).
 
 ## Related pages
 
