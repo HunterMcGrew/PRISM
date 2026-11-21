@@ -127,8 +127,8 @@ PRISM/
 │   ├── adopt-prism.md            # adopt + update reference (npx, vendor, global link)
 │   ├── adopting-into-existing-repos.md  # coexisting with existing AI tooling + .bak conflicts
 │   ├── what-prism-writes.md      # full inventory of every path adopt/update/eject can touch
-│   ├── troubleshooting.md        # common adopt/update/build failures and how to resolve them
-│   ├── workflow.md               # ticket → plan → implement → review → ship
+│   ├── troubleshooting.md        # adopt/update/build failures, and agent commands a PRISM hook denied
+│   ├── workflow.md               # intent → plan folder → stages → PR → retro, and where you step in
 │   ├── personas.md               # what each persona does and when to call them
 │   └── parameterization.md       # config keys + token reference
 │
@@ -165,7 +165,7 @@ These are the commands a consumer repo uses after adopting PRISM. Run from your 
 | `npx @huntermcgrew/prism init` | Writes `.ai-skills/config.json` for a cold consumer — run this before `adopt`. Prompts for project name, ticket prefix, ticket system, and GitHub repo; detects your stack automatically. |
 | `npx @huntermcgrew/prism adopt` | Seeds `.prism/` and projects the persona roster into `.claude/`, `.codex/`, and `.cursor/`. First-contact command; refuses to run if `.prism/` already has a sync record. |
 | `npx @huntermcgrew/prism update` | Pulls PRISM's latest canonical content into an already-adopted repo. Overwrites PRISM-owned files when unchanged; backs up diverged files with `.bak`. |
-| `npx @huntermcgrew/prism doctor` | Reports install health in one pass: validates `.ai-skills/config.json` against its schema, confirms the target is a git repo, reports sync-manifest drift (diverged/missing files vs. their `.bak` siblings), and compares the installed version against the latest on npm. Read-only — never writes. Exits 0 when healthy, non-zero with a findings list otherwise. |
+| `npx @huntermcgrew/prism doctor` | Reports install health in one pass and never writes. Exits 0 when healthy, non-zero with a findings list otherwise. The checks are listed in [Check install health with `prism doctor`](./docs/adopt-prism.md#check-install-health-with-prism-doctor). |
 | `npx @huntermcgrew/prism hooks install` | Points git at PRISM's `pre-commit` and `pre-push` hooks in this clone by setting `core.hooksPath` to `.githooks`. `adopt` and `update` run the same step; a fresh clone needs it once. Leaves another hooks setup alone (husky, lefthook, a team-wide path, or hooks in `.git/hooks`) and says so. Exits 0 either way. |
 | `npx @huntermcgrew/prism eject` | Removes PRISM-owned `.prism/` files and projected `prism-*` skills/agents, then the sync manifest. Requires `--yes`; dry-run by default. Preserves consumer-owned content and backs up any diverged PRISM-owned file to `.bak` before removing it — never destroys unrecoverable edits. |
 | `pnpm prism:adopt` | Same as `npx ... adopt` but run from inside a local PRISM checkout. Use when you've cloned PRISM as a sibling or vendored it inside your repo. |
