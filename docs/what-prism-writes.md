@@ -123,4 +123,4 @@ Every adopted repo carries a `.sync-manifest.json` inside `.prism/`, recording t
 - [SECURITY.md](../SECURITY.md) — the trust model this inventory supports, and how to report a security issue
 - [docs/adopting-into-existing-repos.md](./adopting-into-existing-repos.md) — the coexistence guide and full `.bak` conflict-resolution workflow
 - [docs/adopt-prism.md](./adopt-prism.md) — the full adopt/update/eject command reference, including `--dry-run`
-- [docs/troubleshooting.md](./troubleshooting.md) — what to do when adopt, update, or a build fails
+- [docs/troubleshooting.md](./troubleshooting.md) — what to do when adopt, update, or a build fails, or when a hook denies an agent's command
