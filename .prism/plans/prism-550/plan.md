@@ -321,6 +321,34 @@ The spec's Requirements 1 to 16, in order, with IDs and evidence. Each names the
 
 ## Verification
 
+## Release proof
+
+Run 2026-11-20 against `huntermcgrew-prism-1.0.0.tgz`, packed from the T9 commit `6afcb8d9`, in three scratch repos (`fresh`, `up`, `husky`) under the session scratchpad. `up` and `husky` were adopted at `0.10.0`, given a consumer skill `acme-notes` and a flat plan `acme-1.md`, and given `features.conductorMayMerge: false` by hand, then updated from the tarball.
+
+- `tar tzf` leak grep printed `CLEAN`.
+- `prism doctor` exited 0 in `fresh`, `up`, and `husky`, with no `[ERROR]` line in any.
+- `.prism/.sync-manifest.json` in `up` records `1.0.0`, under the key `prismVersion`, not `version`.
+- No retired ID from T8's table (all 19) remains as a directory or agent file stem under `.claude/skills`, `.cursor/skills`, `.agents/skills`, `.claude/agents`, or `.codex/agents` in `up`.
+- The checksum `diff` printed nothing and `untouched=0` in `up`, and the same in `husky`.
+- Doctor said nothing about `conductorMayMerge` in `up` and `husky`, and the update left the key in the config, so T8's Part 7 bullet ("an existing config stays valid") matches.
+- Hook registrations match: `hook.mjs` 5, `approve-guard.mjs` 2, and `git-gates`, `secrets-gate`, `commit-gate`, `brief-gate`, `reconcile-gate` 1 each, in `fresh`, `up`, and `husky`, and 12 commands in each of `fresh` and `up`.
+- `git config core.hooksPath` printed `.githooks` in `fresh` and `up`, and `.husky` in `husky`, where doctor printed the info line saying PRISM's git hooks are not active.
+- `.claude/hooks/plan/approve.mjs` and `.claude/hooks/commit-gate.mjs` exist in `fresh` and `up`.
+- `prism update` from `0.10.0` preserved two files as `.bak` in both `up` and `husky`: `.prism/architect/guides/writing-a-skill.md` and `writing-an-architect-doc.md`. Each `.bak` is byte-identical to the `0.10.0` tarball's seed copy, and neither repo's consumer edited them. Neither is a doctor finding, and the cause is not diagnosed here.
+
+Doctor lines, identical in `fresh` and `up` except the `core.hooksPath` line, and in `husky`:
+
+- `Version: 1.0.0 installed, 0.10.0 latest on npm.` Reason: npm's `latest` is still `0.10.0` because `1.0.0` is not published.
+- `[INFO] hook-registration: The hook runtime is installed and registered for Claude Code.` and the same for Codex. Reason: both hosts are in `hosts` by default.
+- `[INFO] hook-registration: Git gates are delivered and off`, naming `commitCleanupPass` and `pushVerification`. Reason: the scratch configs set no `hooks` block, and the gates are opt-in.
+- `[INFO] hook-registration: Git hooks are installed (core.hooksPath → .githooks). gitHooks.preCommit.command and gitHooks.prePush.command are unset`, in `fresh` and `up`. Reason: the hooks skip until a command is set.
+- `[INFO] hook-registration: PRISM's git hooks are not active: the local core.hooksPath is '.husky'`, in `husky` only. Reason: the variant's `.husky` path is left alone by design.
+- `[INFO] review-md: REVIEW.md carries PRISM's marker line and is current.` Reason: `REVIEW.md` was delivered unedited.
+
+No `[WARN]` line appeared in any run. `prism update` in `husky` also printed that the local `core.hooksPath` is `.husky` and nothing was changed.
+
+AC-16 (#544's AC-11, declining Atlas's architect-doc offer) is a person's step in `fresh`: `/tmp/claude-1000/-home-zibbix-Projects-PRISM--claude-worktrees-prism-personas-handoff-9543ef/b5b3cef5-428f-4603-b5db-5f5291220dc9/scratchpad/proof/fresh`. Not run.
+
 ## Review
 
 ## PR Readiness
