@@ -22,7 +22,7 @@ Claude Code and Codex get the agent hooks on `prism update`. Codex runs them onl
 - The commit gate denies a commit with `-a`, `--no-verify`, or no paths named, and more than one commit in a command.
 - The secrets gate denies reading a `.env` file other than `.env.example`, a `.pem` or `.key` file, or anything under a `secrets` folder. Its remedy is `node .claude/hooks/env-keys.mjs <file>`, which prints the key names without values.
 - The brief gate denies a subagent brief to a workflow stage over 15 non-blank lines. On Codex it only logs.
-- The approve guard denies an agent running the approval script or editing a chain file's approval lines, until the person approves in chat. After that approval the agent may run the approval command once, as a bare `node <repo's approve.mjs> <path>` with nothing else on the line.
+- The approve guard denies an agent editing a chain file's approval lines, and running the approval script. The one exception: after the person approves in chat, the agent may run the approval command once, as a bare `node <repo's approve.mjs> <path>` with nothing else on the line.
 - The reconcile gate holds a PR-review subagent from stopping while reconcile still reports unanswered or unlogged comments.
 - `PRISM_HOOK_DENY_DISABLE=1` turns off every deny except the secrets gate's and the approve guard's. `PRISM_HOOK_DISABLE=1` stops every hook except those two. The secrets gate and the approve guard ignore both switches. The git hooks read neither.
 
