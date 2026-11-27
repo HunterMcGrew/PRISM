@@ -7,7 +7,7 @@ paths:
 
 # Implementation Task Detail
 
-A task in a plan folder's `plan.md` carries its field list and at most two gotcha lines. A mode 2 mock spec in `.prism/design/mocks/<slug>.md` front-loads every design decision, because the plan stage writes tasks from it — see [ADR-0033](../spec/adrs/_toolkit/0033-implementation-task-detail.md).
+A task in a plan folder's `plan.md` carries its field list and at most two gotcha lines — see [ADR-0088](../spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md). A mode 2 mock spec in `.prism/design/mocks/<slug>.md` front-loads every design decision, because the plan stage writes tasks from it — see [ADR-0033](../spec/adrs/_toolkit/0033-implementation-task-detail.md).
 
 ## When this rule applies
 
