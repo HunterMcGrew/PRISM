@@ -75,7 +75,7 @@ export const PLAN_TASK_PROSE_ALLOWLIST = [
 
 const MAX_TASK_PROSE_LINES = 2;
 
-const TASK_FIELD_KEYS = [
+export const TASK_FIELD_KEYS = [
 	"files",
 	"proof",
 	"proof fails on main",

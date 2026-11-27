@@ -5,11 +5,13 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { parseTasks } from "./hooks/plan/tasks.mjs";
 import {
 	collectPlanFolderViolations,
 	collectTaskProseViolations,
 	findPlanFolders,
 	runPlanFolderCheck,
+	TASK_FIELD_KEYS,
 } from "./plan-folder-citations";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -51,6 +53,20 @@ test("no plan folder in the repo holds a citation or an over-long task, and no a
 	);
 	assert.deepEqual(staleAllowlist, []);
 	assert.deepEqual(staleTaskProseAllowlist, []);
+});
+
+test("every key the task-prose lint treats as a field is a field the task parser accepts", () => {
+	const sampleValues: Record<string, string> = {
+		"depends on": "none",
+		amended: "a.ts: reason",
+	};
+
+	for (const key of TASK_FIELD_KEYS) {
+		const value = sampleValues[key] ?? "a.ts";
+		const plan = `## Tasks\n\n### T1: Example\n\n- ${key}: ${value}\n`;
+
+		assert.doesNotThrow(() => parseTasks(plan), `"${key}" is not a task field`);
+	}
 });
 
 test("collecting violations from one file", async (t) => {
