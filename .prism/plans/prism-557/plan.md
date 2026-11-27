@@ -303,6 +303,7 @@ round 4: resolved 1
 - **Open items for the part 2 PR body, outside Affected systems.** `.ai-skills/README.md` lists the `frontmatter.yml` keys without `tools`, and `prism-forge-skill` does not tell an author that a gated role now needs a list. Whether Claude Code on Windows can offer a gated agent `PowerShell` in place of `Bash`, which would leave verify with no shell under `Read, Bash`, is unverified, and so is whether a `tools` list drops a consumer's MCP tools (T11 states the documented behavior). Each goes to the PR body and the closing summary as an open item, not into this plan's tasks.
 - **Proofs chain with `&&` and `! grep`.** A `; test $?` tail reports only the last command, which child 10's challenge round 3 flagged, so no proof here uses it.
 - **Each file belongs to one task.** The brief's "one task per file" is read as the skill's rule that a file belongs to one task, not as one file per task, which the build tasks and the ten-file frontmatter task could not meet.
+- **`check-report.mjs` exports the header and separator predicate.** Review round 1 found that `record.mjs` let through a row whose `check` the reader drops as a header or separator, so the T1 fix exported `matchesHeaderOrSeparator` from `scripts/ai-skills/hooks/verify/check-report.mjs` and its `.d.mts`, two files no task lists, and both scripts now use it. Rejected: a second copy of the predicate in `record.mjs`, which could drift from the reader it guards.
 
 ## History
 
