@@ -545,6 +545,7 @@ const COMMIT_PASSES: string[] = [
 	`node ${COMMIT_PATH} "chore: Fix the stamp" ${APPROVE_REL}`,
 	`node ${COMMIT_PATH} "chore: Let the commit script name approve.mjs as a path" scripts/ai-skills/hooks/approve-guard.mjs ${APPROVE_REL}`,
 	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} 2>&1`,
+	`PRISM_PLAN_COMMIT_RETRIES=5 node ${COMMIT_PATH} "chore: Fix" .prism/plans/prism-1/plan.md`,
 ];
 
 for (const command of COMMIT_PASSES) {

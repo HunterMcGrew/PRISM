@@ -64,9 +64,10 @@
 // approve.mjs`, and commit or PR heredocs that mention the command go through.
 // So does `node <this runtime's plan/commit.mjs> …`, which only commits the
 // paths it names, judged by realpath like a read-only command but denied on
-// any leading assignment. It passes only as the whole command, with no second
-// segment, subshell, or substitution, because an earlier segment can change
-// directory or set the environment in ways the guard can't follow. The script
+// any leading assignment when the segment names approve.mjs. It passes only as
+// the whole command, with no second segment, subshell, or substitution,
+// because an earlier segment can change directory or set the environment in
+// ways the guard can't follow. The script
 // word must hold a `/` and not start with `-`, because node reads a word like
 // `-r`, `--no-warnings`, `-`, or `inspect` as an option or subcommand whatever
 // it resolves to on disk, while `./-r` is a file. A node option before the
@@ -1025,10 +1026,10 @@ function judgeSegment(segment, tainted, context) {
 			assignments.some((text) => namesWord(text)) ||
 			((names || tainted) && writesFile(segment));
 	} else if (runsCommitScript(segment, index, context)) {
-		// Any assignment fails closed here, since `NODE_OPTIONS` can load a module
-		// that names no script.
+		// When the segment names approve.mjs, any assignment fails closed, since
+		// `NODE_OPTIONS` can load a module that runs the script it names.
 		runsApprove =
-			assignments.length > 0 || ((names || tainted) && writesFile(segment));
+			(names || tainted) && (assignments.length > 0 || writesFile(segment));
 	} else if (filter) {
 		runsApprove =
 			names ||
