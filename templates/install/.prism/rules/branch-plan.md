@@ -114,7 +114,7 @@ The cap is one rule with three reasons.
 - **Edit-time echo** — agents writing the next entry re-read prior history first. A 6-sentence entry costs every future appender twice: once to read, once to draft against. Write-time savings are tiny; read-time savings compound over the plan's lifetime.
 - **Scannability** — a human or agent skimming `## History` to reconstruct what happened reads top to bottom. Each entry is one bullet, so long entries break the rhythm and the reader loses the at-a-glance timeline.
 
-**Where depth belongs:** if the change has a verified-fix or non-trivial-decision story to tell, it belongs in `## Decisions` with the sub-bullet shape from § 5 (root cause, alternatives considered, chosen approach, implementation guidance). The History entry then becomes one line: `YYYY-MM-DD [branch]: <one-sentence change>; see Decision: <title>`. In a plan folder, name the Decision in plain words without that form, because folder files move and get renamed.
+**Where depth belongs:** if the change has a verified-fix or non-trivial-decision story to tell, it belongs in `## Decisions` with the sub-bullet shape from § 5 (root cause, alternatives considered, chosen approach, implementation guidance). On a flat plan, the History entry then becomes one line: `YYYY-MM-DD [branch]: <one-sentence change>; see Decision: <title>`. A plan folder writes no History line.
 
 ---
 
