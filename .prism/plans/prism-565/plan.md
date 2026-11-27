@@ -2,7 +2,9 @@
 title: Close step and triggered retro report
 ticket: https://github.com/HunterMcGrew/PRISM/issues/565
 stage: plan
-status: draft
+status: approved
+approved_by: auto
+approved_at: 2026-11-27
 ---
 
 ## Acceptance Criteria
