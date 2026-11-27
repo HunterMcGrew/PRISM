@@ -239,11 +239,11 @@ export function buildPostCompactNote(repoRoot, state) {
 	const planSteps = state.plan
 		? [
 				`1. Re-read ${state.plan} in full. A read from before the compaction no longer counts.`,
-				'2. If the summary has an "Unrecorded decisions" section, write each one into that plan\'s `## Decisions` before other work, and on a flat plan add a `## History` line.',
+				'2. If the summary has an "Unrecorded decisions" section, write each one into that plan\'s `## Decisions` before other work, and on a flat plan add a `## History` line. On a plan folder, write only scope changes and open questions, because a routine implementation choice already lives in a commit.',
 			]
 		: [
 				"1. No plan file was found for this branch's ticket, by name, by ticket field, or in the archive. Run the lookup in `.prism/rules/branch-plan.md` § Plan Lookup before concluding there is none, and do not create a plan to hold the summary.",
-				'2. If the lookup finds a plan, re-read it in full and write the summary\'s "Unrecorded decisions" into its `## Decisions`. If it finds none, keep that section as the record and tell the user when a decision there needs a plan.',
+				'2. If the lookup finds a plan, re-read it in full and write the summary\'s "Unrecorded decisions" into its `## Decisions`. On a plan folder, write only scope changes and open questions, because a routine implementation choice already lives in a commit. If it finds none, keep that section as the record and tell the user when a decision there needs a plan.',
 			];
 
 	return `Context was compacted. Before continuing:

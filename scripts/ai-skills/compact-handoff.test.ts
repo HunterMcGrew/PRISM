@@ -271,6 +271,7 @@ test("SessionStart on a plan folder asks for a History line only on a flat plan"
 		assert.ok(note?.includes("Re-read .prism/plans/acme-12/plan.md in full."));
 		assert.ok(note?.includes("on a flat plan add a `## History` line"));
 		assert.ok(!note?.includes("and add a `## History` line"));
+		assert.ok(note?.includes("On a plan folder, write only scope changes and open questions"));
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
@@ -288,6 +289,12 @@ test("SessionStart on a filename miss sends the session to the full plan lookup"
 		);
 		assert.ok(note?.includes("`.prism/rules/branch-plan.md` § Plan Lookup"));
 		assert.ok(note?.includes("do not create a plan to hold the summary"));
+		const folderClause = note?.indexOf("On a plan folder, write only scope changes and open questions") ?? -1;
+		assert.ok(folderClause !== -1);
+		assert.ok(
+			folderClause < (note?.indexOf("If it finds none") ?? -1),
+			"the folder clause belongs to the found-a-plan case, not the fallback record"
+		);
 		assert.ok(!note?.includes("Re-read .prism/plans/"), "a miss never names a plan path");
 	} finally {
 		rmSync(root, { recursive: true, force: true });
