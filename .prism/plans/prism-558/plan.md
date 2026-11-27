@@ -7,6 +7,8 @@ approved_by: auto
 approved_at: 2026-11-27
 ---
 
+> Closed: 2026-11-27
+
 ## Acceptance Criteria
 
 Each criterion cites the spec requirement it grades as `(REQ-n)`.
@@ -293,15 +295,25 @@ round 4: resolved 3
 ## Decisions
 
 - **The plan stage ran as a subagent.** The session's context was long after children 10 and 11, so the main session dispatched this stage with the worktree and folder. Rejected: running it in the session, which would have pushed the session toward compaction mid-epic.
+  - → no promotion needed (a one-time call about this session's context length; the stage dispatch rules live in `workflow.md`)
 - **The child ships as a two-PR stack, cut between the plan side and the intent side.** The hand-edited files cross 10 on their own, generated copies aside. Part 1 is the lean plan with the builder tier, and part 2 is the Approach lines with the dashed round lines. The lean plan goes first because `plan-templates.test.ts` imports the lint, so part 2's intent heading case has to land after the lint exists. Part 1 stays one PR although it crosses 10 files, because its pieces have no value apart: a template without History while the workflow still appends History lines, or a two-line task comment beside a rule that demands the full bar, would each ship a contradiction. Rejected: splitting part 1 into scripts and prose, for that reason. The builder tier rides part 1 because the new ADR's reason names it.
+  - → no promotion needed (the cut line is specific to this ticket's files; the stacked commit form is already in the Tasks and subjects part of `plan-chain-scripts.md`, and the resume-table gap is an action item in the retro)
 - **`plan-templates.test.ts` is claimed once in each part.** T1 drops the two plan headings and T17 adds the intent heading. T17 depends on T1, so `bundles.mjs` sees an ordered pair, not a parallel claim. Rejected: one task for both edits, which would put part 2's heading case in part 1 ahead of the intent template it checks.
+  - → no promotion needed (a plan-stage tactic for this plan's bundle check, which the Bundle check part of `plan-chain-scripts.md` already describes)
 - **This plan has no History or Sessions section and keeps every task to two lines.** REQ-1 removes both sections and nothing in the resume table reads them, and the spec says this plan is written to the cap so the lint needs no allowlist entry for it.
+  - → no promotion needed (the rule it follows lives in `.prism/templates/plan.md` and `.prism/rules/implementation-task-detail.md`)
 - **The Approach comment folds onto one line to keep `prism-intent` under the cap.** The skill loads its body plus the intent template, 113 lines before this change, and the spec's six-line comment plus the skill text would cross 120. The spec also says the skill stays under the cap, and the three labels and the `none — <why>` rule are what approval reads, so the comment shrinks and the labels don't. Rejected: a reasoned overage in `skill-loaded-lines.test.ts`, which sits outside Affected systems and spends the cap's slack on comment text.
+  - → no promotion needed (a tactic for the 120-line cap on `prism-intent`; the template holds the one-line comment)
 - **Round 1 added T23 and two files, both through `prism-architect`.** `role-preloads.test.ts` pins the implement agent's model and `branch-plan.md` tells every plan to log a resolved open question in `## History`, and both go false with this child. The architect's verdict was proceed for both and it added them to the spec's Affected systems. T23 is appended rather than renumbered, because task IDs are permanent once committed.
+  - → no promotion needed (the Scope changes part of `workflow.md` already says a change that follows from the outcome goes ahead as a Decision, with the architect consulted for the rest)
 - **Round 3 widened T23 to the rest of `branch-plan.md` and the consumer `AGENTS.md.tmpl`.** Both tell every plan to append `## History` or `## Sessions` lines, which REQ-1 makes false for a folder plan. Both sit inside Affected systems, and this is the same kind of change the architect cleared in round 1, a doc this child makes false, so it is recorded here and not sent back to the architect.
+  - → no promotion needed (same rule as the entry above, already in the Scope changes part of `workflow.md`)
 - **The ADR number is fixed at 0088 in the task files.** A `files` entry must be a real path, so the plan can't defer the number. Child 11 adds no ADR, so 0088 is free unless another merge takes it first, and T6 carries the rename path.
+  - → no promotion needed (ADR-0088 shipped under that number, so the rename path in T6 went unused)
 - **The post-compact note's flat-plan wording gets a test outside the task list.** Review round 1 found that nothing pinned T13's change to `compact-handoff.mjs`, so the T13 fix added a case to `scripts/ai-skills/compact-handoff.test.ts`, a file no task lists. Rejected: leaving the wording untested, since reverting it passed the suite.
+  - → no promotion needed (the case sits in `compact-handoff.test.ts`)
 - **T21 left `prism-challenge` untouched.** The spec said the challenge skill also documents the bare round-line form, and review round 1 confirmed its `shared.md` already lists the round lines bare, so no edit was owed.
+  - → no promotion needed (records a no-edit call; `prism-challenge` already lists the bare round line)
 
 ## Verification
 
@@ -327,3 +339,7 @@ head: e7a7d763
 - review round 1 at bb6ff420 (part 1 of 2): 0 critical, 2 major, 6 minor, 4 nit
 - review round 2 at 67d38b0b (part 1 of 2): clean
 - review round 1 at 83f0ff6d: clean
+
+## PR Readiness
+
+Retro: .prism/retros/prism-499/prism-558.md
