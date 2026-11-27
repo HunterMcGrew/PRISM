@@ -42,7 +42,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | Field | Type | Required | What it controls |
 |---|---|---|---|
 | `org` | string | yes | Display org name. Substituted as `${ORG}`. Used in PR descriptions, changelogs, references in personas' shared.md. |
-| `project` | string | yes | Project display name. Substituted as `${PROJECT}`. Also derives `${PROJECT_LOWERCASE}` (lowercase form, used in git-config namespaces and similar). |
+| `project` | string | yes | Project display name. Substituted as `${PROJECT}`. Also derives `${PROJECT_LOWERCASE}` (lowercase form, used in file names such as QA checklist names). |
 | `ticketPrefix` | string | yes | Ticket ID prefix (uppercase, no separator). Substituted as `${TICKET_PREFIX}`. Also derives `${TICKET_PREFIX_LOWERCASE}`. Pattern: `^[A-Z][A-Z0-9]+$`. |
 | `ticketSystem.kind` | enum | yes | `"linear"` or `"github-issues"`. Drives `${TICKET_TRACKER}`; the Linear-specific fields below apply only when `kind` is `linear`. The object shape is the abstraction lever for future providers (e.g. Jira). |
 | `ticketSystem.workspace` | string | linear | Linear workspace slug (the part before `.linear.app`). Substituted as `${LINEAR_WORKSPACE}`. |

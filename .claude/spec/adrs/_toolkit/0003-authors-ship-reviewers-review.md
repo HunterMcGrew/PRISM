@@ -34,7 +34,7 @@ When a reviewer runs against a branch with no PR open yet, the reviewer routes b
 
 ## Per-User Overrides
 
-The team-wide default above stays as-is. Individuals whose review discipline needs a diff gate before code leaves their machine can opt into a pre-commit pause via git config:
+The team-wide default above stays as-is. Individuals whose review discipline needs a diff gate before code leaves their machine could opt into a pre-commit pause via git config until 2026-11-27, when PRISM removed it:
 
 ```bash
 git config --global prism.pauseBeforeCommit true    # opt in
@@ -42,13 +42,13 @@ git config --global prism.pauseBeforeCommit false   # opt out (matches team defa
 git config --global --unset prism.pauseBeforeCommit # reset (prompts again on next ship)
 ```
 
-The shipping flow (see `references/shipping-flow.md`) reads this value before every commit and branches:
+The shipping flow (see `references/shipping-flow.md`) read this value before every commit and branched:
 
 - `true` — announce the commit subject, wait for the user to say "ship it" before committing. Specific files or a full diff shown on request.
 - `false` — commit directly; same as the team default.
 - unset — ask the user once, persist the answer, and apply it for this ship going forward.
 
-Matching is strict. Only exact `true` or `false` triggers its path; any other value falls through to the unset path and re-asks on next ship.
+Matching was strict. Only exact `true` or `false` triggered its path; any other value fell through to the unset path and re-asked on next ship.
 
 **Why strict:** git config values are user-editable strings. Lenient matching (`yes`, `1`, `True`) hides behavior behind magic and makes bug reports harder to interpret. Git itself uses `true`/`false` as the boolean convention (`core.autocrlf`, `pull.rebase`), so matching git's own pattern keeps the contract legible.
 
@@ -58,7 +58,7 @@ The override has to survive across every surface a developer runs Claude Code fr
 
 ### Scope
 
-`git config --global prism.*` is reserved for per-user, machine-local PRISM preferences that layer on top of the tier defaults. Currently `prism.pauseBeforeCommit` is the only entry.
+`git config --global prism.*` is reserved for per-user, machine-local PRISM preferences that layer on top of the tier defaults. `prism.pauseBeforeCommit` was its only entry, and it has none since that removal.
 
 If a second per-user override emerges, write a new ADR that generalizes the mechanism rather than piling into this section. Preferences earn a place in this namespace when they describe durable per-user behavior — not task-level heuristics, not per-skill tweaks, not anything that belongs in a plan or a skill file.
 
