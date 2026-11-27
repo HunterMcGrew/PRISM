@@ -665,7 +665,11 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 	return findings;
 }
 
-/** Matches any `hook.mjs`, `git-gates.mjs`, `approve-guard.mjs`, `secrets-gate.mjs`, `commit-gate.mjs`, `brief-gate.mjs`, or `reconcile-gate.mjs` path inside a parsed hook command string. */
+/**
+ * Matches any `hook.mjs`, `git-gates.mjs`, `approve-guard.mjs`, `secrets-gate.mjs`, `commit-gate.mjs`, `brief-gate.mjs`, or `reconcile-gate.mjs` path inside a parsed hook command string.
+ *
+ * reconcile-gate stays as a retired entry point, so doctor reports a leftover registration whose file is gone.
+ */
 export const HOOK_COMMAND_PATH_RE =/(\S*(?:hook|git-gates|approve-guard|secrets-gate|commit-gate|brief-gate|reconcile-gate)\.mjs)/g;
 
 /**

@@ -61,36 +61,6 @@ test("Cursor reads no dispatch", () => {
 	);
 });
 
-test("subagentStop reads the agent type, last message, and active flag", () => {
-	const payload = {
-		hook_event_name: "SubagentStop",
-		agent_type: "prism-pr-review",
-		last_assistant_message: "done\nprism-pr: 12",
-		stop_hook_active: true,
-	};
-	const expected = {
-		agentType: "prism-pr-review",
-		message: "done\nprism-pr: 12",
-		active: true,
-	};
-
-	assert.deepEqual(claude.subagentStop(payload), expected);
-	assert.deepEqual(codex.subagentStop(payload), expected);
-	assert.equal(cursor.subagentStop(payload), null);
-});
-
-test("emitBlockStop gives the block shape on Claude and Codex and null on Cursor", () => {
-	assert.deepEqual(claude.emitBlockStop("reconcile is unclean"), {
-		decision: "block",
-		reason: "reconcile is unclean",
-	});
-	assert.deepEqual(codex.emitBlockStop("reconcile is unclean"), {
-		decision: "block",
-		reason: "reconcile is unclean",
-	});
-	assert.equal(cursor.emitBlockStop("reconcile is unclean"), null);
-});
-
 test("readShellCall reads a Claude Bash call", () => {
 	assert.deepEqual(
 		readShellCall("claude", {

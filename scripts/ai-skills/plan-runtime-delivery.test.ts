@@ -66,7 +66,6 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/commit-gate/test-guard.mjs",
 	".claude/hooks/commit-gate/tree.mjs",
 	".claude/hooks/brief-gate.mjs",
-	".claude/hooks/reconcile-gate.mjs",
 	".claude/hooks/lib/hook-log.mjs",
 	".claude/hooks/approve-guard.mjs",
 ];
@@ -347,21 +346,19 @@ test("hosts: [cursor] delivers every plan-chain module and writes no registratio
 	});
 });
 
-test("an update leaves the delivered brief and reconcile gates executable", {
+test("an update leaves the delivered brief gate executable", {
 	skip: process.platform === "win32" && "Windows has no executable bit",
 }, async () => {
 	await withRoots(async (roots) => {
 		await update(roots);
 
-		for (const gate of ["brief-gate.mjs", "reconcile-gate.mjs"]) {
-			const { mode } = await fs.stat(path.join(roots.consumerRepoRoot, ".claude/hooks", gate));
+		const { mode } = await fs.stat(path.join(roots.consumerRepoRoot, ".claude/hooks/brief-gate.mjs"));
 
-			assert.equal(mode & 0o111, 0o111, gate);
-		}
+		assert.equal(mode & 0o111, 0o111);
 	});
 });
 
-test("the delivered brief and reconcile gates load every import in the consumer layout and pass an unrelated call", async () => {
+test("the delivered brief gate loads every import in the consumer layout and passes an unrelated call", async () => {
 	await withRoots(async (roots) => {
 		await update(roots);
 
@@ -379,18 +376,6 @@ test("the delivered brief and reconcile gates load every import in the consumer 
 					hook_event_name: "PreToolUse",
 					tool_name: "Agent",
 					tool_input: { subagent_type: "general-purpose", prompt: "Read the file." },
-				},
-			},
-			{
-				gate: "reconcile-gate.mjs",
-				args: ["--tool=claude", "--event=SubagentStop"],
-				payload: {
-					session_id: "s1",
-					cwd: roots.consumerRepoRoot,
-					hook_event_name: "SubagentStop",
-					agent_type: "general-purpose",
-					last_assistant_message: "done",
-					stop_hook_active: false,
 				},
 			},
 		];

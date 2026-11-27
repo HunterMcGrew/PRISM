@@ -26,8 +26,6 @@
  * @property {string} [hook_event_name]
  * @property {string} [agent_type]
  * @property {string} [prompt]
- * @property {string} [last_assistant_message]
- * @property {boolean} [stop_hook_active]
  */
 
 /**
@@ -62,11 +60,6 @@
  * @property {(payload: HookPayload) => {type?: string, prompt?: string} | null} subagentDispatch
  *   The subagent type and brief a payload dispatches, or `null` for any
  *   other call.
- * @property {(payload: HookPayload) => {agentType?: string, message?: string, active?: boolean} | null} subagentStop
- *   What a subagent's stop event carries, or `null` on a host with no such event.
- * @property {(reason: string) => unknown} emitBlockStop
- *   The reply that sends a stopping subagent back to work, or `null` on a
- *   host with none.
  */
 
 /**
@@ -176,31 +169,6 @@ export function extractPatchAddedText(command, filePath) {
 	return added.join("\n");
 }
 
-/**
- * The fields a Claude or Codex `SubagentStop` payload carries.
- *
- * @param {HookPayload} payload
- * @returns {{agentType?: string, message?: string, active?: boolean}}
- */
-function readSubagentStop(payload) {
-	return {
-		agentType: payload.agent_type,
-		message: payload.last_assistant_message,
-		active: payload.stop_hook_active,
-	};
-}
-
-/**
- * The reply that blocks a subagent's stop and returns `reason` to it, the
- * same shape on Claude and Codex.
- *
- * @param {string} reason
- * @returns {{decision: "block", reason: string}}
- */
-function emitStopBlock(reason) {
-	return { decision: "block", reason };
-}
-
 /** @type {Record<string, HarnessSpec>} */
 export const HARNESSES = {
 	claude: {
@@ -274,8 +242,6 @@ export const HARNESSES = {
 						prompt: payload.tool_input?.prompt,
 					}
 				: null,
-		subagentStop: readSubagentStop,
-		emitBlockStop: emitStopBlock,
 	},
 	cursor: {
 		// StrReplace (Cursor's edit tool) is deliberately unlisted here — the
@@ -294,8 +260,6 @@ export const HARNESSES = {
 		// Same reasoning as `emitDeny` — no observed envelope to answer in.
 		emitAllow: () => null,
 		subagentDispatch: () => null,
-		subagentStop: () => null,
-		emitBlockStop: () => null,
 	},
 	codex: {
 		// Codex has no separate read tool — reads run through `Bash` — so
@@ -351,15 +315,13 @@ export const HARNESSES = {
 				permissionDecisionReason: reason,
 			},
 		}),
-		// The `SubagentStart` and `SubagentStop` field names below come from
+		// The `SubagentStart` field names below come from
 		// OpenAI's Codex hook documentation as the reference implementation read
 		// it. They are documentation-read, not live-probed.
 		subagentDispatch: (payload) =>
 			payload.hook_event_name === "SubagentStart"
 				? { type: payload.agent_type, prompt: payload.prompt }
 				: null,
-		subagentStop: readSubagentStop,
-		emitBlockStop: emitStopBlock,
 	},
 };
 

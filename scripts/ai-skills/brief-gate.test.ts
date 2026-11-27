@@ -354,7 +354,7 @@ test("a long brief with an override phrase names both causes", () => {
 
 test("a gated brief that says override passes", () => {
 	assertAllowed("prism-implement", "Plan folder: x\nOverride the default.");
-	assertAllowed("prism-pr-review", "PR 12. Read the plan before reviewing.");
+	assertAllowed("prism-review", "PR 12. Read the plan before reviewing.");
 });
 
 // --- Roles and repos ---
