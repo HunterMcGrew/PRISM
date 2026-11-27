@@ -54,7 +54,7 @@ Look before you ask. Read the ticket, the code around the area, its tests, and t
 The template is `.prism/templates/intent.md`. Keep every heading as written, because the approval script reads them by name.
 
 - **Size.** Propose `standard`, or `epic` when the work splits into several parts under one tracker parent. Give the reason either way. An approved epic intent covers its children, so no child gets an intent of its own.
-- **Surfaces.** The regression and security surfaces are each filled or `none — <why>`, and a bare "none" fails approval. Propose them from the callers and consumers you found.
+- **Surfaces and Approach.** The regression and security surfaces and the `Chosen:`, `Rejected:`, and `Unknown:` Approach lines are each filled or `none — <why>`, and a bare "none" fails approval. Propose the surfaces from the callers and consumers you found, and grill for each Approach line with your recommended answer: the approach taken, the strongest alternative and why it lost, and what it depends on that nobody has checked.
 - **Design line.** `needed`, `supplement`, or `not needed`, with its reason. Ask whether approved mocks exist and cover the empty, loading, error, and disabled states. `needed` fits only new UI with no approved mock, and always means `approval: required`. A supplement says `approval: required` or `not-required`.
 - **Acceptance criteria.** Each has a stable ID and an Evidence line, per the template. Walk the person through every one. Only an epic may write `none — <why>`.
 - **Open questions.** Anything the person must answer before the spec starts, or `none`.
@@ -65,7 +65,7 @@ A plan folder holds no section-sign citations and no `see Decision:` citations, 
 
 ## Write, then approve
 
-Recap every section in a few lines and get the person's confirmation, then write `intent.md` with `status: draft`. Land every pending edit, then ask once for `approve`, because an edit after the person's message voids it. On approval, run `node scripts/ai-skills/hooks/plan/approve.mjs <path>` as its own command, and commit the stamp with `node scripts/ai-skills/hooks/plan/commit.mjs "plan: approve intent" <path>`. When the script refuses, fix the field it names and ask for a fresh `approve`. Approval rules beyond that are in `.prism/rules/workflow.md`.
+Recap every section in a few lines, the three Approach lines included, and get the person's confirmation, then write `intent.md` with `status: draft`. Land every pending edit, then ask once for `approve`, because an edit after the person's message voids it. On approval, run `node scripts/ai-skills/hooks/plan/approve.mjs <path>` as its own command, and commit the stamp with `node scripts/ai-skills/hooks/plan/commit.mjs "plan: approve intent" <path>`. When the script refuses, fix the field it names and ask for a fresh `approve`. Approval rules beyond that are in `.prism/rules/workflow.md`.
 
 ## After approval
 

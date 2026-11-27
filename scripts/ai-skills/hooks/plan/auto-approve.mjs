@@ -395,7 +395,8 @@ function checkAffectedSystems(tasks, specPath) {
 function checkChallenge(text) {
 	const rounds = (sectionBody(text, "Challenge") ?? "")
 		.split("\n")
-		.map((line) => ROUND_LINE.exec(line.trimEnd()))
+		// Planners write round lines bare or as list items, and both mean the same round.
+		.map((line) => ROUND_LINE.exec(line.trimEnd().replace(/^- /, "")))
 		.filter((match) => match !== null)
 		.map((match) => ({
 			number: Number(match[1]),

@@ -53,6 +53,8 @@ process.env.GIT_CONFIG_GLOBAL = EMPTY_GIT_CONFIG;
 const DEFAULT_SECTIONS: Record<string, string> = {
 	Problem: "The search page is slow.",
 	"Proposed outcome": "Search answers in under a second.",
+	Approach:
+		"Chosen: cache the result index in memory.\nRejected: a search service — too much to run for one page.\nUnknown: none — the index already fits in memory.",
 	"Regression surface":
 		"<!-- guidance -->\nThe search results page could break.",
 	"Security surface": "none — the change reads no user input.",
@@ -407,6 +409,120 @@ test('approves "none — reason" acceptance criteria on an epic intent', async (
 	assert.equal(result.code, 0, result.message);
 });
 
+// --- Approach lines ---
+
+const APPROACH_LINES = {
+	Chosen: "Chosen: cache the result index in memory.",
+	Rejected: "Rejected: a search service — too much to run for one page.",
+	Unknown: "Unknown: the index fits in memory.",
+};
+
+type ApproachLabel = keyof typeof APPROACH_LINES;
+
+function buildApproach(lines: Partial<Record<ApproachLabel, string | null>> = {}) {
+	return Object.values({ ...APPROACH_LINES, ...lines })
+		.filter((line) => line !== null)
+		.join("\n");
+}
+
+function placeIntentWithApproach(approach: string) {
+	return placeFile(
+		makeTempDir(),
+		".prism/plans/acme-1/intent.md",
+		buildIntent({ sections: { Approach: approach } })
+	);
+}
+
+test("refuses an intent missing ## Approach", async () => {
+	const file = placeFile(
+		makeTempDir(),
+		".prism/plans/acme-1/intent.md",
+		buildIntent({ omit: ["Approach"] })
+	);
+	await assertRefused(file, {}, /## Approach is missing/);
+});
+
+test("refuses an epic intent missing ## Approach", async () => {
+	const file = placeFile(
+		makeTempDir(),
+		".prism/plans/epic-acme-1/intent.md",
+		buildIntent({ size: "epic", omit: ["Approach"] })
+	);
+	await assertRefused(file, {}, /## Approach is missing/);
+});
+
+for (const label of ["Chosen", "Rejected", "Unknown"] as const) {
+	test(`refuses an Approach with no ${label}: line`, async () => {
+		const file = placeIntentWithApproach(buildApproach({ [label]: null }));
+		await assertRefused(
+			file,
+			{},
+			new RegExp(`## Approach needs a line starting "${label}:"`)
+		);
+	});
+
+	test(`refuses an Approach with ${label}: on two lines`, async () => {
+		const file = placeIntentWithApproach(
+			`${buildApproach()}\n${APPROACH_LINES[label]}`
+		);
+		await assertRefused(
+			file,
+			{},
+			new RegExp(`## Approach has more than one "${label}:" line`)
+		);
+	});
+
+	test(`refuses an Approach whose ${label}: line is empty`, async () => {
+		const file = placeIntentWithApproach(buildApproach({ [label]: `${label}:` }));
+		await assertRefused(
+			file,
+			{},
+			new RegExp(`## Approach's "${label}:" line is empty`)
+		);
+	});
+}
+
+test("refuses an Approach label that only appears mid-line", async () => {
+	const file = placeIntentWithApproach(
+		buildApproach({ Rejected: "The Rejected: line is below." })
+	);
+	await assertRefused(file, {}, /## Approach needs a line starting "Rejected:"/);
+});
+
+for (const value of ["none", "None.", "none —", "none because nobody checked"]) {
+	test(`refuses an Approach line reading ${JSON.stringify(value)}`, async () => {
+		const file = placeIntentWithApproach(
+			buildApproach({ Unknown: `Unknown: ${value}` })
+		);
+		await assertRefused(
+			file,
+			{},
+			/## Approach's "Unknown:" line needs its reason on the "none" line/
+		);
+	});
+}
+
+test("approves three filled Approach lines", async () => {
+	const result = await run(placeIntentWithApproach(buildApproach()));
+	assert.equal(result.code, 0, result.message);
+});
+
+test('approves "none — <why>" on an Approach line', async () => {
+	const file = placeIntentWithApproach(
+		buildApproach({ Unknown: "Unknown: none — every dependency was checked." })
+	);
+	const result = await run(file);
+	assert.equal(result.code, 0, result.message);
+});
+
+test("ignores label lines inside an HTML comment in ## Approach", async () => {
+	const file = placeIntentWithApproach(
+		`<!--\nChosen: the approach, in one line.\n-->\n\n${buildApproach()}`
+	);
+	const result = await run(file);
+	assert.equal(result.code, 0, result.message);
+});
+
 test("refuses size: epic outside an epic-*/ folder", async () => {
 	const file = placeFile(
 		makeTempDir(),
@@ -585,6 +701,12 @@ test("writes the three approval lines after status and leaves every other byte a
 		"## Proposed outcome",
 		"",
 		"Search answers in under a second.",
+		"",
+		"## Approach",
+		"",
+		"Chosen: cache the result index in memory.",
+		"Rejected: a search service — too much to run for one page.",
+		"Unknown: none — the index already fits in memory.",
 		"",
 		"## Regression surface",
 		"",
