@@ -319,6 +319,23 @@ round 4: resolved 1
 
 ## Verification
 
+verdict: done
+base: 8c53b07a
+head: b65cc834
+
+| check | result | evidence |
+| --- | --- | --- |
+| typecheck | pass | /tmp/tmp.4LKYX3l0Wv/typecheck.log |
+| lint | pass | /tmp/tmp.4LKYX3l0Wv/lint.log |
+| test | pass | /tmp/tmp.4LKYX3l0Wv/test.log |
+| build | pass | /tmp/tmp.4LKYX3l0Wv/build.log |
+| format | n/a: not configured | none |
+| spec | pass | /tmp/tmp.4LKYX3l0Wv/spec.log |
+
+### Failures
+
+- none
+
 ## Review
 
 ## PR Readiness
