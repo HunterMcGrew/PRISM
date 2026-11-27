@@ -44,4 +44,4 @@ Every agent PR opens as a draft and stays one. GitHub blocks merging a draft, so
 
 After the push, say one line: "PR #<number> is open as a draft." Include the number from step 3 or from `gh pr create`. If step 4 synced the body, add "PR #<number> body synced to current scope." before it.
 
-Then run `node ${HOOK_RUNTIME_DIR}/review/reconcile.mjs <pr> --json`. For each human comment it reports as not yet logged, append one miss row to `.prism/metrics/review-misses.jsonl` in the shape `.prism/architect/_toolkit/review-runtime.md` gives under "The misses log", naming the nearest pass. The log is committed by the retro, per step 3.
+Then run `node ${HOOK_RUNTIME_DIR}/review/reconcile.mjs <pr> --json`. For each human comment it reports as not yet logged, append one miss row to `.prism/metrics/review-misses.jsonl` in the shape `.prism/architect/_toolkit/review-runtime.md` gives under "The misses log", naming the nearest pass. The log is committed by the retro, per step 2.
