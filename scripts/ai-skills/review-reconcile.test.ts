@@ -748,3 +748,54 @@ describe("reconcile.mjs command line", () => {
 		assert.match(child.stdout, /missing null guard: 3 rows/);
 	});
 });
+
+describe("PR argument", () => {
+	const logPath = path.join(scratchDir, "pr-argument-misses.jsonl");
+	const run = (arg: string) =>
+		spawnSync(process.execPath, [SCRIPT, arg, "--classes", "--log", logPath], {
+			encoding: "utf8",
+			env: cleanEnv(),
+		});
+
+	for (const arg of ["#12", "12", "https://github.com/o/r/pull/12"]) {
+		test(`accepts ${arg}`, () => {
+			const child = run(arg);
+
+			assert.equal(child.status, 0, child.stderr);
+		});
+	}
+
+	for (const arg of ["0", "007", "abc", "https://github.com/o/r/issues/12", "99999999999999999999"]) {
+		test(`rejects ${arg} with exit 2`, () => {
+			const child = run(arg);
+
+			assert.equal(child.status, 2, child.stderr);
+			assert.match(child.stderr, /unknown argument/);
+		});
+	}
+
+	for (const pr of [0, 1.5, Number.NaN]) {
+		test(`reconcile() throws before any gh call for pr ${String(pr)}`, () => {
+			let ghCalls = 0;
+			const gh = () => {
+				ghCalls += 1;
+
+				return null;
+			};
+
+			assert.throws(
+				() =>
+					reconcile({
+						pr,
+						repo: "o/r",
+						gh,
+						git: () => "",
+						agentLogin: "me",
+						logPath,
+					}),
+				/positive integer/
+			);
+			assert.equal(ghCalls, 0);
+		});
+	}
+});
