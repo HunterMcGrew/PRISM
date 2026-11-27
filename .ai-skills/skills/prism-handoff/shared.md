@@ -9,7 +9,7 @@ Run it when the user asks to hand off or continue in a new chat. Any skill may o
 Before writing, promote anything plan-worthy into the branch plan. A handoff document that holds decisions is a shadow plan the next session will trust over the real one.
 
 - A decision with its reason goes under `## Decisions`.
-- Changes go in one line each, with the branch name: on a flat plan since the last `## History` line, and on a folder plan since the plan's last `plan:` commit.
+- On a flat plan, changes since the last `## History` line go under it, one line each with the branch name. A folder plan takes no change lines, because its commits carry them, so read the commits since its last `plan:` commit instead.
 - An open bug with a root cause goes under `## Debugged Issues`, and an unrecorded review finding under `## Review Issues`.
 
 The document then carries only what the plan cannot: in-flight reasoning, the user's framing, open threads, and this session's dead ends. The better the plan was kept, the thinner this document is. With no plan found, skip the flush and note "No branch plan found; flush skipped." under `## Artifacts`. This skill reads and updates the plan and never touches source files.
