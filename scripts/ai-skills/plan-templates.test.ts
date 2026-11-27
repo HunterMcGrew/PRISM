@@ -21,6 +21,7 @@ const TEMPLATES: Record<string, { keys: string[]; headings: string[] }> = {
 		headings: [
 			"Problem",
 			"Proposed outcome",
+			"Approach",
 			"Regression surface",
 			"Security surface",
 			"Design",
@@ -117,4 +118,13 @@ test("the spec template's Affected systems block is an empty text fence", async 
 	const body = sectionBody(await readTemplate("spec.md"), "Affected systems");
 
 	assert.match(body ?? "", /^```text\n\n```$/m);
+});
+
+test("the intent template's Approach section holds the three labels, empty, for the person to fill", async () => {
+	const body = sectionBody(await readTemplate("intent.md"), "Approach");
+
+	assert.deepEqual(
+		(body ?? "").split("\n").filter((line) => line.trim() !== ""),
+		["Chosen:", "Rejected:", "Unknown:"]
+	);
 });
