@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import {
 	HOOK_RUNTIME_MARKER,
 	mergeHookRegistration,
+	PRISM_CODEX_HOOK_COMMAND_PATTERN,
 	PRISM_HOOK_COMMAND_PATTERN,
 	refreshHookRuntime,
 } from "./update";
@@ -35,19 +36,30 @@ const RETIRED_PRISM_ENTRY = {
 	],
 };
 
+const RETIRED_PRISM_CODEX_ENTRY = {
+	matcher: "^prism-pr-review$",
+	hooks: [
+		{
+			type: "command",
+			command: 'node ".claude/hooks/reconcile-gate.mjs" --tool=codex --event=SubagentStop',
+			timeout: 120,
+		},
+	],
+};
+
 const CONSUMER_ENTRY = {
 	matcher: "^my-agent$",
 	hooks: [{ type: "command", command: "node scripts/mine.mjs" }],
 };
 
 /**
- * Writes the current Claude install template, minus any `SubagentStop` key,
- * as the incoming source, so the merge sees a template that has retired it.
+ * Writes the current install template, minus any `SubagentStop` key, as the
+ * incoming source, so the merge sees a template that has retired it.
  */
-async function writeRetiredSource(dir: string): Promise<string> {
-	const template = JSON.parse(
-		await fs.readFile(path.join(prismRoot, "templates/install/.claude/settings.json"), "utf8")
-	) as { hooks: Record<string, unknown> };
+async function writeRetiredSource(dir: string, templatePath: string): Promise<string> {
+	const template = JSON.parse(await fs.readFile(path.join(prismRoot, templatePath), "utf8")) as {
+		hooks: Record<string, unknown>;
+	};
 	delete template.hooks.SubagentStop;
 
 	const sourcePath = path.join(dir, "source-settings.json");
@@ -56,10 +68,14 @@ async function writeRetiredSource(dir: string): Promise<string> {
 	return sourcePath;
 }
 
-async function mergeTargetWith(subagentStop: unknown[]): Promise<Record<string, unknown>> {
+async function mergeTargetWith(
+	subagentStop: unknown[],
+	templatePath = "templates/install/.claude/settings.json",
+	pattern = PRISM_HOOK_COMMAND_PATTERN
+): Promise<Record<string, unknown>> {
 	const dir = await fs.mkdtemp(path.join(os.tmpdir(), "prism-retire-merge-"));
 	try {
-		const sourcePath = await writeRetiredSource(dir);
+		const sourcePath = await writeRetiredSource(dir, templatePath);
 		const targetPath = path.join(dir, "settings.json");
 		await fs.writeFile(
 			targetPath,
@@ -67,7 +83,7 @@ async function mergeTargetWith(subagentStop: unknown[]): Promise<Record<string, 
 			"utf8"
 		);
 
-		await mergeHookRegistration(sourcePath, targetPath, PRISM_HOOK_COMMAND_PATTERN, false);
+		await mergeHookRegistration(sourcePath, targetPath, pattern, false);
 
 		const merged = JSON.parse(await fs.readFile(targetPath, "utf8")) as {
 			hooks: Record<string, unknown>;
@@ -87,6 +103,16 @@ test("a merge drops PRISM's entry from an event key the template retired and kee
 
 test("a merge deletes an event key the template retired when only PRISM's entry was under it", async () => {
 	const hooks = await mergeTargetWith([RETIRED_PRISM_ENTRY]);
+
+	assert.ok(!("SubagentStop" in hooks), "SubagentStop key still present");
+});
+
+test("a Codex merge deletes the retired SubagentStop key holding only PRISM's reconcile-gate entry", async () => {
+	const hooks = await mergeTargetWith(
+		[RETIRED_PRISM_CODEX_ENTRY],
+		"templates/install/.codex/hooks.json",
+		PRISM_CODEX_HOOK_COMMAND_PATTERN
+	);
 
 	assert.ok(!("SubagentStop" in hooks), "SubagentStop key still present");
 });
