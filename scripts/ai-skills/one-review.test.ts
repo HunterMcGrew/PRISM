@@ -27,6 +27,8 @@ const SCANNED_ROOTS = [
 	"templates/install",
 	"AGENTS.md",
 	"CLAUDE.md",
+	"REVIEW.md",
+	".prism/review",
 ];
 
 const SKIPPED_DIRS = new Set(["node_modules", ".git", "plans", "retros", "audits", "archived"]);
@@ -40,10 +42,6 @@ const ALLOWLIST = [
 	"scripts/ai-skills/update-retire-review.test.ts",
 	// Fixture of an old registration that doctor must still recognize.
 	"scripts/ai-skills/doctor.test.ts",
-	// Part 2 of the stack rewrites the seeded rulebook.
-	"templates/install/REVIEW.md",
-	// Part 2 of the stack rewrites the seeded pass files.
-	"templates/install/.prism/review/",
 ];
 
 function readRepoFile(relativePath: string): string {
@@ -215,10 +213,21 @@ test("leaves no live mention of the retired skill IDs", () => {
 test("removes the review labels", () => {
 	const labelPattern = /review:has-minors|prism-verdict|effort:(glance|quick|deep)|confidence:(high|needs-judgment|standards-only)|planLabels/;
 
+	const passFiles = readdirSync(path.join(REPO_ROOT, ".prism/review"), { withFileTypes: true })
+		.filter((entry) => entry.isFile())
+		.map((entry) => `.prism/review/${entry.name}`);
+
+	assert.ok(passFiles.length > 0, ".prism/review has no pass files");
+
 	for (const file of [
 		"scripts/ai-skills/hooks/review/reconcile.mjs",
 		"scripts/ai-skills/hooks/review/reconcile.d.mts",
 		".prism/architect/_toolkit/review-runtime.md",
+		"REVIEW.md",
+		...passFiles,
+		".prism/rules/git-conventions.md",
+		".prism/rules/followup-scope.md",
+		".ai-skills/config.schema.json",
 	]) {
 		assert.ok(!labelPattern.test(readRepoFile(file)), `${file} still names a review label`);
 	}

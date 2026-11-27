@@ -9,7 +9,6 @@ Its enumeration unit, severity, finding shape, and coverage line are in `REVIEW.
 - **Grade every acceptance criterion.** Grade each one per § `Grading a criterion`. An unmet criterion is a finding. An ungradeable one names what would make it gradeable.
 - **Non-functional constraints.** Check the diff against each constraint `intent.md`'s proposed outcome names, such as contrast, performance, or type safety. A diff that breaks one is a finding.
 - **Out-of-scope changes.** Work the plan didn't specify, with no stated reason anywhere, is a finding of kind "out-of-scope change".
-- **Plan drift.** Handle it per § `Plan drift is reconciled, not reported`.
 - **Re-test each "leave it alone" Decision.** For each Decision that leaves code unchanged, ask what breaks if the unchanged code and the new code drift apart. A real answer is a finding.
 
 ## Grading a criterion
@@ -31,31 +30,6 @@ A criterion defect is a defect in the current plan, so it is not follow-up work.
 
 **A disputed unmet.** When the author believes an unmet grade misreads the criterion, the fix is not a code change with no requirement behind it. Both readings go to the criterion's owner, who sharpens the criterion, and the next round grades the corrected version. Two competent readers reaching opposite grades means the criterion is ambiguous.
 
-**Where the grades go.** Write them as sub-bullets under the round's record line in `## Review`, or in `## Review Issues` on a flat plan, one line per criterion: its ID, its grade, and its evidence type.
-
-## Plan drift is reconciled, not reported
-
-Every observation about the plan lands in one of two buckets, and the reviewer reports only the second. Cosmetics are neither, per `REVIEW.md` § `Severity`.
-
-**Fix in place, the default, where nearly everything lands.** A `## PR Readiness` line that no longer matches the branch, a Decision whose wording describes something other than what shipped. A Decision with no verdict sub-bullet is not drift, because the close writes verdicts per `.prism/rules/branch-plan.md`. Work out which side is stale, edit the plan, and list what you edited in the report. No severity, no round trip. The review fixes drift in place only in the sections of `plan.md` other than `## Tasks`.
-
-**Report as a Minor, and leave as written.** Two things are never edited. A task whose stated approach the code did not take, including a task a later Decision contradicts, is reported as a Minor finding and the task stays as written, because the task list is the plan's contract and the review has no authority to rewrite it. A difference between the diff and `intent.md` is a finding too, and the review never edits `intent.md`.
-
-**Report only at a genuine impasse.** A Minor, stating what could not be resolved and what would settle it. It is for the case where the ticket, the diff, and the session history still leave it unclear which side is stale, most often because the code appears to contradict the Decision itself rather than merely post-date it. Reaching for it routinely is declining the reconciliation rather than hitting one.
-
-### Reconcile against the Decision
-
-A `## Decisions` entry records intent that predates the code, so when a Decision and some other plan text disagree, the Decision is what the rest gets reconciled against. `.prism/rules/branch-plan.md` § `3. Preserve Intentional Logic` already makes a Decision do-not-undo for implementation. This narrows what a reviewer does about a contradiction rather than changing what a Decision means.
-
-**Check the Decision against fact first.** A Decision is not review authority and does not override fact. When it contradicts a manifest-matched architect doc, visible repo practice, or an external system's real behavior, that contradiction is the finding, reported at its own severity and never reconciled around. Everything below governs plan-internal drift, once the Decision has passed that check.
-
-Three sources settle it, and the reviewer uses all three: the ticket's intent, what the implementation did, and the session history. Two worked shapes:
-
-- A Decision and some other plan prose outside `## Tasks` disagree, and the code matches the Decision. The prose is stale and gets fixed.
-- A task says one thing, a later Decision contradicts it, and the code matches the Decision. The task is reported as a Minor and left as written, and the Decision stands.
-
-In both, the code tells the story and the plan is what drifted.
-
-Never silently reverse a Decision to match the code. A Decision reversed by inference is an intentional constraint undone without anyone deciding to. That case is the impasse, and it goes in the report.
+**Where the grades go.** Grades go in the review's report to the session. An unmet criterion is a finding. Criteria awaiting a person are listed in the PR body.
 
 Stack checks for this pass, when the repo has them: `.prism/review/stack/intent-scope.md`.

@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-04-19
 ---
 
+> Amended by [ADR-0087](./0087-one-review-replaces-the-pr-reviewer-and-labels.md): Eric and `prism-pr-review` are retired, so the rule now binds `prism-review`, which never approves and never posts; the no-approval rule itself stands.
+
 ## Context
 
 Eric is the PR review skill — he reads diffs, flags issues, and posts feedback. The natural question: should Eric also approve PRs when the review is clean?
