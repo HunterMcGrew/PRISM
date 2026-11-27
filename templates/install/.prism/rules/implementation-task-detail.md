@@ -7,15 +7,13 @@ paths:
 
 # Implementation Task Detail
 
-When authoring artifacts that drive implementation — the plan stage's tasks in a branch plan, or Pixel's mode 2 mock specs in `.prism/design/mocks/<slug>.md` — the bar is: any LLM at any effort level should be able to execute the artifact without making judgment calls about what file to touch, what specific change to make, or how to verify it worked. **Front-load every decision; do not front-load every keystroke.**
-
-**Why:** Cross-LLM portability is one of PRISM's core promises. Sonnet, low-effort Opus, ChatGPT, Cursor — they all hit ambiguity differently, but they all hit it. A plan that leaves decisions to the implementer produces divergent outputs across runs and across models. Codifying the bar means the next planner doesn't have to reinvent the pattern, and the next reviewer has a concrete standard to flag against.
+A task in a plan folder's `plan.md` carries its field list and at most two gotcha lines. A mode 2 mock spec in `.prism/design/mocks/<slug>.md` front-loads every design decision, because the plan stage writes tasks from it.
 
 ## When this rule applies
 
 Two artifact classes are in scope:
 
-- **`## Implementation Tasks` in branch plans** — written by the plan stage (`prism-plan`). Each task line is a unit of work Clove (or another implementing persona) executes against.
+- **Tasks in a plan folder's `plan.md`** — written by the plan stage (`prism-plan`). A legacy flat plan's `## Implementation Tasks` keeps the earlier bar: each task names the file, the exact change, the verification command, and its sequence.
 - **Mode 2 saved mock specs** — written by Pixel at `.prism/design/mocks/<slug>.md`. The spec is the implementation guide for the design portion of the work; the plan stage reads it when writing tasks.
 
 Two artifact classes are explicitly **exempt**:
@@ -23,19 +21,13 @@ Two artifact classes are explicitly **exempt**:
 - **Mode 1 inline sketches** — Pixel's conversational riffs in chat, including mid-ticket gap-fill. These are quick answers by design; holding them to the spec-class bar defeats their purpose.
 - **Mode 3 HTML mockups** — Pixel's visual preview artifacts. These are renders, not specs; the detail goes in the paired mode 2 markdown spec, not in the HTML.
 
-## The bar
+## Folder-plan tasks
 
-A **decision** belongs in the artifact. A **keystroke** belongs to the implementer with the code in front of them.
+A task is its heading and the field list per [`plan-chain-scripts.md` § Tasks and subjects](../architect/_toolkit/plan-chain-scripts.md): `files`, `proof`, `depends on`, and the optional fields. Below the fields, write at most two gotcha lines, meaning what the builder would otherwise get wrong. A task with nothing to warn about has no prose at all.
 
-| Counts as a decision (front-load) | Counts as a keystroke (leave to implementer) |
-| --- | --- |
-| Target file path (with line number when stable) | Variable names within new code |
-| Specific change — text-to-text replacement, exact insertion point, full new content for new files | Loop construct choice (`for` vs `while` vs `.map`) |
-| Verification command (the exact `pnpm` / `git` / build invocation) | Specific line counts in new code |
-| Sequence — which task must finish before this one starts | Internal helper function names |
-| External shape — function signatures crossing boundaries, ARIA roles, exact Tailwind tokens | Comment phrasing inside a function |
+**Why:** the builder runs on the planning model and reads the spec and the code itself. Long task prose was 58 to 73 percent of a plan's words, and it repeated what the spec and the diff already hold. The field list stays because the checks read it: `bundles.mjs` groups tasks by their files, `auto-approve.mjs` tests each file against the spec's Affected systems, and the proof is what the builder runs to show the task works.
 
-When you can't tell whether something is a decision or a keystroke, ask: "If two LLMs both executed this task perfectly, would they produce identical output?" If they'd diverge on this dimension, it's a decision — front-load it.
+**How to apply:** to decide whether something earns a gotcha line, ask whether two builders who read the spec and the code, and both did the task well, would still produce different output on it. If they would, it is a decision the builder can't recover, so write it down. If they wouldn't, the builder finds it in the spec or the code, and the line is noise.
 
 ## Cite, don't restate, when overlapping existing framing
 
@@ -45,30 +37,9 @@ When the artifact restates a concept defined elsewhere — a doctrine, a templat
 
 **How to apply:** When authoring a rule, ADR, architect doc, or skill section that touches a concept owned by another doc, link to the owning doc and quote at most a sentence for context. Don't re-enumerate. If you find yourself writing "the five [things] are: a, b, c, d, e" and another doc already enumerates them, replace the list with `per [doc] § [section]`.
 
-## How to apply — the plan stage's tasks
-
-Each task names:
-
-1. **Target file path** with relative path from repo root (e.g. `.ai-skills/skills/prism-design/shared.md`). Include line numbers when stable; reference section headings when line numbers will drift.
-2. **The specific change.** For edits: the exact `old_string` → `new_string` replacement (or describe it precisely enough that Edit tool input writes itself). For new files: full content or a content outline tight enough that the writer doesn't have to invent structure. For deletions: name the lines or sections to delete.
-3. **Verification command** when the change has runtime or build implications (`pnpm prism:check`, `pnpm prism:test`, `npx jest --testPathPatterns=...`). When the change is content-only with no build effect, state that explicitly so the implementer doesn't waste time guessing.
-4. **Sequence dependencies** noted inline when applicable — "after task 3", "blocks task 7", "parallel with task 4–6".
-
-The model to study is `.prism/plans/epic-phase-1-foundation.md` tasks 13–19. They name files, line numbers, exact replacements, and verification — they read like the artifact this rule is asking for.
-
-### Example — good
-
-> 13. **Drop the stale count claim from `.prism/rules/writing-voice.md:45`** (and the mirrored copy at `templates/claude/rules/writing-voice.md:45`). Replace `"five dangling references across..."` with `"the dangling references across..."` — no count, just the noun, per writing-voice § Count rules, not numbers. Verify with `pnpm prism:check`.
-
-### Example — bad (under-specified version of the same)
-
-> 13. Update writing-voice.md to remove the count claim.
-
-The bad version leaves: which file, which surface, which line, what specific text, what replacement phrasing, what verification? An LLM executing this would have to read the rule, locate the count claim, choose between several valid phrasings, and decide whether both surfaces need the edit. That's four judgment calls the planner could have eliminated.
-
 ## How to apply — Pixel's mode 2 mock specs
 
-A spec at this bar gives the plan stage enough fidelity to write `## Implementation Tasks` against it without round-tripping back to Pixel for clarification. Required elements:
+A mock spec front-loads every decision and leaves keystrokes to the implementer: two implementers building from it should produce the same design. That gives the plan stage enough fidelity to write `## Implementation Tasks` against it without round-tripping back to Pixel for clarification. Required elements:
 
 1. **Measurable units in every wireframe.** Use Tailwind tokens (`text-lg`, `p-4`, `gap-2`, `max-w-md`) when they fit; explicit px or rem when they don't. Spacing, typography scale, color tokens, layout dimensions — all named.
 2. **Cited principles for each interaction or layout decision.** Name the framework: Hick's Law, Fitts's Law, Miller's Law, Nielsen heuristic by number (Nielsen #4, Nielsen #8), Gestalt principle by name (proximity, common region). The intuition explains why the design feels right; the citation makes it auditable.
@@ -96,10 +67,10 @@ The bad version leaves: which Tailwind classes? Which principles justify which c
 
 ## Who runs this rule
 
-- **The plan stage** (`prism-plan`) — applies the bar when authoring tasks. The bar is a baseline for every task it writes.
+- **The plan stage** (`prism-plan`) — writes each folder-plan task as its field list and at most two gotcha lines.
 - **Pixel** (`prism-design`) — applies the bar when authoring mode 2 saved mock specs. Mode 1 inline sketches and mode 3 HTML mocks are exempt.
 - **Briar** (`prism-review`) — flags tasks or specs that fail the bar during review.
 
 ## Severity
 
-Tasks or mock specs that fail the bar are at minimum **Major** in review. The cost compounds — every implementer who reads an under-specified task makes a judgment call that may diverge from the planner's intent, and the divergence shows up later as rework.
+A mock spec that fails the bar, or a task missing a gotcha its builder needed, is at minimum **Major** in review. The cost compounds — every implementer who reads an under-specified task makes a judgment call that may diverge from the planner's intent, and the divergence shows up later as rework.
