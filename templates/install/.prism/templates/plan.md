@@ -26,7 +26,7 @@ Above the first task, record the parallel groups the bundle check (plan/bundles.
 - behavior change: <only when an existing test changes, say what and why>
 
 "proof fails on main" is optional. Add it when the proof is a test that fails before this task lands.
-Below the fields, write at most two lines of gotchas: what the builder would otherwise get wrong. The plan-folder lint counts them.
+Below the fields, write at most two lines of gotchas: what the builder would otherwise get wrong.
 -->
 
 ## Challenge

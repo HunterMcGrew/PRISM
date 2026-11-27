@@ -15,7 +15,7 @@ In the plan folders written under that bar, task prose was 58 to 73 percent of a
 
 The bar's reason has also moved. The implement agent now runs on the planning model, because `CLAUDE_AGENT_MODEL_DEFAULTS` in `generate-skills.ts` maps `prism-implement` to `inherit`, and it reads the spec and the code itself, so a task no longer has to carry everything a smaller model would need.
 
-The fields still do work no prose does. `bundles.mjs` groups tasks by their `files`, `auto-approve.mjs` tests each file against the spec's Affected systems, and the `proof` is what the builder runs to show the task works.
+The fields still do work no prose does. `bundles.mjs` groups tasks by the architect docs their `files` route to, `auto-approve.mjs` tests each file against the spec's Affected systems, and the `proof` is what the builder runs to show the task works.
 
 ## Decision
 
@@ -31,8 +31,9 @@ Alternatives considered:
 ## Consequences
 
 - **Positive:** plans get shorter to write, to challenge, and to approve, and the words left in a task are the ones a builder couldn't recover.
-- **Positive:** the cap is a lint, so it holds without a reviewer counting lines.
-- **Negative:** a builder reads the spec and the code to recover what a task no longer states, and that costs more reads per task. A builder on a weaker model than the planner, such as a consumer who pins the implement agent to a smaller one, loses the detail ADR-0033 gave it.
+- **Positive:** in PRISM's own tree the cap is a lint, so it holds without a reviewer counting lines.
+- **Negative:** a builder reads the spec and the code to recover what a task no longer states, and that costs more reads per task. A builder on a weaker model than the planner loses the detail ADR-0033 gave it. In Claude Code that happens when the session itself runs a weaker model, since the implement agent inherits it and `modelTiers` offers no pin for it. On Codex and Cursor, PRISM pins no model for the builder at all.
+- **Negative:** the lint is PRISM's own check. `plan-folder-citations.ts` is not in the published package, so in a consumer repo nothing counts the gotcha lines, and the cap holds only as far as the plan stage follows the rule.
 - **Negative:** whether a line earns its place as a gotcha is a judgment the plan stage makes. A missing gotcha shows up as a review finding or a re-plan, after the build.
 
 ## References
