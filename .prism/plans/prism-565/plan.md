@@ -183,6 +183,7 @@ It names no `ADR-NNNN`, because `crossref-lint` forbids one under `templates/ins
 - depends on: T8
 
 Text only: change the `--event=SessionStart` bullet and the sentence after the plan-path paragraph, and the two matching header sentences, to match the note's own text at lines 242 and 246.
+Keep `scope changes and open questions` on one line in the `compact-handoff.mjs` header, because the proof counts lines and a wrap at a ` * ` break fails it.
 
 ### T16: Part 2 — update the user docs
 
@@ -208,6 +209,11 @@ round 1: clean
   - T15 (non-blocking): the proof passes when only one of the bullet, the sentence after the plan-path paragraph, and the header sentences changes. Check each of the three places.
   - plan (non-blocking): `docs/what-prism-writes.md` is a "complete inventory" of delivered runtime files and is outside Affected systems, so T5 leaves it stale. Record it as child 16's sweep, the way the `parameterization.md` Decision does.
   - T9 (non-blocking, unverified): the current loaded-line count of `prism-retro` was not measured, so the headroom under 120 for the trigger step is unknown. Measure it before T9 starts.
+round 2: clean
+  - T15 (non-blocking): AC-13 and T15's proof count lines, not occurrences, and the `compact-handoff.mjs` header wraps near 72 columns, so a builder who lets `scope changes and open questions` break across a ` * ` line fails the proof. Keep the phrase on one line.
+  - T9 (non-blocking, unverified): the 118-of-120 loaded-line figure now in the task was not re-measured this round. `skill-loaded-lines.test.ts` at T17 is the gate, so a miss costs a cut in T9's files and no more.
+  - T7 and T17 (non-blocking): the generated-copy lists were not checked against a build. A path the build changes that is not listed comes back as `unlisted:` in the build report, which the plan already tells the builder to do.
+  - AC-7 (non-blocking, carried from round 1): its evidence is still two phrase greps, so only AC-15 reads behavior. Accepted, because the retro's own close grades it.
 
 ## Decisions
 
