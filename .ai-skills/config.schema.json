@@ -49,7 +49,7 @@
 		},
 		"github": {
 			"type": "object",
-			"description": "GitHub repo info for Eric (PR review), Sage (changelog), Reese (QA plans), Lilac (standup).",
+			"description": "GitHub repo info for Sage (changelog), Reese (QA plans), Lilac (standup), and the review scripts.",
 			"properties": {
 				"owner": { "type": "string" },
 				"repo": { "type": "string" }
@@ -362,7 +362,7 @@
 		},
 		"modelTiers": {
 			"type": "object",
-			"description": "Optional model selection. Only `overrides.eric` is read, by every `prism-pr-review` dispatch, so a value for any other persona has no effect. Each other skill keeps the model its generated agent definition or frontmatter pins.",
+			"description": "Optional model selection. Only `overrides.briar` is read, by the session's `prism-review` dispatch, so a value for any other persona has no effect. Each other skill keeps the model its generated agent definition or frontmatter pins.",
 			"properties": {
 				"overrides": {
 					"type": "object",
