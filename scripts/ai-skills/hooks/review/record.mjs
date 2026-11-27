@@ -125,18 +125,21 @@ export function validateReport(value) {
 }
 
 /**
- * The round's verdict: `clean`, or the open counts.
+ * The round's verdict: `clean`, `clean, <d> decision(s)`, or the open counts.
  *
- * A round is `clean` when no Critical or Major is open apart from decision
+ * A round is clean when no Critical or Major is open apart from decision
  * items and every pass token reads `swept — …` or `n/a: …` with text after
  * the prefix. A bare `swept`, or a prefix with nothing after it, names no
  * reach, so it reads as a sweep that did not finish. Decision items
- * wait on a person rather than a fix, so the counts leave them out too.
+ * wait on a person rather than a fix, so the counts leave them out. A clean
+ * round still names them, because only a bare `clean` meets the merge bar
+ * and a call only the person can make must not let the session merge.
  *
  * @param {ReviewReport} report
  * @returns {string}
  */
 export function computeVerdict(report) {
+	const decisions = report.findings.filter((finding) => finding.kind === "decision").length;
 	const counted = report.findings.filter((finding) => finding.kind !== "decision");
 	const count = (/** @type {string} */ severity) =>
 		counted.filter((finding) => finding.severity === severity).length;
@@ -146,7 +149,11 @@ export function computeVerdict(report) {
 		FINISHED_TOKEN_PATTERNS.some((pattern) => pattern.test(pass.token))
 	);
 
-	if (crit === 0 && maj === 0 && everyPassFinished) return "clean";
+	if (crit === 0 && maj === 0 && everyPassFinished) {
+		if (decisions === 0) return "clean";
+
+		return `clean, ${decisions} ${decisions === 1 ? "decision" : "decisions"}`;
+	}
 
 	return `${crit} critical, ${maj} major, ${min} minor, ${nit} nit`;
 }

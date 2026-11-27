@@ -89,15 +89,43 @@ test("a round with no findings and every pass swept is clean", () => {
 	assert.equal(computeVerdict(reportOf()), "clean");
 });
 
-test("a Major marked as a decision item leaves the round clean, and the same Major without the kind is counted", () => {
+test("a round whose only open item is one decision records clean, 1 decision, and the same Major without the kind is counted", () => {
 	const major = { severity: "major", file: "src/a.ts", line: 3, summary: "s" };
 
 	assert.equal(
 		computeVerdict(reportOf({ findings: [{ ...major, kind: "decision" }] })),
-		"clean"
+		"clean, 1 decision"
 	);
 	assert.equal(
 		computeVerdict(reportOf({ findings: [major] })),
+		"0 critical, 1 major, 0 minor, 0 nit"
+	);
+});
+
+test("a round whose only open items are two decisions records clean, 2 decisions", () => {
+	assert.equal(
+		computeVerdict(
+			reportOf({
+				findings: [
+					{ severity: "major", file: "a.ts", kind: "decision" },
+					{ severity: "minor", file: "b.ts", kind: "decision" },
+				],
+			})
+		),
+		"clean, 2 decisions"
+	);
+});
+
+test("a decision beside a Major keeps the counts verdict and leaves the decision out", () => {
+	assert.equal(
+		computeVerdict(
+			reportOf({
+				findings: [
+					{ severity: "major", file: "a.ts", kind: "decision" },
+					{ severity: "major", file: "b.ts" },
+				],
+			})
+		),
 		"0 critical, 1 major, 0 minor, 0 nit"
 	);
 });
