@@ -118,7 +118,7 @@ New `node:test` file in the style of `scripts/ai-skills/brief-gate.test.ts` (rep
 ### T4: Part 1 — sweep the always-on rules
 
 - files: .prism/rules/skill-routing.md, templates/install/.prism/rules/skill-routing.md, .prism/rules/branch-plan.md, templates/install/.prism/rules/branch-plan.md, .prism/rules/git-conventions.md, .prism/rules/followup-scope.md, .prism/rules/code-standards.md, .prism/rules/context-reuse.md, .prism/rules/design-governance.md, .prism/rules/architect-doc-verification.md, templates/install/.prism/rules/architect-doc-verification.md, .prism/rules/implementation-task-detail.md, templates/install/.prism/rules/implementation-task-detail.md, .prism/rules/lazy-artifacts.md, .prism/rules/skill-authoring.md
-- proof: node --test --test-name-pattern="routes review phrases" scripts/ai-skills/one-review.test.ts && grep -nE 'prism-pr-review|prism-self-review' .prism/rules/*.md templates/install/.prism/rules/skill-routing.md templates/install/.prism/rules/branch-plan.md templates/install/.prism/rules/architect-doc-verification.md templates/install/.prism/rules/implementation-task-detail.md | grep -v 'rules/workflow.md' ; test $? -eq 1
+- proof: node --test --test-name-pattern="routes review phrases" scripts/ai-skills/one-review.test.ts && { grep -nE 'prism-pr-review|prism-self-review' .prism/rules/*.md templates/install/.prism/rules/skill-routing.md templates/install/.prism/rules/branch-plan.md templates/install/.prism/rules/architect-doc-verification.md templates/install/.prism/rules/implementation-task-detail.md | grep -v 'rules/workflow.md' ; test $? -eq 1; }
 - depends on: T1
 
 Make each edit in the canonical and, for the four curated twins listed in `files`, the same edit in the twin. Line numbers are at `ceab998d`.
@@ -152,7 +152,7 @@ Make each edit in the canonical and, for the four curated twins listed in `files
 ### T6: Part 1 — sweep the architect docs and routes
 
 - files: .prism/architect/_toolkit/skills-ecosystem.md, templates/install/.prism/architect/_toolkit/skills-ecosystem.md, .prism/architect/_toolkit/closing-messages.md, .prism/architect/_toolkit/ticket-workflows.md, templates/install/.prism/architect/_toolkit/ticket-workflows.md, .prism/architect/_toolkit/audit-workflow.md, .prism/architect/_toolkit/plan-authoring.md, templates/install/.prism/architect/_toolkit/plan-authoring.md, .prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, .prism/architect/manifest.json, .prism/architect/_toolkit/manifest.base.json, templates/install/.prism/architect/manifest.stub.json
-- proof: pnpm prism:verify-manifest && grep -rnE 'prism-pr-review|prism-self-review|eric-review-modes' .prism/architect templates/install/.prism/architect ; test $? -eq 1
+- proof: pnpm prism:verify-manifest && { grep -rnE 'prism-pr-review|prism-self-review|eric-review-modes' .prism/architect templates/install/.prism/architect ; test $? -eq 1; }
 - depends on: T2
 
 Each curated twin gets the same edit as its canonical.
@@ -324,7 +324,7 @@ Add `review/ignore.mjs`, `review/record.mjs`, and `review/post.mjs` to `HOOK_RUN
 ### T19: Part 2 — rewrite the rulebook
 
 - files: REVIEW.md, .prism/review/intent-scope.md, .prism/review/docs-citations.md
-- proof: node --test scripts/ai-skills/one-review.test.ts && grep -nE 'Plan drift|whole PR is in scope|confirm pass|3-round|prism-pr-review|prism-self-review' REVIEW.md .prism/review/*.md ; test $? -eq 1
+- proof: node --test scripts/ai-skills/one-review.test.ts && { grep -nE 'Plan drift|whole PR is in scope|confirm pass|3-round|prism-pr-review|prism-self-review' REVIEW.md .prism/review/*.md ; test $? -eq 1; }
 - depends on: T14, T10, T20
 
 `REVIEW.md` (line numbers at `ceab998d`):
@@ -358,7 +358,7 @@ Add `review/ignore.mjs`, `review/record.mjs`, and `review/post.mjs` to `HOOK_RUN
 ### T21: Part 2 — record through record.mjs in the skill, template, and runtime doc
 
 - files: .ai-skills/skills/prism-review/shared.md, .prism/templates/plan.md, .prism/architect/_toolkit/review-runtime.md
-- proof: grep -n 'review/record.mjs' .ai-skills/skills/prism-review/shared.md .prism/templates/plan.md .prism/architect/_toolkit/review-runtime.md && grep -n 'Fix plan drift\|3-round' .ai-skills/skills/prism-review/shared.md ; test $? -eq 1
+- proof: grep -q 'review/record.mjs' .ai-skills/skills/prism-review/shared.md && grep -q 'review/record.mjs' .prism/templates/plan.md && grep -q 'review/record.mjs' .prism/architect/_toolkit/review-runtime.md && { grep -n 'Fix plan drift\|3-round' .ai-skills/skills/prism-review/shared.md ; test $? -eq 1; }
 - depends on: T16, T17, T19
 
 - `prism-review/shared.md` "Write the plan before the chat", plan-folder bullet → `- **On a plan folder,** write the round's report JSON to a temp file in the shape \`REVIEW.md\` names, marking each decision item \`kind: "decision"\` so the verdict leaves it out, run \`node ${HOOK_RUNTIME_DIR}/review/record.mjs <plan.md> <report.json>\`, and commit with \`node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "plan: review record" <plan.md>\`. Add \`part\` when the plan's Decisions declare a stack and this PR is not its last part. Exit 1 means a finding cites a never-reviewed path: drop it and record again. Findings and criterion grades go in the report, not the plan.` Delete the "Fix plan drift in place" bullet. "Report": `Ready for PR` verdict stays; append `Minors, decision items, and anything left after round 2 are listed for the PR body.` "Rounds and guardrails": `up to the 3-round cap per \`REVIEW.md\`` → `up to the two-round cap per \`REVIEW.md\``; `On a folder plan its only writes are the record line and the in-place plan-drift fixes` → `On a folder plan its only write is the record line`.
@@ -387,7 +387,7 @@ Then dispatch `prism-review` on the part 2 branch per REQ-27's CI and the spec's
 
 ## Challenge
 
-- round 1: blocking 4
+round 1: blocking 4
   - T9 (blocking): `scripts/ai-skills/verify-manifest-coverage.test.ts` is not in `files` or `behavior change`, yet its `findMissingCoverage` cases (lines 220, 232) key on `eric`, so renaming the fixture to `briar` fails T9's own proof.
   - T12 (blocking): writing probe lines under `## Verification` makes that section non-empty, so the resume table's verify row (`## Verification` empty) never fires and prism-verify's section is pre-filled with non-report lines; and "start a fresh Claude Code session" names no mechanism an unattended run can perform (headless `claude -p`, or a `[HITL]` tag).
   - T16 (blocking): the report shape has no decision-item marker, so `record.mjs` counts a Critical or Major decision item as unclean while T19's `REVIEW.md` makes the round `clean` apart from decision items; T16 and T21 need one agreed field (such as `kind: "decision"`) excluded from the verdict.
@@ -396,11 +396,18 @@ Then dispatch `prism-review` on the part 2 branch per REQ-27's CI and the spec's
   - plan (non-blocking): a consumer's live `manifest.json` (consumer-owned, never rewritten) keeps `.claude/skills/prism-pr-review/**` -> `_toolkit/eric-review-modes.md` after update, and doctor's empty-route warning may fire; T13 does not run `prism doctor` or check that the moved `.prism/` files and their host copies left the consumer, and it omits `prism init` before `prism adopt`.
   - plan (non-blocking): `review-runtime.md` line 91 ("REVIEW.md gives the `self-review` lines the same marker") goes false after T19, and T21 leaves that section untouched.
   - plan (non-blocking): nothing says part 1 goes to verify, review, and PR after T13 while T14 to T23 stay open, so the resume table's implement row keeps matching on part 1's branch.
-- round 2: blocking 1
+round 2: blocking 1
   - T19 (blocking): its proof runs all of `one-review.test.ts`, which cannot pass at T19's commit. The widened label case reads `git-conventions.md` line 118, `followup-scope.md` line 80, and the schema's `mainSessionMayMerge` description, all of which hold `review:has-minors` until T20. T20 is not a dependency, and the two share no file, so the bundle check lets them run in parallel. Dropping the `templates/install/REVIEW.md` allowlist entry also fails: that mirror keeps lines 4 and 97 naming both old skills until T23's build. Fix by narrowing T19's proof with `--test-name-pattern`, or by adding `depends on: T20` and moving the allowlist removal into T23.
   - plan (non-blocking): the "Part 1 ships from T13" Decision does not say the retro waits for part 2. After part 1's PR opens, the resume table's retro row (`Retro:` empty) matches, and `prism-retro` would write `> Closed:` with T14 to T23 still open.
   - T3 (non-blocking): `mergeHookRegistration` takes `(sourcePath, targetPath, pattern, dryRun)`, so step 1(a) has to write temp files and cannot pass a settings object. Its JSDoc ("an event name the consumer hasn't registered is added outright") also needs a sentence on dropping target-only keys.
   - T18 (non-blocking): changes `update.ts` behavior, but has no `proof fails on main: yes`. Its appended expectations fail on `main`.
+
+round 3: blocking 4
+  - T4 (blocking): the proof `node --test … && grep … | grep -v … ; test $? -eq 1` passes when the routing test fails, because a failed `node --test` exits 1 and skips the grep, so `test $? -eq 1` reads that 1 as success. Replace the tail with `! grep …` so each half must hold.
+  - T6 (blocking): same shape. A failing `pnpm prism:verify-manifest` exits 1, skips the grep, and the proof passes.
+  - T19 (blocking): same shape. A failing `node --test scripts/ai-skills/one-review.test.ts` exits 1 and the proof passes.
+  - T21 (blocking): `grep -n 'review/record.mjs' … && grep -n 'Fix plan drift\|3-round' … ; test $? -eq 1` passes when the first grep finds nothing, which is the state before T21's edits.
+  - plan (non-blocking): rounds 1 and 2 are written `- round 1: blocking 4` and `- round 2: blocking 1`, and `auto-approve.mjs` matches `^round <n>: …` with no leading `- `, so `--check` reports "## Challenge holds rounds none". Those two lines need the `- ` dropped before approval can pass.
 
 ## Decisions
 
