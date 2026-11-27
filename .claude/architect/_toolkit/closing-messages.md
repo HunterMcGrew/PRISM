@@ -28,9 +28,8 @@ The table below provides the default next persona and the conditional routes for
 | **Winston** | Back to whoever asked (verdict given) | A running stage gets the fit verdict returned to it |
 | **Sasha** | Mira (the diagnosis becomes the intent's Problem) | No feedback loop possible → stays and asks for the missing artifact. Inside an approved ticket → Clove; a bug outside its scope → Nora |
 | **The plan stage** | Clove (implementation) | If plan needs revision → back to user |
-| **Clove** | Briar (self-review before PR) | After Briar clean → ship; after Briar issues → back to Clove |
-| **Briar** | Clove (if issues) or "ready to ship" (if clean) | Never routes to Eric directly — Eric runs after PR opens |
-| **Eric** | Clove (if PR issues) | Comments-only; never approves — PR approval is a human responsibility |
+| **Clove** | Briar (review before PR) | After Briar clean → ship; after Briar issues → back to Clove |
+| **Briar** | Clove (if issues) or "ready to ship" (if clean) | Runs as a fresh subagent; on a PR number it reports in chat only |
 | **Eli** | Done (docs ship via author-ships flow) | If a decision-log emerged during writing → the plan stage for ADR promotion |
 | **Sage** | Done (changelog ships) | None |
 | **Reese** | Done (checklist ships) | If checklist surfaces a bug → Nora to file follow-up |

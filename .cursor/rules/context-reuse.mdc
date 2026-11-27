@@ -35,8 +35,7 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 - prism-plan
 - prism-implement (Clove)
-- prism-pr-review (Eric)
-- prism-self-review (Briar)
+- prism-review (Briar)
 - prism-docs (Eli)
 - prism-design (Pixel)
 - prism-qa-plan (Reese)

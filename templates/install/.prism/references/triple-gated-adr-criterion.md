@@ -38,11 +38,11 @@ Apply the gate at decision-promotion time — typically the plan stage during pl
 ## Who cites this pattern
 
 - **The plan stage** (`prism-plan`) — applies the gate at plan close for every `## Decisions` entry.
-- **Briar** and **Eric** — apply the gate when reviewing whether a Decision in a plan should have been promoted to an ADR but wasn't (or vice versa). Flag as Minor in review when the gate is misapplied.
+- **Briar** — applies the gate when reviewing whether a Decision in a plan should have been promoted to an ADR but wasn't (or vice versa). Flag as Minor in review when the gate is misapplied.
 
 ## Why a reference doc rather than inlining
 
 Phase 1.5e inlined the gate in Winston's `## Immediate Decision Promotion` section. Wave 2 extracts it for two reasons:
 
-- Future personas that need ADR criteria (Briar review checks, Eric PR review checks, the Iris retrospective persona) can cite one source instead of three.
+- Future personas that need ADR criteria (Briar review checks, the Iris retrospective persona) can cite one source instead of three.
 - The gate is the canonical PRISM criterion for ADR promotion. Canonical criteria belong in `.prism/references/`, not inlined in one persona that other personas have to read around.

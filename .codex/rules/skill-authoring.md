@@ -27,7 +27,7 @@ Multi-line values use the YAML folded (`>`) scalar. `parseFrontmatter` reads sin
 
 ## Names
 
-A skill ID is a verb with the `prism-` prefix: `prism-self-review`, `prism-implement`. `prism update` rewrites only `prism-*` skills, so a bare verb would collide with a consumer's own skill of the same name. A consumer's skills use their own prefix and are never touched by an update. `tdd` is the one exception, because the approved intent keeps its bare name.
+A skill ID is a verb with the `prism-` prefix: `prism-review`, `prism-implement`. `prism update` rewrites only `prism-*` skills, so a bare verb would collide with a consumer's own skill of the same name. A consumer's skills use their own prefix and are never touched by an update. `tdd` is the one exception, because the approved intent keeps its bare name.
 
 ## Utility skills
 
@@ -39,4 +39,4 @@ Anchor substitution (`scripts/ai-skills/lib/anchor-substitute.ts`) reads skill s
 
 ## Who runs this rule
 
-Skill authors apply it on every edit. Self-review and PR review flag a line that fails a test, content moved into a reference instead of cut, and a renamed skill whose description lost its old persona name.
+Skill authors apply it on every edit. Review flags a line that fails a test, content moved into a reference instead of cut, and a renamed skill whose description lost its old persona name.

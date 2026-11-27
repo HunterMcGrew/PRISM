@@ -24,7 +24,7 @@ argument-hint: "[task description]"
 <!-- Source: .ai-skills/skills/prism-implement -->
 <!-- Target: codex | Regenerate with: pnpm prism:build -->
 
-Implements a feature, fix, or task on the current branch against its plan, then ships it. It does not plan architecture (`prism-architect`'s lane), design UI (`prism-design`), or review its own work (`prism-self-review`). Task: $ARGUMENTS
+Implements a feature, fix, or task on the current branch against its plan, then ships it. It does not plan architecture (`prism-architect`'s lane), design UI (`prism-design`), or review its own work (`prism-review`). Task: $ARGUMENTS
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.
@@ -67,7 +67,7 @@ Open with one warm line so the user knows Clove arrived, such as "Clove here! Le
 
 On a flat plan, after the code is done, update the plan in one pass:
 
-- Mark addressed issues `fixed` with a `Fixed in:` note, or `deferred` with a reason. Record each non-trivial PR-review finding under `## Review Issues` as `fixed`, because PR threads do not survive as plan evidence.
+- Mark addressed issues `fixed` with a `Fixed in:` note, or `deferred` with a reason. Record each non-trivial PR finding under `## Review Issues` as `fixed`, because PR threads do not survive as plan evidence.
 - Append one `## History` line, `YYYY-MM-DD [<branch>]: <what and why>`, of three sentences at most.
 - Write each new `## Decisions` entry as a standing fact with its reason in the same sentence ("X is used because Y"), never "currently" or "recently". Later readers see it cold.
 
@@ -79,7 +79,7 @@ On a flat plan, after the code is done, update the plan in one pass:
 - **On a flat plan, ship without asking** (authors ship). First read `git config --global --get prism.pauseBeforeCommit`. `true` means state the commit subject and wait for "ship it". Unset means ask once and save the answer with `git config --global`. Then push, and open a draft PR with `gh pr create --draft`. If `gh pr list --head <branch>` already finds one, the push updates it and no new PR is created.
 - **PR title and body.** The title is `PRISM-NNNN: <description>`, or `PRISM-NNNN followup: <description>` once the main PR has merged. The body uses `.github/pull_request_template.md` as its scaffold and adds Summary, What did you do?, Why did you do it?, How did you achieve it?, Screenshots (UI only), Notes, and Ticket ahead of its Type of Change and checklist. Check only the checklist items you can confirm, and leave UI items unchecked when nothing in the UI changed. The body carries reasoning the diff cannot show, so it never lists files or copies the AC. On every push that adds scope past the body, rewrite only the templated sections (Summary, What did you do?, Why did you do it?, How did you achieve it?, Ticket, Type of Change, and the checklist) and keep every other section verbatim, Screenshots and Notes included. Skip the sync when the user said not to touch the body this session. Write it with `gh pr edit --body-file`, since `--body` hits a GraphQL deprecation error. Escape a bare `#N` in backticks, because GitHub autolinks it.
 - **Offer e2e tests** when the plan has behavioral AC: Given/When/Then maps 1:1 to a test case. Only offer, never generate them unasked.
-- **Close a flat plan** with the outcome and the PR number, then propose `prism-self-review` in this session, or `review pr #<n>` in a fresh chat. Propose the handoff and never invoke it.
+- **Close a flat plan** with the outcome and the PR number, then propose `prism-review`. Propose the handoff and never invoke it.
 
 Before closing the session, append to `.prism/lessons.md` when you were corrected, found a codebase constraint no architect doc states, or an assumption proved wrong.
 
