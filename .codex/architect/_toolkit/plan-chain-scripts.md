@@ -10,7 +10,8 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 - **`plan/lookup.mjs`** resolves a ticket ID to a plan file, live or archived.
 - **`plan/tasks.mjs`** parses `## Tasks` and reports which tasks are done from commit subjects.
 - **`plan/bundles.mjs`** groups open tasks into parallel-safe bundles.
-- **`plan/auto-approve.mjs`** approves a folder plan when every condition holds.
+- **`plan/auto-approve.mjs`** approves a folder plan when every condition holds. It also exports the challenge round pattern, `ROUND_LINE`, and `readChallengeRounds`, the one reader of `## Challenge` round lines.
+- **`plan/retro-trigger.mjs`** says whether a folder plan's retro writes a report (§ Retro trigger).
 - **`plan/stop-paths.mjs`** holds the dependency and contract path lists and the matcher for them.
 - **`plan/commit.mjs`** commits exactly the named paths.
 - **`plan/approve.mjs`** stamps a chain file's approval lines for a person, after a keypress in their terminal or, inside an agent session, on a chat approval token in place of the keypress. It stamps `intent.md`, `design.md`, and `plan.md` and never `spec.md`, and it refuses a file whose text changed after the person said `approve`.
@@ -20,7 +21,7 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 
 ## Invocation
 
-In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Skill and rule text spells that directory with the `HOOK_RUNTIME_DIR` token, which renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. It comes from `hookRuntimeDir` in `.ai-skills/config.json`, which a consumer never sets. Only `tasks`, `bundles`, `auto-approve`, `approve`, `commit`, and `watch-ci` are commands. The rest are imported. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `watch-ci.mjs` adds 8 and 3 to those. `commit.mjs` passes any other git failure through with git's code. A `.ai-skills/config.json` that exists but does not parse is a config error, exit 2, for every command that reads it except `watch-ci.mjs`, so a typo in a config that sets `stopPaths` can't fall back to the default paths and approve a plan the configured ones would stop. `watch-ci.mjs` reads the file only for `ci.requiredCheck` and treats one that does not parse as absent, which makes it wait only until the head has a check and none is pending, with the late-check gap above, instead of for one named check.
+In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Skill and rule text spells that directory with the `HOOK_RUNTIME_DIR` token, which renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. It comes from `hookRuntimeDir` in `.ai-skills/config.json`, which a consumer never sets. Only `tasks`, `bundles`, `auto-approve`, `approve`, `commit`, `watch-ci`, and `retro-trigger` are commands. The rest are imported, and `retro-trigger.mjs` imports `auto-approve.mjs` too. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `watch-ci.mjs` adds 8 and 3 to those. `commit.mjs` passes any other git failure through with git's code. A `.ai-skills/config.json` that exists but does not parse is a config error, exit 2, for every command that reads it except `watch-ci.mjs`, so a typo in a config that sets `stopPaths` can't fall back to the default paths and approve a plan the configured ones would stop. `watch-ci.mjs` reads the file only for `ci.requiredCheck` and treats one that does not parse as absent, which makes it wait only until the head has a check and none is pending, with the late-check gap above, instead of for one named check.
 
 ## Templates
 
@@ -74,11 +75,21 @@ Done is judged over a commit range. With `--base <ref>`, the range is `<ref>..HE
 - `## Challenge` has round lines `round <n>: clean`, `resolved <k>`, `carried <k>`, or `blocking <k>`, with no repeated number, rounds 1 and 2 both present, and the highest-numbered round not `blocking`;
 - no listed file is on a stop path.
 
-A round line may open with a leading `- `, because a planner writing markdown reaches for the list bullet by habit, and a plan whose real rounds were dashed would otherwise read as having none. A refusal quotes the line after the dash, so its message reads the same for both spellings. The plan template's `## Challenge` comment still documents the bare form.
+A round line may open with a leading `- `, because a planner writing markdown reaches for the list bullet by habit, and a plan whose real rounds were dashed would otherwise read as having none. A refusal quotes the line after the dash, so its message reads the same for both spellings. `readChallengeRounds` does the dash-stripping read, and `retro-trigger.mjs` imports it, so a change to the round grammar reaches both scripts at once. The plan template's `## Challenge` comment still documents the bare form.
 
 `carried` is accepted only from round 4 on, because rounds 1 to 3 are the fix loop and round 4 is the first confirm round. A carried finding is one the confirm round leaves for the PR as an open item. The task count has no cap, because a cap sends a sound plan to a person for its size alone.
 
 When every condition holds, the script rewrites the `status: draft` line to `status: approved` plus `approved_by: auto` and `approved_at: <local date>`, and changes nothing else. `--check` writes nothing. An already approved plan passes untouched. A `status` other than `draft` or `approved`, or a status line that isn't plain `status: draft`, fails instead of reporting an approval it never wrote. The script writes through the filesystem, so an approval guard watching agent edits never sees it.
+
+## Retro trigger
+
+`retro-trigger.mjs <plan-folder>` reads the folder's `plan.md` once and prints one line per reason, in the order challenge, review, amended:
+
+- **`challenge: round <n>`** for each `## Challenge` round numbered 3 or higher, bare or dashed, read through `readChallengeRounds`. Rounds 1 and 2 are the challenge every plan runs, so a third means the fix loop ran.
+- **`review: <line>`** for each `## Review` record line whose verdict is not exactly `clean`, read through `review/lines.mjs` ([`review-runtime.md`](./review-runtime.md) § review/lines.mjs). `clean, 1 decision` is not `clean`. A round that asked for changes still triggers when a later round came back clean, because the first round asked for them.
+- **`amended: T<n>`** for each task whose `amended` list is not empty.
+
+It exits 0 when any reason holds, and 1 with nothing printed when none does. It exits 2 on a usage error, a folder with no `plan.md`, a `plan.md` it cannot read, and a task list `parseTasks` throws on.
 
 ## Stop paths
 
