@@ -7,6 +7,8 @@ approved_by: auto
 approved_at: 2026-11-27
 ---
 
+> Closed: 2026-11-27
+
 ## Acceptance Criteria
 
 Child 11 of the Kitchen Line epic (#499). Each criterion cites the spec requirement it grades as `(REQ-n)`.
@@ -290,20 +292,39 @@ round 4: resolved 1
 ## Decisions
 
 - **The plan stage ran as a subagent.** The session's context was long, so it dispatched this stage in a fresh context with the folder path. The skill expects it to run in the session, and the cost is that the stage read the spec and code cold rather than from the session's memory.
+  - → no promotion needed (a one-time call about this session's context length)
 - **This child ships as a two-PR stack, cut after T5.** The work touches well over 10 files once the regenerated copies count, past the point where Hunter asks for a split. Part 1 (`verify/record.mjs`, the verify body, the reconcile check, and the runtime doc) has value alone. Part 2 (the tool lists, the delivery of `verify/record.mjs`, the review body, the probe) needs part 1 first, because `prism-verify` loses `Write` in part 2 and must already have the script to write through. Rejected: cutting the tool field into its own part ahead of the record script, which would ship a verify agent with no supported way to write its section.
+  - → no promotion needed (the cut line is specific to this ticket's files)
 - **Part 1 ships from T5, not from the resume table.** After T5, part 1's verify, review, and PR stages run while T6 to T13 are still open. The resume table would read "a task with no commit naming it" and send the session back to implement, so the session drives part 1's verify, review, and PR from this Decision, and part 2 resumes from T6 on its own branch cut from `main`. The retro waits for part 2: `prism-retro` runs once, after part 2's review, on the whole plan.
+  - → no promotion needed (ticket tactic here; it recurred from PRISM-553, so the retro routes it as an action item to epic child 15, which rewrites the resume table in `workflow.md`)
 - **Codex gets the declaration only.** This resolves the spec's open question on a Codex tool allowlist. Codex's subagents documentation, read 2026-11-27 (developers.openai.com redirects to learn.chatgpt.com), lists `name`, `description`, `developer_instructions`, model keys, and `features.*` on/off switches for an agent file, with no tools key, and says the file cannot override `mcp_servers`. The read covered most of the page and the config reference's `agents` table, not every line. Rejected: setting `features.shell_tool = false` on Codex agents, which would stop verify running checks and `record.mjs` at all.
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 - **`prism-implement` and `prism-challenge` also get `WebFetch` and `WebSearch`.** The spec's Decision gives them to the review because its body says to check a framework behavior or vendor API at the source. Both of these bodies say the same thing in their Startup, and both tools only read, so this extends that ruling to its sibling cases. Rejected: leaving them off, which would push the same check through `curl` in the shell with no gain.
+  - → no promotion needed (codified in each skill's `tools` line, which `stage-tools.test.ts` pins)
 - **`verify/record.mjs` pairs `verdict` with `blocked`.** A `blocked` verdict with no `blocked` entries, or a `done` verdict with some, is a shape error. `prism-verify` already forbids both, and without the rule a `blocked` report with no entries passes `checkReport` as `verdict is blocked: (none given)`. This tightens the spec's shape list; it follows from the outcome that the writer cannot produce a section the skill forbids.
+  - → promoted to .prism/architect/_toolkit/review-runtime.md
 - **`verify/record.mjs` reaches consumers in part 2, not part 1.** `update.ts` imports `generate-skills.ts`, so with the delivery task in part 1 the bundle check added an import edge from it to the part 2 task that owns `generate-skills.ts`, and reported the cycle T2 -> T8 -> T7 -> T6 -> T2 under the old numbering. Child 10 met the same shape and moved the work across the cut (its plan's Decision on the label removal). Moving the generate-skills edit into part 1 would pull the tool lists, and with them the review body, into part 1 and undo the cut. Between the two merges the part 1 verify body names `.claude/hooks/verify/record.mjs`, which a consumer update does not yet deliver. No consumer receives either part until the next npm publish, which comes after both, so the gap never reaches one. PRISM's own tree runs the script from `scripts/ai-skills/hooks/` and is unaffected.
+  - → no promotion needed (stack ordering for this ticket; the delivery itself is in `HOOK_RUNTIME_FILES` and `review-runtime.md`)
 - **Each part's review grades only its own criteria.** Part 1's head carries no tool lists, so its review grades AC-5, AC-6, AC-8, AC-13, AC-14, and the `review-runtime.md` half of AC-12, and reads the rest as part 2's. That includes the delivery claim T4 writes into `review-runtime.md` (the consumer command `node .claude/hooks/verify/record.mjs` and the delivered-files sentence), which is true only once T9 lands, for the reason the Decision on delivery in part 2 gives: no consumer receives part 1 before part 2. Part 2's review grades every criterion. Tagging each criterion with its part was considered and left out, because the IDs already map to tasks and the split is two lines here.
+  - → no promotion needed (stack tactic for this ticket)
 - **Tests and the code they import share a task.** T1, T2, T7, and T9 each write the failing test first inside the task. A separate test task would import a file the implementation task owns, and the bundle check would add an import edge back to it and report a cycle.
+  - → no promotion needed (a plan-stage tactic for this plan's bundle check)
 - **`reconcile.d.mts` and `utils.ts` stay unchanged.** Both are in Affected systems. `reconcile()` keeps `pr: number`, `parseArgs` is not exported, and `parseFrontmatter` already reads a one-line `tools:` value, so neither file needs an edit, and `commit.mjs` rejects an unchanged path.
+  - → no promotion needed (records two no-edit calls; the code shows them)
 - **`branch-plan.md` and `plan-authoring.md` keep naming Briar as the writer of `## Review Issues`.** After T10 the review still authors those entries and the session writes them to the file. Both docs sit outside Affected systems, and Briar's authorship of the content is unchanged, so they are listed for the part 2 PR body as an open item rather than edited here. the Landing a plan-only commit section of `branch-plan.md` and the Authors ship, reviewers review section of `skill-routing.md` join them: both say a reviewer commits and pushes a flat plan's record, which after T10 the session does for a dispatched review.
+  - → no promotion needed (an open item carried in the part 2 PR body; the retro routes the stale prose as an action item to epic children 15 and 16)
 - **Open items for the part 2 PR body, outside Affected systems.** `.ai-skills/README.md` lists the `frontmatter.yml` keys without `tools`, and `prism-forge-skill` does not tell an author that a gated role now needs a list. Whether Claude Code on Windows can offer a gated agent `PowerShell` in place of `Bash`, which would leave verify with no shell under `Read, Bash`, is unverified, and so is whether a `tools` list drops a consumer's MCP tools (T11 states the documented behavior). Each goes to the PR body and the closing summary as an open item, not into this plan's tasks.
+  - → no promotion needed (a list of open items; each is in the part 2 PR body or the retro's action items)
 - **Proofs chain with `&&` and `! grep`.** A `; test $?` tail reports only the last command, which child 10's challenge round 3 flagged, so no proof here uses it.
+  - → no promotion needed (a plan-authoring tactic for this plan's proofs)
 - **Each file belongs to one task.** The brief's "one task per file" is read as the skill's rule that a file belongs to one task, not as one file per task, which the build tasks and the ten-file frontmatter task could not meet.
+  - → no promotion needed (a reading of the brief's task rule for this plan)
 - **`check-report.mjs` exports the header and separator predicate.** Review round 1 found that `record.mjs` let through a row whose `check` the reader drops as a header or separator, so the T1 fix exported `matchesHeaderOrSeparator` from `scripts/ai-skills/hooks/verify/check-report.mjs` and its `.d.mts`, two files no task lists, and both scripts now use it. Rejected: a second copy of the predicate in `record.mjs`, which could drift from the reader it guards.
+  - → promoted to .prism/architect/_toolkit/review-runtime.md
+- **Part 1 merged on a direct `gh` check, not a `reconcile.mjs` run.** Running the script would have meant re-reading two routed docs for the write gate, and `gh` showed 0 comments, 0 reviews, and 0 inline comments on https://github.com/HunterMcGrew/PRISM/pull/559, the same answer. Part 2's PR runs `reconcile.mjs`. Review round 1's nit to share `PR_PATTERN` with `post.mjs` was declined, because T2 asked for a local copy. A CI flake gets `gh run rerun --failed`, which does not count against the three fix-and-push attempts.
+  - → no promotion needed (a one-time call about part 1's merge; `reconcile.mjs` ran at the retro and reports clean)
+- **Gated tools lists stay Bash-only; Windows without Git Bash is unsupported for dispatched stages.** Hunter's ruling on 2026-11-27, on review round 1's decision item. Claude Code offers `PowerShell` in place of `Bash` on Windows without Git Bash, so a gated stage there has no shell. A Linux probe showed an allowlist entry for a tool the host lacks is dropped silently, so adding `PowerShell` would have been safe on Linux and macOS. Rejected: adding `PowerShell` to every list and amending AC-2, and deferring the question to a follow-up PR. `hook-runtime.md` records the limitation under Stage tools.
+  - → promoted to .prism/architect/_toolkit/hook-runtime.md
 
 ## History
 
@@ -313,6 +334,15 @@ round 4: resolved 1
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T3 made prism-verify write `## Verification` only through `verify/record.mjs` from a report JSON written in a `mktemp -d` directory, and carry unchanged rows into the report on a re-run because the script always writes the whole section.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T4 documented `verify/record.mjs` (its report shape, the `checkReport` run before the write, and its exit codes) in `review-runtime.md`, and the `N`, `#N`, and `/pull/N` forms `reconcile.mjs` now takes.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T5 regenerated the prism-verify skill and agent copies and the review-runtime.md mirrors from the T3 and T4 sources.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: Part 1 (T1-T5) shipped in https://github.com/HunterMcGrew/PRISM/pull/559, squash-merged as dc02db07. Part 2 starts from main.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: Recorded the part 1 merge check, the declined `PR_PATTERN` nit, and the CI rerun rule as one Decision.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T7 added `parseToolsField`, which fails the build on a malformed `tools` list for any skill, and made `buildClaudeAgentMarkdown` write a gated role's list as `tools:` after `model:` and throw for a gated role that declares none.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T10 moved prism-review's flat-plan writes into the report under `Plan record` and `Lessons` headings for the session to write, and writes the folder-plan report JSON through `mktemp -d` and a heredoc.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T11 added the `**Stage tools.**` paragraph, worded identically in `skills-ecosystem.md` and its install twin.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T8 declared the pinned `tools:` list on each stage skill, and T9 added `verify/record.mjs` to `HOOK_RUNTIME_FILES` so a consumer update delivers it.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T12 regenerated the outputs, so each gated role's Claude agent file carries its tools list.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T13 probes: verify `PROBE write=failed: no Write tool available to this agent (only Read, Bash, SubagentHandback) edit=failed: no Edit tool available to this agent` and `PROBE file=absent`; the general-purpose control `PROBE write=ok edit=ok` and `PROBE file=present`; review `PROBE inner=pong`. The allowlist holds and the review keeps dispatch, recorded under Stage tools in `hook-runtime.md`.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: Merged `main` after #560; the one conflict, the generated `prism-implement` agent file, was regenerated and carries both `model: inherit` and its tools list.
 
 ## Sessions
 
@@ -321,17 +351,17 @@ round 4: resolved 1
 ## Verification
 
 verdict: done
-base: 8c53b07a
-head: 18a64e03
+base: 6b97a1d6
+head: eb79bef3
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | /tmp/tmp.iQJxN5EOFZ/typecheck.log |
-| lint | pass | /tmp/tmp.iQJxN5EOFZ/lint.log |
-| test | pass | /tmp/tmp.iQJxN5EOFZ/test.log |
-| build | pass | /tmp/tmp.iQJxN5EOFZ/build.log |
+| typecheck | pass | /tmp/tmp.1QjVrY7AZf/typecheck.log |
+| lint | pass | /tmp/tmp.1QjVrY7AZf/lint.log |
+| test | pass | /tmp/tmp.1QjVrY7AZf/test.log |
+| build | pass | /tmp/tmp.1QjVrY7AZf/build.log |
 | format | n/a: not configured | none |
-| spec | pass | /tmp/tmp.iQJxN5EOFZ/spec.log |
+| spec | pass | /tmp/tmp.1QjVrY7AZf/spec.log |
 
 ### Failures
 
@@ -341,7 +371,9 @@ head: 18a64e03
 
 - review round 1 at 83394455 (part 1 of 2): 0 critical, 1 major, 4 minor, 2 nit
 - review round 2 at d6940bbf (part 1 of 2): clean
+- review round 1 at 0b010b8e (part 2 of 2): clean, 1 decision
+- review round 2 at 3cab77c2 (part 2 of 2): clean
 
 ## PR Readiness
 
-Retro:
+Retro: .prism/retros/prism-499/prism-557.md

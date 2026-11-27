@@ -19,6 +19,7 @@ description: >
   intent, grill me on this, define the scope, what are the requirements, write
   user stories, flesh out the requirements.
 argument-hint: "[ticket ID or description of the work]"
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

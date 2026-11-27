@@ -17,6 +17,7 @@ description: >
   ships the docs PR. Writes docs only, never code. Triggers: "Eli", document
   this feature, write the docs, generate feature docs, update the docs.
 argument-hint: "[branch name, feature description, or doc path to update]"
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

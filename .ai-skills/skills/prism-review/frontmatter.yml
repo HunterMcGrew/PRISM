@@ -11,3 +11,4 @@ description: >
 argument-hint: "[PR# or GitHub URL]"
 model: opus
 effort: high
+tools: Read, Grep, Glob, Bash, Agent, WebFetch, WebSearch

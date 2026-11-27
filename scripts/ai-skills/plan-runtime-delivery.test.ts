@@ -71,6 +71,7 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/review/ignore.mjs",
 	".claude/hooks/review/record.mjs",
 	".claude/hooks/review/post.mjs",
+	".claude/hooks/verify/record.mjs",
 ];
 
 const FIXTURE_PLAN = [

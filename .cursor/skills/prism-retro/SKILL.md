@@ -11,6 +11,7 @@ description: >
   retrospective, post-mortem, retro this epic, plan close, per-PR retro.
 argument-hint: "[retro <epic-slug> | retro <from>..<to> | retro <ticket-id>]"
 category: retrospective
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
