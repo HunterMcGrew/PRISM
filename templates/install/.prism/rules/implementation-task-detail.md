@@ -25,7 +25,7 @@ Two artifact classes are explicitly **exempt**:
 
 A task is its heading and the field list per [`plan-chain-scripts.md` § Tasks and subjects](../architect/_toolkit/plan-chain-scripts.md): `files`, `proof`, `depends on`, and the optional fields. Below the fields, write at most two gotcha lines, meaning what the builder would otherwise get wrong. A task with nothing to warn about has no prose at all.
 
-**Why:** the builder runs on the planning model and reads the spec and the code itself. Long task prose was 58 to 73 percent of a plan's words, and it repeated what the spec and the diff already hold. The field list stays because the checks read it: `bundles.mjs` groups tasks by their files, `auto-approve.mjs` tests each file against the spec's Affected systems, and the proof is what the builder runs to show the task works.
+**Why:** the builder runs on the planning model and reads the spec and the code itself. Long task prose was 58 to 73 percent of a plan's words, and it repeated what the spec and the diff already hold. The field list stays because the checks read it: `bundles.mjs` groups tasks by the architect docs their files route to, `auto-approve.mjs` tests each file against the spec's Affected systems, and the proof is what the builder runs to show the task works.
 
 **How to apply:** to decide whether something earns a gotcha line, ask whether two builders who read the spec and the code, and both did the task well, would still produce different output on it. If they would, it is a decision the builder can't recover, so write it down. If they wouldn't, the builder finds it in the spec or the code, and the line is noise.
 
@@ -33,13 +33,13 @@ A task is its heading and the field list per [`plan-chain-scripts.md` § Tasks a
 
 When the artifact restates a concept defined elsewhere — a doctrine, a template, an established enumeration — cite the source rather than re-enumerate it. Restated content drifts the moment either side moves; cited content can't.
 
-**Why:** Same divergence failure mode the bar already addresses, just upstream. A rule or spec that re-enumerates "the five states" instead of citing Pixel's doctrine at `prism-design` § States will eventually disagree with it — and downstream artifacts get generated against whichever version the author read first. This rule's first-pass version shipped that exact bug: the rule enumerated states differently from Pixel's doctrine and the mode 2 template, three docs out of sync on day one. Caught by Eric on PR #3 review; fix re-pointed the rule at Pixel's doctrine.
+**Why:** A rule or spec that re-enumerates "the five states" instead of citing Pixel's doctrine at `prism-design` § States will eventually disagree with it — and downstream artifacts get generated against whichever version the author read first. This rule's first-pass version shipped that exact bug: the rule enumerated states differently from Pixel's doctrine and the mode 2 template, three docs out of sync on day one. Caught by Eric on PR #3 review; fix re-pointed the rule at Pixel's doctrine.
 
 **How to apply:** When authoring a rule, ADR, architect doc, or skill section that touches a concept owned by another doc, link to the owning doc and quote at most a sentence for context. Don't re-enumerate. If you find yourself writing "the five [things] are: a, b, c, d, e" and another doc already enumerates them, replace the list with `per [doc] § [section]`.
 
 ## How to apply — Pixel's mode 2 mock specs
 
-A mock spec front-loads every decision and leaves keystrokes to the implementer: two implementers building from it should produce the same design. That gives the plan stage enough fidelity to write `## Implementation Tasks` against it without round-tripping back to Pixel for clarification. Required elements:
+A mock spec front-loads every decision and leaves keystrokes to the implementer: two implementers building from it should produce the same design. That gives the plan stage enough fidelity to write a plan's tasks from it without round-tripping back to Pixel for clarification. Required elements:
 
 1. **Measurable units in every wireframe.** Use Tailwind tokens (`text-lg`, `p-4`, `gap-2`, `max-w-md`) when they fit; explicit px or rem when they don't. Spacing, typography scale, color tokens, layout dimensions — all named.
 2. **Cited principles for each interaction or layout decision.** Name the framework: Hick's Law, Fitts's Law, Miller's Law, Nielsen heuristic by number (Nielsen #4, Nielsen #8), Gestalt principle by name (proximity, common region). The intuition explains why the design feels right; the citation makes it auditable.
@@ -69,8 +69,8 @@ The bad version leaves: which Tailwind classes? Which principles justify which c
 
 - **The plan stage** (`prism-plan`) — writes each folder-plan task as its field list and at most two gotcha lines.
 - **Pixel** (`prism-design`) — applies the bar when authoring mode 2 saved mock specs. Mode 1 inline sketches and mode 3 HTML mocks are exempt.
-- **Briar** (`prism-review`) — flags tasks or specs that fail the bar during review.
+- **Briar** (`prism-review`) — flags mock specs that fail the bar during review. A plan's task prose is never a finding, per `REVIEW.md` § The plan is the yardstick: a gotcha the builder needed and didn't get shows up in the code it produced.
 
 ## Severity
 
-A mock spec that fails the bar, or a task missing a gotcha its builder needed, is at minimum **Major** in review. The cost compounds — every implementer who reads an under-specified task makes a judgment call that may diverge from the planner's intent, and the divergence shows up later as rework.
+A mock spec that fails the bar is at minimum **Major** in review. The cost compounds — every implementer who reads an under-specified spec makes a judgment call that may diverge from the planner's intent, and the divergence shows up later as rework.
