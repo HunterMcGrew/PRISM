@@ -66,7 +66,7 @@ Run each command once and record that result. Rerunning a failure until it passe
 - **`verdict: "done"`** means every configured check ran, whatever its result. **`verdict: "blocked"`** means at least one could not run: its row reads `n/a: blocked`, and `blocked` holds `{ "check", "why" }` for each, which the script writes as `blocked: <check>: <why>` lines.
 - A cell may not hold `|` or a line break.
 
-`record.mjs` runs `check-report.mjs`'s checks over the new section before it writes. Exit 0 means the section is written. Exit 2 names each problem and writes nothing, so fix the report and run it again. A `blocked` report is written, and `check-report.mjs` still fails it on purpose, so a run that could not finish never passes.
+`record.mjs` runs `check-report.mjs`'s checks over the new section before it writes. Exit 0 means the section is written. Exit 2 names the problem, or every problem in the finished section, and writes nothing, so fix the report and run it again. A `blocked` report is written, and `check-report.mjs` still fails it on purpose, so a run that could not finish never passes.
 
 ## Re-running after a later commit
 
