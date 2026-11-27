@@ -460,6 +460,9 @@ round 5: clean
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T3 retired the reconcile stop gate, its tests, and its `SubagentStop` registrations, and gated `prism-review`; `mergeHookRegistration` now drops PRISM entries from event keys only the consumer holds. Its prune test drives the exported `refreshHookRuntime` rather than exporting the private prune.
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T6 swept the architect context, its curated twins, and the routes to name only `prism-review`, and removed the reconcile gate text from `hook-runtime.md`; its proof waits on T11's seed refresh.
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T9 moved the manifest-coverage fixture from eric to briar, dropped Eric's tone test and bootstrap row, and moved the spec-scope-lint fixtures to `prism-review`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T11's first run stopped on a routing-coverage conflict with AC-7; the re-plan added T24, which relaxed the test to one row per persona, and T11's second run passed `pnpm prism:check` and committed the regenerated outputs. The Decision on the routing-coverage test holds the reasoning.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T12's live probe returned `PROBE inner=pong`, so a dispatched `prism-review` can launch subagents on Claude Code; recorded under `### Nested dispatch` in `hook-runtime.md`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T13 proved the upgrade from the `37cdbd28` pack; every AC-6 check passed, and doctor's one WARN is the consumer-owned manifest's dead `prism-pr-review` route.
 
 ## Sessions
 
