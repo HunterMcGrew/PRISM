@@ -72,6 +72,9 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/review/record.mjs",
 	".claude/hooks/review/post.mjs",
 	".claude/hooks/verify/record.mjs",
+	".claude/hooks/plan/retro-trigger.mjs",
+	".claude/hooks/review/lines.mjs",
+	".claude/hooks/review/merge-bar.mjs",
 ];
 
 const FIXTURE_PLAN = [
@@ -299,6 +302,20 @@ test("the delivered reconcile script lists classes in the consumer layout with n
 
 		assert.equal(result.status, 0, result.stderr);
 		assert.equal(result.stdout.trim(), "No open class has 3 or more rows.");
+	});
+});
+
+test("the delivered retro trigger runs in the consumer layout and finds no reason", async () => {
+	await withRoots(async (roots) => {
+		await update(roots);
+
+		const result = spawnSync(process.execPath, [".claude/hooks/plan/retro-trigger.mjs", "."], {
+			cwd: roots.consumerRepoRoot,
+			encoding: "utf8",
+		});
+
+		assert.equal(result.status, 1, result.stderr);
+		assert.equal(result.stdout, "");
 	});
 });
 
