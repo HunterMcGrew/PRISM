@@ -304,6 +304,7 @@ round 4: resolved 1
 - **Proofs chain with `&&` and `! grep`.** A `; test $?` tail reports only the last command, which child 10's challenge round 3 flagged, so no proof here uses it.
 - **Each file belongs to one task.** The brief's "one task per file" is read as the skill's rule that a file belongs to one task, not as one file per task, which the build tasks and the ten-file frontmatter task could not meet.
 - **`check-report.mjs` exports the header and separator predicate.** Review round 1 found that `record.mjs` let through a row whose `check` the reader drops as a header or separator, so the T1 fix exported `matchesHeaderOrSeparator` from `scripts/ai-skills/hooks/verify/check-report.mjs` and its `.d.mts`, two files no task lists, and both scripts now use it. Rejected: a second copy of the predicate in `record.mjs`, which could drift from the reader it guards.
+- **Part 1 merged on a direct `gh` check, not a `reconcile.mjs` run.** Running the script would have meant re-reading two routed docs for the write gate, and `gh` showed 0 comments, 0 reviews, and 0 inline comments on https://github.com/HunterMcGrew/PRISM/pull/559, the same answer. Part 2's PR runs `reconcile.mjs`. Review round 1's nit to share `PR_PATTERN` with `post.mjs` was declined, because T2 asked for a local copy. A CI flake gets `gh run rerun --failed`, which does not count against the three fix-and-push attempts.
 
 ## History
 
@@ -314,6 +315,10 @@ round 4: resolved 1
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T4 documented `verify/record.mjs` (its report shape, the `checkReport` run before the write, and its exit codes) in `review-runtime.md`, and the `N`, `#N`, and `/pull/N` forms `reconcile.mjs` now takes.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T5 regenerated the prism-verify skill and agent copies and the review-runtime.md mirrors from the T3 and T4 sources.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: Part 1 (T1-T5) shipped in https://github.com/HunterMcGrew/PRISM/pull/559, squash-merged as dc02db07. Part 2 starts from main.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: Recorded the part 1 merge check, the declined `PR_PATTERN` nit, and the CI rerun rule as one Decision.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T7 added `parseToolsField`, which fails the build on a malformed `tools` list for any skill, and made `buildClaudeAgentMarkdown` write a gated role's list as `tools:` after `model:` and throw for a gated role that declares none.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T10 moved prism-review's flat-plan writes into the report under `Plan record` and `Lessons` headings for the session to write, and writes the folder-plan report JSON through `mktemp -d` and a heredoc.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T11 added the `**Stage tools.**` paragraph, worded identically in `skills-ecosystem.md` and its install twin.
 
 ## Sessions
 
