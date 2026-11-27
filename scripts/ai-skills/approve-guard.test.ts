@@ -544,8 +544,7 @@ const APPROVE_REL = "scripts/ai-skills/hooks/plan/approve.mjs";
 const COMMIT_PASSES: string[] = [
 	`node ${COMMIT_PATH} "chore: Fix the stamp" ${APPROVE_REL}`,
 	`node ${COMMIT_PATH} "chore: Let the commit script name approve.mjs as a path" scripts/ai-skills/hooks/approve-guard.mjs ${APPROVE_REL}`,
-	`git add ${APPROVE_REL} && node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
-	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} 2>&1 | tail -5`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} 2>&1`,
 ];
 
 for (const command of COMMIT_PASSES) {
@@ -604,19 +603,32 @@ for (const command of COMMIT_DENIES) {
 	});
 }
 
-test("execution arm denies a relative commit script path after a directory change", () => {
-	for (const command of [
-		`cd /tmp && node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
-		`pushd /tmp; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
-		`(cd /tmp; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL})`,
-	])
-		assertExecDenied("claude", shell.claude(command, REPO_ROOT));
-});
+// The commit script passes only as the whole command. An earlier segment can
+// change directory or set the environment in ways the guard can't follow, so
+// any second segment, subshell, or substitution denies, however it is spelled.
+const COMMIT_MULTI_SEGMENT_DENIES: string[] = [
+	`git add ${APPROVE_REL} && node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} 2>&1 | tail -5`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} &`,
+	`true\nnode ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`cd /tmp && node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`pushd /tmp; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`(cd /tmp; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL})`,
+	`(node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL})`,
+	`cd ${REPO_ROOT} && node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`eval "cd /tmp/fake"; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`c=cd; $c /tmp/fake; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`cd\${IFS}/tmp/fake; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`export NODE_OPTIONS=--import=./x.mjs; node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`set -a; NODE_OPTIONS=--import=./x.mjs; node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`echo $(node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL})`,
+];
 
-test("execution arm passes an absolute commit script path after a directory change", () => {
-	const command = `cd ${REPO_ROOT} && node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`;
-	assertPasses("claude", shell.claude(command, makeRepo()));
-});
+for (const command of COMMIT_MULTI_SEGMENT_DENIES) {
+	test(`execution arm denies the commit script beside another segment: ${command}`, () => {
+		assertExecDenied("claude", shell.claude(command, REPO_ROOT));
+	});
+}
 
 test("execution arm denies a lookalike commit script outside the runtime", () => {
 	const root = makeRepo();

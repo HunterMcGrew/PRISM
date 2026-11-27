@@ -64,10 +64,12 @@
 // approve.mjs`, and commit or PR heredocs that mention the command go through.
 // So does `node <this runtime's plan/commit.mjs> …`, which only commits the
 // paths it names, judged by realpath like a read-only command but denied on
-// any leading assignment. A node option before the script, a lookalike copy,
-// or a relative script path in a command that changes directory is judged as
-// any other `node` run. A test runner such as `node --test` runs its file
-// operands, so naming approve.mjs there is still denied.
+// any leading assignment. It passes only as the whole command, with no second
+// segment, subshell, or substitution, because an earlier segment can change
+// directory or set the environment in ways the guard can't follow. A node
+// option before the script, a lookalike copy, or any other segment beside it
+// is judged as any other `node` run. A test runner such as `node --test` runs
+// its file operands, so naming approve.mjs there is still denied.
 // A read-only segment is still denied when a leading assignment names the
 // script (`GIT_PAGER=…`), or when it names the script outside a heredoc body
 // and writes a file, which is how `cat approve.mjs > x.mjs` copies it.
@@ -142,7 +144,8 @@
 // which carries no agent marker and may give approve.mjs a terminal; edits to
 // this guard or to the harness settings files that register it, including the
 // copy in the checkout the payload's `cwd` points into, which this guard hands
-// the event to. approve.mjs
+// the event to; edits to plan/commit.mjs, which the commit pass trusts by
+// path. approve.mjs
 // refuses without a terminal and inside an agent session unless it holds a
 // token, which catches accidental runs only.
 //
@@ -321,7 +324,6 @@ const PLAIN_WORD = /^(?:[A-Za-z]:)?[\w./-]+$/;
 const SELF = fileURLToPath(import.meta.url);
 const APPROVE_SCRIPT = path.resolve(path.dirname(SELF), "plan/approve.mjs");
 const COMMIT_SCRIPT = path.resolve(path.dirname(SELF), "plan/commit.mjs");
-const DIRECTORY_CHANGERS = new Set(["cd", "pushd", "popd"]);
 const ARTIFACT_PLACEHOLDER = "<artifact>";
 
 /**
@@ -827,7 +829,7 @@ function isChatApproveCommand(command, cwd) {
  * @property {(word: string) => boolean} [names]
  * @property {RegExp} [unreadable]
  * @property {string} [cwd]
- * @property {boolean} [movesDir]
+ * @property {boolean} [oneSegment]
  */
 
 /** @typedef {{ runsApprove: boolean, patches: string[] }} Inspection */
@@ -902,19 +904,21 @@ function holdsCarriageReturn(text, unreadable) {
  */
 function inspectItems(items, substitutions, context) {
 	const shadowed = context.shadowed || shadowsCommands(items);
-	const movesDir =
-		context.movesDir ||
-		items.some(({ text, op, body }) => !op && !body && DIRECTORY_CHANGERS.has(text));
-	const inner = { ...context, shadowed, movesDir };
+	const segments = splitSegments(items);
+	const oneSegment =
+		context.oneSegment !== false &&
+		substitutions.length === 0 &&
+		segments.length === 1;
+	const inner = { ...context, shadowed, oneSegment };
 	let runsApprove = substitutions.some(
-		(text) => inspectCommand(text, inner).runsApprove
+		(text) => inspectCommand(text, { ...inner, oneSegment: false }).runsApprove
 	);
 	/** @type {string[]} */
 	const patches = [];
 	/** @type {Group[]} */
 	const groups = [{ kind: null, tainted: false, named: false }];
 
-	for (const { segment, separator } of splitSegments(items)) {
+	for (const { segment, separator } of segments) {
 		trackCompounds(segment, groups);
 		const group = groups[groups.length - 1];
 		if (segment.length > 0) {
@@ -1039,8 +1043,9 @@ function judgeSegment(segment, tainted, context) {
 /**
  * True when a segment is `node <this runtime's plan/commit.mjs> ...`, with no
  * node option before the script, which only stages and commits the paths it
- * is given. A relative script path counts only in a command that never changes
- * directory, because the guard resolves it against the payload's `cwd`.
+ * is given. It counts only as the whole command, because an earlier segment
+ * can change directory or set the environment in ways the guard can't follow,
+ * and the script path resolves against the payload's `cwd`.
  *
  * @param {Item[]} segment
  * @param {number} index
@@ -1049,11 +1054,11 @@ function judgeSegment(segment, tainted, context) {
  */
 function runsCommitScript(segment, index, context) {
 	const script = segment[index + 1];
-	if (context.shadowed || context.cwd === undefined) return false;
+	if (context.shadowed || !context.oneSegment || context.cwd === undefined)
+		return false;
 	if (segment[index].text !== "node" || !script || script.op || script.body)
 		return false;
 	if (!PLAIN_WORD.test(script.text)) return false;
-	if (context.movesDir && !path.isAbsolute(script.text)) return false;
 
 	try {
 		return (
