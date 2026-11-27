@@ -465,6 +465,35 @@ round 5: clean
 
 ## Verification
 
+## Release proof
+
+Run 2026-11-27 at 2:59 AM Central. Two tarballs, both `huntermcgrew-prism-1.0.0.tgz`: the old one packed with `pnpm pack` from a worktree at `37cdbd28` (sha256 `e045aa45…`), and the new one from this branch at `5d85b848` (sha256 `afc51c50…`). They share a name and version, so each was installed with `npm install --prefix` into its own directory instead of through `npx`, whose cache could serve one for the other. The new tarball holds no path matching `prism-(pr|self)-review`, and the old one holds 10.
+
+The consumer `up` was set up from the old pack. It ran `git init -q -b main`, an empty commit, then `prism init --project Acme --ticket-prefix ACME --ticket-system github-issues --github-owner acme --github-repo app` and `prism adopt`, which exited 0. The config sets no `hosts`, which means all three. After adopt, every artifact AC-6 retires was present:
+
+- both old skill directories under `.claude/skills`, `.cursor/skills`, and `.agents/skills`, and both agent files under `.claude/agents` and `.codex/agents`
+- `.claude/hooks/reconcile-gate.mjs`, plus one `reconcile-gate` command in each of `.claude/settings.json` and `.codex/hooks.json`
+- `github-writes.md` and `eric-review-modes.md` under `.prism/`, `.claude/`, `.codex/`, and `.cursor/`
+
+The consumer's own `SubagentStop` entry, `{ "matcher": "^my-agent$", "hooks": [{ "type": "command", "command": "node scripts/mine.mjs" }] }`, was added to `.claude/settings.json` beside PRISM's `^prism-pr-review$` entry. `prism update` from the branch pack then exited 0 and printed `101 no-op, 25 overwritten, 2 removed, 1 removed-with-backup`, with the backup at `.claude/hooks/reconcile-gate.mjs.bak`.
+
+- `ls .claude/skills .cursor/skills .agents/skills | grep -E 'prism-(pr|self)-review'` printed nothing and exited 1.
+- `ls .claude/agents .codex/agents | grep -E 'prism-(pr|self)-review'` printed nothing and exited 1. `prism-review` is present in all five directories.
+- `node -e` over both registration files: `.claude/settings.json` `SubagentStop` is `[{"matcher":"^my-agent$",...}]`, with no `reconcile-gate` command and the consumer's entry present. `.codex/hooks.json` has no `SubagentStop` key. `grep -c reconcile-gate` prints 0 for both files.
+- `test ! -e .claude/hooks/reconcile-gate.mjs && test -e .claude/hooks/reconcile-gate.mjs.bak` exited 0.
+- `references/pr-review/github-writes.md` and `architect/_toolkit/eric-review-modes.md` are absent under `.prism/`, `.claude/`, `.codex/`, and `.cursor/`, so all eight paths are gone.
+- `prism doctor` exited 0 and printed `prism doctor: healthy.` It printed one WARN: `1 manifest route(s) name an architect doc that is not on disk: _toolkit/eric-review-modes.md`. The cause is the consumer's own `.prism/architect/manifest.json` line 13, `".claude/skills/prism-pr-review/**": "_toolkit/eric-review-modes.md"`. Update never rewrites that file, so this is recorded, not a failure.
+
+Doctor's other lines, each with its reason:
+
+- `Version: 1.0.0 installed, 0.10.0 latest on npm.` npm's `latest` is still `0.10.0`.
+- `[INFO] hook-registration` for Claude Code and for Codex: both are registered, because all three hosts are on by default.
+- `[INFO] hook-registration: Git gates are delivered and off`. The scratch config has no `hooks` block.
+- `[INFO] hook-registration: Git hooks are installed (core.hooksPath → .githooks)`, with both `gitHooks` commands unset.
+- `[INFO] review-md: REVIEW.md carries PRISM's marker line and is current.`
+
+The old-tree worktree and the scratch directory were removed after the run.
+
 ## Review
 
 ## PR Readiness
