@@ -21,9 +21,19 @@ import { isDirectCliEntry } from "./lib/cli-entry";
  * A file named in `PLAN_CITATION_ALLOWLIST` may keep its citations, and the
  * check reports an entry as stale once its file is clean or gone, so the
  * allowlist can only shrink.
+ *
+ * It also fails a task in a plan folder's `plan.md` that holds more than two
+ * prose lines below its field list, because a task carries its fields and at
+ * most two gotcha lines while the spec and the code hold the rest.
+ * `PLAN_TASK_PROSE_ALLOWLIST` names the plans written before that cap, and is
+ * kept apart from the citation allowlist so an entry in one can't hide a
+ * violation of the other.
  */
 
-export type PlanFolderViolationKind = "section-citation" | "decision-citation";
+export type PlanFolderViolationKind =
+	| "section-citation"
+	| "decision-citation"
+	| "task-prose";
 
 export interface PlanFolderViolation {
 	file: string;
@@ -34,6 +44,7 @@ export interface PlanFolderViolation {
 export interface PlanFolderCheckResult {
 	violations: PlanFolderViolation[];
 	staleAllowlist: string[];
+	staleTaskProseAllowlist: string[];
 }
 
 const PLAN_ROOTS = [".prism/plans", ".prism/archived/plans"];
@@ -47,6 +58,37 @@ const CHAIN_FILES = ["intent.md", "design.md", "spec.md", "plan.md"];
  */
 export const PLAN_CITATION_ALLOWLIST = ["prism-499/plan.md"];
 
+/**
+ * Plans written before the task-prose cap that hold a task over it, keyed
+ * `<plan folder>/plan.md` like the citation allowlist.
+ */
+export const PLAN_TASK_PROSE_ALLOWLIST = [
+	"prism-516/plan.md",
+	"prism-520/plan.md",
+	"prism-522/plan.md",
+	"prism-530/plan.md",
+	"prism-537/plan.md",
+	"prism-544/plan.md",
+	"prism-550/plan.md",
+	"prism-553/plan.md",
+];
+
+const MAX_TASK_PROSE_LINES = 2;
+
+const TASK_FIELD_KEYS = [
+	"files",
+	"proof",
+	"proof fails on main",
+	"depends on",
+	"behavior change",
+	"amended",
+	"new dependency",
+];
+
+const TASK_HEADING_REGEX = /^### T\d+:/;
+
+const HTML_COMMENT_REGEX = /<!--[\s\S]*?-->/g;
+
 const FENCE_REGEX = /^\s*```/;
 
 const DOUBLE_BACKTICK_SPAN_REGEX = /``.*?``/g;
@@ -57,9 +99,12 @@ const DECISION_MARKER_REGEX = /see Decision:/i;
 
 export async function runPlanFolderCheck(
 	repoRoot: string,
-	allowlist: readonly string[] = PLAN_CITATION_ALLOWLIST
+	allowlist: readonly string[] = PLAN_CITATION_ALLOWLIST,
+	taskProseAllowlist: readonly string[] = PLAN_TASK_PROSE_ALLOWLIST
 ): Promise<PlanFolderCheckResult> {
 	const found: { allowlistKey: string; violation: PlanFolderViolation }[] = [];
+	const foundTaskProse: { allowlistKey: string; violation: PlanFolderViolation }[] =
+		[];
 
 	for (const folder of await findPlanFolders(repoRoot)) {
 		const folderName = path.posix.basename(folder);
@@ -73,16 +118,25 @@ export async function runPlanFolderCheck(
 			)) {
 				found.push({ allowlistKey: `${folderName}/${inner}`, violation });
 			}
+
+			if (inner === "plan.md") {
+				for (const violation of collectTaskProseViolations(
+					content,
+					`${folder}/${inner}`
+				)) {
+					foundTaskProse.push({ allowlistKey: `${folderName}/${inner}`, violation });
+				}
+			}
 		}
 	}
 
 	return {
-		violations: found
-			.filter((entry) => !allowlist.includes(entry.allowlistKey))
-			.map((entry) => entry.violation),
-		staleAllowlist: allowlist.filter(
-			(entry) => !found.some((candidate) => candidate.allowlistKey === entry)
-		),
+		violations: [
+			...filterAllowlisted(found, allowlist),
+			...filterAllowlisted(foundTaskProse, taskProseAllowlist),
+		],
+		staleAllowlist: findStaleEntries(found, allowlist),
+		staleTaskProseAllowlist: findStaleEntries(foundTaskProse, taskProseAllowlist),
 	};
 }
 
@@ -156,6 +210,90 @@ export function collectPlanFolderViolations(
 	return violations;
 }
 
+/**
+ * Reports each task under `## Tasks` holding more than two prose lines below
+ * its field list, on the task's heading line. Exported for unit testing.
+ *
+ * Unlike the citation check, fenced code counts here: a code block under a
+ * task is task prose. HTML comments are blanked first, keeping their newlines
+ * so line numbers stay true, because the template's example task sits in one.
+ */
+export function collectTaskProseViolations(
+	content: string,
+	file: string
+): PlanFolderViolation[] {
+	const violations: PlanFolderViolation[] = [];
+	const lines = content
+		.replace(HTML_COMMENT_REGEX, (comment) => comment.replace(/[^\n]/g, ""))
+		.split(/\r?\n/);
+	let inTasks = false;
+	let task: { line: number; proseLines: number; inFieldList: boolean } | null =
+		null;
+
+	const closeTask = (): void => {
+		if (task && task.proseLines > MAX_TASK_PROSE_LINES) {
+			violations.push({ file, line: task.line, kind: "task-prose" });
+		}
+
+		task = null;
+	};
+
+	for (const [index, line] of lines.entries()) {
+		if (line.startsWith("## ")) {
+			closeTask();
+			inTasks = line.trim() === "## Tasks";
+			continue;
+		}
+
+		if (line.startsWith("### ")) {
+			closeTask();
+
+			if (inTasks && TASK_HEADING_REGEX.test(line)) {
+				task = { line: index + 1, proseLines: 0, inFieldList: true };
+			}
+
+			continue;
+		}
+
+		if (!task || line.trim() === "") {
+			continue;
+		}
+
+		if (task.inFieldList && isTaskFieldLine(line)) {
+			continue;
+		}
+
+		task.inFieldList = false;
+		task.proseLines += 1;
+	}
+
+	closeTask();
+
+	return violations;
+}
+
+function isTaskFieldLine(line: string): boolean {
+	return TASK_FIELD_KEYS.some((key) => line.startsWith(`- ${key}:`));
+}
+
+function filterAllowlisted(
+	found: readonly { allowlistKey: string; violation: PlanFolderViolation }[],
+	allowlist: readonly string[]
+): PlanFolderViolation[] {
+	return found
+		.filter((entry) => !allowlist.includes(entry.allowlistKey))
+		.map((entry) => entry.violation);
+}
+
+function findStaleEntries(
+	found: readonly { allowlistKey: string }[],
+	allowlist: readonly string[]
+): string[] {
+	return allowlist.filter(
+		(entry) => !found.some((candidate) => candidate.allowlistKey === entry)
+	);
+}
+
 async function holdsChainFile(folder: string): Promise<boolean> {
 	for (const name of CHAIN_FILES) {
 		try {
@@ -198,7 +336,8 @@ async function main(): Promise<void> {
 		path.dirname(fileURLToPath(import.meta.url)),
 		"../.."
 	);
-	const { violations, staleAllowlist } = await runPlanFolderCheck(repoRoot);
+	const { violations, staleAllowlist, staleTaskProseAllowlist } =
+		await runPlanFolderCheck(repoRoot);
 
 	for (const violation of violations) {
 		console.error(`${violation.file}:${violation.line} ${violation.kind}`);
@@ -210,7 +349,17 @@ async function main(): Promise<void> {
 		);
 	}
 
-	if (violations.length > 0 || staleAllowlist.length > 0) {
+	for (const entry of staleTaskProseAllowlist) {
+		console.error(
+			`plan-folder-citations: ${entry} has no task over the prose cap or is gone; remove it from the task-prose allowlist`
+		);
+	}
+
+	if (
+		violations.length > 0 ||
+		staleAllowlist.length > 0 ||
+		staleTaskProseAllowlist.length > 0
+	) {
 		process.exit(1);
 	}
 }
