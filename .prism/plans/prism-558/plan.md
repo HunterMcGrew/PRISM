@@ -10,19 +10,19 @@ status: draft
 Each criterion cites the spec requirement it grades as `(REQ-n)`.
 
 - [ ] **AC-1** Given `.prism/templates/plan.md`, When its headings are read, Then they are Tasks, Challenge, Decisions, Verification, Review, PR Readiness in that order, with no `## History` and no `## Sessions`, and a copy of the template holds neither. (REQ-1)
-  - Evidence (machine): `node --test scripts/ai-skills/plan-templates.test.ts` passes, and its copy case fails on `main` at `8c53b07a`.
+  - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts` passes, and its copy case fails on `main` at `8c53b07a`.
 - [ ] **AC-2** Given the plan template's Decisions comment, `prism-plan`, and the `## Decisions` row of the plan-authoring ownership table, When read, Then each says a folder plan's Decisions hold scope changes and open questions only and a routine implementation choice is a commit, and the template still asks for the close-time verdict line. (REQ-2)
   - Evidence (machine): `grep -c 'scope change' .prism/templates/plan.md .ai-skills/skills/prism-plan/shared.md .prism/architect/_toolkit/plan-authoring.md templates/install/.prism/architect/_toolkit/plan-authoring.md` prints at least 1 for each, and `grep -c 'promoted to' .prism/templates/plan.md` prints at least 1.
 - [ ] **AC-3** Given the plan template's Tasks comment, When read, Then it asks for the fields plus at most two gotcha lines and no longer asks for the exact edit, its insertion point, or a content outline. (REQ-3)
   - Evidence (machine): `grep -c -E 'describe the specific change in prose|insertion point' .prism/templates/plan.md` prints 0 and `grep -c 'gotcha' .prism/templates/plan.md` prints at least 1.
 - [ ] **AC-4** Given a plan folder's `plan.md` with a task holding three prose lines below its field list, When `plan-folder-citations.ts` runs, Then it reports a `task-prose` violation on the task heading; two lines, a field-only task, and a commented example task pass; an allowlisted plan passes; a clean or missing allowlisted plan is reported stale; and `tasks.mjs` still parses every older plan. (REQ-4)
-  - Evidence (machine): `node --test scripts/ai-skills/plan-folder-citations.test.ts scripts/ai-skills/plan-tasks.test.ts` passes, and the three-line case fails on `main`.
+  - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/plan-folder-citations.test.ts scripts/ai-skills/plan-tasks.test.ts` passes, and the three-line case fails on `main`.
 - [ ] **AC-5** Given `.prism/templates/intent.md`, When its headings are read, Then `## Approach` sits between `## Proposed outcome` and `## Regression surface` and holds the lines `Chosen:`, `Rejected:`, and `Unknown:`. (REQ-5)
   - Evidence (machine): the intent heading case in `plan-templates.test.ts` passes, and fails on `main`.
 - [ ] **AC-6** Given an intent, When `approve.mjs` checks it, Then it refuses a missing `## Approach`, a missing or repeated label, a label with nothing after it, and a bare `none`, and passes three filled lines and `none — <why>`. (REQ-6)
-  - Evidence (machine): `node --test scripts/ai-skills/plan-approve.test.ts` passes, and each refusal case fails on `main`.
+  - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/plan-approve.test.ts` passes, and each refusal case fails on `main`.
 - [ ] **AC-7** Given `prism-intent`, When its body is read, Then it interviews for the three Approach lines with a recommended answer each and puts them in the recap, and the skill stays under the 120-line loaded cap. (REQ-7)
-  - Evidence (machine): `grep -c -E 'Chosen|Rejected|Unknown' .ai-skills/skills/prism-intent/shared.md` prints at least 1, and `node --test scripts/ai-skills/skill-loaded-lines.test.ts` passes.
+  - Evidence (machine): `grep -c -E 'Chosen|Rejected|Unknown' .ai-skills/skills/prism-intent/shared.md` prints at least 1, and `pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts` passes.
 - [ ] **AC-8** Given `.prism/rules/implementation-task-detail.md` and its curated seed twin, When read, Then a folder-plan task's bar is files, proof, dependencies, and at most two gotcha lines, the Pixel mode 2 section, `[HITL]`, Cite don't restate, and Severity remain, and the any-model, any-effort framing is gone. (REQ-8)
   - Evidence (machine): `grep -c 'any LLM at any effort level' .prism/rules/implementation-task-detail.md templates/install/.prism/rules/implementation-task-detail.md` prints 0 for each, and `grep -c 'Pixel' .prism/rules/implementation-task-detail.md templates/install/.prism/rules/implementation-task-detail.md` prints at least 1 for each.
 - [ ] **AC-9** Given `.prism/spec/adrs/_toolkit/`, When listed, Then `0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md` exists, ADR-0033 carries a superseded-in-part status line naming ADR-0088, the ADR index lists 0088, `seed-curation.json` excludes it, and no seed copy of it exists. (REQ-9)
@@ -36,9 +36,9 @@ Each criterion cites the spec requirement it grades as `(REQ-n)`.
 - [ ] **AC-13** Given `prism-retro`, `prism-handoff`, the Iris row and rule 3 of `skills-ecosystem.md` and its twin, the plan-authoring `## History` row and its twin, `writing-a-plan.md`, `docs/ai-skills/iris.md`, and `compact-handoff.mjs`, When read, Then the retro reads no `## History`, and every other mention of `## History` is scoped to flat plans. (REQ-13, architect fold-in)
   - Evidence (machine): `grep -c '## History' .ai-skills/skills/prism-retro/shared.md` prints 0, and each other file's `## History` line contains `flat`.
 - [ ] **AC-14** Given `CLAUDE_AGENT_MODEL_DEFAULTS`, When the implement agent is built, Then `.claude/agents/prism-implement.md` reads `model: inherit`, and a test fails when that file names another model. (REQ-14)
-  - Evidence (machine): `node --test scripts/ai-skills/claude-agent-def.test.ts` passes, and `grep -c '^model: inherit$' .claude/agents/prism-implement.md` prints 1.
+  - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/claude-agent-def.test.ts` passes, and `grep -c '^model: inherit$' .claude/agents/prism-implement.md` prints 1.
 - [ ] **AC-15** Given a plan whose `## Challenge` round lines start with `- `, When `auto-approve.mjs` runs, Then it reads them the same as bare lines, for approval and for the round-1-carried refusal. (REQ-15)
-  - Evidence (machine): `node --test scripts/ai-skills/plan-auto-approve.test.ts` passes, and the dashed cases fail on `main`.
+  - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/plan-auto-approve.test.ts` passes, and the dashed cases fail on `main`.
 - [ ] **AC-16** Given each part's head, When CI runs, Then `pnpm prism:check` passes on both platforms.
   - Evidence (machine): the PR's check rollup shows the `prism:check` job green on ubuntu and windows.
 
@@ -65,14 +65,14 @@ Later groups print as tasks finish. The script added two import edges: T1 and T1
 ### T1: Part 1 — expect a plan template with no History or Sessions
 
 - files: scripts/ai-skills/plan-templates.test.ts
-- proof: node --test scripts/ai-skills/plan-templates.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts
 - proof fails on main: yes
 - depends on: none
 
 ### T2: Part 1 — cut History, Sessions, and task prose from the plan template
 
 - files: .prism/templates/plan.md
-- proof: node --test scripts/ai-skills/plan-templates.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts
 - depends on: T1
 
 The new Tasks comment drops the pointer to the task-detail rule's file, exact change, verification, and sequence, along with the prose line.
@@ -80,7 +80,7 @@ The new Tasks comment drops the pointer to the task-detail rule's file, exact ch
 ### T3: Part 1 — add the task-prose lint and its allowlist
 
 - files: scripts/ai-skills/plan-folder-citations.test.ts, scripts/ai-skills/plan-folder-citations.ts
-- proof: node --test scripts/ai-skills/plan-folder-citations.test.ts scripts/ai-skills/plan-tasks.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-folder-citations.test.ts scripts/ai-skills/plan-tasks.test.ts
 - proof fails on main: yes
 - depends on: none
 
@@ -90,7 +90,7 @@ Recount at build time, and add `prism-557/plan.md` when child 11 merged first, p
 ### T4: Part 1 — map the implement agent to inherit
 
 - files: scripts/ai-skills/claude-agent-def.test.ts, scripts/ai-skills/generate-skills.ts
-- proof: node --test --test-name-pattern="maps prism-implement to inherit" scripts/ai-skills/claude-agent-def.test.ts
+- proof: pnpm exec tsx --test --test-name-pattern="maps prism-implement to inherit" scripts/ai-skills/claude-agent-def.test.ts
 - proof fails on main: yes
 - depends on: none
 - behavior change: line 77 asserted `prism-implement` had no default model, and now asserts it maps to `inherit`, because REQ-14 moves the builder to the session's model.
@@ -164,7 +164,7 @@ The Iris row drops `## History` and rule 3 gains "on a flat plan", and the guide
 ### T13: Part 1 — scope the post-compact History line to flat plans
 
 - files: scripts/ai-skills/hooks/compact-handoff.mjs
-- proof: node --test scripts/ai-skills/compact-handoff.test.ts && grep -n 'flat plan' scripts/ai-skills/hooks/compact-handoff.mjs
+- proof: pnpm exec tsx --test scripts/ai-skills/compact-handoff.test.ts && grep -n 'flat plan' scripts/ai-skills/hooks/compact-handoff.mjs
 - depends on: none
 
 ### T14: Part 1 — regenerate the outputs
@@ -188,7 +188,7 @@ Commit it as `T1-T15: Record part 1 as shipped` through `plan/commit.mjs`, per t
 ### T16: Part 2 — refuse an intent without its Approach lines
 
 - files: scripts/ai-skills/plan-approve.test.ts, scripts/ai-skills/hooks/plan/approve.mjs
-- proof: node --test scripts/ai-skills/plan-approve.test.ts scripts/ai-skills/approve-guard.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-approve.test.ts scripts/ai-skills/approve-guard.test.ts
 - proof fails on main: yes
 - depends on: T15
 
@@ -198,14 +198,14 @@ Read the section through `sectionBody` and test the none form with `NONE_WITH_RE
 ### T17: Part 2 — expect the Approach heading in the intent template
 
 - files: scripts/ai-skills/plan-templates.test.ts
-- proof: node --test scripts/ai-skills/plan-templates.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts
 - proof fails on main: yes
 - depends on: T15, T1
 
 ### T18: Part 2 — add the Approach section to the intent template
 
 - files: .prism/templates/intent.md
-- proof: node --test scripts/ai-skills/plan-templates.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts
 - depends on: T17
 
 Copy the comment and the three label lines from the spec's Approach lines part as written.
@@ -221,7 +221,7 @@ T22's build runs the 120-line cap check on the rendered skill.
 ### T20: Part 2 — accept a leading dash on a round line
 
 - files: scripts/ai-skills/plan-auto-approve.test.ts, scripts/ai-skills/hooks/plan/auto-approve.mjs
-- proof: node --test scripts/ai-skills/plan-auto-approve.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/plan-auto-approve.test.ts
 - proof fails on main: yes
 - depends on: T15
 
