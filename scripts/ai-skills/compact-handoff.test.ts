@@ -262,6 +262,20 @@ test("PreCompact outside a git checkout labels the branch and the status as unkn
 	}
 });
 
+test("SessionStart on a plan folder asks for a History line only on a flat plan", async () => {
+	const root = makeRepo("dev/acme-12-thing");
+	try {
+		writePlan(root, ".prism/plans/acme-12/plan.md");
+		const note = await runSessionStartArm(JSON.stringify({ source: "compact", cwd: root }));
+
+		assert.ok(note?.includes("Re-read .prism/plans/acme-12/plan.md in full."));
+		assert.ok(note?.includes("on a flat plan add a `## History` line"));
+		assert.ok(!note?.includes("and add a `## History` line"));
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
 test("SessionStart on a filename miss sends the session to the full plan lookup", async () => {
 	const root = makeRepo("scratch");
 	try {

@@ -74,11 +74,10 @@ tasks: <task ids>
 commit: <sha, or none>
 files: <each changed path, or unlisted: <path>>
 checks: <each check run and its result>
-history: <one `## History` line>
 <one paragraph>
 ```
 
-- `done`: rerun `node scripts/ai-skills/hooks/plan/bundles.mjs <plan.md> --base <base>`, dispatch the next bundles, and after each wave append the reports' History lines to `plan.md` and commit `plan: <summary>`. `<base>` is the commit that first added `plan.md`, the last line of `git log --diff-filter=A --format=%H -- <plan.md>`, and never the default branch, whose parent commits would read as done.
+- `done`: rerun `node scripts/ai-skills/hooks/plan/bundles.mjs <plan.md> --base <base>`, and dispatch the next bundles. `<base>` is the commit that first added `plan.md`, the last line of `git log --diff-filter=A --format=%H -- <plan.md>`, and never the default branch, whose parent commits would read as done.
 - `blocked`: fix the environment and re-dispatch, at most 2 times. A chain script's exit 2, or a `commit.mjs` failure other than an unchanged path, is `blocked`.
 - `needs-replan`: the plan stage's re-plan, where a second one on the same task asks the person. An unlisted file, or an acceptance criterion the tasks cannot meet, is `needs-replan`.
 
@@ -496,7 +495,7 @@ Before making changes:
 
 - Review the goal and user stories (if present)
 - Review documented decisions — each one is an implicit do-not-undo
-- Review the history log for what has already been done
+- On a flat plan, review the history log for what has already been done
 - Check `## Acceptance Criteria` for what the implementation must satisfy
 - Check `## Debugged Issues` and `## Review Issues` for any `open` entries
 
@@ -533,11 +532,11 @@ Skip plan updates for trivial edits such as:
 - variable renaming
 - whitespace fixes
 
-When appending to `## History`, include the branch name for traceability:
+On a flat plan, when appending to `## History`, include the branch name for traceability:
 
 - `2026-03-19 [HunterMcGrew/feature-branch]: added mega menu keyboard navigation`
 
-Each history entry must be at most 3 sentences. Longer entries indicate the change belongs in ## Decisions with sub-bullets, not in history narration.
+Each flat-plan history entry must be at most 3 sentences. Longer entries indicate the change belongs in ## Decisions with sub-bullets, not in history narration.
 
 ### History entries: cap at 3 sentences
 
@@ -547,7 +546,7 @@ The cap is one rule with three reasons.
 - **Edit-time echo** — agents writing the next entry re-read prior history first. A 6-sentence entry costs every future appender twice: once to read, once to draft against. Write-time savings are tiny; read-time savings compound over the plan's lifetime.
 - **Scannability** — a human or agent skimming `## History` to reconstruct what happened reads top to bottom. Each entry is one bullet, so long entries break the rhythm and the reader loses the at-a-glance timeline.
 
-**Where depth belongs:** if the change has a verified-fix or non-trivial-decision story to tell, it belongs in `## Decisions` with the sub-bullet shape from § 5 (root cause, alternatives considered, chosen approach, implementation guidance). The History entry then becomes one line: `YYYY-MM-DD [branch]: <one-sentence change>; see Decision: <title>`. In a plan folder, name the Decision in plain words without that form. The plan-folder citation lint rejects it, because folder files move and get renamed.
+**Where depth belongs:** if the change has a verified-fix or non-trivial-decision story to tell, it belongs in `## Decisions` with the sub-bullet shape from § 5 (root cause, alternatives considered, chosen approach, implementation guidance). On a flat plan, the History entry then becomes one line: `YYYY-MM-DD [branch]: <one-sentence change>; see Decision: <title>`. A plan folder writes no History line.
 
 ---
 
@@ -638,7 +637,7 @@ When the ticket or epic is complete (the final PR is reviewed and ready to merge
 
 0. **Reflect** — grain-adaptive per above. On a flat plan, record the outcome as `> Retro: <path>` or `> Retro: declined — <reason>` beside the plan's `> Closed:` line (added in step 2 below).
 1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add each one to the doc that owns its subject, and apply `.prism/references/triple-gated-adr-criterion.md` before writing a `→ promoted to ADR-NNNN` verdict. Read `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes before writing the `→ promoted to` verdict. A plan edit does not load that guide on its own. Without this read, the target gets picked before the placement order is in context, and content drifts into the nearest broad doc. Consume any `## Promotion cautions` from a retro report for this plan: a Decision the execution record refuted is promoted as corrected or demoted to a lesson, never promoted unchanged.
-2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line, and on a flat plan the `> Retro:` line from step 0, under the plan's title, and append the close entry to `## History`. A folder plan's `plan.md` has no title, so there `prism-retro` writes the `> Closed:` line directly after the frontmatter, or after an epic's `spec.md` frontmatter at full grain, where the audit's archive lane reads its date. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
+2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line, and on a flat plan the `> Retro:` line from step 0, under the plan's title, and on a flat plan append the close entry to `## History`. A folder plan's `plan.md` has no title, so there `prism-retro` writes the `> Closed:` line directly after the frontmatter, or after an epic's `spec.md` frontmatter at full grain, where the audit's archive lane reads its date. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
 
 Decisions that should be promoted:
 
@@ -752,7 +751,7 @@ Some decisions surface during planning but can't be resolved without input the t
 - Use `OPEN — TBD, needs <name> input.` as the first sentence so the marker is scannable.
 - Name the person whose input resolves the question. If multiple people, name the decision-maker.
 - Always include the **Default path** sub-clause — work has to be able to continue. If you can't articulate a default, the open question isn't ready to be a Decision yet.
-- When the question resolves, replace the entry with a normal Decision capturing the resolution (and note in `## History` that the open question closed).
+- When the question resolves, replace the entry with a normal Decision capturing the resolution (and, on a flat plan, note in `## History` that the open question closed).
 
 A canonical `OPEN` entry inline — open question + named reviewer + default path on a single bullet, ready to drop into a plan's `## Decisions` section:
 
@@ -887,8 +886,8 @@ The plan should evolve alongside the implementation.
 
 When updating the plan:
 
-- Append to `## Sessions` at session start and close — never delete entries
-- Append new entries to `## History` — never delete old ones
+- On a flat plan, append to `## Sessions` at session start and close — never delete entries
+- On a flat plan, append new entries to `## History` — never delete old ones
 - Update `## Decisions` when constraints change (add a note if a prior decision was reversed)
 - Update `## Debugged Issues` status as bugs are fixed
 - Keep `## PR Readiness` current after every self-review
@@ -1605,6 +1604,8 @@ Run this battery once, immediately after startup completes and before any of the
 
 The opening battery's answers don't stay in the transcript — they compress to one line appended to the branch plan's `## Sessions` section (see `.prism/rules/branch-plan.md`), in an `open:` clause. The closing battery re-reads that line and diffs the finished work against the opening `Bounds` answer — Closing Q1 (Scope boundary) is that diff. When the closing battery finishes, append its verdict to the same line as a `close:` clause: `scope held` if the work matched the opening Bounds, or `drifted — <why>` if it didn't.
 
+On a folder plan, the batteries still run, but the `open:` and `close:` lines are not written, because the plan template has no `## Sessions` section, and an older folder that still has one gets nothing appended. The closing battery's Scope boundary diff reads the opening Bounds from the session's own opening answer instead.
+
 ## Closing Re-Orientation Battery
 
 Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
@@ -1614,7 +1615,7 @@ Run this battery once, immediately before declaring the work complete and report
 3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?
 
-Append the `close:` verdict to the same `## Sessions` line from the opening battery (see Battery Persistence above) before stopping.
+On a flat plan, append the `close:` verdict to the same `## Sessions` line from the opening battery before stopping. On a folder plan nothing is appended, even when an older folder still has the section (see Battery Persistence above).
 
 ## Mid-flight Re-anchors
 

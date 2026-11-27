@@ -3,12 +3,12 @@ title: "Iris — the retrospective skill"
 description: "How the retro skill compares a plan's stated intent with the execution record and writes an evidence-cited report."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-11-19"
+last_updated: "2026-11-27"
 ---
 
 ## What Iris does
 
-`prism-retro` (Iris) runs the retro charter on a plan: six questions answered from the plan's intent sections (`## History`, `## Decisions`, `## Acceptance Criteria`, `## Debugged Issues`, `## Review Issues`, plus `## Review` and `## Verification` on a folder plan) and from the execution record (merged diffs, PR review threads, CI conclusions). It writes one report to `.prism/retros/`. On a flat plan it never edits the plan. On a folder plan it also writes the plan's closing records, described next.
+`prism-retro` (Iris) runs the retro charter on a plan: six questions answered from the plan's intent sections (`## Decisions`, `## Acceptance Criteria`, `## Debugged Issues`, `## Review Issues`, plus `## Review` and `## Verification` on a folder plan) and from the execution record (merged diffs, PR review threads, CI conclusions). It writes one report to `.prism/retros/`. On a flat plan it never edits the plan. On a folder plan it also writes the plan's closing records, described next.
 
 The six questions are: did we do what we said, were there issues or bottlenecks, what could we improve, did we follow the code standards, did we do anything wrong, and are the tests passing. A question that no reached source can answer is reported as unanswered, so a retro built on thin evidence says so.
 
@@ -19,7 +19,7 @@ On a folder plan the retro is the fixed last stage. Iris runs after PR review wi
 - **Per-PR.** A light fidelity check on one ticket: what the plan said against what shipped, what CI showed, and whether review findings were addressed. It produces a compact note.
 - **Epic.** The full audit of an epic plan and its children. It reads the per-PR notes first and spends its effort on cross-ticket patterns.
 
-A date range (`YYYY-MM-DD..YYYY-MM-DD`) walks every plan with a `## History` line inside it.
+A date range (`YYYY-MM-DD..YYYY-MM-DD`) walks every plan with a commit touching it inside the range.
 
 ## How it works
 

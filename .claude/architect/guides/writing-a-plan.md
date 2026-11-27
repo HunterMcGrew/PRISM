@@ -65,9 +65,12 @@ until a human says yes.
 
 ## Keep it scannable
 
-`## History` is append-only, one dated line per meaningful change, at most
-three sentences each. When an entry wants to be longer than that, the depth
-belongs in `## Decisions` and the history line becomes a pointer to it.
+On a flat plan, `## History` is append-only, one dated line per meaningful
+change, at most three sentences each. When an entry wants to be longer than
+that, the depth belongs in `## Decisions` and the history line becomes a
+pointer to it. A plan folder's template has no `History` section, because
+its commits carry that record. An older folder keeps the one it has, and
+nothing appends to it.
 
 Skip history entries for formatting, renames, and whitespace. A plan nobody
 can skim stops being working memory and becomes another thing to read.

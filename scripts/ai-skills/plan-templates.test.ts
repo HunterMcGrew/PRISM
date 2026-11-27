@@ -61,8 +61,6 @@ const TEMPLATES: Record<string, { keys: string[]; headings: string[] }> = {
 			"Tasks",
 			"Challenge",
 			"Decisions",
-			"History",
-			"Sessions",
 			"Verification",
 			"Review",
 			"PR Readiness",

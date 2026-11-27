@@ -37,7 +37,7 @@ Start from `.prism/templates/plan.md`, at `status: draft`. You own `## Tasks` an
 - Each `files` entry is one repo path with forward slashes, because the parser rejects a backslash, a glob character, a space, and a trailing slash. Each sits inside an Affected systems glob and belongs to one task.
 - Docs are their own task when the plan changes user-facing behavior, a public contract, or an architect-owned area.
 - IDs are permanent: append new tasks and never renumber. A commit subject naming a task marks it done.
-- Record each non-obvious call in `## Decisions`: a bold title, the reason in one line, and one clause on why a rejected alternative lost. A plan folder holds no section-sign citations and no `see Decision:` citations, so name a file by its path and a ticket by its ID.
+- Record each scope change and open question in `## Decisions`: a bold title, the reason in one line, and one clause on why a rejected alternative lost. A routine implementation choice is a commit, not a Decision. A plan folder holds no section-sign citations and no `see Decision:` citations, so name a file by its path and a ticket by its ID.
 
 ## Group and challenge
 

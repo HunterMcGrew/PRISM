@@ -89,6 +89,7 @@
 		"spec/adrs/_toolkit/0085-the-debugger-returns-as-prism-debug.md",
 		"spec/adrs/_toolkit/0086-an-approved-epic-carries-its-children.md",
 		"spec/adrs/_toolkit/0087-one-review-replaces-the-pr-reviewer-and-labels.md",
+		"spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md",
 		"architect/_toolkit/npm-packaging.md",
 		"architect/_toolkit/token-substitution.md"
 	],

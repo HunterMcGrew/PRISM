@@ -53,7 +53,7 @@ function buildCodexDef(roleDefinition: RoleDefinition): string {
 test("a role with preloads renders a skills list in its Claude agent def", () => {
 	assert.match(
 		buildClaudeDef(["tdd"]),
-		/^---\nname: prism-implement\n[\s\S]*\nmodel: sonnet\nskills:\n {2}- tdd\n---\n/
+		/^---\nname: prism-implement\n[\s\S]*\nskills:\n {2}- tdd\n---\n/
 	);
 });
 

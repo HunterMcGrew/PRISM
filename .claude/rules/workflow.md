@@ -34,11 +34,10 @@ tasks: <task ids>
 commit: <sha, or none>
 files: <each changed path, or unlisted: <path>>
 checks: <each check run and its result>
-history: <one `## History` line>
 <one paragraph>
 ```
 
-- `done`: rerun `node scripts/ai-skills/hooks/plan/bundles.mjs <plan.md> --base <base>`, dispatch the next bundles, and after each wave append the reports' History lines to `plan.md` and commit `plan: <summary>`. `<base>` is the commit that first added `plan.md`, the last line of `git log --diff-filter=A --format=%H -- <plan.md>`, and never the default branch, whose parent commits would read as done.
+- `done`: rerun `node scripts/ai-skills/hooks/plan/bundles.mjs <plan.md> --base <base>`, and dispatch the next bundles. `<base>` is the commit that first added `plan.md`, the last line of `git log --diff-filter=A --format=%H -- <plan.md>`, and never the default branch, whose parent commits would read as done.
 - `blocked`: fix the environment and re-dispatch, at most 2 times. A chain script's exit 2, or a `commit.mjs` failure other than an unchanged path, is `blocked`.
 - `needs-replan`: the plan stage's re-plan, where a second one on the same task asks the person. An unlisted file, or an acceptance criterion the tasks cannot meet, is `needs-replan`.
 

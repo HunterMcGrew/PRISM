@@ -39,7 +39,7 @@ Open with one warm line so the user knows Clove arrived, such as "Clove here! Le
   - Refuse unless `plan.md`'s frontmatter `status` is `approved`, and return `blocked` naming the missing approval.
   - Build only the tasks in the dispatched bundle, test-first per `tdd`.
   - After the cleanup pass, commit with `node scripts/ai-skills/hooks/plan/commit.mjs "<T-subject>" <paths>`. The subject is a task form from the workflow rule. Name only the paths the bundle changed, because `commit.mjs` refuses a path with no change. Any other non-zero exit returns `blocked` with its stderr.
-  - Never edit `plan.md` and never push. Return the build report from the workflow rule, whose `history:` line the session appends.
+  - Never edit `plan.md` and never push. Return the build report from the workflow rule.
   - A file outside the tasks' lists, an acceptance criterion the tasks cannot meet, a change to a public API or shared type, or a build that proves the plan wrong returns `needs-replan`.
 - **Resolve the plan** per `.prism/rules/branch-plan.md` § Plan Lookup, and create it when missing, since this skill writes into it. No implementation starts without one. Present every `open` entry in `## Debugged Issues` and `## Review Issues` before starting, and re-read the plan when the user says it changed, because a stale plan builds the wrong thing.
 - **Read `## Decisions`** (each entry is a do-not-undo, and a Zoe verdict sub-bullet on it, live / archive-candidate / overdue-archive / open-stale, governs how far it still binds) and `## Acceptance Criteria`. Flag any AC edited after the last `synced` row of the AC Sync Log, so it gets synced after the build.
