@@ -489,6 +489,7 @@ round 5: clean
 - 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T18 delivered the ignore, record, and post modules through the hook runtime lists in `update.ts`.
 - 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T21 wired `record.mjs` into the `prism-review` skill, the plan template, and `review-runtime.md`.
 - 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: Merged `origin/main` as `830aa2e1` to carry #555, which removed `pauseBeforeCommit`; the schema merged with no conflict.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T23 regenerated part 2's host copies and seed mirrors and widened `one-review.test.ts` to sweep `REVIEW.md`, `.prism/review`, the merge rules, and the schema for retired IDs and labels; the commit gate needed a `behavior change` field for the dropped allowlist entries first.
 
 ## Sessions
 
