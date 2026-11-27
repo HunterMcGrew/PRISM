@@ -6,6 +6,8 @@ Date: 2026-10-17
 Supersedes: 0048, 0049, 0050, 0051, 0052, 0053, 0054, 0055, 0056, 0061, 0066, 0069
 ---
 
+> Amended by [ADR-0087](./0087-one-review-replaces-the-pr-reviewer-and-labels.md): the PR-review pass and the `review:has-minors` label are gone, so the merge bar is now the plan's last review line reading `clean` plus green CI on the head; the flag and the retired conductor stand.
+
 ## Context
 
 Sol, the conductor persona, took in three jobs over time. It orchestrated goal-driven runs across lanes, teams, and partitioned run-control state (ADRs 0048 to 0056). It held standing merge authority over PRISM's own PRs (ADR-0061), later moved behind the hidden `features.conductorMayMerge` flag (ADR-0066). It ratified a write lane's `done` with a deterministic pipeline stage (ADR-0069).

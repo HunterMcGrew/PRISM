@@ -55,10 +55,7 @@ At close, add a verdict line under each entry: "→ promoted to <path>" or "→ 
 
 ## Review
 
-<!--
-Review findings and how each one was resolved.
-One line per review round, "- self-review round <n> at <sha>: <verdict>", "- pr-review round <n> at <sha>: <verdict>", or "- pr-review confirm at <sha>: <verdict>", per REVIEW.md.
--->
+<!-- One line per review round, "- review round <n> at <sha>[ (part <k> of <m>)]: <verdict>", written by review/record.mjs per REVIEW.md. -->
 
 ## PR Readiness
 
