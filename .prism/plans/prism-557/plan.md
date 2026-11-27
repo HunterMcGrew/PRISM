@@ -2,7 +2,9 @@
 title: Stage tools — declared tool lists, and verify writes its record by script
 ticket: https://github.com/HunterMcGrew/PRISM/issues/557
 stage: plan
-status: draft
+status: approved
+approved_by: auto
+approved_at: 2026-11-27
 ---
 
 ## Acceptance Criteria
