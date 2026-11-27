@@ -1,7 +1,7 @@
 /**
  * Regression suite for the Claude agent-definition emitter. Catches:
  *   - frontmatter shape (name / description / model)
- *   - per-skill model defaults (opus for the architect, sonnet otherwise)
+ *   - per-skill model defaults (opus for the architect, inherit for the implement agent, sonnet otherwise)
  *   - the generated SKILL.md body riding after the frontmatter
  *   - token substitution applied to the description
  *   - the emitter loop skips utility skills (one agent def per non-utility role, none per utility)
@@ -63,8 +63,8 @@ test("the architect defaults to opus; other personas to sonnet", () => {
 	});
 	const worker = buildClaudeAgentMarkdown({
 		claudeSkillMarkdown: "body",
-		description: "Clove.",
-		skillId: "prism-implement",
+		description: "Eli.",
+		skillId: "prism-docs",
 		tokenMap: new Map(),
 	});
 
@@ -72,9 +72,29 @@ test("the architect defaults to opus; other personas to sonnet", () => {
 	assert.equal(parseModelFromFrontmatter(worker), "sonnet");
 });
 
-test("the model-defaults map names only the strong-tier personas", () => {
+test("the model-defaults map names only the personas off the cheaper tier", () => {
 	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.get("prism-architect"), "opus");
-	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.has("prism-implement"), false);
+	assert.equal(CLAUDE_AGENT_MODEL_DEFAULTS.get("prism-implement"), "inherit");
+});
+
+test("maps prism-implement to inherit", () => {
+	const builder = buildClaudeAgentMarkdown({
+		claudeSkillMarkdown: "body",
+		description: "Clove.",
+		skillId: "prism-implement",
+		tokenMap: new Map(),
+	});
+
+	assert.equal(parseModelFromFrontmatter(builder), "inherit");
+});
+
+test("generated prism-implement agent inherits the session model", async () => {
+	const generated = await fs.readFile(
+		path.join(repoRoot, ".claude", "agents", "prism-implement.md"),
+		"utf8"
+	);
+
+	assert.equal(parseModelFromFrontmatter(generated), "inherit");
 });
 
 test("description is collapsed to one line and token-substituted", () => {

@@ -117,11 +117,14 @@ function applyAnchorsThenTokens(
  * Default dispatch-model tier per persona agent definition.
  *
  * The architect (Winston) runs on the strong model because he is the
- * plan-readiness firewall, a role that should not run cheap. Every other persona
- * defaults to the cheaper tier.
+ * plan-readiness firewall, a role that should not run cheap. The implement
+ * agent (Clove) inherits the session's model, because the builder writes the
+ * code and should not drop below the session that dispatched it. Every other
+ * persona defaults to the cheaper tier.
  */
 export const CLAUDE_AGENT_MODEL_DEFAULTS = new Map<string, string>([
 	["prism-architect", "opus"],
+	["prism-implement", "inherit"],
 ]);
 const DEFAULT_CLAUDE_AGENT_MODEL = "sonnet";
 

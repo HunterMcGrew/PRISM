@@ -239,7 +239,7 @@ export function buildPostCompactNote(repoRoot, state) {
 	const planSteps = state.plan
 		? [
 				`1. Re-read ${state.plan} in full. A read from before the compaction no longer counts.`,
-				'2. If the summary has an "Unrecorded decisions" section, write each one into that plan\'s `## Decisions`, and add a `## History` line, before other work.',
+				'2. If the summary has an "Unrecorded decisions" section, write each one into that plan\'s `## Decisions` before other work, and on a flat plan add a `## History` line.',
 			]
 		: [
 				"1. No plan file was found for this branch's ticket, by name, by ticket field, or in the archive. Run the lookup in `.prism/rules/branch-plan.md` § Plan Lookup before concluding there is none, and do not create a plan to hold the summary.",

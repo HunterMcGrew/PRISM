@@ -3,7 +3,10 @@ Number: 0033
 Title: Implementation Task Detail Bar
 Status: accepted
 Date: 2026-05-03
+Superseded-in-part-by: 0088
 ---
+
+> **Superseded in part by [ADR-0088](./0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md).** Only the task half is retired: a task in a plan folder's `plan.md` now carries its field list and at most two gotcha lines. The mode 2 mock-spec bar, and the bar for a legacy flat plan's `## Implementation Tasks`, stand.
 
 ## Context
 
