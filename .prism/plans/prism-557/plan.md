@@ -313,6 +313,7 @@ round 4: resolved 1
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T3 made prism-verify write `## Verification` only through `verify/record.mjs` from a report JSON written in a `mktemp -d` directory, and carry unchanged rows into the report on a re-run because the script always writes the whole section.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T4 documented `verify/record.mjs` (its report shape, the `checkReport` run before the write, and its exit codes) in `review-runtime.md`, and the `N`, `#N`, and `/pull/N` forms `reconcile.mjs` now takes.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T5 regenerated the prism-verify skill and agent copies and the review-runtime.md mirrors from the T3 and T4 sources.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: Part 1 (T1-T5) shipped in https://github.com/HunterMcGrew/PRISM/pull/559, squash-merged as dc02db07. Part 2 starts from main.
 
 ## Sessions
 
