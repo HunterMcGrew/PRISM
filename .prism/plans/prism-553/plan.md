@@ -383,6 +383,7 @@ Confirm 0087 is free with `ls .prism/spec/adrs/_toolkit/ | sort | tail -2`. Writ
 - proof: pnpm prism:check
 - depends on: T18, T19, T20, T21, T22
 - amended: .claude/architect/_toolkit/skills-ecosystem.md: T22 now edits `skills-ecosystem.md`, so T23 regenerates its three host copies.
+- behavior change: `one-review.test.ts` drops the part-1 allowlist entries for `templates/install/REVIEW.md` and `templates/install/.prism/review/`, which widens the sweep now that part 2 rewrote both.
 
 Run `pnpm prism:build`, then `pnpm prism:check`; fix a failure in the task that owns the source. Commit only the listed paths `git status -s` shows changed.
 
