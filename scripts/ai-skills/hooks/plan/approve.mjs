@@ -72,6 +72,7 @@ const REQUIRED_INTENT_SECTIONS = [
 ];
 // The reason has to sit on the same line as "none", after a dash, colon, or comma.
 const NONE_WITH_REASON = /^none[ \t]*[—–:,-][ \t]*\S/i;
+const APPROACH_LABELS = ["Chosen", "Rejected", "Unknown"];
 
 /**
  * Runs every refusal and check, asks for confirmation, then writes the
@@ -378,6 +379,38 @@ function checkIntent(text, fields, folder) {
 	);
 	if (!design || !(design[2] ?? "").replace(/^[\s—–:,.-]+/, "")) {
 		return '## Design must open with "needed", "supplement", or "not needed", then a reason.';
+	}
+
+	return checkApproach(sectionBody(text, "Approach"));
+}
+
+/**
+ * Returns the first reason an intent's `## Approach` body fails, or null when
+ * each label opens exactly one line and carries a value.
+ *
+ * Each label must appear once, because the person approves one answer per
+ * label. A value reading `none` takes its reason the way a surface does.
+ *
+ * @param {string | null} body
+ * @returns {string | null}
+ */
+function checkApproach(body) {
+	if (body === null) return "## Approach is missing.";
+
+	const lines = body.split("\n").map((line) => line.trim());
+	for (const label of APPROACH_LABELS) {
+		const values = lines
+			.filter((line) => line.startsWith(`${label}:`))
+			.map((line) => line.slice(label.length + 1).trim());
+		if (values.length === 0)
+			return `## Approach needs a line starting "${label}:".`;
+		if (values.length > 1)
+			return `## Approach has more than one "${label}:" line. Keep one answer per label.`;
+
+		const value = values[0] ?? "";
+		if (!value) return `## Approach's "${label}:" line is empty.`;
+		if (/^none\b/i.test(value) && !NONE_WITH_REASON.test(value))
+			return `## Approach's "${label}:" line needs its reason on the "none" line: "none — <why>".`;
 	}
 
 	return null;
