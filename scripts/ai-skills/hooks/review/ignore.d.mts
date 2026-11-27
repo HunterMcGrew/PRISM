@@ -11,4 +11,6 @@ export function resolveReviewIgnore(
 	config: { reviewIgnore?: unknown } | null | undefined
 ): ReviewIgnoreLists;
 
+export function normalizeReviewPath(file: string, repoRoot: string): string;
+
 export function isNeverReviewed(file: string, lists: ReviewIgnoreLists): boolean;

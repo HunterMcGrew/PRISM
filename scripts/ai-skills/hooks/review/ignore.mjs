@@ -9,6 +9,8 @@
  * `resolveReviewIgnore`, so a finding the review may not record is also one
  * it may not post. Paths are repo-relative with forward slashes.
  */
+import path from "node:path";
+
 import { compileMatcher } from "../lib/match.mjs";
 
 /**
@@ -103,6 +105,29 @@ export function resolveReviewIgnore(config) {
 	}
 
 	return { ignore: list, keep: [] };
+}
+
+/**
+ * The repo-relative, forward-slash form of a path a finding cites, so the
+ * ignore lists see one spelling of each file.
+ *
+ * Backslashes become slashes, a path absolute on either platform is made
+ * relative to `repoRoot`, dot segments collapse, and a leading `./` goes.
+ * Without the collapse, `src/../.prism/lessons.md` would slip past a pattern
+ * written for `.prism/lessons.md`.
+ *
+ * @param {string} file
+ * @param {string} repoRoot
+ * @returns {string}
+ */
+export function normalizeReviewPath(file, repoRoot) {
+	let normalized = file.replace(/\\/g, "/");
+
+	if (path.posix.isAbsolute(normalized) || /^[A-Za-z]:\//.test(normalized)) {
+		normalized = path.posix.relative(repoRoot.replace(/\\/g, "/"), normalized);
+	}
+
+	return path.posix.normalize(normalized).replace(/^\.\//, "");
 }
 
 /**

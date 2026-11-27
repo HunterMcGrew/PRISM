@@ -10,6 +10,7 @@ import {
 	DEFAULT_REVIEW_IGNORE,
 	DEFAULT_REVIEW_KEEP,
 	isNeverReviewed,
+	normalizeReviewPath,
 	resolveReviewIgnore,
 } from "./hooks/review/ignore.mjs";
 import { CONSUMER_OWNED_GLOBS, PRISM_OWNED_GLOBS } from "./ownership";
@@ -137,3 +138,39 @@ for (const [label, value] of MALFORMED) {
 		assert.throws(() => resolveReviewIgnore({ reviewIgnore: value }), /reviewIgnore/);
 	});
 }
+
+const NORMALIZED: [string, string, string][] = [
+	["a bare repo-relative path", "src/a.ts", "src/a.ts"],
+	["a leading ./", "./src/a.ts", "src/a.ts"],
+	["backslashes", "src\\lib\\a.ts", "src/lib/a.ts"],
+	["a .\\ prefix", ".\\src\\a.ts", "src/a.ts"],
+	["dot segments", "src/./lib/../a.ts", "src/a.ts"],
+	["an absolute path inside the repo", "/repo/root/.prism/plans/x/plan.md", ".prism/plans/x/plan.md"],
+	["an absolute path with dot segments", "/repo/root/src/../.prism/lessons.md", ".prism/lessons.md"],
+];
+
+for (const [label, file, expected] of NORMALIZED) {
+	test(`normalizeReviewPath turns ${label} into a repo-relative path`, () => {
+		assert.equal(normalizeReviewPath(file, "/repo/root"), expected);
+	});
+}
+
+test("normalizeReviewPath makes a Windows absolute path repo-relative", () => {
+	assert.equal(
+		normalizeReviewPath("C:\\work\\repo\\.prism\\plans\\x\\plan.md", "C:\\work\\repo"),
+		".prism/plans/x/plan.md"
+	);
+});
+
+test("an absolute or dot-segmented path to a never-reviewed file is caught once normalized", () => {
+	const lists = resolveReviewIgnore({});
+
+	assert.equal(
+		isNeverReviewed(normalizeReviewPath("/repo/root/.prism/plans/x/plan.md", "/repo/root"), lists),
+		true
+	);
+	assert.equal(
+		isNeverReviewed(normalizeReviewPath("./src/../REVIEW.md", "/repo/root"), lists),
+		true
+	);
+});
