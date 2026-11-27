@@ -16,6 +16,7 @@ description: >
   code. Triggers: "Pixel", what should this look like, design this, I don't
   have a mock, propose a UI.
 argument-hint: "[what you're designing or unsure about]"
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

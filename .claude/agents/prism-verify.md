@@ -2,6 +2,7 @@
 name: prism-verify
 description: "The verify stage. Run as a subagent after the build: it runs every automated check the repo configures against the committed head, once per head, and records the results under `## Verification` in plan.md. It fixes nothing and grades no acceptance criterion. Dispatched by the workflow, never routed off a phrase."
 model: sonnet
+tools: Read, Bash
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
@@ -17,6 +18,7 @@ description: >
   grades no acceptance criterion. Dispatched by the workflow, never routed off a
   phrase.
 argument-hint: "[plan folder path]"
+tools: Read, Bash
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

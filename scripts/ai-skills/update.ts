@@ -1157,6 +1157,7 @@ const HOOK_RUNTIME_FILES = [
 	"review/record.mjs",
 	"review/post.mjs",
 	"verify/check-report.mjs",
+	"verify/record.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */

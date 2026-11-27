@@ -531,6 +531,147 @@ for (const command of EXEC_PASSES) {
 	}
 }
 
+// --- Execution arm, leg 2b: the commit script names approve.mjs as a path ---
+
+const REPO_ROOT = path.resolve(path.dirname(HOOK), "../../..");
+const COMMIT_PATH = path
+	.resolve(path.dirname(HOOK), "plan/commit.mjs")
+	.split(path.sep)
+	.join("/");
+const COMMIT_REL = "scripts/ai-skills/hooks/plan/commit.mjs";
+const APPROVE_REL = "scripts/ai-skills/hooks/plan/approve.mjs";
+
+const COMMIT_PASSES: string[] = [
+	`node ${COMMIT_PATH} "chore: Fix the stamp" ${APPROVE_REL}`,
+	`node ${COMMIT_PATH} "chore: Let the commit script name approve.mjs as a path" scripts/ai-skills/hooks/approve-guard.mjs ${APPROVE_REL}`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} 2>&1`,
+	`PRISM_PLAN_COMMIT_RETRIES=5 node ${COMMIT_PATH} "chore: Fix" .prism/plans/prism-1/plan.md`,
+];
+
+for (const command of COMMIT_PASSES) {
+	for (const tool of TOOLS) {
+		test(`execution arm passes the commit script in ${tool}: ${command}`, () => {
+			assertPasses(tool, shell[tool](command, makeRepo()));
+		});
+	}
+}
+
+test("execution arm passes the commit script spelled from the repo root", () => {
+	const command = `node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`;
+	for (const tool of TOOLS)
+		assertPasses(tool, shell[tool](command, REPO_ROOT));
+});
+
+test("execution arm passes a Codex argv-array commit script call", () => {
+	assertPasses(
+		"codex",
+		shell.codex(["node", COMMIT_PATH, "chore: Fix", APPROVE_REL], makeRepo())
+	);
+});
+
+test("execution arm passes a test runner over the approve script's tests", () => {
+	for (const command of [
+		"tsx --test scripts/ai-skills/plan-approve.test.ts",
+		"node --test scripts/ai-skills/approve-guard.test.ts",
+	])
+		for (const tool of TOOLS)
+			assertPasses(tool, shell[tool](command, REPO_ROOT));
+});
+
+// Each of these either is not this runtime's commit script or does something
+// beyond committing: runs the script, pipes its name onward, writes its output
+// to a file, or carries an assignment or a node option that can load code.
+const COMMIT_DENIES: string[] = [
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} | bash`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} | xargs node`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} > a.mjs`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} && ${B}`,
+	`node ${COMMIT_PATH} "$(${B})" ${APPROVE_REL}`,
+	`NODE_OPTIONS=--import=./x.mjs node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`node --import ./${APPROVE_REL} ${COMMIT_PATH} "chore: Fix" a`,
+	`node --import ./x.mjs ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`f() { node "$@"; }; node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`node ${COMMIT_PATH}x "chore: Fix" ${APPROVE_REL}`,
+	`node --test ${APPROVE_REL}`,
+	`tsx --test ${APPROVE_REL}`,
+	`node --test scripts/ai-skills/approve-guard.test.ts ${APPROVE_REL}`,
+];
+
+for (const command of COMMIT_DENIES) {
+	test(`execution arm denies a commit-script lookalike: ${command}`, () => {
+		assertExecDenied("claude", shell.claude(command, makeRepo()));
+	});
+}
+
+// The commit script passes only as the whole command. An earlier segment can
+// change directory or set the environment in ways the guard can't follow, so
+// any second segment, subshell, or substitution denies, however it is spelled.
+const COMMIT_MULTI_SEGMENT_DENIES: string[] = [
+	`git add ${APPROVE_REL} && node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} 2>&1 | tail -5`,
+	`node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL} &`,
+	`true\nnode ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`cd /tmp && node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`pushd /tmp; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`(cd /tmp; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL})`,
+	`(node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL})`,
+	`cd ${REPO_ROOT} && node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`eval "cd /tmp/fake"; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`c=cd; $c /tmp/fake; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`cd\${IFS}/tmp/fake; node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`,
+	`export NODE_OPTIONS=--import=./x.mjs; node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`set -a; NODE_OPTIONS=--import=./x.mjs; node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL}`,
+	`echo $(node ${COMMIT_PATH} "chore: Fix" ${APPROVE_REL})`,
+];
+
+for (const command of COMMIT_MULTI_SEGMENT_DENIES) {
+	test(`execution arm denies the commit script beside another segment: ${command}`, () => {
+		assertExecDenied("claude", shell.claude(command, REPO_ROOT));
+	});
+}
+
+// Node reads each of these words as an option or a subcommand, never as a
+// script path, so a link by that name to the real commit script still lets
+// node run approve.mjs.
+const COMMIT_OPTION_WORD_DENIES: [string, string][] = [
+	["--no-warnings", `node --no-warnings ${APPROVE_COMMAND_PATH} p`],
+	["-r", `node -r ${COMMIT_PATH} ${APPROVE_COMMAND_PATH} p`],
+	["-", `node - ${APPROVE_COMMAND_PATH} p`],
+	["inspect", `node inspect ${APPROVE_COMMAND_PATH} p`],
+];
+
+for (const [link, command] of COMMIT_OPTION_WORD_DENIES) {
+	test(`execution arm denies a commit-script link node reads as an option: ${link}`, (t) => {
+		const root = makeRepo();
+		if (!tryLink(COMMIT_PATH, path.join(root, link)))
+			return t.skip("symlinks need privilege on this Windows host");
+
+		assertExecDenied("claude", shell.claude(command, root));
+	});
+}
+
+test("execution arm passes a dash-named commit-script link spelled as a path", (t) => {
+	const root = makeRepo();
+	if (!tryLink(COMMIT_PATH, path.join(root, "--no-warnings")))
+		return t.skip("symlinks need privilege on this Windows host");
+
+	for (const tool of TOOLS)
+		assertPasses(
+			tool,
+			shell[tool](`node ./--no-warnings "chore: Fix" ${APPROVE_REL}`, root)
+		);
+});
+
+test("execution arm denies a lookalike commit script outside the runtime", () => {
+	const root = makeRepo();
+	place(root, COMMIT_REL, "// a copy the agent wrote\n");
+	assertExecDenied(
+		"claude",
+		shell.claude(`node ${COMMIT_REL} "chore: Fix" ${APPROVE_REL}`, root)
+	);
+});
+
 // Shapes that run approve.mjs and pass, each one a known miss in the hook's
 // header. A fix that closes one moves it to PROBES.
 const KNOWN_MISSES: string[] = [

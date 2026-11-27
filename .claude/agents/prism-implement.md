@@ -2,6 +2,7 @@
 name: prism-implement
 description: "Implements a feature, fix, or task on the current branch against its plan, then ships it (commit, push, draft PR). Reads the plan and the routed architect docs before editing and updates the plan afterward. Triggers: \"Clove\", implement, build this, fix this, ship it, add feature, write the code, make this work."
 model: inherit
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch
 skills:
   - tdd
 ---
@@ -19,6 +20,7 @@ description: >
   "Clove", implement, build this, fix this, ship it, add feature, write the
   code, make this work.
 argument-hint: "[task description]"
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

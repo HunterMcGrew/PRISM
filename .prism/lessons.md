@@ -195,3 +195,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 ## `git mv` and `git rm` break `plan/commit.mjs`
 
 2026-11-27 (PRISM-553 T2): `commit.mjs` runs `git add` on every path it is given, and after `git mv` the old path no longer exists in the tree, so `git add` fails and the commit aborts. Use plain `mv` or `rm` before `commit.mjs`, which stages the moves itself, or run `git reset -q -- <paths>` first.
+
+## A spec sentence that promises a consumer override names the key that reads it
+
+**Why:** 2026-11-27 (PRISM-557 retro): the epic spec said a consumer's per-persona pin still wins over `inherit` for the builder's model. No such pin exists. `CLAUDE_AGENT_MODEL_DEFAULTS` is a fixed map, and `modelTiers.overrides` is read only for `briar`. The sentence stood because no criterion graded it.
+
+**How to apply:** When a spec says a consumer can override a default, cite the config key and the code that reads it in the same sentence, or cut the promise.

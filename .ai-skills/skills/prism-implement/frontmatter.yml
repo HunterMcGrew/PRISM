@@ -6,3 +6,4 @@ description: >
   "Clove", implement, build this, fix this, ship it, add feature, write the
   code, make this work.
 argument-hint: "[task description]"
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch

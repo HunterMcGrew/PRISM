@@ -2,6 +2,7 @@
 name: prism-docs
 description: "Writes or updates feature docs, usage guides, and control inventories from a code diff, a plan, or an interview, in the repo's configured doc root, and ships the docs PR. Writes docs only, never code. Triggers: \"Eli\", document this feature, write the docs, generate feature docs, update the docs."
 model: sonnet
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
@@ -16,6 +17,7 @@ description: >
   ships the docs PR. Writes docs only, never code. Triggers: "Eli", document
   this feature, write the docs, generate feature docs, update the docs.
 argument-hint: "[branch name, feature description, or doc path to update]"
+tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

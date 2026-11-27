@@ -7,6 +7,7 @@ description: >
   grades no acceptance criterion. Dispatched by the workflow, never routed off a
   phrase.
 argument-hint: "[plan folder path]"
+tools: Read, Bash
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
