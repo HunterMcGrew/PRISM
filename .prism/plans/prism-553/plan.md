@@ -471,6 +471,7 @@ round 5: clean
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T11's first run stopped on a routing-coverage conflict with AC-7; the re-plan added T24, which relaxed the test to one row per persona, and T11's second run passed `pnpm prism:check` and committed the regenerated outputs. The Decision on the routing-coverage test holds the reasoning.
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T12's live probe returned `PROBE inner=pong`, so a dispatched `prism-review` can launch subagents on Claude Code; recorded under `### Nested dispatch` in `hook-runtime.md`.
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T13 proved the upgrade from the `37cdbd28` pack; every AC-6 check passed, and doctor's one WARN is the consumer-owned manifest's dead `prism-pr-review` route.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T14 recorded part 1 (T1–T13, T24) as shipped: PR #554 squash-merged as `403e9a30` after review round 2 was clean and CI passed. Part 2 starts from that commit.
 
 ## Sessions
 
