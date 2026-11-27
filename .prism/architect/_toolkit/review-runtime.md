@@ -1,6 +1,6 @@
 # Review Runtime
 
-The review rulebook an install carries and the scripts a review or verify run calls: how [`REVIEW.md`](../../../REVIEW.md) and its pass files reach a repo and who owns them, and what `reconcile.mjs`, `ignore.mjs`, `record.mjs`, `post.mjs`, `check-report.mjs`, and the retro-line check promise. How the hook runtime reaches an install is [`hook-runtime.md`](./hook-runtime.md). The plan-folder scripts, `watch-ci.mjs` among them, are [`plan-chain-scripts.md`](./plan-chain-scripts.md).
+The review rulebook an install carries and the scripts a review or verify run calls: how [`REVIEW.md`](../../../REVIEW.md) and its pass files reach a repo and who owns them, and what `reconcile.mjs`, `ignore.mjs`, `record.mjs`, `post.mjs`, `check-report.mjs`, `verify/record.mjs`, and the retro-line check promise. How the hook runtime reaches an install is [`hook-runtime.md`](./hook-runtime.md). The plan-folder scripts, `watch-ci.mjs` among them, are [`plan-chain-scripts.md`](./plan-chain-scripts.md).
 
 ---
 
@@ -36,9 +36,9 @@ The ten pass files live in `.prism/review/`, one per pass in `REVIEW.md`'s table
 
 `reconcile.mjs <pr>` runs after an agent review. It replies to and resolves the agent's own threads whose lines changed and reports what is still unclean. Every GitHub read and write goes through `gh api`, so it needs the `gh` login.
 
-**Arguments.** `--no-write` skips every write and reports each as `would ...`. `--json` prints the findings as one object with the same exit code, for a caller that should not parse prose. `--log <path>` overrides the misses log location. `--classes` prints the open miss classes and exits without touching GitHub.
+**Arguments.** `<pr>` is `N`, `#N`, or a URL ending `/pull/N`, the forms `post.mjs` takes, with no leading zero. `--no-write` skips every write and reports each as `would ...`. `--json` prints the findings as one object with the same exit code, for a caller that should not parse prose. `--log <path>` overrides the misses log location. `--classes` prints the open miss classes and exits without touching GitHub.
 
-**Exit codes.** 0 when nothing is unclean. 1 when something is, and the report lists it. 2 on a usage error, or when it cannot find the repo to locate the log and `--log` was not given. A failed `gh` read is not caught, so it ends the run with the thrown error.
+**Exit codes.** 0 when nothing is unclean. 1 when something is, and the report lists it. 2 on a usage error, a `<pr>` in none of those forms included, or when it cannot find the repo to locate the log and `--log` was not given. A failed `gh` read is not caught, so it ends the run with the thrown error.
 
 **What counts as unclean:**
 
@@ -116,6 +116,32 @@ The session runs `reconcile.mjs <pr> --json` after each push and logs each unlog
 
 It exits 0 when clean, 1 with one line per problem, and 2 on a usage error or an unreadable input.
 
+## verify/record.mjs
+
+`record.mjs <plan.md> <report.json>` writes the plan's `## Verification` section from a verify run's report. It replaces the lines from the heading to the next `## ` heading and nothing else, and a plan with no heading gets it at the end.
+
+**The report.** A JSON object in this shape:
+
+```json
+{
+  "verdict": "done",
+  "base": "8c53b07a",
+  "head": "1a2b3c4d",
+  "blocked": [],
+  "rows": [
+    { "check": "typecheck", "result": "fail", "evidence": "/tmp/verify/typecheck.log" },
+    { "check": "lint", "result": "pass", "evidence": "/tmp/verify/lint.log" }
+  ],
+  "failures": [{ "check": "typecheck", "file": "scripts/lib/parse.ts", "line": 42 }]
+}
+```
+
+`verdict` is `done` or `blocked`. `base` and `head` match `^[0-9a-f]{7,40}$` once trimmed, and the section gets the trimmed values. `rows` is a non-empty array of `{ check, result, evidence }`, each a string that is not blank, with no whitespace in `check`. `blocked` is an array of `{ check, why }`, and `failures` an array of `{ check, file, line? }` whose `check` and `file` hold no whitespace and whose `line`, when present, is a positive integer. A `blocked` verdict needs at least one `blocked` entry, and a `done` verdict needs none. No cell may hold `|` or a line break, because either would break the table row or the line `check-report.mjs` reads.
+
+**One copy of the rules.** It composes the section in the shape `check-report.mjs` parses and runs `checkReport` over the plan with the new section in place before it writes. Any problem other than `verdict is blocked:` exits 2 and writes nothing, so the writer cannot drift from the reader.
+
+**Exit codes.** 0 when the section is written. 2 on a missing argument, an unreadable plan or report, invalid JSON, a shape error, or a `checkReport` problem. There is no exit 1: a `blocked` report is written, and `check-report.mjs` is what fails it. On a re-run, `prism-verify` carries the unchanged rows into the report, so the script never merges.
+
 ## The retro-line check
 
 `plan-retro-line.ts` fails a live folder plan whose PR review has given its final verdict while the `Retro:` line under `## PR Readiness` is still empty. The retro is the fixed last stage of a folder plan, so a plan that got that far with no retro line was left unfinished.
@@ -130,4 +156,4 @@ It exits 0 when clean, 1 with one line per problem, and 2 on a usage error or an
 
 ## Invocation
 
-In a consumer, the commands are `node .claude/hooks/review/reconcile.mjs`, `node .claude/hooks/review/record.mjs`, `node .claude/hooks/review/post.mjs`, and `node .claude/hooks/verify/check-report.mjs`. `review/ignore.mjs` is imported by `record.mjs` and `post.mjs`, not run. In PRISM's own tree the same files sit under `scripts/ai-skills/hooks/` in place of `.claude/hooks/`. All five are zero-dependency `.mjs` files with a `.d.mts` sidecar, they carry the runtime ownership marker, and `HOOK_RUNTIME_FILES` delivers them with the rest of the runtime ([`hook-runtime.md`](./hook-runtime.md)). None needs the executable bit. `reconcile.mjs` and `post.mjs` need `gh` signed in, and `record.mjs` and `check-report.mjs` read only local files.
+In a consumer, the commands are `node .claude/hooks/review/reconcile.mjs`, `node .claude/hooks/review/record.mjs`, `node .claude/hooks/review/post.mjs`, `node .claude/hooks/verify/check-report.mjs`, and `node .claude/hooks/verify/record.mjs`. `review/ignore.mjs` is imported by `record.mjs` and `post.mjs`, not run. `verify/record.mjs` imports `check-report.mjs`. In PRISM's own tree the same files sit under `scripts/ai-skills/hooks/` in place of `.claude/hooks/`. All of these are zero-dependency `.mjs` files with a `.d.mts` sidecar, they carry the runtime ownership marker, and `HOOK_RUNTIME_FILES` delivers them with the rest of the runtime ([`hook-runtime.md`](./hook-runtime.md)). None needs the executable bit. `reconcile.mjs` and `post.mjs` need `gh` signed in, and `record.mjs`, `verify/record.mjs`, and `check-report.mjs` read only local files.
