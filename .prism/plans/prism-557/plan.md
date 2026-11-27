@@ -319,6 +319,10 @@ round 4: resolved 1
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T7 added `parseToolsField`, which fails the build on a malformed `tools` list for any skill, and made `buildClaudeAgentMarkdown` write a gated role's list as `tools:` after `model:` and throw for a gated role that declares none.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T10 moved prism-review's flat-plan writes into the report under `Plan record` and `Lessons` headings for the session to write, and writes the folder-plan report JSON through `mktemp -d` and a heredoc.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T11 added the `**Stage tools.**` paragraph, worded identically in `skills-ecosystem.md` and its install twin.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T8 declared the pinned `tools:` list on each stage skill, and T9 added `verify/record.mjs` to `HOOK_RUNTIME_FILES` so a consumer update delivers it.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T12 regenerated the outputs, so each gated role's Claude agent file carries its tools list.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: T13 probes: verify `PROBE write=failed: no Write tool available to this agent (only Read, Bash, SubagentHandback) edit=failed: no Edit tool available to this agent` and `PROBE file=absent`; the general-purpose control `PROBE write=ok edit=ok` and `PROBE file=present`; review `PROBE inner=pong`. The allowlist holds and the review keeps dispatch, recorded under Stage tools in `hook-runtime.md`.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools-part-2]: Merged `main` after #560; the one conflict, the generated `prism-implement` agent file, was regenerated and carries both `model: inherit` and its tools list.
 
 ## Sessions
 
