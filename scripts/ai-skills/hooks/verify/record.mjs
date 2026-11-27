@@ -12,13 +12,14 @@
  * `check-report.mjs` parses and checked with its `checkReport` before the
  * write, so the writer cannot drift from the reader. Exits 0 when written,
  * and 2 writing nothing on a usage error, an unreadable file, invalid JSON, a
- * shape error, or a `checkReport` problem other than `verdict is blocked:`.
+ * shape error, a `checkReport` problem other than `verdict is blocked:`, or a
+ * plan it cannot write.
  * A `blocked` report is written, and `check-report.mjs` is what fails it.
  */
 import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { checkReport } from "./check-report.mjs";
+import { checkReport, matchesHeaderOrSeparator } from "./check-report.mjs";
 
 const SHA_PATTERN = /^[0-9a-f]{7,40}$/;
 
@@ -82,6 +83,13 @@ export function validateVerifyReport(value) {
 	for (const row of report.rows) {
 		requireObject(row, "row");
 		requireCell(row.check, "row check", { noWhitespace: true });
+
+		if (matchesHeaderOrSeparator(/** @type {string} */ (row.check))) {
+			throw new ReportShapeError(
+				`row check ${JSON.stringify(row.check)} reads as the table's header or separator, so check-report.mjs would drop the row.`
+			);
+		}
+
 		requireCell(row.result, `row ${row.check} result`);
 		requireCell(row.evidence, `row ${row.check} evidence`);
 	}
@@ -277,7 +285,16 @@ function runCli(args) {
 		return;
 	}
 
-	writeFileSync(planPath, newText);
+	try {
+		writeFileSync(planPath, newText);
+	} catch (error) {
+		process.stderr.write(
+			`record: cannot write ${planPath}: ${error instanceof Error ? error.message : String(error)}\n`
+		);
+		process.exitCode = 2;
+		return;
+	}
+
 	process.stdout.write(`record: wrote ${HEADING} (${report.verdict})\n`);
 }
 

@@ -208,6 +208,17 @@ export function parseSection(sectionLines) {
 }
 
 /**
+ * Tells whether a table row's first cell marks the header or separator row,
+ * which `parseSection` drops rather than counting as a check.
+ *
+ * @param {string} cell
+ * @returns {boolean}
+ */
+export function matchesHeaderOrSeparator(cell) {
+	return cell.toLowerCase() === "check" || /^:?-+:?$/.test(cell);
+}
+
+/**
  * Splits a table row on `|` and trims each cell, so padded and unpadded tables
  * read the same. Returns null for the header and separator rows, and for a
  * row with fewer than three cells, so a row missing its evidence cell is
@@ -233,8 +244,7 @@ function parseTableRow(line) {
 		check === undefined ||
 		result === undefined ||
 		evidence === undefined ||
-		check.toLowerCase() === "check" ||
-		/^:?-+:?$/.test(check)
+		matchesHeaderOrSeparator(check)
 	) {
 		return null;
 	}

@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -171,6 +171,9 @@ test("rejects a malformed report with exit 2 and writes nothing", () => {
 		["cell holding a pipe", row({ evidence: "a | b" })],
 		["cell holding a newline", row({ evidence: "a\nb" })],
 		["whitespace-only check", row({ check: "   " })],
+		["check named like the header", row({ check: "Check" })],
+		["check named like a separator", row({ check: "---" })],
+		["check named like an aligned separator", row({ check: ":-:" })],
 		["failure file holding a space", failure({ file: "a b.ts" })],
 		["line 0", failure({ line: 0 })],
 		["line 1.5", failure({ line: 1.5 })],
@@ -203,4 +206,46 @@ test("a missing argument, an unreadable plan, and an unreadable report exit 2", 
 	assert.equal(run(SCRIPT, [missing, reportPath]).status, 2);
 	assert.equal(run(SCRIPT, [planPath, missing]).status, 2);
 	assert.equal(readFileSync(planPath, "utf8"), PLAN_WITH_SECTION);
+});
+
+test("an unwritable plan exits 2 naming the plan", { skip: process.getuid?.() === 0 }, () => {
+	const { planPath, reportPath } = makeScratch(PLAN_WITH_SECTION, DONE_REPORT);
+
+	chmodSync(planPath, 0o444);
+
+	const result = run(SCRIPT, [planPath, reportPath]);
+
+	chmodSync(planPath, 0o644);
+	assert.equal(result.status, 2, result.stderr);
+	assert.ok(result.stderr.includes(planPath), result.stderr);
+	assert.equal(readFileSync(planPath, "utf8"), PLAN_WITH_SECTION);
+});
+
+test("a second run on a plan ending in its Verification section writes the same bytes", () => {
+	const { planPath, reportPath } = makeScratch(
+		`${BEFORE_SECTION}## Verification\n\nold line\n`,
+		DONE_REPORT
+	);
+
+	assert.equal(run(SCRIPT, [planPath, reportPath]).status, 0);
+	const first = readFileSync(planPath, "utf8");
+
+	assert.equal(run(SCRIPT, [planPath, reportPath]).status, 0);
+	const second = readFileSync(planPath, "utf8");
+
+	assert.equal(second, first);
+	assert.equal(second, `${BEFORE_SECTION}## Verification\n${DONE_SECTION}\n`);
+	assert.equal(second.match(/^## Verification$/gm)?.length, 1);
+	assert.equal(run(CHECK_REPORT, [planPath]).status, 0);
+});
+
+test("writes a failure with no line as check and file alone", () => {
+	const { planPath, reportPath } = makeScratch(PLAN_WITH_SECTION, {
+		...DONE_REPORT,
+		failures: [{ check: "typecheck", file: "a.ts" }],
+	});
+
+	assert.equal(run(SCRIPT, [planPath, reportPath]).status, 0);
+	assert.ok(readFileSync(planPath, "utf8").includes("\n- typecheck: a.ts\n"));
+	assert.equal(run(CHECK_REPORT, [planPath]).status, 0);
 });
