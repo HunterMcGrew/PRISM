@@ -437,6 +437,9 @@ round 4: resolved 4
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T7 swept the ADR-criterion reference, the PR-description template, and the consumer AGENTS template.
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T10 removed the review labels and verdict marker from `reconcile.mjs`, its types, tests, fixtures, and `review-runtime.md`.
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T8 swept `prism-implement`, `prism-retro`, and `prism-forge-skill` to name `prism-review` and drop the separate PR-review stage.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T3 retired the reconcile stop gate, its tests, and its `SubagentStop` registrations, and gated `prism-review`; `mergeHookRegistration` now drops PRISM entries from event keys only the consumer holds. Its prune test drives the exported `refreshHookRuntime` rather than exporting the private prune.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T6 swept the architect context, its curated twins, and the routes to name only `prism-review`, and removed the reconcile gate text from `hook-runtime.md`; its proof waits on T11's seed refresh.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T9 moved the manifest-coverage fixture from eric to briar, dropped Eric's tone test and bootstrap row, and moved the spec-scope-lint fixtures to `prism-review`.
 
 ## Sessions
 
