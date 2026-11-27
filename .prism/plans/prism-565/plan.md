@@ -230,16 +230,16 @@ round 2: clean
 
 verdict: done
 base: 02e9aeb0
-head: a57e3caf
+head: db3c3f70
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/typecheck.log |
-| lint | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/lint.log |
-| test | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/test.log |
-| build | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/build.log |
-| format | n/a: not configured | part 1 of 2, T1-T7: none |
-| spec | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/spec.log |
+| typecheck | pass | part 1 of 2, T1-T7 and T3 fix: local run, log not kept |
+| lint | pass | part 1 of 2, T1-T7 and T3 fix: local run, log not kept |
+| test | pass | part 1 of 2, T1-T7 and T3 fix: local run, log not kept |
+| build | pass | part 1 of 2, T1-T7 and T3 fix: local run, log not kept |
+| format | n/a: not configured | part 1 of 2, T1-T7 and T3 fix: none |
+| spec | pass | part 1 of 2, T1-T7 and T3 fix: local run, log not kept |
 
 ### Failures
 
