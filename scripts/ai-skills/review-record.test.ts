@@ -109,6 +109,16 @@ test("a bare swept token makes the round unclean", () => {
 	);
 });
 
+test("a swept or n/a token with nothing after its prefix makes the round unclean", () => {
+	for (const token of ["swept — ", "swept —  ", "n/a: ", "n/a:  "]) {
+		assert.equal(
+			computeVerdict(reportOf({ passes: [{ pass: "Correctness", token }] })),
+			"0 critical, 0 major, 0 minor, 0 nit",
+			JSON.stringify(token)
+		);
+	}
+});
+
 test("an n/a pass with a reason keeps the round clean, and minors and nits alone do not block it", () => {
 	assert.equal(
 		computeVerdict(
@@ -260,6 +270,43 @@ test("a finding on a never-reviewed path exits 1, names it, and leaves the plan 
 	}
 });
 
+test("a sha with surrounding whitespace is trimmed and accepted", () => {
+	const { root, planPath } = makeRepo(PLAN_WITH_REVIEW);
+
+	try {
+		const result = runRecord(root, planPath, reportOf({ sha: "  def5678\n" }));
+
+		assert.equal(result.status, 0, result.stderr);
+		assert.match(readFileSync(planPath, "utf8"), /- review round 1 at def5678: clean\n/);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("a never-reviewed path spelled absolute, with ./, with dot segments, or with backslashes still exits 1", () => {
+	const { root, planPath } = makeRepo(PLAN_WITH_REVIEW);
+
+	try {
+		for (const file of [
+			path.join(root, ".prism", "plans", "x", "plan.md"),
+			"./.prism/lessons.md",
+			"src/../REVIEW.md",
+			".prism\\plans\\x\\plan.md",
+		]) {
+			const result = runRecord(
+				root,
+				planPath,
+				reportOf({ findings: [{ severity: "minor", file }] })
+			);
+
+			assert.equal(result.status, 1, `${file}: ${result.stderr}`);
+			assert.equal(readFileSync(planPath, "utf8"), PLAN_WITH_REVIEW, file);
+		}
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
 test("a set reviewIgnore replaces the default", () => {
 	const { root, planPath } = makeRepo(PLAN_WITH_REVIEW, {
 		reviewIgnore: ["generated/**"],
@@ -296,6 +343,15 @@ test("malformed input exits 2 and writes nothing", () => {
 		["finding without file", reportOf({ findings: [{ severity: "minor" }] })],
 		["unknown severity", reportOf({ findings: [{ severity: "Major", file: "a.ts" }] })],
 		["part without integers", reportOf({ part: { k: "1", m: 2 } })],
+		["empty passes", reportOf({ passes: [] })],
+		["sha with non-hex characters", reportOf({ sha: "xyz1234" })],
+		["sha shorter than seven", reportOf({ sha: "abc123" })],
+		["sha longer than forty", reportOf({ sha: "0".repeat(41) })],
+		["upper-case sha", reportOf({ sha: "DEF5678" })],
+		["part k of 0", reportOf({ part: { k: 0, m: 2 } })],
+		["part k above m", reportOf({ part: { k: 3, m: 2 } })],
+		["part m of 1", reportOf({ part: { k: 1, m: 1 } })],
+		["part with a fractional k", reportOf({ part: { k: 1.5, m: 2 } })],
 		["not JSON", "{ round: 1"],
 	];
 

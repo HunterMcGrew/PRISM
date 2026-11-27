@@ -16,11 +16,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readPlanConfig } from "../plan/tasks.mjs";
-import { isNeverReviewed, resolveReviewIgnore } from "./ignore.mjs";
+import { isNeverReviewed, normalizeReviewPath, resolveReviewIgnore } from "./ignore.mjs";
 
 const SEVERITIES = ["critical", "major", "minor", "nit"];
 
 const SHORT_SHA_LENGTH = 8;
+
+const SHA_PATTERN = /^[0-9a-f]{7,40}$/;
+
+const FINISHED_TOKEN_PATTERNS = [/^swept — \S/, /^n\/a: \S/];
 
 /**
  * @typedef {{ pass?: string, token: string }} ReviewPass
@@ -57,8 +61,18 @@ export function validateReport(value) {
 		throw new ReportShapeError("sha is missing.");
 	}
 
+	if (!SHA_PATTERN.test(report.sha.trim())) {
+		throw new ReportShapeError(
+			`sha ${JSON.stringify(report.sha)} is not 7 to 40 lower-case hex characters.`
+		);
+	}
+
 	if (!Array.isArray(report.passes)) {
 		throw new ReportShapeError("passes is not an array.");
+	}
+
+	if (report.passes.length === 0) {
+		throw new ReportShapeError("passes is empty; a round names every pass it ran.");
 	}
 
 	if (!Array.isArray(report.findings)) {
@@ -96,10 +110,13 @@ export function validateReport(value) {
 			part === null ||
 			typeof part !== "object" ||
 			!Number.isInteger(part.k) ||
-			!Number.isInteger(part.m)
+			!Number.isInteger(part.m) ||
+			/** @type {number} */ (part.m) < 2 ||
+			/** @type {number} */ (part.k) < 1 ||
+			/** @type {number} */ (part.k) > /** @type {number} */ (part.m)
 		) {
 			throw new ReportShapeError(
-				`part is ${JSON.stringify(report.part)}; it needs integer k and m.`
+				`part is ${JSON.stringify(report.part)}; it needs integers with 1 <= k <= m and m >= 2.`
 			);
 		}
 	}
@@ -111,8 +128,9 @@ export function validateReport(value) {
  * The round's verdict: `clean`, or the open counts.
  *
  * A round is `clean` when no Critical or Major is open apart from decision
- * items and every pass token reads `swept — …` or `n/a: …`. A bare `swept`
- * names no reach, so it reads as a sweep that did not finish. Decision items
+ * items and every pass token reads `swept — …` or `n/a: …` with text after
+ * the prefix. A bare `swept`, or a prefix with nothing after it, names no
+ * reach, so it reads as a sweep that did not finish. Decision items
  * wait on a person rather than a fix, so the counts leave them out too.
  *
  * @param {ReviewReport} report
@@ -124,8 +142,8 @@ export function computeVerdict(report) {
 		counted.filter((finding) => finding.severity === severity).length;
 
 	const [crit, maj, min, nit] = SEVERITIES.map(count);
-	const everyPassFinished = report.passes.every(
-		(pass) => pass.token.startsWith("swept — ") || pass.token.startsWith("n/a: ")
+	const everyPassFinished = report.passes.every((pass) =>
+		FINISHED_TOKEN_PATTERNS.some((pattern) => pattern.test(pass.token))
 	);
 
 	if (crit === 0 && maj === 0 && everyPassFinished) return "clean";
@@ -187,14 +205,6 @@ function findRepoRoot(start) {
 }
 
 /**
- * @param {string} file
- * @returns {string}
- */
-function normalizeFile(file) {
-	return file.replace(/\\/g, "/").replace(/^\.\//, "");
-}
-
-/**
  * @param {string[]} argv
  */
 function runCli(argv) {
@@ -212,12 +222,14 @@ function runCli(argv) {
 	let planText;
 	/** @type {import("./ignore.mjs").ReviewIgnoreLists} */
 	let lists;
+	/** @type {string | null} */
+	let repoRoot;
 
 	try {
 		report = validateReport(JSON.parse(readFileSync(reportPath, "utf8")));
 		planText = readFileSync(planPath, "utf8");
 
-		const repoRoot = findRepoRoot(path.dirname(planPath));
+		repoRoot = findRepoRoot(path.dirname(planPath));
 		lists = resolveReviewIgnore(repoRoot ? readPlanConfig(repoRoot) : null);
 	} catch (error) {
 		process.stderr.write(
@@ -227,9 +239,10 @@ function runCli(argv) {
 		return;
 	}
 
-	const neverReviewed = report.findings.filter((finding) =>
-		isNeverReviewed(normalizeFile(finding.file), lists)
-	);
+	const root = repoRoot ?? path.resolve(path.dirname(planPath));
+	const neverReviewed = report.findings
+		.map((finding) => ({ ...finding, file: normalizeReviewPath(finding.file, root) }))
+		.filter((finding) => isNeverReviewed(finding.file, lists));
 
 	if (neverReviewed.length > 0) {
 		for (const finding of neverReviewed) {
