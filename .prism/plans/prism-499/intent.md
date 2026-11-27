@@ -37,7 +37,7 @@ A developer approves a one-page intent. The session then runs every stage after 
 
 - Every ticket runs through a committed plan folder: `intent.md`, `design.md` when needed, `spec.md`, and `plan.md`. A fresh session reads the folder and knows which stage is next.
 - Each stage is a skill named for its job. Stages that need a cold read run as subagents.
-- Both reviews run one rulebook, `REVIEW.md`. What a human reviewer catches is logged, and a miss that keeps recurring becomes a fix to the rulebook or a hook.
+- One review runs one rulebook, `REVIEW.md`. What a human reviewer catches is logged, and a miss that keeps recurring becomes a fix to the rulebook or a hook.
 - The rules that must always hold are hooks that stop the action. This covers git hooks for everyone and agent hooks for AI sessions.
 - A consumer gets the same line through `prism adopt` and `prism update`, with their own commands and paths in place of thrive's.
 
@@ -49,7 +49,7 @@ In priority order:
 2. **Human touches per ticket.** Two on a routine ticket: approve the intent, read the PR. A third only for a design that needs approval, a plan that fails automatic approval, or a change that would alter the approved intent.
 3. **Skill size.** Every skill aims for 120 loaded lines or less, enforced by the existing build check as a soft cap: a skill may go over with an allowlist entry that gives a one-line reason. A persona skill's `## Voice` block does not count, up to 16 lines.
 
-The always-loaded rules have a word budget, checked by the build. The phase-1 baseline stands and no new baseline is run. The eval harness is not in scope.
+The always-loaded rules have a word budget of 3,000 to 5,000 words. The spec sets the number, and the build checks it. The phase-1 baseline stands and no new baseline is run. The eval harness is not in scope.
 
 ## Affected users and systems
 
@@ -85,12 +85,12 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 ### Workflow
 
 - There are three sizes. **Small** is a change of 100 or fewer changed lines of product code, in one area, with at most one new product file and no file on a stop path. A script measures it on the diff, and tests, docs, plans, config, and lockfiles don't count toward the 100. **Standard** is the default and may ship as one PR or a stack. **Epic** is several stories under one tracker parent.
-- **Small** runs: intent → implement → verify → review → draft PR → PR review → close. It has no spec and no plan. A small change that outgrows the limit stops and goes on as a standard ticket.
-- **Standard** runs: intent → design when needed → spec → plan → challenge twice → implement → verify → review → draft PR → PR review → close, with a retro report when a trigger fires. A standard ticket keeps its spec.
+- **Small** runs: intent → implement → verify → review → draft PR → close. It has no spec and no plan. A small change that outgrows the limit stops and goes on as a standard ticket.
+- **Standard** runs: intent → design when needed → spec → plan → challenge twice → implement → verify → review → draft PR → close, with a retro report when a trigger fires. A standard ticket keeps its spec.
 - The implement stage runs on the same model tier as planning. A task no longer carries the long prose a cheaper model needed.
 - **Epic** has a folder with `intent.md` and `spec.md` and no `plan.md`. The spec names the children and their merge order. Each child is a standard ticket.
 - No orchestrator skill drives the run. The stage order and a resume table in the always-on workflow block do. A fresh session reads the plan folder and runs the first row that matches.
-- Four stages run as fresh subagents because their value is a cold read: spec, challenge, verify, and PR review. Everything else runs in the session.
+- Three stages run as fresh subagents because their value is a cold read: spec, challenge, and verify. Everything else runs in the session.
 - Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage, and 2 rounds for review. A plan challenge that still blocks after round 3 gets a confirm round, rerun once after an architect verdict, and neither counts against the 3.
 
 ### Where the run stops for a person
@@ -134,13 +134,13 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 - **New stage skills:** `prism-intent`, `prism-spec`, and `prism-verify`.
 - **`prism-architect` is new and is Winston.** It answers "is this the right approach?" at any time, in chat, with no plan folder and no approval. A running stage also sends it scope ideas and unresolved challenge findings, and it returns a verdict to that stage instead of offering a next step. `prism-plan` becomes a persona-less utility that writes `plan.md` and runs the challenge rounds.
 - **`prism-debug` is new and is Sasha.** It diagnoses and changes no source. Its report becomes the Problem section of an intent. This reverses the phase-1 deletion.
-- **`prism-pr-review` stays Eric** and gains a chat voice that stays out of his GitHub comments.
+- **`prism-pr-review` is retired.** PRISM runs one review, `prism-self-review`. The retired skill's source moves to a deprecated folder the build does not read, so it can come back.
 - `prism-challenge` runs the plan challenge rounds. `tdd` holds the test-first rules the implement stage loads.
 - **Folded:** `prism-user-stories` into `prism-intent`. No skill writes user stories.
 - **Deleted:** `prism-review-loop`, once `REVIEW.md` and the review rounds inside the stages replace it. Sol, Ren, and Theo stay deleted.
 - Acceptance-criteria grading moves out of `prism-qa-plan` and into the review's intent-conformance pass.
 - `prism-audit` learns to archive a plan folder whole.
-- Each stage skill declares the tools it may use. The verify stage and both review stages get no Edit and no Write, and a script appends their one record line per round.
+- Each stage skill declares the tools it may use. The verify stage and the review stage get no Edit and no Write, and a script appends the review's one record line per round.
 - The always-loaded workflow rule keeps the sizes and the resume table. Its approval, advancing, and scope-change text moves into the stage skills.
 - The 120-line cap is a soft cap, and it keeps counting everything a skill loads. A skill may go over it with an allowlist entry and a one-line reason. Thrive reached its numbers partly by moving text into references its check does not count. PRISM does not copy that. Content that fails the tests is still cut, not moved.
 
@@ -150,9 +150,8 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 - **The exit rule is zero Critical and zero Major findings.** A Minor is fixed inside the rounds when it can be, and never earns a round of its own. A review that reaches its cap with only Minors left has passed, and those Minors are listed in the PR body.
 - **Review reads the plan folder and never reviews it.** The acceptance criteria and the task list are the yardstick for the diff, and no finding is raised on the prose of `intent.md`, `spec.md`, or `plan.md`. Published docs, code comments, and the changelog earn a finding only when they are wrong about the code, never for wording.
 - **A list of never-reviewed paths lives in the consumer's config.** Plan folders, working notes (lessons, retros, audits, metrics), generated files, and the PR body are on it by default. So is everything PRISM delivers, in any repo that uses PRISM. In PRISM's own repo the skills and rules are the product and stay reviewable, for being wrong about a script or contradicting another rule, never for wording. The script that posts findings rejects one aimed at a listed path.
-- `prism-self-review` runs the passes on the branch before anything reaches GitHub, split across subagents. The session fixes what it finds, for at most two rounds.
-- `prism-pr-review` runs the same passes on the PR in a fresh context, and posts inline comments and one summary. It never approves and never flips the PR to ready.
-- A reconcile script resolves addressed threads and reports unanswered human comments. A stop gate sends the PR review back while a Critical or Major finding is open, for at most two rounds.
+- `prism-self-review` is the only review. It runs the passes on the branch before anything reaches GitHub, split across subagents. The session fixes what it finds, for at most two rounds. It never approves and never flips the PR to ready.
+- A reconcile script resolves addressed threads and reports unanswered human comments. The stop gate that sent the PR review back is retired with it.
 - **The review labels are gone.** `effort:*`, `confidence:*`, and `review:has-minors` came from thrive's team queue, and nothing here needs them.
 - A human comment the agent missed is logged. A class of miss that reaches three gets a proposed fix, and a person approves each one.
 - `prism-verify` runs once after the build, in a fresh context, with the consumer's own commands. It fixes nothing.
@@ -161,7 +160,7 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 ### Hooks
 
 - **Git hooks for everyone.** PRISM ships a pre-commit hook and a pre-push hook and installs them through `core.hooksPath`. They run commands from the consumer's config and skip with a notice when the tool is missing. The installer refuses to replace a hook path it does not recognize. This reverses the earlier decision against real git hooks.
-- **Agent hooks for AI sessions.** The new gates are the secrets gate, the dispatch-brief gate, the reconcile stop gate, the approve guard, and a wider commit gate.
+- **Agent hooks for AI sessions.** The new gates are the secrets gate, the dispatch-brief gate, the approve guard, and a wider commit gate. The reconcile stop gate is retired with `prism-pr-review`.
 - The commit gate checks the task subject, weakened or deleted tests, bypass flags such as `--no-verify`, and stop paths. It does not check that every file belongs to the named task. Thrive removed that check, and so does this intent.
 - **Architect reads stay enforced by default.** Onboarding writes routes over the consumer's product code, so the gate covers more than PRISM's own files.
 - **Kill switches.** PRISM keeps its two existing switches, because a consumer cannot patch a broken hook the way a maintainer can. The approve guard and the secrets gate ignore them, and an agent cannot set one on its own command.
@@ -226,12 +225,13 @@ Measured on main at `37cdbd28` before the change: the task list and the review r
 - **Review scope.** Every section of the plan was in scope. Review now reads the plan folder as its yardstick and raises no finding on it.
 - **Never-reviewed paths.** New. Hunter: "PRISM repo stuff should never be reviewed by the users repo."
 - **Labels.** The review labels are removed. Hunter: "the effort labels and review:minor labels was thrive only stuff, we dont need that."
-- **Reviewers.** They wrote their record line and fixed plan drift by hand. They now get no Edit and no Write, and a script writes the line.
+- **One review.** A self-review and a PR review become one review, before the PR opens. `prism-pr-review` moves to a deprecated folder, and its stop gate goes with it. Hunter: "PRISM doesn't need a PR reviewer and a reviewer."
+- **Reviewer tools.** A reviewer wrote the record line and fixed plan drift by hand. The review stage now gets no Edit and no Write, and a script writes the line.
 - **Merge.** The main session merged on a clean final pass with no `review:has-minors` label. The bar is now zero Critical and zero Major.
 - **Plan.** Task prose shrinks to two lines of gotchas, Decisions narrow to scope changes and open questions, and History and Sessions leave the template.
 - **Builders.** The implement stage runs on the planning model tier.
 - **Intent.** It gains the three approach lines.
-- **Always-on size.** It was reported and was not a target. It gets a word budget, and the workflow rule shrinks to the sizes and the resume table.
+- **Always-on size.** It was reported and was not a target. It gets a word budget, and the workflow rule shrinks to the sizes and the resume table. Hunter: "i say 3000-5000 should be good, but lets see what the spec and plan come up with."
 - **Retro.** The fixed last stage splits into a close step that always runs and a report that runs on a trigger.
 - **Skills.** Each stage skill declares its tools.
 
