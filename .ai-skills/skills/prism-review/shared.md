@@ -1,4 +1,4 @@
-Reviews the current branch against `REVIEW.md` and reports in chat. `REVIEW.md` holds severity, the finding shape, the coverage line, the exit rule, and the passes, so this body holds only the run around it. It never approves, never posts to GitHub, never flips a PR ready, never edits source, and never ships. The author ships.
+Reviews the current branch, or a PR by number or URL, against `REVIEW.md` and reports in chat. `REVIEW.md` holds severity, the finding shape, the coverage line, the exit rule, and the passes, so this body holds only the run around it. It never approves, never posts to GitHub, never flips a PR ready, never edits source, and never ships. The author ships.
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.
@@ -28,9 +28,9 @@ Open with one greeting so the user knows Briar arrived: "Briar here. Three monit
 
 1. **Pin the range** from `git merge-base origin/${DEFAULT_BRANCH} HEAD` to `HEAD`, and confirm it holds at least one file. Every later command takes those two refs. With a PR, the range is `origin/<baseRefName>..<headRefOid>` instead.
 2. **Read the criteria before the diff,** from the source `.prism/review/intent-scope.md` names: `intent.md` on a folder that has one, else `plan.md`'s `## Acceptance Criteria`. Read the intent's regression and security surfaces too, from the epic's `intent.md` on an epic child, so the review judges the approach before the lines.
-3. **Inventory the changed files** with `git diff --name-status <base> HEAD`.
+3. **Inventory the changed files** with `git diff --name-status <base> HEAD`. With a PR, use `gh pr diff <pr> --name-only` instead.
 4. **Pick the passes whose triggers fire** per `REVIEW.md`, and read each pass file and its `.prism/review/stack/` file when one exists.
-5. **Dispatch one subagent per pass or pass group,** at most the workflow rule's subagent cap, with a no-steer brief per `REVIEW.md`. Give each the pinned refs, its files, its passes, and `REVIEW.md`.
+5. **Dispatch one subagent per pass or pass group,** at most the workflow rule's subagent cap, with a no-steer brief per `REVIEW.md`. Give each the pinned refs, its files, its passes, and `REVIEW.md`. A host that cannot launch subagents sweeps the passes itself and prints the same coverage line.
 6. **Collect, then sweep and filter** per `REVIEW.md`. Open each subagent finding's cited line at the pinned head and confirm the triggering input produces the wrong behavior. Drop one you cannot confirm, and name the drop in the report.
 
 ## Write the plan before the chat
@@ -58,7 +58,8 @@ Open with the verdict: `Ready for PR`, or `N Critical, M Major, K Minor to fix`.
 
 ## Boundaries and handoff
 
-- **Issues found:** route to the implementing skill (`prism-implement`), or to the docs skill (`prism-docs`) when the diff is docs only. Route a UX-level problem to `prism-design` before anyone changes code.- **Clean, no PR yet:** on a plan folder, the next stage is the resume table's PR row. On a flat plan, hand back to the author skill to commit, push, and open it (`prism-docs` when every changed path is under `docs/` or `.claude/`, otherwise `prism-implement`). Authors ship and reviewers review.
+- **Issues found:** route to the implementing skill (`prism-implement`), or to the docs skill (`prism-docs`) when the diff is docs only. Route a UX-level problem to `prism-design` before anyone changes code.
+- **Clean, no PR yet:** on a plan folder, the next stage is the resume table's PR row. On a flat plan, hand back to the author skill to commit, push, and open it (`prism-docs` when every changed path is under `docs/` or `.claude/`, otherwise `prism-implement`). Authors ship and reviewers review.
 - Propose these handoffs and never invoke them.
 
 Before closing the session, append to `.prism/lessons.md` when a documented lesson should have prevented an issue you found, or when an assumption you made proved wrong.
