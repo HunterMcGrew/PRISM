@@ -289,7 +289,12 @@ test("SessionStart on a filename miss sends the session to the full plan lookup"
 		);
 		assert.ok(note?.includes("`.prism/rules/branch-plan.md` § Plan Lookup"));
 		assert.ok(note?.includes("do not create a plan to hold the summary"));
-		assert.ok(note?.includes("On a plan folder, write only scope changes and open questions"));
+		const folderClause = note?.indexOf("On a plan folder, write only scope changes and open questions") ?? -1;
+		assert.ok(folderClause !== -1);
+		assert.ok(
+			folderClause < (note?.indexOf("If it finds none") ?? -1),
+			"the folder clause belongs to the found-a-plan case, not the fallback record"
+		);
 		assert.ok(!note?.includes("Re-read .prism/plans/"), "a miss never names a plan path");
 	} finally {
 		rmSync(root, { recursive: true, force: true });
