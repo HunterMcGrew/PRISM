@@ -30,11 +30,11 @@ Each criterion cites the spec requirement it grades as `(REQ-n)`.
 - [ ] **AC-10** Given `.prism/rules/workflow.md`, `prism-implement`, and `prism-docs`, When read, Then the build report has no `history:` line, the `done` bullet appends no History lines, and neither skill's folder-plan bullet names a `history:` line, while `prism-implement`'s flat-plan History line stays. (REQ-10)
   - Evidence (machine): `grep -c 'history:' .prism/rules/workflow.md .ai-skills/skills/prism-implement/shared.md .ai-skills/skills/prism-docs/shared.md` prints 0 for each, and `grep -c '## History' .ai-skills/skills/prism-implement/shared.md` prints at least 1.
 - [ ] **AC-11** Given `shipping-flow.md` step 4 and the PR-stage bullet of `pr-description.md`, When read, Then the sync trigger is commits or scope changes the body doesn't describe, with no `## History` trigger, and the Clove flat-plan bullet keeps its History trigger. (REQ-11)
-  - Evidence (machine): `grep -c '## History' .prism/references/shipping-flow.md` prints 0 and `grep -c '## History' .prism/rules/pr-description.md` prints 1.
+  - Evidence (machine): `grep -c '## History' .prism/references/shipping-flow.md` prints 0, `grep '## History' .prism/rules/pr-description.md | grep -c 'PR stage'` prints 0, and `grep '## History' .prism/rules/pr-description.md | grep -c 'Clove'` prints 1.
 - [ ] **AC-12** Given `.prism/rules/session-orientation.md`, When Battery Persistence and the Closing battery's last line are read, Then a folder plan runs both batteries and writes no `open:` or `close:` line, and a flat plan keeps them. (REQ-12)
   - Evidence (machine): `grep -c 'folder plan' .prism/rules/session-orientation.md` prints at least 2.
 - [ ] **AC-13** Given `prism-retro`, `prism-handoff`, the Iris row and rule 3 of `skills-ecosystem.md` and its twin, the plan-authoring `## History` row and its twin, `writing-a-plan.md`, `docs/ai-skills/iris.md`, and `compact-handoff.mjs`, When read, Then the retro reads no `## History`, and every other mention of `## History` is scoped to flat plans. (REQ-13, architect fold-in)
-  - Evidence (machine): `grep -c '## History' .ai-skills/skills/prism-retro/shared.md` prints 0, and each other file's `## History` line contains `flat`.
+  - Evidence (machine): `grep -c '## History' .ai-skills/skills/prism-retro/shared.md` prints 0, and `grep -h '## History' .ai-skills/skills/prism-handoff/shared.md docs/ai-skills/iris.md .prism/architect/_toolkit/skills-ecosystem.md templates/install/.prism/architect/_toolkit/skills-ecosystem.md .prism/architect/_toolkit/plan-authoring.md templates/install/.prism/architect/_toolkit/plan-authoring.md .prism/architect/guides/writing-a-plan.md scripts/ai-skills/hooks/compact-handoff.mjs | grep -vc flat` prints 0, and the open-question variant's History sentence in `.prism/rules/branch-plan.md` and its twin names a flat plan.
 - [ ] **AC-14** Given `CLAUDE_AGENT_MODEL_DEFAULTS`, When the implement agent is built, Then `.claude/agents/prism-implement.md` reads `model: inherit`, and a test fails when that file names another model. (REQ-14)
   - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/claude-agent-def.test.ts` passes, and `grep -c '^model: inherit$' .claude/agents/prism-implement.md` prints 1.
 - [ ] **AC-15** Given a plan whose `## Challenge` round lines start with `- `, When `auto-approve.mjs` runs, Then it reads them the same as bare lines, for approval and for the round-1-carried refusal. (REQ-15)
@@ -44,7 +44,7 @@ Each criterion cites the spec requirement it grades as `(REQ-n)`.
 
 ## Tasks
 
-This child ships as a two-PR stack. **Part 1 (the lean plan and the builder tier, REQ-1 to 4 and 8 to 14, plus the architect fold-ins)** is T1 to T14. **Part 2 (the Approach lines and the dashed round lines, REQ-5, 6, 7, 15)** is T15 to T22, and opens with T15, the plan-only commit that names part 1's tasks as shipped.
+This child ships as a two-PR stack. **Part 1 (the lean plan and the builder tier, REQ-1 to 4 and 8 to 14, plus the architect fold-ins)** is T1 to T14 and T23, which round 1 added. **Part 2 (the Approach lines and the dashed round lines, REQ-5, 6, 7, 15)** is T15 to T22, and opens with T15, the plan-only commit that names part 1's tasks as shipped. The run stops once part 1's PR is open: T15 starts only on part 2's branch, cut from `main` after part 1 merges, even though `bundles.mjs` reports it ready after T14.
 
 Each part's generated copies are listed in its build task (T14, T22), which commits only the listed paths `git status -s` shows changed. Curated seed twins are hand-edited in the same task as their canonical, because the build never rewrites them. A test and the script it imports share one task, written test-first, because the import edge would otherwise make the test task wait on the script task.
 
@@ -52,7 +52,7 @@ Bundle groups (from `node scripts/ai-skills/hooks/plan/bundles.mjs .prism/plans/
 
 Group 1: T3
 Group 2: T4
-Group 3: T5, T9
+Group 3: T5, T9, T23
 Group 4: T7
 Group 5: T8
 Group 6: T10
@@ -89,11 +89,11 @@ Recount at build time, and add `prism-557/plan.md` when child 11 merged first, p
 
 ### T4: Part 1 — map the implement agent to inherit
 
-- files: scripts/ai-skills/claude-agent-def.test.ts, scripts/ai-skills/generate-skills.ts
-- proof: pnpm exec tsx --test --test-name-pattern="maps prism-implement to inherit" scripts/ai-skills/claude-agent-def.test.ts
+- files: scripts/ai-skills/claude-agent-def.test.ts, scripts/ai-skills/generate-skills.ts, scripts/ai-skills/role-preloads.test.ts
+- proof: pnpm exec tsx --test --test-name-pattern="maps prism-implement to inherit" scripts/ai-skills/claude-agent-def.test.ts && pnpm exec tsx --test scripts/ai-skills/role-preloads.test.ts
 - proof fails on main: yes
 - depends on: none
-- behavior change: line 77 asserted `prism-implement` had no default model, and now asserts it maps to `inherit`, because REQ-14 moves the builder to the session's model.
+- behavior change: line 77 asserted `prism-implement` had no default model, and now asserts it maps to `inherit`, because REQ-14 moves the builder to the session's model; `role-preloads.test.ts` line 56 drops `model: sonnet\n` from its regex, so it checks preloads only and stops pinning the implement agent's model.
 
 Name the new cases "maps prism-implement to inherit" and "generated prism-implement agent inherits the session model".
 The generated-file case passes only after T14 rebuilds the agent files.
@@ -112,7 +112,7 @@ Keep and cut the parts the spec's Task-detail rule and ADR part names, and make 
 - proof: pnpm prism:crossref-lint && grep -c '0088-' .ai-skills/definitions/seed-curation.json
 - depends on: T5
 
-Add the ADR as one exact path in `excluded` beside 0087, and check the twin README's curation before giving it the index line.
+Add the ADR as one exact path in `excluded` beside 0087, and in both READMEs add the 0088 row and mark 0033's row superseded in part.
 If 0088 is taken when this task runs, take the next free number and record the rename as an `amended:` line on this task.
 
 ### T7: Part 1 — drop the build report's history line
@@ -169,9 +169,9 @@ The Iris row drops `## History` and rule 3 gains "on a flat plan", and the guide
 
 ### T14: Part 1 — regenerate the outputs
 
-- files: .claude/templates/plan.md, .codex/templates/plan.md, .cursor/templates/plan.md, templates/install/.prism/templates/plan.md, .claude/rules/implementation-task-detail.md, .codex/rules/implementation-task-detail.md, .cursor/rules/implementation-task-detail.mdc, .claude/rules/workflow.md, .codex/rules/workflow.md, .cursor/rules/workflow.mdc, templates/install/.prism/rules/workflow.md, .claude/rules/session-orientation.md, .codex/rules/session-orientation.md, .cursor/rules/session-orientation.mdc, templates/install/.prism/rules/session-orientation.md, templates/install/.prism/rules/pr-description.md, .claude/references/shipping-flow.md, .codex/references/shipping-flow.md, .cursor/references/shipping-flow.md, templates/install/.prism/references/shipping-flow.md, .claude/architect/_toolkit/plan-authoring.md, .codex/architect/_toolkit/plan-authoring.md, .cursor/architect/_toolkit/plan-authoring.md, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, .claude/architect/guides/writing-a-plan.md, .codex/architect/guides/writing-a-plan.md, .cursor/architect/guides/writing-a-plan.md, templates/install/.prism/architect/guides/writing-a-plan.md, .claude/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .codex/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .cursor/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .claude/spec/adrs/_toolkit/0033-implementation-task-detail.md, .codex/spec/adrs/_toolkit/0033-implementation-task-detail.md, .cursor/spec/adrs/_toolkit/0033-implementation-task-detail.md, .claude/spec/adrs/_toolkit/README.md, .codex/spec/adrs/_toolkit/README.md, .cursor/spec/adrs/_toolkit/README.md, AGENTS.md, .codex/config.toml, .claude/skills/prism-plan/SKILL.md, .cursor/skills/prism-plan/SKILL.md, .claude/skills/prism-implement/SKILL.md, .cursor/skills/prism-implement/SKILL.md, .claude/agents/prism-implement.md, .codex/agents/prism-implement.toml, .claude/skills/prism-retro/SKILL.md, .cursor/skills/prism-retro/SKILL.md, .claude/agents/prism-retro.md, .codex/agents/prism-retro.toml, .claude/skills/prism-handoff/SKILL.md, .cursor/skills/prism-handoff/SKILL.md, .claude/skills/prism-docs/SKILL.md, .cursor/skills/prism-docs/SKILL.md, .claude/agents/prism-docs.md, .codex/agents/prism-docs.toml
+- files: .claude/templates/plan.md, .codex/templates/plan.md, .cursor/templates/plan.md, templates/install/.prism/templates/plan.md, .claude/rules/implementation-task-detail.md, .codex/rules/implementation-task-detail.md, .cursor/rules/implementation-task-detail.mdc, .claude/rules/workflow.md, .codex/rules/workflow.md, .cursor/rules/workflow.mdc, templates/install/.prism/rules/workflow.md, .claude/rules/session-orientation.md, .codex/rules/session-orientation.md, .cursor/rules/session-orientation.mdc, templates/install/.prism/rules/session-orientation.md, .claude/rules/branch-plan.md, .codex/rules/branch-plan.md, .cursor/rules/branch-plan.mdc, templates/install/.prism/rules/pr-description.md, .claude/references/shipping-flow.md, .codex/references/shipping-flow.md, .cursor/references/shipping-flow.md, templates/install/.prism/references/shipping-flow.md, .claude/architect/_toolkit/plan-authoring.md, .codex/architect/_toolkit/plan-authoring.md, .cursor/architect/_toolkit/plan-authoring.md, .claude/architect/_toolkit/skills-ecosystem.md, .codex/architect/_toolkit/skills-ecosystem.md, .cursor/architect/_toolkit/skills-ecosystem.md, .claude/architect/guides/writing-a-plan.md, .codex/architect/guides/writing-a-plan.md, .cursor/architect/guides/writing-a-plan.md, templates/install/.prism/architect/guides/writing-a-plan.md, .claude/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .codex/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .cursor/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .claude/spec/adrs/_toolkit/0033-implementation-task-detail.md, .codex/spec/adrs/_toolkit/0033-implementation-task-detail.md, .cursor/spec/adrs/_toolkit/0033-implementation-task-detail.md, .claude/spec/adrs/_toolkit/README.md, .codex/spec/adrs/_toolkit/README.md, .cursor/spec/adrs/_toolkit/README.md, AGENTS.md, .codex/config.toml, .claude/skills/prism-plan/SKILL.md, .cursor/skills/prism-plan/SKILL.md, .claude/skills/prism-implement/SKILL.md, .cursor/skills/prism-implement/SKILL.md, .claude/agents/prism-implement.md, .codex/agents/prism-implement.toml, .claude/skills/prism-retro/SKILL.md, .cursor/skills/prism-retro/SKILL.md, .claude/agents/prism-retro.md, .codex/agents/prism-retro.toml, .claude/skills/prism-handoff/SKILL.md, .cursor/skills/prism-handoff/SKILL.md, .claude/skills/prism-docs/SKILL.md, .cursor/skills/prism-docs/SKILL.md, .claude/agents/prism-docs.md, .codex/agents/prism-docs.toml
 - proof: pnpm prism:check
-- depends on: T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13
+- depends on: T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T23
 
 Run `pnpm prism:build`, then `pnpm prism:check`, and fix a failure in the task that owns the source file.
 A changed path missing from this list goes in the build report as `unlisted:`, and `.codex/config.toml` changes only if `AGENTS.md` crosses a 64 KiB step.
@@ -208,15 +208,16 @@ Read the section through `sectionBody` and test the none form with `NONE_WITH_RE
 - proof: pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts
 - depends on: T17
 
-Copy the comment and the three label lines from the spec's Approach lines part as written.
+Copy the three label lines from the spec's Approach lines part, with its comment folded onto one line and other template comments trimmed as needed.
+`prism-intent` loads 113 lines at `c6f9027c` against the 120 cap, so this task and T19 together add no more than 7.
 
 ### T19: Part 2 — interview for the Approach lines
 
 - files: .ai-skills/skills/prism-intent/shared.md
-- proof: grep -c -E 'Chosen|Rejected|Unknown' .ai-skills/skills/prism-intent/shared.md
+- proof: grep -c -E 'Chosen|Rejected|Unknown' .ai-skills/skills/prism-intent/shared.md && pnpm exec tsx --test scripts/ai-skills/skill-loaded-lines.test.ts
 - depends on: T18
 
-T22's build runs the 120-line cap check on the rendered skill.
+Fold the Approach lines into the existing interview and recap bullets rather than adding new ones, to stay under the cap.
 
 ### T20: Part 2 — accept a leading dash on a round line
 
@@ -243,7 +244,24 @@ The reported line is the text after the dash, so a refusal message reads the sam
 Run `pnpm prism:build`, then `pnpm prism:check`, and fix a failure in the task that owns the source file.
 A changed path missing from this list goes in the build report as `unlisted:`.
 
+### T23: Part 1 — scope the open-question History note to flat plans
+
+- files: .prism/rules/branch-plan.md, templates/install/.prism/rules/branch-plan.md
+- proof: grep -n 'open question closed' .prism/rules/branch-plan.md templates/install/.prism/rules/branch-plan.md
+- depends on: none
+
+Only the Open-question Decision variant's "note in `## History`" sentence changes, in the canonical and the curated twin.
+
 ## Challenge
+
+round 1: blocking 3
+  - T4 (blocking, major): `scripts/ai-skills/role-preloads.test.ts` line 56 builds the agent for skillId `prism-implement` and asserts `model: sonnet`, so REQ-14 breaks it. The file is in no task and outside Affected systems, so T14's `pnpm prism:check` fails with no task able to fix it.
+  - T18 (blocking): `prism-intent` loads 113 lines today (47 body plus the 66-line intent template) against an empty over-cap allowlist. The spec's Approach block adds about 13 template lines and T19 adds skill lines, so about 128 lines, and AC-7 and AC-16 cannot pass. No task cuts lines or records a reasoned overage.
+  - AC-11 (blocking): `.prism/rules/pr-description.md` has three `## History` lines (61, 65, 66), and T8 edits only line 65. The count prints 2, not the 1 the evidence expects.
+  - T6 (non-blocking): the README index row for 0033 reads `accepted`, and the task only adds a status pointer in the ADR itself.
+  - T15 (non-blocking): after T14 lands on part 1's branch, `bundles.mjs` reports T15 ready, because it depends only on T14, so the session builds part 2 on part 1's branch. The plan names no stop point.
+  - AC-13 (non-blocking): the `flat` check is a line-level grep with no count, so a file passes whether or not its mention was scoped.
+  - plan (non-blocking): `.prism/rules/branch-plan.md` line 322 tells every plan to note a resolved open question in `## History`, which is false for a folder plan after REQ-1. The file is outside Affected systems.
 
 ## Decisions
 
@@ -251,4 +269,6 @@ A changed path missing from this list goes in the build report as `unlisted:`.
 - **The child ships as a two-PR stack, cut between the plan side and the intent side.** The hand-edited files cross 10 on their own, generated copies aside. Part 1 is the lean plan with the builder tier, and part 2 is the Approach lines with the dashed round lines. The lean plan goes first because `plan-templates.test.ts` imports the lint, so part 2's intent heading case has to land after the lint exists. Part 1 stays one PR although it crosses 10 files, because its pieces have no value apart: a template without History while the workflow still appends History lines, or a two-line task comment beside a rule that demands the full bar, would each ship a contradiction. Rejected: splitting part 1 into scripts and prose, for that reason. The builder tier rides part 1 because the new ADR's reason names it.
 - **`plan-templates.test.ts` is claimed once in each part.** T1 drops the two plan headings and T17 adds the intent heading. T17 depends on T1, so `bundles.mjs` sees an ordered pair, not a parallel claim. Rejected: one task for both edits, which would put part 2's heading case in part 1 ahead of the intent template it checks.
 - **This plan has no History or Sessions section and keeps every task to two lines.** REQ-1 removes both sections and nothing in the resume table reads them, and the spec says this plan is written to the cap so the lint needs no allowlist entry for it.
+- **The Approach comment folds onto one line to keep `prism-intent` under the cap.** The skill loads its body plus the intent template, 113 lines before this change, and the spec's six-line comment plus the skill text would cross 120. The spec also says the skill stays under the cap, and the three labels and the `none — <why>` rule are what approval reads, so the comment shrinks and the labels don't. Rejected: a reasoned overage in `skill-loaded-lines.test.ts`, which sits outside Affected systems and spends the cap's slack on comment text.
+- **Round 1 added T23 and two files, both through `prism-architect`.** `role-preloads.test.ts` pins the implement agent's model and `branch-plan.md` tells every plan to log a resolved open question in `## History`, and both go false with this child. The architect's verdict was proceed for both and it added them to the spec's Affected systems. T23 is appended rather than renumbered, because task IDs are permanent once committed.
 - **The ADR number is fixed at 0088 in the task files.** A `files` entry must be a real path, so the plan can't defer the number. Child 11 adds no ADR, so 0088 is free unless another merge takes it first, and T6 carries the rename path.
