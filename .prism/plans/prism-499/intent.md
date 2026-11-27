@@ -7,16 +7,16 @@ approved_by: Hunter McGrew
 approved_at: 2026-11-18
 approved_via: chat
 previously_approved: 2026-11-17 (the Kitchen Line amendment) and 2026-10-17 (the version phase 1 was built from), both by Hunter McGrew
-amended: 2026-11-18
+amended: 2026-11-26
 ticket: https://github.com/HunterMcGrew/PRISM/issues/499
 created: 2026-10-17
 size: epic
-ports: thrive "Kitchen Line" epic THRN-579 — TracTru/thrive #2844 (intent and spec), #2847, #2853, #2854, #2859, read at their branch tips on 2026-11-17, and #2844 again at 3507ce9e1 and #2859 again at db3570975 on 2026-11-18, after the approve-once change (#2937) was folded into #2859
+ports: thrive "Kitchen Line" epic THRN-579 — TracTru/thrive #2844 (intent and spec), #2847, #2853, #2854, #2859, read at their branch tips on 2026-11-17, and #2844 again at 3507ce9e1 and #2859 again at db3570975 on 2026-11-18, after the approve-once change (#2937) was folded into #2859; and thrive's process review of 2026-11-24 (claude.ai/artifact/3tNTFg4hxP72TypKGRraM7), read on 2026-11-26
 ---
 
 # Intent: AI-native SDLC for PRISM
 
-This is the amended intent. The first version was approved on 2026-10-17 and phase 1 was built from it. Thrive kept refining the same workflow after that, and this amendment brings those refinements over. The section "What this amendment changes" lists every decision that moved, so a reader of the first version can see the difference in one place. A second, smaller amendment on 2026-11-18 cuts the run's stops down to what only the person can decide, and is listed under its own heading in that section.
+This is the amended intent. The first version was approved on 2026-10-17 and phase 1 was built from it. Thrive kept refining the same workflow after that, and this amendment brings those refinements over. The section "What this amendment changes" lists every decision that moved, so a reader of the first version can see the difference in one place. A second, smaller amendment on 2026-11-18 cuts the run's stops down to what only the person can decide, and is listed under its own heading in that section. A third amendment on 2026-11-26 brings over the cuts from thrive's process review, and is listed last in that section.
 
 ## Problem
 
@@ -49,7 +49,7 @@ In priority order:
 2. **Human touches per ticket.** Two on a routine ticket: approve the intent, read the PR. A third only for a design that needs approval, a plan that fails automatic approval, or a change that would alter the approved intent.
 3. **Skill size.** Every skill aims for 120 loaded lines or less, enforced by the existing build check as a soft cap: a skill may go over with an allowlist entry that gives a one-line reason. A persona skill's `## Voice` block does not count, up to 16 lines.
 
-Always-on size is reported by the build and is no longer a target. The phase-1 baseline stands and no new baseline is run. The eval harness is not in scope.
+The always-loaded rules have a word budget, checked by the build. The phase-1 baseline stands and no new baseline is run. The eval harness is not in scope.
 
 ## Affected users and systems
 
@@ -84,12 +84,14 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 
 ### Workflow
 
-- There are two sizes. **Standard** is the default and may ship as one PR or a stack. **Epic** is several stories under one tracker parent. There is no small size and no file or line threshold.
-- **Standard** runs: intent → design when needed → spec → plan → challenge twice → implement → verify → review → draft PR → PR review → retro.
+- There are three sizes. **Small** is a change of 100 or fewer changed lines of product code, in one area, with at most one new product file and no file on a stop path. A script measures it on the diff, and tests, docs, plans, config, and lockfiles don't count toward the 100. **Standard** is the default and may ship as one PR or a stack. **Epic** is several stories under one tracker parent.
+- **Small** runs: intent → implement → verify → review → draft PR → PR review → close. It has no spec and no plan. A small change that outgrows the limit stops and goes on as a standard ticket.
+- **Standard** runs: intent → design when needed → spec → plan → challenge twice → implement → verify → review → draft PR → PR review → close, with a retro report when a trigger fires. A standard ticket keeps its spec.
+- The implement stage runs on the same model tier as planning. A task no longer carries the long prose a cheaper model needed.
 - **Epic** has a folder with `intent.md` and `spec.md` and no `plan.md`. The spec names the children and their merge order. Each child is a standard ticket.
 - No orchestrator skill drives the run. The stage order and a resume table in the always-on workflow block do. A fresh session reads the plan folder and runs the first row that matches.
 - Four stages run as fresh subagents because their value is a cold read: spec, challenge, verify, and PR review. Everything else runs in the session.
-- Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage. A plan challenge that still blocks after round 3 gets a confirm round, rerun once after an architect verdict, and neither counts against the 3.
+- Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage, and 2 rounds for review. A plan challenge that still blocks after round 3 gets a confirm round, rerun once after an architect verdict, and neither counts against the 3.
 
 ### Where the run stops for a person
 
@@ -113,11 +115,12 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 ### Artifact chain
 
 - Plan folders live at `.prism/plans/<ticket>/`. Lookup checks the folder first, then the flat file.
-- **`intent.md`** requires a regression surface, a security surface, a design need (`needed`, `supplement`, or `not needed`, each with a reason), and acceptance criteria. A surface may be "none" only with a reason.
+- **`intent.md`** requires a regression surface, a security surface, a design need (`needed`, `supplement`, or `not needed`, each with a reason), and acceptance criteria. A surface may be "none" only with a reason. It also states the approach in three lines the person approves: chosen, rejected, and unknown.
 - The intent stage is an interview: one question per message, each with a recommended answer. Facts the agent can look up are never questions.
 - **`design.md`** exists only when the intent asks for it.
 - **`spec.md`** is never approved. It holds the requirements and the affected-systems globs the plan is checked against.
-- **`plan.md`** holds tasks. Each task names its files, its proof, and what it depends on. Tasks group into bundles, and one bundle is one commit.
+- **`plan.md`** holds tasks. Each task names its files, its proof, what it depends on, and at most two lines of gotchas. Tasks group into bundles, and one bundle is one commit.
+- A plan's Decisions hold only scope changes and open questions. Its review record is one line per round. It has no History and no Sessions section, and a plan written before this change keeps the ones it has.
 - A commit subject names its tasks, such as `T3:` or `T3-T5:`. A task is done when a commit names it. Nothing edits the plan to mark a task done.
 - Approval is recorded by a script. In a terminal it needs a keypress. In chat, typing `approve` lets the agent run the script once. That approval is tied to the file's content, so a draft edited after the `approve` is not approved.
 - A person's answer in chat to a question the run asked counts as approval of the edit that records it. The agent writes the ruling into the file in the person's words, and the file stays approved. An approved `plan.md` also stays approved through an edit outside its tasks.
@@ -137,17 +140,23 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 - **Deleted:** `prism-review-loop`, once `REVIEW.md` and the review rounds inside the stages replace it. Sol, Ren, and Theo stay deleted.
 - Acceptance-criteria grading moves out of `prism-qa-plan` and into the review's intent-conformance pass.
 - `prism-audit` learns to archive a plan folder whole.
+- Each stage skill declares the tools it may use. The verify stage and both review stages get no Edit and no Write, and a script appends their one record line per round.
+- The always-loaded workflow rule keeps the sizes and the resume table. Its approval, advancing, and scope-change text moves into the stage skills.
 - The 120-line cap is a soft cap, and it keeps counting everything a skill loads. A skill may go over it with an allowlist entry and a one-line reason. Thrive reached its numbers partly by moving text into references its check does not count. PRISM does not copy that. Content that fails the tests is still cut, not moved.
 
 ### Review and verify
 
 - One `REVIEW.md` holds severity, finding shape, the exit rule, and ten passes. Each pass runs only when its trigger fires. The passes' stack-specific checklists come from the consumer.
-- `prism-self-review` runs the passes on the branch before anything reaches GitHub, split across subagents. The session fixes what it finds, for at most three rounds.
-- `prism-pr-review` runs the same passes on the PR in a fresh context, posts inline comments and one summary, and applies the review labels. It never approves and never flips the PR to ready.
-- A reconcile script resolves addressed threads, corrects labels, and reports unanswered human comments. A stop gate sends the PR review back until it is clean, up to three times.
+- **The exit rule is zero Critical and zero Major findings.** A Minor is fixed inside the rounds when it can be, and never earns a round of its own. A review that reaches its cap with only Minors left has passed, and those Minors are listed in the PR body.
+- **Review reads the plan folder and never reviews it.** The acceptance criteria and the task list are the yardstick for the diff, and no finding is raised on the prose of `intent.md`, `spec.md`, or `plan.md`. Published docs, code comments, and the changelog earn a finding only when they are wrong about the code, never for wording.
+- **A list of never-reviewed paths lives in the consumer's config.** Plan folders, working notes (lessons, retros, audits, metrics), generated files, and the PR body are on it by default. So is everything PRISM delivers, in any repo that uses PRISM. In PRISM's own repo the skills and rules are the product and stay reviewable, for being wrong about a script or contradicting another rule, never for wording. The script that posts findings rejects one aimed at a listed path.
+- `prism-self-review` runs the passes on the branch before anything reaches GitHub, split across subagents. The session fixes what it finds, for at most two rounds.
+- `prism-pr-review` runs the same passes on the PR in a fresh context, and posts inline comments and one summary. It never approves and never flips the PR to ready.
+- A reconcile script resolves addressed threads and reports unanswered human comments. A stop gate sends the PR review back while a Critical or Major finding is open, for at most two rounds.
+- **The review labels are gone.** `effort:*`, `confidence:*`, and `review:has-minors` came from thrive's team queue, and nothing here needs them.
 - A human comment the agent missed is logged. A class of miss that reaches three gets a proposed fix, and a person approves each one.
 - `prism-verify` runs once after the build, in a fresh context, with the consumer's own commands. It fixes nothing.
-- **The retro is the fixed last stage** of every workflow and cannot be declined. It grades the work against the plan, gives every Decision a verdict, and prunes lessons.
+- **The close step runs on every plan, and the retro report runs on a trigger.** The close step gives every Decision a verdict and writes the closed line. The report grades the work against the plan and prunes lessons. It runs only when a stage hit its round cap, a task was re-planned, or a review asked for changes. A script reads the trigger, so no person decides whether the report runs.
 
 ### Hooks
 
@@ -163,16 +172,16 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 ### AGENTS.md and the Codex limit
 
 - Codex reads at most 32 KiB of `AGENTS.md` by default and drops the rest without a warning. PRISM's file is about four times that.
-- PRISM does not cap `AGENTS.md` at 32 KiB. Claude Code is the primary host, and the always-on rules are a cost already accepted.
+- PRISM does not cap `AGENTS.md` at 32 KiB. Claude Code is the primary host. The always-loaded rules have their own word budget, added by the third amendment.
 - The generator puts the workflow block, the resume table, routing, and the behavioral norms first, so a Codex session that reads only the start still gets the part that drives the run.
 - When `codex` is among the hosts, onboarding writes a raised `project_doc_max_bytes` to the repo's `.codex/config.toml`.
 - `prism doctor` warns when `AGENTS.md` is over the limit Codex will read.
 
 ### Merging and release
 
-- **Merge authority is unchanged.** Consumers keep the human merge gate. PRISM's own PRs keep the `mainSessionMayMerge` flag from phase 1.
+- **Merge authority.** Consumers keep the human merge gate. On PRISM's own PRs, the `mainSessionMayMerge` flag from phase 1 lets the main session merge when the final review pass has zero Critical and zero Major findings, with any Minors left listed in the PR body.
 - **Plans are still never deleted.** Thrive now allows deleting a closed plan. PRISM keeps its rule.
-- **Release.** The port ships as `1.0.0`, a clean break with a migration note. `prism update` removes the deleted skills, and old persona names keep routing.
+- **Release.** The port ships as `1.0.0`, a clean break with a migration note. `prism update` removes the deleted skills, and old persona names keep routing. It is published once the third amendment's work has merged.
 - **What carries over from thrive.** Only what fits a generic toolkit. Thrive's Docker routing, Storybook and Pest steps, screenshot script, dealer vocabulary rule, tracker-specific ticket flow, and per-worktree dev port stay out.
 
 ## What this amendment changes
@@ -205,6 +214,27 @@ Against the version approved on 2026-11-17. Hunter's rulings in chat on 2026-11-
 - **Approval.** A chat answer counts as approval of the edit that records it, and an approved plan survives edits outside its tasks. The plan stage asks once.
 - **Auto-approval.** The 12-task limit is gone.
 
+### Third amendment, 2026-11-26
+
+Against the version approved on 2026-11-18. It brings over the cuts from thrive's process review of 2026-11-24, less the parts that only fit a team. Hunter's rulings in chat on 2026-11-26 approve it.
+
+Measured on main at `37cdbd28` before the change: the task list and the review record hold 58 to 73 percent of the words in each of the five folder plans the port produced, and the always-loaded rules total 20,936 words.
+
+- **Release.** `1.0.0` was ready to publish. It now waits for this work. Hunter: "1.0 to me, would mean the kitchen line port is done, fully, as i see it now. with the new artifact i showed you with the new changes."
+- **Sizes.** Standard and epic become small, standard, and epic. Hunter: "lets do the small size per the spec we created, code only changes".
+- **Review exit.** Zero Critical, Major, or Minor findings becomes zero Critical and zero Major, and three rounds become two. Hunter: "as long as no major or critical are found, it is okay if we hit our max review rounds and minors that don't matter ride".
+- **Review scope.** Every section of the plan was in scope. Review now reads the plan folder as its yardstick and raises no finding on it.
+- **Never-reviewed paths.** New. Hunter: "PRISM repo stuff should never be reviewed by the users repo."
+- **Labels.** The review labels are removed. Hunter: "the effort labels and review:minor labels was thrive only stuff, we dont need that."
+- **Reviewers.** They wrote their record line and fixed plan drift by hand. They now get no Edit and no Write, and a script writes the line.
+- **Merge.** The main session merged on a clean final pass with no `review:has-minors` label. The bar is now zero Critical and zero Major.
+- **Plan.** Task prose shrinks to two lines of gotchas, Decisions narrow to scope changes and open questions, and History and Sessions leave the template.
+- **Builders.** The implement stage runs on the planning model tier.
+- **Intent.** It gains the three approach lines.
+- **Always-on size.** It was reported and was not a target. It gets a word budget, and the workflow rule shrinks to the sizes and the resume table.
+- **Retro.** The fixed last stage splits into a close step that always runs and a report that runs on a trigger.
+- **Skills.** Each stage skill declares its tools.
+
 ## Constraints
 
 - An unfinished migration must not freeze routine work. Legacy flat plans keep working until the last one is archived.
@@ -222,7 +252,10 @@ Against the version approved on 2026-11-17. Hunter's rulings in chat on 2026-11-
 
 - The eval harness, a metrics store, and a new baseline.
 - Auto-approving intents.
-- Rewriting the rules and architect docs.
+- Rewriting the architect docs. Rules are re-sorted into load tiers and cut to the budget, and are not otherwise rewritten.
+- A rule that keeps weaker models off the planning stages, required heads on architect docs, a scheduled count of repeated misses, and a standard ticket with no spec. These come after `1.0.0`.
+- Installing PRISM outside the repo it runs over, and the work desk. Both come after `1.0.0`.
+- Owner lanes, a `CODEOWNERS` split, and Slack messages from thrive's review. They solve a team queue PRISM does not have.
 - Cursor hook delivery.
 - A generic version of thrive's domain vocabulary rule.
 - Thrive-specific infrastructure.
