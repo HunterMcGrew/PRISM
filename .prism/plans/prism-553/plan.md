@@ -454,6 +454,13 @@ round 5: clean
   - `T3 fix:` add a Codex case to `scripts/ai-skills/update-retire-review.test.ts`: a `.codex/hooks.json` target with PRISM's old `SubagentStop` reconcile-gate entry, merged with `PRISM_CODEX_HOOK_COMMAND_PATTERN`, loses the key.
   - Left for the PR body: `mergeHookRegistration` now drops a consumer-only key holding `[]` or a non-array (harmless for real settings files); `branch-plan.md`'s `prism:retro-line` sentence reads only `pr-review` lines until child 13 rekeys it; `ticket-workflows.md` lists a branch name as a review input while the skill names a PR number or URL; the consumer manifest's dead `prism-pr-review` route doctor warns on.
 - **The routing-coverage test allows one auto ID in rows for different personas.** AC-7 routes both the Eric row and the Briar row to `prism-review`, so a retired persona's name keeps reaching its successor, and `routing-coverage.test.ts` required every auto ID exactly once. T24 relaxes that to at least once and at most one row per persona; the phrase-uniqueness check still catches an ambiguous route. Rejected: folding Eric's phrases into the Briar row, which changes approved AC-7 and drops "Eric" as a routing-table entry.
+- **T15's test pins the default's `.prism/` entries to the five operational paths plus the prefixed `PRISM_OWNED_GLOBS`.** The task text said "equal" to the ownership lists, but the same task adds the five operational paths, so a strict equality would fail its own default. Rejected: dropping the operational paths, which leaves review noise on metrics and audit files.
+- **`record.mjs` reads a strict report.** Severity names are lower-case only, and a pass with no string token exits 2, because a loose parse would record a round the reviewer never ran cleanly. The sha is cut to 8 characters to match the existing record lines. Every finding counts as open, and `kind: "decision"` is left out of the verdict and the counts, which is the marker round 1 of the challenge asked T16 and T21 to share.
+- **`post.mjs` treats config and `gh` failures differently.** A malformed `reviewIgnore` exits 2, as a config error. A failed `gh pr view` exits 1, as a run failure. A 422 is matched on the text `HTTP 422`, the format `gh api` was seen to print live (`gh: Validation Failed (HTTP 422)`).
+- **T19 made two edits beyond its task text, both following from REQ-14.** The Severity table's Minor action reads "Fix in the rounds", and the Coverage example says round 2 instead of round 3, because the two-round cap made the old wording false.
+- **T20 kept the schema's closing sentence on `mainSessionMayMerge`.** "Never mentioned in init or onboarding output" is an onboarding constraint, not part of the merge bar REQ-23 rewrites.
+- **T21 spells out the report JSON shape in the `prism-review` skill body.** `REVIEW.md` never lists the fields, and citing `review-runtime.md` for them would count against the skill's 120-line cap. The shape is `{ "round", "sha", "passes": [{ "pass", "token" }], "findings": [{ "severity", "file", "line", "kind", "summary" }] }`, with an optional `"part": { "k", "m" }`.
+- **The 1.0.x release notes carry the dead manifest route.** A consumer's own `.prism/architect/manifest.json` keeps the `prism-pr-review` route after update, and doctor warns on it, so the epic's closing child or the 1.0.x notes tell consumers to delete it.
 
 ## History
 
@@ -472,6 +479,15 @@ round 5: clean
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T12's live probe returned `PROBE inner=pong`, so a dispatched `prism-review` can launch subagents on Claude Code; recorded under `### Nested dispatch` in `hook-runtime.md`.
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: T13 proved the upgrade from the `37cdbd28` pack; every AC-6 check passed, and doctor's one WARN is the consumer-owned manifest's dead `prism-pr-review` route.
 - 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T14 recorded part 1 (T1–T13, T24) as shipped: PR #554 squash-merged as `403e9a30` after review round 2 was clean and CI passed. Part 2 starts from that commit.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T22 added ADR-0087 and its amendment lines on ADR-0011 and ADR-0078, and restored the ADR-0087 citation in `skills-ecosystem.md`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T15 added `review/ignore.mjs` and the `reviewIgnore` config key with its default list.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T20 rewrote the merge bar in `git-conventions.md` and the schema, dropped "Bookkeeping findings are recorded, not gated" from `followup-scope.md`, and named the `post.mjs` leftover path in `workflow.md`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T17 added `review/post.mjs`, which posts one inline comment on the PR head.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T16 added `review/record.mjs`, which appends one `- review round` line under `## Review`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T19 rewrote `REVIEW.md` and the intent-scope and docs-citations passes for one review and two rounds, with no confirm pass and no plan-drift section.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T18 delivered the ignore, record, and post modules through the hook runtime lists in `update.ts`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: T21 wired `record.mjs` into the `prism-review` skill, the plan template, and `review-runtime.md`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review-part-2]: Merged `origin/main` as `830aa2e1` to carry #555, which removed `pauseBeforeCommit`; the schema merged with no conflict.
 
 ## Sessions
 
