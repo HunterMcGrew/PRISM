@@ -74,6 +74,8 @@ Done is judged over a commit range. With `--base <ref>`, the range is `<ref>..HE
 - `## Challenge` has round lines `round <n>: clean`, `resolved <k>`, `carried <k>`, or `blocking <k>`, with no repeated number, rounds 1 and 2 both present, and the highest-numbered round not `blocking`;
 - no listed file is on a stop path.
 
+A round line may open with a leading `- `, because a planner writing markdown reaches for the list bullet by habit, and a plan whose real rounds were dashed would otherwise read as having none. A refusal quotes the line after the dash, so its message reads the same for both spellings. The plan template's `## Challenge` comment still documents the bare form.
+
 `carried` is accepted only from round 4 on, because rounds 1 to 3 are the fix loop and round 4 is the first confirm round. A carried finding is one the confirm round leaves for the PR as an open item. The task count has no cap, because a cap sends a sound plan to a person for its size alone.
 
 When every condition holds, the script rewrites the `status: draft` line to `status: approved` plus `approved_by: auto` and `approved_at: <local date>`, and changes nothing else. `--check` writes nothing. An already approved plan passes untouched. A `status` other than `draft` or `approved`, or a status line that isn't plain `status: draft`, fails instead of reporting an approval it never wrote. The script writes through the filesystem, so an approval guard watching agent edits never sees it.

@@ -24,10 +24,15 @@ The approval script reads the section headings below by name, so keep them exact
 
 ## Proposed outcome
 
-<!--
-What is true once this ships, stated as behavior someone can observe.
-Non-functional constraints go here too, such as contrast, performance, or type safety.
--->
+<!-- What is true once this ships, stated as behavior someone can observe. Non-functional constraints go here too, such as contrast, performance, or type safety. -->
+
+## Approach
+
+<!-- Chosen: the approach this ticket takes, in one line. Rejected: the strongest alternative and why it lost. Unknown: what the approach depends on that nobody has checked yet. Each line takes "none — <why>", and a bare "none" fails approval. -->
+
+Chosen:
+Rejected:
+Unknown:
 
 ## Regression surface
 
