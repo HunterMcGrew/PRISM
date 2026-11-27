@@ -4,7 +4,8 @@
 /**
  * Reconciles a PR after an agent review run:
  * `node <hook-runtime>/review/reconcile.mjs <pr> [--log <path>] [--no-write] [--classes] [--json]`.
- * `<pr>` is `N`, `#N`, or a URL ending `/pull/N`.
+ * `<pr>` is `N`, `#N`, or a URL ending `/pull/N`, and a URL whose owner and
+ * repo differ from the checkout's exits 2 before any write.
  *
  * It replies to and resolves the agent's own threads whose lines changed,
  * holding back a thread where a person has the last word, and it reports
@@ -45,6 +46,7 @@ const DEFAULT_TEMPLATE = ".prism/templates/pr-description.md";
 const DEFAULT_LOG = ".prism/metrics/review-misses.jsonl";
 // The forms post.mjs accepts, so the session hands both scripts the same PR reference
 const PR_PATTERN = /^(?:#|https?:\/\/\S+\/pull\/)?([1-9]\d*)$/;
+const PR_URL_REPO = /\/([^/\s]+\/[^/\s]+)\/pull\/\d+$/;
 const THREADS_QUERY = `query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
@@ -752,12 +754,14 @@ export function formatClasses(classes) {
 
 /**
  * @param {string[]} argv
- * @returns {{ pr: number | null, log: string | null, write: boolean, classes: boolean, json: boolean }}
+ * @returns {{ pr: number | null, prRepo: string | null, log: string | null, write: boolean, classes: boolean, json: boolean }}
  */
 function parseArgs(argv) {
 	const options = {
 		/** @type {number | null} */
 		pr: null,
+		/** @type {string | null} */
+		prRepo: null,
 		/** @type {string | null} */
 		log: null,
 		write: true,
@@ -781,6 +785,7 @@ function parseArgs(argv) {
 			if (!Number.isSafeInteger(pr)) throw new Error(`unknown argument ${arg}`);
 
 			options.pr = pr;
+			options.prRepo = PR_URL_REPO.exec(arg)?.[1] ?? null;
 		}
 	}
 
@@ -860,6 +865,16 @@ function main() {
 	}
 
 	const repo = runGh(["repos/{owner}/{repo}"]).full_name;
+	// GitHub owner and repo names are case-insensitive, so the URL may spell them either way
+	if (options.prRepo !== null && options.prRepo.toLowerCase() !== String(repo).toLowerCase()) {
+		console.error(
+			`reconcile.mjs: the PR URL names ${options.prRepo}, but this checkout's repo is ${repo}\n${usage}`
+		);
+		process.exitCode = 2;
+
+		return;
+	}
+
 	const agentLogin = runGh(["user"]).login;
 	const result = reconcile({
 		pr: options.pr,
