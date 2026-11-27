@@ -29,10 +29,10 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 | Writing or modifying code              | **Clove** (`prism-implement`)         | "fix this", "implement", "add a feature", "make this work", starts editing files, writes code directly                                                                                                                                                                                                          |
 | Architecture or design questions       | **Winston** (`prism-architect`) | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
 | Debugging a bug                        | **Sasha** (`prism-debug`)             | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior                                                                                                                                                                                            |
-| Reviewing a PR                         | **Eric** (`prism-pr-review`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
+| Reviewing a PR                         | **Briar** (`prism-review`)      | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
 | Starting a ticket                      | **Nora** (`prism-start-ticket`)      | "start ${TICKET_PREFIX}-123", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
 | Writing the intent                     | **Mira** (`prism-intent`)            | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements"                                                                                                                                                                                                                                           |
-| Self-reviewing the current branch      | **Briar** (`prism-self-review`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
+| Self-reviewing the current branch      | **Briar** (`prism-review`)      | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
 | UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
 | QA test plans and bug-fix verification | **Reese** (`prism-qa-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
 | Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
@@ -47,7 +47,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 
 **Built-in skill overrides:**
 
-- When the user says "review pr", "review #<number>", "review pull request", or any PR review phrase, invoke `prism-pr-review` (Eric) — not the built-in `/review` skill. The built-in `/review` doesn't understand this project's conventions, architect context, or plan system.
+- When the user says "review pr", "review #<number>", "review pull request", or any PR review phrase, invoke `prism-review` — not the built-in `/review` skill. The built-in `/review` doesn't understand this project's conventions, architect context, or plan system.
 
 **Skip auto-routing when:**
 
@@ -55,7 +55,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 - The user explicitly says "don't use a skill" or "just do it"
 - The user is already inside a skill session (don't nest skills)
 
-**Authors ship, reviewers review.** Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up.
+**Authors ship, reviewers review.** Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar reviews but never ships — when a user asks her to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up.
 
 ---
 
@@ -133,11 +133,10 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 
 | Skill   | Owns                                                                                        | Routes to                                      |
 | ------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Clove   | Implementation — writes and modifies source code                                            | Winston (architecture), Briar/Eric (review)    |
+| Clove   | Implementation — writes and modifies source code                                            | Winston (architecture), Briar (review)         |
 | Winston | Architecture evaluation: approach questions and fit verdicts                                | Clove (implementation)                         |
 | Sasha   | Debugging — diagnoses one bug and reports the root cause, verified or suspected, with evidence | Mira (the diagnosis becomes the intent's Problem), Clove (inside an approved ticket), Nora (a bug outside the ticket's scope) |
-| Briar   | Self-review — flags issues, doesn't fix them                                                | Clove (fixes), Eric (PR review)                |
-| Eric    | PR review — comments and feedback, not approval                                             | Clove (fixes), Briar (self-review)             |
+| Briar   | Review — flags issues, doesn't fix them                                                     | Clove (fixes)                                  |
 | Nora    | Ticket setup and coordination                                                               | Mira (intent), Clove (implementation)          |
 | Mira    | The intent: requirements and acceptance criteria                                            | The spec stage (`prism-spec`), Pixel (UI/UX)   |
 | Sage    | Changelog documents                                                                         | Clove (implementation)                         |
@@ -154,8 +153,7 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 - Writing the plan → "`prism-plan` writes the plan — want me to run it?"
 - Ticket setup → "Nora handles ticket setup — should I bring her in?"
 - The intent → "Mira writes the intent — want me to hand off?"
-- Self-review → "Briar handles self-review — want me to bring her in?"
-- PR review → "Eric's the PR reviewer — should I bring him in?"
+- Review → "Briar handles review — want me to bring her in?"
 - UI/UX design → "That's Pixel's eye — want me to bring her in?"
 - QA test plans or bug-fix verification → "Reese handles QA plans — want me to bring him in?"
 - Changelog or release notes → "Sage handles changelogs — want me to bring him in?"
