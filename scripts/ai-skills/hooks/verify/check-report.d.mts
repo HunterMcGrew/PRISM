@@ -25,3 +25,5 @@ export function checkReport(
 export function extractVerificationSection(planText: string): string[] | null;
 
 export function parseSection(sectionLines: string[]): Report;
+
+export function matchesHeaderOrSeparator(cell: string): boolean;

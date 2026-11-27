@@ -748,3 +748,93 @@ describe("reconcile.mjs command line", () => {
 		assert.match(child.stdout, /missing null guard: 3 rows/);
 	});
 });
+
+describe("PR argument", () => {
+	const logPath = path.join(scratchDir, "pr-argument-misses.jsonl");
+	const run = (arg: string) =>
+		spawnSync(process.execPath, [SCRIPT, arg, "--classes", "--log", logPath], {
+			encoding: "utf8",
+			env: cleanEnv(),
+		});
+
+	for (const arg of ["#12", "12", "https://github.com/o/r/pull/12"]) {
+		test(`accepts ${arg}`, () => {
+			const child = run(arg);
+
+			assert.equal(child.status, 0, child.stderr);
+		});
+	}
+
+	for (const arg of ["0", "007", "abc", "https://github.com/o/r/issues/12", "99999999999999999999"]) {
+		test(`rejects ${arg} with exit 2`, () => {
+			const child = run(arg);
+
+			assert.equal(child.status, 2, child.stderr);
+			assert.match(child.stderr, /unknown argument/);
+		});
+	}
+
+	const runWithRepo = (arg: string) => {
+		const binDir = fs.mkdtempSync(path.join(scratchDir, "fake-gh-"));
+		const ghPath = path.join(binDir, "gh");
+
+		fs.writeFileSync(
+			ghPath,
+			'#!/bin/sh\nif [ "$2" = user ]; then echo \'{"login":"me"}\'; else echo \'{"full_name":"o/r"}\'; fi\n'
+		);
+		fs.chmodSync(ghPath, 0o755);
+
+		return spawnSync(process.execPath, [SCRIPT, arg, "--no-write", "--log", logPath], {
+			encoding: "utf8",
+			env: { ...cleanEnv(), PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}` },
+		});
+	};
+
+	test(
+		"a PR URL naming another repo exits 2",
+		{ skip: process.platform === "win32" },
+		() => {
+			const child = runWithRepo("https://github.com/other/r/pull/12");
+
+			assert.equal(child.status, 2, child.stderr);
+			assert.match(child.stderr, /other\/r/);
+			assert.match(child.stderr, /o\/r/);
+		}
+	);
+
+	test(
+		"a PR URL naming the resolved repo, in any case, is not refused",
+		{ skip: process.platform === "win32" },
+		() => {
+			const child = runWithRepo("https://github.com/O/R/pull/12");
+
+			assert.notEqual(child.status, 2, child.stderr);
+			assert.doesNotMatch(child.stderr, /names/);
+		}
+	);
+
+	for (const pr of [0, 1.5, Number.NaN]) {
+		test(`reconcile() throws before any gh call for pr ${String(pr)}`, () => {
+			let ghCalls = 0;
+			const gh = () => {
+				ghCalls += 1;
+
+				return null;
+			};
+
+			assert.throws(
+				() =>
+					reconcile({
+						pr,
+						repo: "o/r",
+						gh,
+						git: () => "",
+						agentLogin: "me",
+						logPath,
+					}),
+				/positive integer/
+			);
+			assert.equal(ghCalls, 0);
+		});
+	}
+});
