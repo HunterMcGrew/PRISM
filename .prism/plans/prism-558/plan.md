@@ -46,7 +46,7 @@ Each criterion cites the spec requirement it grades as `(REQ-n)`.
 
 ## Tasks
 
-This child ships as a two-PR stack. **Part 1 (the lean plan and the builder tier, REQ-1 to 4 and 8 to 14, plus the architect fold-ins)** is T1 to T14 and T23, which round 1 added. **Part 2 (the Approach lines and the dashed round lines, REQ-5, 6, 7, 15)** is T15 to T22, and opens with T15, the plan-only commit that names part 1's tasks as shipped. The run stops once part 1's PR is open: T15 starts only on part 2's branch, cut from `main` after part 1 merges, even though `bundles.mjs` reports it ready after T14.
+This child ships as a two-PR stack. **Part 1 (the lean plan and the builder tier, REQ-1 to 4 and 8 to 14, plus the architect fold-ins)** is T1 to T14 and T23, which round 1 added. **Part 2 (the Approach lines and the dashed round lines, REQ-5, 6, 7, 15)** is T15 to T22, and opens with T15, the plan-only commit that names part 1's tasks as shipped. The run stops once part 1's PR is open: T15 starts only on part 2's branch, cut from `main` after part 1 merges, even though `bundles.mjs` reports it ready after T14. Part 1 shipped in #560.
 
 Each part's generated copies are listed in its build task (T14, T22), which commits only the listed paths `git status -s` shows changed. Curated seed twins are hand-edited in the same task as their canonical, because the build never rewrites them. A test and the script it imports share one task, written test-first, because the import edge would otherwise make the test task wait on the script task.
 
