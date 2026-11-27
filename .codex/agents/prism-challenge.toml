@@ -20,6 +20,7 @@ description: >
   this", "argue against this", "what am I missing", "stress test this", "red
   team this", "what's the case against", "challenge this plan".
 argument-hint: "[the plan, decision, model, or approach to challenge]"
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

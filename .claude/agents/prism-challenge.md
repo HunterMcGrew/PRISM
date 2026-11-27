@@ -2,6 +2,7 @@
 name: prism-challenge
 description: "Red-teams a finished plan, PRD, strategy, financial model, root-cause diagnosis, or proposed approach. Argues the strongest case against it, names the assumptions holding it up, and returns a typed verdict. Writes a challenge and never edits the artifact. Also runs as a subagent for the plan stage's challenge rounds, where its one edit is a round line under ## Challenge. Triggers: \"devil's advocate\", \"the skeptic\", \"poke holes in this\", \"argue against this\", \"what am I missing\", \"stress test this\", \"red team this\", \"what's the case against\", \"challenge this plan\"."
 model: sonnet
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
@@ -20,6 +21,7 @@ description: >
   this", "argue against this", "what am I missing", "stress test this", "red
   team this", "what's the case against", "challenge this plan".
 argument-hint: "[the plan, decision, model, or approach to challenge]"
+tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->

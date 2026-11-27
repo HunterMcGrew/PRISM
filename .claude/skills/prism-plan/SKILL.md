@@ -7,6 +7,7 @@ description: >
   the plan in chat only. Triggers: plan this out, build out the plan, write the
   plan.
 argument-hint: "[plan folder path, or what you want to build]"
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
