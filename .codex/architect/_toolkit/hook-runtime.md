@@ -139,6 +139,8 @@ Codex's agent file has no tool allowlist. Its subagents documentation, read 2026
 
 A stage with a shell can still write a file through it, so the list is friction and not a wall. The verify probe ruled out Bash for that reason, so a shell write could not pass for a `Write` call.
 
+Windows without Git Bash is unsupported for dispatched stages. Claude Code's tools reference, read 2026-11-27, says the `PowerShell` tool is enabled automatically on Windows without Git Bash, and that the `Bash` tool is available on Windows only when Git Bash is installed. Every gated `tools` list names `Bash` and not `PowerShell`, so a gated stage on such a host has no shell. A Linux probe on 2026-11-27 showed that a list entry for a tool the host lacks is dropped without a warning: the agent loaded with `Read, Bash`, and its shell worked. That probe ran on Linux, so the Windows case it predicts, a stage that loads without its shell and reports no error, is untested.
+
 ### Compaction arms
 
 Auto-compaction summarizes a session with no guidance, so user corrections, open questions, and decisions never written to the plan get dropped. A compact also skips a skill's startup, so nothing prompts the session to re-read its plan afterward. Two arms in `compact-handoff.mjs`, dispatched by `hook.mjs`, cover both gaps.
