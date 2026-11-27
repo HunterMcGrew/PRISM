@@ -3,9 +3,9 @@
  *
  * Asserts that `.ai-skills/definitions/roles.json`'s `routing` field and the
  * prose routing surfaces agree in both directions:
- *   - every `routing: "auto"` id appears exactly once in the canonical rule's
- *     routing table (and the install seed twin's), and 0 times in the
- *     named-invocation or utility section
+ *   - every `routing: "auto"` id appears at least once in the canonical rule's
+ *     routing table (and the install seed twin's), in at most one row per
+ *     persona, and 0 times in the named-invocation or utility section
  *   - every `routing: "named-only"` id appears in the rule's named-invocation
  *     or utility section (and the seed twin's), and 0 times in the routing
  *     table or onboarding-intent section
@@ -92,14 +92,26 @@ async function assertRoutingRuleAgreesWithRoles(
 		...extractBacktickedSkillIds(namedInvocationSection),
 		...extractBacktickedSkillIds(utilitySection),
 	]);
+	const tableRows = routingTableSection
+		.split("\n")
+		.filter((line) => line.startsWith("| "));
 
 	for (const role of roles) {
 		if (role.routing === "auto") {
 			const occurrences = autoIdsInScope.filter((id) => id === role.id).length;
+			assert.ok(
+				occurrences >= 1,
+				`${rulePath}: expected '${role.id}' to appear in the routing table or the onboarding-intent section, found 0`
+			);
+			// A retired persona's row may route to its successor, so one id can
+			// sit in several rows as long as each row names a different persona.
+			const personas = tableRows
+				.filter((row) => row.includes(`\`${role.id}\``))
+				.map((row) => row.match(/^\| \*\*([^*]+)\*\*/)?.[1] ?? row);
 			assert.equal(
-				occurrences,
-				1,
-				`${rulePath}: expected '${role.id}' to appear exactly once in the routing table or the onboarding-intent section, found ${occurrences}`
+				new Set(personas).size,
+				personas.length,
+				`${rulePath}: '${role.id}' appears in two routing rows for the same persona: ${personas.join(", ")}`
 			);
 			assert.ok(
 				!namedOnlyIds.has(role.id),
@@ -121,9 +133,6 @@ async function assertRoutingRuleAgreesWithRoles(
 
 	// The router reads the table with no tie-break, so a phrase in two rows
 	// routes ambiguously.
-	const tableRows = routingTableSection
-		.split("\n")
-		.filter((line) => line.startsWith("| "));
 	const rowByPhrase = new Map<string, string>();
 	for (const row of tableRows) {
 		for (const [, phrase] of row.matchAll(/"([^"]+)"/g)) {
