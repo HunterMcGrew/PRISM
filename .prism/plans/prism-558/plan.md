@@ -10,7 +10,7 @@ status: draft
 Each criterion cites the spec requirement it grades as `(REQ-n)`.
 
 - [ ] **AC-1** Given `.prism/templates/plan.md`, When its headings are read, Then they are Tasks, Challenge, Decisions, Verification, Review, PR Readiness in that order, with no `## History` and no `## Sessions`, and a copy of the template holds neither. (REQ-1)
-  - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts` passes, and its copy case fails on `main` at `8c53b07a`.
+  - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts` passes, and its plan heading case fails on `main` at `8c53b07a`.
 - [ ] **AC-2** Given the plan template's Decisions comment, `prism-plan`, and the `## Decisions` row of the plan-authoring ownership table, When read, Then each says a folder plan's Decisions hold scope changes and open questions only and a routine implementation choice is a commit, and the template still asks for the close-time verdict line. (REQ-2)
   - Evidence (machine): `grep -c 'scope change' .prism/templates/plan.md .ai-skills/skills/prism-plan/shared.md .prism/architect/_toolkit/plan-authoring.md templates/install/.prism/architect/_toolkit/plan-authoring.md` prints at least 1 for each, and `grep -c 'promoted to' .prism/templates/plan.md` prints at least 1.
 - [ ] **AC-3** Given the plan template's Tasks comment, When read, Then it asks for the fields plus at most two gotcha lines and no longer asks for the exact edit, its insertion point, or a content outline. (REQ-3)
@@ -98,7 +98,7 @@ Recount at build time, and add `prism-557/plan.md` when child 11 merged first, p
 - behavior change: line 77 asserted `prism-implement` had no default model, and now asserts it maps to `inherit`, because REQ-14 moves the builder to the session's model; the line-57 test's worker case (lines 64 to 72) builds `prism-docs` with description `Eli.` instead of `prism-implement`, so its `sonnet` assertion and title stay true; `role-preloads.test.ts` line 56 drops `model: sonnet\n` from its regex, so it checks preloads only and stops pinning the implement agent's model.
 
 Name the new cases "maps prism-implement to inherit" and "generated prism-implement agent inherits the session model".
-The generated-file case passes only after T14 rebuilds the agent files.
+The generated-file case passes only after T14 rebuilds the agent files, and the doc comment above `CLAUDE_AGENT_MODEL_DEFAULTS` names the implement agent's `inherit`.
 
 ### T5: Part 1 — rewrite the task-detail rule for folder-plan tasks
 
@@ -253,7 +253,7 @@ A changed path missing from this list goes in the build report as `unlisted:`.
 - proof: grep -n 'History\|Sessions' .prism/rules/branch-plan.md templates/install/.prism/rules/branch-plan.md templates/install/AGENTS.md.tmpl
 - depends on: none
 
-In `branch-plan.md` and its twin, scope to a flat plan: the step 4 History lines, the close step's History entry, the open-question note, and the Sessions and History maintenance bullets.
+In `branch-plan.md` and its twin, scope to a flat plan: step 2's history-log bullet, the step 4 History lines, the close step's History entry, the open-question note, and the Sessions and History maintenance bullets.
 The `Plan File Template` section is already flat-only; `AGENTS.md.tmpl` line 102 gains "on a flat plan".
 
 ## Challenge
@@ -282,6 +282,11 @@ round 3: blocking 3
   - plan (non-blocking): `templates/install/.prism/AGENTS.md.tmpl` line 102 (Task Management item 3) says "update `## History` after meaningful changes", reaches consumers, and contradicts REQ-1. Scope it to flat plans or drop it; the file sits inside `templates/install/**`, which is in Affected systems.
   - AC-13 (non-blocking, repeat of round 2): `docs/ai-skills/iris.md` line 11 already holds "flat" beside `## History`, so the `grep -vc flat` evidence passes without T10's iris edit. Grade iris line 22 separately, for example `grep -c 'plan with a \`## History\` line' docs/ai-skills/iris.md` prints 0.
   - T18 (non-blocking): it adds about 8 lines (heading, blank, one-line comment, blank, three labels, trailing blank) against the task's own cap of 7 for T18 and T19 together, and `prism-intent` is at 113 of 120. Name the template comment to trim.
+
+round 4: resolved 3
+  - AC-1 (non-blocking): its evidence says "its copy case fails on `main`", but T1 adds no copy case; the heading-list assertion is what fails on `main`, and it also covers the copy. Reword the evidence to "its plan heading case".
+  - T4 (non-blocking): the `CLAUDE_AGENT_MODEL_DEFAULTS` doc comment in `generate-skills.ts` (lines 116 to 122) says every persona but the architect defaults to the cheaper tier, which is false once `prism-implement` maps to `inherit`. Update it in the same edit.
+  - plan / T23 (non-blocking): `branch-plan.md` step 2 under Required Workflow still says "Review the history log for what has already been done", which a folder plan no longer has. Scope it to a flat plan with the other History lines.
 
 ## Decisions
 
