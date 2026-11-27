@@ -127,6 +127,10 @@ Claude gets the deny. Codex gets no deny, because its `SubagentStart` cannot blo
 
 Claude registers it on `PreToolUse` with matcher `Agent|Task`, because Claude Code dispatches a subagent as `Agent` and older builds as `Task`. Codex registers it on `SubagentStart` with no matcher. Both use a timeout of 21 seconds. The header of `scripts/ai-skills/hooks/brief-gate.mjs` lists the known misses. They include a Workflow-internal agent stage, which Claude's `PreToolUse` does not fire for, a Codex `SubagentStart` payload with no documented brief field, so its `would-deny` row fires only if a `prompt` field arrives, an override phrase reworded past the patterns, and a brief packed into a few very long lines, because the limit counts lines and not characters.
 
+### Nested dispatch
+
+The session dispatches `prism-review` as a subagent, and the review dispatches its own subagents for the passes, so a review needs a subagent that can launch subagents. A live probe on 2026-11-27 at 2:56 AM Central confirmed this on Claude Code. A headless `claude -p --allowedTools Agent` session dispatched `prism-review`, which launched one general-purpose subagent and relayed its reply. The probe's final output line was `PROBE inner=pong`. Codex is unprobed. Where a dispatched review cannot launch subagents, it sweeps the passes itself and prints the same coverage line.
+
 ### Compaction arms
 
 Auto-compaction summarizes a session with no guidance, so user corrections, open questions, and decisions never written to the plan get dropped. A compact also skips a skill's startup, so nothing prompts the session to re-read its plan afterward. Two arms in `compact-handoff.mjs`, dispatched by `hook.mjs`, cover both gaps.
