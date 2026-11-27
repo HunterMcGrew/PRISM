@@ -24,7 +24,7 @@ The six charter questions are: did we do what we said (`## Decisions` and the ac
 
 - **Read** the plan's `## Decisions`, `## Review`, `## Verification`, `## Challenge`, and `## History`, the diff against `origin/${DEFAULT_BRANCH}`, the PR's comments, reviews, and check rollup, and per-PR retro notes under `.prism/retros/`. Read all three PR surfaces and merge them, because none alone is complete: human reviewers use issue comments, review objects, and inline threads interchangeably. An epic's `spec.md` holds its Decisions and `## Children`.
 - **CI is read, never started.** Grade a finished run on the PR's head. A check still pending is `CI pending on <sha>`, owned by the session's watcher, and this skill never starts `${HOOK_RUNTIME_DIR}/plan/watch-ci.mjs`.
-- **Grading.** Take the review's unmet criteria from `## Review` as given, and grade every other criterion yourself against the diff, from the source `.prism/review/intent-scope.md` names. A finding marked `fixed <sha>` is graded with the rest.
+- **Grading.** Grade every criterion yourself against the diff, from the source `.prism/review/intent-scope.md` names, because `## Review` holds only one record line per round. Read what the review left open from the PR body.
 - **Divergences.** A Decision is refuted only when a Debugged Issue, review finding, CI pattern, or unmet criterion directly contradicts its stated rationale. An adjacent bug is logged under Citations. When the causal link is not stated, quote both entries and ask.
 
 ## Report
