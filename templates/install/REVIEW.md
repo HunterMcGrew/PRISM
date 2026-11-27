@@ -105,13 +105,13 @@ A declined nit carries its reason on one line.
 - **Rounds.** At most two rounds. What is left after round 2 goes to the PR body, per the exit rule.
 - **Subagents.** The parent splits files and passes across subagents within the limits in the workflow rule, `.prism/rules/workflow.md`. It removes duplicate findings, and it confirms every subagent finding against the file before reporting it.
 - **Subagent briefs don't steer.** Each brief carries a one-line TL;DR, such as "review PR #N" or "review the commits since `<sha>`", plus the pinned range, the subagent's files or passes, and hard limits. It never says which angles to check, what to conclude, or what to skip. Grouping files or passes per subagent is fine, because the grouping is the brief. **Why:** a subagent handed a hypothesis tends to return it confirmed, and one told what to skip never reports what sits there.
-- **Record.** The review records each of its rounds with `review/record.mjs <plan.md> <report.json>`, which writes `- review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>` under `## Review` and nothing else. `<verdict>` is `clean` or `<crit> critical, <maj> major, <min> minor, <nit> nit`. A legacy flat plan records under `## Review Issues` instead. Older `self-review` and `pr-review` lines stay valid wherever a script reads them.
+- **Record.** The review records each of its rounds with `review/record.mjs <plan.md> <report.json>`, which writes `- review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>` under `## Review` and nothing else. `<verdict>` is `clean`, `clean, <d> decision(s)` when the round is clean and `<d>` decision items wait on the person, or `<crit> critical, <maj> major, <min> minor, <nit> nit`. Only a bare `clean` meets the merge bar, so a call only the person can make never lets the session merge. A legacy flat plan records under `## Review Issues` instead. Older `self-review` and `pr-review` lines stay valid wherever a script reads them.
 
   On a stacked ticket, every PR shares one plan folder, so a line written on a PR that is not the last carries ` (part <k> of <m>)` after the sha, where `<k>` is that PR's place in the stack and `<m>` is the stack's size, and a line whose `<k>` is less than `<m>` is never a final verdict.
 
 **When a round is `clean`.** A round's verdict is `clean` exactly when zero Critical and zero Major are open apart from decision items and every pass reads `swept — …` or `n/a: …`.
 
-**The final verdicts.** The review is final when its last line is `clean` or is round 2.
+**The final verdicts.** The review is final when its last line is `clean`, is `clean, <d> decision(s)`, or is round 2.
 
 ### After a fix
 
