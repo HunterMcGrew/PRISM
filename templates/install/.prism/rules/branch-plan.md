@@ -134,7 +134,7 @@ The plan should remain easy to scan.
 
 The brevity default in step 5 is correct for routine entries. Verified fixes and non-trivial decisions are the exception — they use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance.
 
-**Why:** Conclusions look scannable, but downstream personas (Clove, Briar) lose the reasoning that makes the conclusion act-on-able. An early-Phase audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be.
+**Why:** Conclusions look scannable, but downstream personas (Clove, Briar) lose the reasoning that makes the conclusion act-on-able. An early-Phase audit surfaced the cost: Clove picks between plausible interpretations, and Briar self-reviews against the same gap. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be.
 
 **How to apply:** When the plan stage (`prism-plan`) records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 
