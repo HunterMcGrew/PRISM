@@ -408,6 +408,7 @@ round 3: blocking 4
   - T19 (blocking): same shape. A failing `node --test scripts/ai-skills/one-review.test.ts` exits 1 and the proof passes.
   - T21 (blocking): `grep -n 'review/record.mjs' … && grep -n 'Fix plan drift\|3-round' … ; test $? -eq 1` passes when the first grep finds nothing, which is the state before T21's edits.
   - plan (non-blocking): rounds 1 and 2 are written `- round 1: blocking 4` and `- round 2: blocking 1`, and `auto-approve.mjs` matches `^round <n>: …` with no leading `- `, so `--check` reports "## Challenge holds rounds none". Those two lines need the `- ` dropped before approval can pass.
+round 4: resolved 4
 
 ## Decisions
 
