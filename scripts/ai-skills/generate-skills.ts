@@ -49,7 +49,7 @@ export interface RoleDefinition {
 	routing?: "auto" | "named-only";
 	/** Skill ids whose content a Claude agent def injects at start. */
 	preloads?: string[];
-	/** True for a role whose dispatch brief the brief gate holds to a path brief, wherever that gate is delivered. Roles opt in one by one: `prism-architect` is dispatched as a subagent but stays ungated, because a fit-verdict brief carries its finding in full. */
+	/** True for a role whose dispatch brief the brief gate holds to a path brief, wherever that gate is delivered. Roles opt in one by one: `prism-architect` is dispatched as a subagent but stays ungated, because a fit-verdict brief carries its finding in full. The flag also writes the skill's `tools` list into the role's Claude agent file as its tool allowlist, and the build fails for a gated role that declares no list. */
 	gated?: boolean;
 }
 
