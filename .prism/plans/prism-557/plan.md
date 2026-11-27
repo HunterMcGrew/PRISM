@@ -309,6 +309,8 @@ round 4: resolved 1
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: Plan stage wrote 13 tasks across a two-part stack (T1–T5 the verify record script and reconcile fix; T6–T13 the tool lists, review body, and probe) from the spec at 5f92de79.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T1 added `verify/record.mjs`, which writes `## Verification` from a verify report and runs `checkReport` over the result before writing, so the writer and `check-report.mjs` cannot disagree on the section's shape.
 - 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T2 made `reconcile.mjs` take `N`, `#N`, or a URL ending `/pull/N`, the forms `post.mjs` takes, exit 2 on any other form, and throw in `reconcile()` before any gh call on a pr that is not a positive safe integer.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T3 made prism-verify write `## Verification` only through `verify/record.mjs` from a report JSON written in a `mktemp -d` directory, and carry unchanged rows into the report on a re-run because the script always writes the whole section.
+- 2026-11-27 [huntermcgrew/prism-557-stage-tools]: T4 documented `verify/record.mjs` (its report shape, the `checkReport` run before the write, and its exit codes) in `review-runtime.md`, and the `N`, `#N`, and `/pull/N` forms `reconcile.mjs` now takes.
 
 ## Sessions
 
