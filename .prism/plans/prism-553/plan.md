@@ -558,6 +558,7 @@ The old-tree worktree and the scratch directory were removed after the run.
   - Exit per the spec's exit-rule Decision and the 2026-11-27 ruling: zero Critical, zero Major. Three round 1 Minors stay open for the PR body, as the round 1 fix-list Decision lists them: the `prism:retro-line` sentence in `branch-plan.md`, the widened `mergeHookRegistration` key handling, and the branch-name form in `ticket-workflows.md`. The routing-coverage nit is declined, per the Decision on that test.
   - fixed: the ADR-0087 citation (5bd53921); the no-subagent fallback, PR inventory, and line-1 PR input in `prism-review` (f7073921); the Eric clause in `branch-plan.md` (f46521ae); the Codex `SubagentStop` retirement test (5d562281), whose fixture matches `templates/install/.codex/hooks.json` at `ceab998d`.
   - Criteria: AC-1, AC-2, AC-3, AC-4, AC-5, AC-7, AC-8, AC-9, AC-10, AC-20 met at 5d562281 (`one-review`, `update-retire-review`, `brief-gate`, `routing-coverage` tests pass; the AC-2, AC-8, and AC-20 greps print as required). AC-6 met by `## Release proof`. AC-21 awaits the PR's CI; `pnpm prism:check` passes locally at 5d562281. AC-11 to AC-19 n/a (part 2).
+- review round 1 at 06773215 (part 2 of 2): 0 critical, 2 major, 7 minor, 1 nit
 
 ## PR Readiness
 
