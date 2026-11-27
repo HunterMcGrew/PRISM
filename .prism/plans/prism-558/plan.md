@@ -301,6 +301,7 @@ round 4: resolved 3
 - **Round 3 widened T23 to the rest of `branch-plan.md` and the consumer `AGENTS.md.tmpl`.** Both tell every plan to append `## History` or `## Sessions` lines, which REQ-1 makes false for a folder plan. Both sit inside Affected systems, and this is the same kind of change the architect cleared in round 1, a doc this child makes false, so it is recorded here and not sent back to the architect.
 - **The ADR number is fixed at 0088 in the task files.** A `files` entry must be a real path, so the plan can't defer the number. Child 11 adds no ADR, so 0088 is free unless another merge takes it first, and T6 carries the rename path.
 - **The post-compact note's flat-plan wording gets a test outside the task list.** Review round 1 found that nothing pinned T13's change to `compact-handoff.mjs`, so the T13 fix added a case to `scripts/ai-skills/compact-handoff.test.ts`, a file no task lists. Rejected: leaving the wording untested, since reverting it passed the suite.
+- **OPEN — TBD, needs Hunter input.** T21 left out the spec's claim that `prism-challenge` also documents the bare round-line form, because confirming it meant reading three more gated docs for a one-line mention. **Default path (used until resolved):** the claim stays out of this PR and is listed as an open item in the PR body.
 
 ## Verification
 
