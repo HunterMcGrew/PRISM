@@ -306,17 +306,17 @@ round 4: resolved 3
 ## Verification
 
 verdict: done
-base: 8c53b07a
-head: b6725fbd
+base: 07ba5288
+head: 92c0f90e
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify2/typecheck.log |
-| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify2/lint.log |
-| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify2/test.log |
-| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify2/build.log |
+| typecheck | pass | /tmp/verify-IbGUs8/typecheck.log |
+| test | pass | /tmp/verify-IbGUs8/test.log |
+| lint | pass | /tmp/verify-IbGUs8/lint.log |
+| build | pass | /tmp/verify-IbGUs8/build.log |
 | format | n/a: not configured | none |
-| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify2/spec.log |
+| spec | pass | /tmp/verify-IbGUs8/spec.log |
 
 ### Failures
 
