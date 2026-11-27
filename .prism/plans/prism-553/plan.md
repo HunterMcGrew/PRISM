@@ -473,7 +473,7 @@ round 5: clean
 - **A decision-only round records `clean, <d> decision(s)`, never `clean`.** Hunter's ruling on 2026-11-27, on review round 2's decision item, was option (b). `record.mjs` leaves decision items out of the verdict, and `clean` plus green CI is the merge bar, so a round whose only open item is a decision let the main session merge with a call only the person can make still unanswered. Rejected: (a) a prose clause on the merge bar, which nothing checks mechanically, and (c) accepting the gap.
   - `T16 fix:` in `scripts/ai-skills/hooks/review/record.mjs`, when the round would be `clean` and the report holds `d > 0` findings with `kind: "decision"`, the verdict is `clean, 1 decision` or `clean, <d> decisions`. An unclean round keeps its counts verdict, with decisions still left out. Tests cover zero, one, and two decisions, and a decision beside a Major.
   - `T19 fix:` in `REVIEW.md`, the Record bullet's `<verdict>` list adds the `clean, <d> decision(s)` form and says only a bare `clean` meets the merge bar. The mirror is regenerated.
-  - `T21 fix:` `review-runtime.md` § `review/record.mjs` "The verdict" describes the same form, and the change regenerates its copies.
+  - `T21 fix:` the "The verdict" paragraph under `review/record.mjs` in `review-runtime.md` describes the same form, and the change regenerates its copies.
 - **The 1.0.x release notes carry the dead manifest route.** A consumer's own `.prism/architect/manifest.json` keeps the `prism-pr-review` route after update, and doctor warns on it, so the epic's closing child or the 1.0.x notes tell consumers to delete it.
 
 ## History
