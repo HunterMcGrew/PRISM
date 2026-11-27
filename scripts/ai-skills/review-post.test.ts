@@ -98,6 +98,87 @@ test("posts one comment on the head commit with side RIGHT and the agent marker 
 	assert.equal(args[args.indexOf("side=RIGHT") - 1], "-f");
 });
 
+test("passes --repo <owner>/<repo> to gh pr view", () => {
+	const fake = fakeGh();
+	post(makeRepo(CONFIG), fake);
+
+	const view = fake.calls.find((call) => call[0] === "pr") as string[];
+	assert.equal(view[view.indexOf("--repo") + 1], "acme/widgets");
+});
+
+test("accepts the PR as N, #N, or a URL ending /pull/N, and posts to number N", () => {
+	for (const pr of ["42", "#42", "https://github.com/acme/widgets/pull/42"]) {
+		const fake = fakeGh();
+		const result = post(makeRepo(CONFIG), fake, { pr });
+
+		assert.equal(result.status, 0, pr);
+		const view = fake.calls.find((call) => call[0] === "pr") as string[];
+		assert.equal(view[2], "42", pr);
+		const api = fake.calls.find((call) => call[0] === "api") as string[];
+		assert.equal(api[1], "repos/acme/widgets/pulls/42/comments", pr);
+	}
+});
+
+test("exits 2 posting nothing on a PR that is not N, #N, or a /pull/N URL", () => {
+	for (const pr of ["0", "-1", "42abc", "#", "pull/42", "https://github.com/acme/widgets/pull/42/files", "42; rm"]) {
+		const fake = fakeGh();
+		const result = post(makeRepo(CONFIG), fake, { pr });
+
+		assert.equal(result.status, 2, pr);
+		assert.deepEqual(fake.calls, [], pr);
+	}
+});
+
+test("exits 2 posting nothing when github.owner or github.repo holds characters outside a GitHub name", () => {
+	for (const github of [
+		{ owner: "acme/evil", repo: "widgets" },
+		{ owner: "acme", repo: "widgets/../x" },
+		{ owner: "ac me", repo: "widgets" },
+		{ owner: "acme", repo: "widgets?x=1" },
+	]) {
+		const fake = fakeGh();
+		const result = post(makeRepo({ github }), fake);
+
+		assert.equal(result.status, 2, JSON.stringify(github));
+		assert.match(result.message, /github\.(owner|repo)/);
+		assert.deepEqual(fake.calls, []);
+	}
+});
+
+test("normalizes the file to a repo-relative path before the ignore check and the post", () => {
+	const repo = makeRepo(CONFIG);
+
+	const ignored = fakeGh();
+	assert.equal(
+		post(repo, ignored, { file: path.join(repo, ".prism", "plans", "prism-1", "plan.md") }).status,
+		1
+	);
+	assert.deepEqual(ignored.calls, []);
+
+	const fake = fakeGh();
+	assert.equal(post(repo, fake, { file: ".\\src\\lib\\..\\app.ts" }).status, 0);
+	const api = fake.calls.find((call) => call[0] === "api") as string[];
+	assert.equal(field(api, "path"), "src/app.ts");
+});
+
+test("exits 1 with no api call when gh pr view fails", () => {
+	const calls: string[][] = [];
+	const result = post(makeRepo(CONFIG), {
+		calls,
+		gh: (args) => {
+			calls.push(args);
+
+			return args[0] === "pr"
+				? { status: 1, stdout: "", stderr: "GraphQL: Could not resolve to a PullRequest\n" }
+				: { status: 0, stdout: "{}", stderr: "" };
+		},
+	});
+
+	assert.equal(result.status, 1);
+	assert.match(result.message, /Could not resolve/);
+	assert.equal(calls.filter((call) => call[0] === "api").length, 0);
+});
+
 test("keeps a body that already opens with the marker as it is", () => {
 	const fake = fakeGh();
 	const body = `${MARKER}\nAlready marked.\n`;

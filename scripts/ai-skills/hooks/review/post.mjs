@@ -20,9 +20,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { asRecord, readRepoConfig } from "../lib/command.mjs";
-import { isNeverReviewed, resolveReviewIgnore } from "./ignore.mjs";
+import { isNeverReviewed, normalizeReviewPath, resolveReviewIgnore } from "./ignore.mjs";
 
 const MARKER = "<!-- prism-agent -->";
+
+const PR_PATTERN = /^(?:#|https?:\/\/\S+\/pull\/)?([1-9]\d*)$/;
+
+// The owner and repo are spliced into an API path, so a slash or a `?` would
+// send the comment to another endpoint.
+const GITHUB_NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
 
 const USAGE = "usage: node <hook-runtime>/review/post.mjs <pr> <file> <line> <body-file>";
 
@@ -36,8 +42,9 @@ const USAGE = "usage: node <hook-runtime>/review/post.mjs <pr> <file> <line> <bo
  * Posts `bodyFile`'s text as one comment on `file` at `line` of `pr`'s head
  * commit, and returns the exit status with a one-line message.
  *
- * `cwd` is the repo top level: the config is read from its
- * `.ai-skills/config.json`, and a relative `bodyFile` resolves against it.
+ * `pr` is `N`, `#N`, or a URL ending `/pull/N`. `cwd` is the repo top level:
+ * the config is read from its `.ai-skills/config.json`, a relative `bodyFile`
+ * resolves against it, and `file` is made relative to it.
  * `gh(args)` returns `{ status, stdout, stderr }`, so a test drives every
  * branch without GitHub. Nothing is posted unless every check passes first.
  *
@@ -54,6 +61,14 @@ const USAGE = "usage: node <hook-runtime>/review/post.mjs <pr> <file> <line> <bo
 export function postComment({ pr, file, line, bodyFile, gh = runGh, cwd }) {
 	if (!pr || !file || !bodyFile) {
 		return { status: 2, message: USAGE };
+	}
+
+	const prNumber = PR_PATTERN.exec(pr)?.[1];
+	if (!prNumber) {
+		return {
+			status: 2,
+			message: `post: PR "${pr}" is not N, #N, or a URL ending /pull/N`,
+		};
 	}
 
 	if (!/^[1-9]\d*$/.test(line)) {
@@ -77,6 +92,13 @@ export function postComment({ pr, file, line, bodyFile, gh = runGh, cwd }) {
 		};
 	}
 
+	if (!GITHUB_NAME_PATTERN.test(owner) || !GITHUB_NAME_PATTERN.test(repo)) {
+		return {
+			status: 2,
+			message: `post: github.owner "${owner}" and github.repo "${repo}" may hold only letters, digits, ".", "_", and "-"`,
+		};
+	}
+
 	let lists;
 	try {
 		lists = resolveReviewIgnore(config);
@@ -84,30 +106,41 @@ export function postComment({ pr, file, line, bodyFile, gh = runGh, cwd }) {
 		return { status: 2, message: `post: ${describe(error)}` };
 	}
 
-	if (isNeverReviewed(file, lists)) {
+	const reviewPath = normalizeReviewPath(file, cwd);
+	if (isNeverReviewed(reviewPath, lists)) {
 		return {
 			status: 1,
-			message: `post: ${file} is never reviewed (reviewIgnore), so nothing was posted`,
+			message: `post: ${reviewPath} is never reviewed (reviewIgnore), so nothing was posted`,
 		};
 	}
 
-	const view = gh(["pr", "view", pr, "--json", "headRefOid", "-q", ".headRefOid"]);
+	const view = gh([
+		"pr",
+		"view",
+		prNumber,
+		"--repo",
+		`${owner}/${repo}`,
+		"--json",
+		"headRefOid",
+		"-q",
+		".headRefOid",
+	]);
 	const head = view.stdout.trim();
 	if (view.status !== 0 || !head) {
-		return { status: 1, message: `post: gh pr view ${pr} failed: ${failure(view)}` };
+		return { status: 1, message: `post: gh pr view ${prNumber} failed: ${failure(view)}` };
 	}
 
 	const firstLine = body.split("\n", 1)[0]?.trim();
 	const markedBody = firstLine === MARKER ? body : `${MARKER}\n${body}`;
 	const result = gh([
 		"api",
-		`repos/${owner}/${repo}/pulls/${pr}/comments`,
+		`repos/${owner}/${repo}/pulls/${prNumber}/comments`,
 		"-f",
 		`body=${markedBody}`,
 		"-f",
 		`commit_id=${head}`,
 		"-f",
-		`path=${file}`,
+		`path=${reviewPath}`,
 		"-F",
 		`line=${line}`,
 		"-f",
@@ -115,7 +148,7 @@ export function postComment({ pr, file, line, bodyFile, gh = runGh, cwd }) {
 	]);
 
 	if (result.status === 0) {
-		return { status: 0, message: `post: commented on ${file}:${line} at ${head}` };
+		return { status: 0, message: `post: commented on ${reviewPath}:${line} at ${head}` };
 	}
 
 	// GitHub answers 422 for a line outside the diff's hunks. Retrying another
