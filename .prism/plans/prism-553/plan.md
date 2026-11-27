@@ -423,10 +423,20 @@ round 4: resolved 4
 - **`prism-forge-skill` joins the sweep, per the spec's Decision adding it to Affected systems.** Its ID-namespace bullet uses `prism-self-review` as an example, a live mention under requirement 13, so T8 changes it and T1's sweep test carries no allowlist entry for it.
 - **T4 fixes `branch-plan.md`'s review sentence in part 1.** Line 236 says the review "covers the whole PR" and that intent-scope fixes plan drift in place, which part 2's rulebook retires. A file belongs to one task, and T4 already owns `branch-plan.md`, so T4 rewrites the sentence to the part 2 behavior. The two parts merge back to back, so the rule leads the rulebook by one merge rather than trailing it.
 - **Part 1 ships from T13, not from the resume table.** After T13, part 1's verify, review, and PR stages run while T14–T23 are still open. The resume table would read "a task with no commit naming it" and send the session back to implement, so the session drives part 1's verify, review, and PR from this Decision, and part 2 resumes from T14 on its own branch. The retro waits for part 2: `prism-retro` runs once, after part 2's review, on the whole plan.
+- **The session dispatches `prism-review` with a `model: opus` override.** The generated agent file stays pinned to `sonnet` until child 12 reworks model tiers, and the spec chose `sonnet` for that file. An override at dispatch time gives this child's reviews the stronger model without changing the generator. Rejected: editing the generator here, which is child 12's scope.
+- **TS proofs run under `npx tsx --test`, not plain `node --test`.** Test files with extensionless imports or JSON imports, such as `review-reconcile.test.ts` and `plan-config-schema.test.ts`, fail to load under plain node. `tsx` is the runner `pnpm prism:test` and CI use, so builders and the verify stage use it. The per-task proof text keeps `node --test` as written, since the approved tasks do not change for a runner swap.
+- **`one-review.test.ts` reads the hook runtime lists from `update.ts` source text.** `HOOK_RUNTIME_FILES` and `HOOK_RUNTIME_ENTRY_POINTS` are not exported, and `update.ts` cannot load under plain node, so T1 parses the array literals with `readArrayLiteral` instead of importing them. T3 therefore adds no exports. Rejected: exporting them, which widens `update.ts`'s public surface for a test.
 
 ## History
 
 - 2026-11-27 [huntermcgrew/prism-553-one-review]: Plan stage wrote 23 tasks across the two-part stack (T1–T13 rename, retirement, and label removal; T14–T23 the rulebook) from the spec at 286db6ce.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T1 added `one-review.test.ts`, seven cases, all failing on the branch base.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T2 renamed `prism-self-review` to `prism-review` (Briar, gated, opus, PR input) and moved `prism-pr-review` and its two docs to `.ai-skills/deprecated/prism-pr-review/`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T4 swept the always-on rules and their curated twins to name `prism-review` and Briar alone.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T5 dropped the PR-review stage from `workflow.md`, `shipping-flow.md`, and the config schema; a follow-up fix dropped the PR-review brief from the Limits paragraph.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T7 swept the ADR-criterion reference, the PR-description template, and the consumer AGENTS template.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T10 removed the review labels and verdict marker from `reconcile.mjs`, its types, tests, fixtures, and `review-runtime.md`.
+- 2026-11-27 [huntermcgrew/prism-553-one-review]: T8 swept `prism-implement`, `prism-retro`, and `prism-forge-skill` to name `prism-review` and drop the separate PR-review stage.
 
 ## Sessions
 

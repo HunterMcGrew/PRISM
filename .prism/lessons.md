@@ -191,3 +191,7 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-11-20 (PRISM-544, PR #547): round 1 prescribed "realpath the longest existing prefix of each path" and "pair only the lines next to the markers". The author applied both literally. The first also resolved a symlink leaf and left `repoRoot` unresolved, so the gate failed open on a committed outside link and 74 Windows tests went red. The second over-denied an ordinary insert. Each regression traced to the fix text, not to the author.
 
 **How to apply:** When a finding's fix touches path canonicalization or diff pairing, name what stays untouched (the leaf, the other operand, the adjacent run) and the case the fix must still pass, so the fix carries its own regression test.
+
+## `git mv` and `git rm` break `plan/commit.mjs`
+
+2026-11-27 (PRISM-553 T2): `commit.mjs` runs `git add` on every path it is given, and after `git mv` the old path no longer exists in the tree, so `git add` fails and the commit aborts. Use plain `mv` or `rm` before `commit.mjs`, which stages the moves itself, or run `git reset -q -- <paths>` first.
