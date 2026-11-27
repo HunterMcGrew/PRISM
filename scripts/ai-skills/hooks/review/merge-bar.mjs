@@ -11,7 +11,7 @@
  * commit after the sha is never exempt, because a clean refresh and a conflict
  * resolution that changed code look the same from here. Exits 0 when the bar
  * holds, 1 printing one reason per failure, and 2 on a usage error, an
- * unreadable plan, an unknown `--head`, or no repo.
+ * unreadable plan, an unknown `--head`, no repo, or a git call that fails.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
@@ -84,10 +84,13 @@ export function checkMergeBar(planPath, head = "HEAD") {
 
 	const planFolder = `${path.relative(repoRoot, planDir).replace(/\\/g, "/")}/`;
 	const log = git("log", "--reverse", "--format=%H%x00%P%x00%s", `${reviewedSha}..${headSha}`);
+	if (log === null) {
+		throw new MergeBarError(`git log ${short(reviewedSha)}..${short(headSha)} failed.`);
+	}
 
-	for (const entry of (log ?? "").split("\n").filter(Boolean)) {
+	for (const entry of log.split("\n").filter(Boolean)) {
 		const [sha = "", parents = "", subject = ""] = entry.split("\0");
-		const shortSha = sha.slice(0, SHORT_SHA_LENGTH);
+		const shortSha = short(sha);
 
 		if (parents.trim().split(/\s+/).length > 1) {
 			reasons.push(`merge commit ${shortSha} "${subject}" follows the reviewed sha; ${RERUN}.`);
@@ -96,9 +99,12 @@ export function checkMergeBar(planPath, head = "HEAD") {
 
 		if (subject.startsWith("retro:")) continue;
 
-		const files = (git("diff-tree", "--no-commit-id", "--name-only", "-r", "-z", sha) ?? "")
-			.split("\0")
-			.filter(Boolean);
+		const changed = git("diff-tree", "--no-commit-id", "--name-only", "-r", "-z", sha);
+		if (changed === null) {
+			throw new MergeBarError(`git diff-tree failed for commit ${shortSha} "${subject}".`);
+		}
+
+		const files = changed.split("\0").filter(Boolean);
 
 		if (files.every((file) => file.startsWith(planFolder))) continue;
 
@@ -108,6 +114,14 @@ export function checkMergeBar(planPath, head = "HEAD") {
 	}
 
 	return reasons;
+}
+
+/**
+ * @param {string} sha
+ * @returns {string}
+ */
+function short(sha) {
+	return sha.slice(0, SHORT_SHA_LENGTH);
 }
 
 /**

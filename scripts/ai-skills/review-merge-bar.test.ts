@@ -264,6 +264,21 @@ test("exits 2 for an unknown --head", () => {
 	});
 });
 
+test("exits 2 when git cannot list a later commit's files", () => {
+	withRepo(({ root, git, commit, writePlan }) => {
+		const reviewed = commit("T1: Add a", { "src/a.ts": "a\n" });
+		const later = commit("T2: Add b", { "src/b.ts": "b\n" });
+		const tree = git("rev-parse", `${later}^{tree}`);
+		rmSync(path.join(root, ".git", "objects", tree.slice(0, 2), tree.slice(2)));
+		const plan = writePlan([`- review round 1 at ${short(reviewed)}: clean`]);
+
+		const result = runBar([plan]);
+
+		assert.equal(result.status, 2, result.stdout + result.stderr);
+		assert.match(result.stderr, new RegExp(short(later)));
+	});
+});
+
 test("exits 2 for an unreadable plan", () => {
 	withRepo(({ root, commit }) => {
 		commit("T1: Add a", { "src/a.ts": "a\n" });
