@@ -23,7 +23,7 @@ Alternatives that lost:
 ## Consequences
 
 - Positive: the PR opens once, with code, docs, and the review record together, so the first reviewer sees a whole change.
-- Positive: the per-user pause preference in ADR-0003 fires once, at the push, instead of once per bundle.
+- Positive: the per-user pause preference in ADR-0003 fired once, at the push, instead of once per bundle, until PRISM removed it on 2026-11-27.
 - Negative: a session that stops before the PR stage leaves local commits and nothing on the remote. Nothing outside that worktree can see the work until a later session pushes it.
 - Negative: the stage skills carry two shipping behaviors, one for folder plans and one for flat plans, and a reader has to check which kind of plan the branch holds.
 - Neutral: the resume table's PR row picks up local commits on a folder-plan branch with no open PR, so a later session finishes the push without a new instruction.
