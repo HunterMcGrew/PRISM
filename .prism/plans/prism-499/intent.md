@@ -90,7 +90,7 @@ none — this is an epic. Each child PR carries its own criteria in its plan, an
 - The implement stage runs on the same model tier as planning. A task no longer carries the long prose a cheaper model needed.
 - **Epic** has a folder with `intent.md` and `spec.md` and no `plan.md`. The spec names the children and their merge order. Each child is a standard ticket.
 - No orchestrator skill drives the run. The stage order and a resume table in the always-on workflow block do. A fresh session reads the plan folder and runs the first row that matches.
-- Three stages run as fresh subagents because their value is a cold read: spec, challenge, and verify. Everything else runs in the session.
+- Four stages run as fresh subagents because their value is a cold read: spec, challenge, verify, and review. Everything else runs in the session.
 - Caps: 20 subagents at once, 3 writers on files no other writer touches, 3 rounds per stage, and 2 rounds for review. A plan challenge that still blocks after round 3 gets a confirm round, rerun once after an architect verdict, and neither counts against the 3.
 
 ### Where the run stops for a person
@@ -134,7 +134,7 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 - **New stage skills:** `prism-intent`, `prism-spec`, and `prism-verify`.
 - **`prism-architect` is new and is Winston.** It answers "is this the right approach?" at any time, in chat, with no plan folder and no approval. A running stage also sends it scope ideas and unresolved challenge findings, and it returns a verdict to that stage instead of offering a next step. `prism-plan` becomes a persona-less utility that writes `plan.md` and runs the challenge rounds.
 - **`prism-debug` is new and is Sasha.** It diagnoses and changes no source. Its report becomes the Problem section of an intent. This reverses the phase-1 deletion.
-- **`prism-pr-review` is retired.** PRISM runs one review, `prism-self-review`. The retired skill's source moves to a deprecated folder the build does not read, so it can come back.
+- **One review skill, `prism-review`.** It is `prism-self-review` under a new name. `prism-pr-review` is retired, and its source moves to a deprecated folder the build does not read, so it can come back.
 - `prism-challenge` runs the plan challenge rounds. `tdd` holds the test-first rules the implement stage loads.
 - **Folded:** `prism-user-stories` into `prism-intent`. No skill writes user stories.
 - **Deleted:** `prism-review-loop`, once `REVIEW.md` and the review rounds inside the stages replace it. Sol, Ren, and Theo stay deleted.
@@ -150,7 +150,7 @@ The run halts only when going on cannot work: a blocked build, or a second re-pl
 - **The exit rule is zero Critical and zero Major findings.** A Minor is fixed inside the rounds when it can be, and never earns a round of its own. A review that reaches its cap with only Minors left has passed, and those Minors are listed in the PR body.
 - **Review reads the plan folder and never reviews it.** The acceptance criteria and the task list are the yardstick for the diff, and no finding is raised on the prose of `intent.md`, `spec.md`, or `plan.md`. Published docs, code comments, and the changelog earn a finding only when they are wrong about the code, never for wording.
 - **A list of never-reviewed paths lives in the consumer's config.** Plan folders, working notes (lessons, retros, audits, metrics), generated files, and the PR body are on it by default. So is everything PRISM delivers, in any repo that uses PRISM. In PRISM's own repo the skills and rules are the product and stay reviewable, for being wrong about a script or contradicting another rule, never for wording. The script that posts findings rejects one aimed at a listed path.
-- `prism-self-review` is the only review. It runs the passes on the branch before anything reaches GitHub, split across subagents. The session fixes what it finds, for at most two rounds. It never approves and never flips the PR to ready.
+- `prism-review` is the only review skill. It runs the passes on the branch before anything reaches GitHub, as a fresh subagent wherever the host can launch one, and reports to the session. The session fixes what it reports, for at most two rounds. The review never approves and never flips the PR to ready.
 - A reconcile script resolves addressed threads and reports unanswered human comments. The stop gate that sent the PR review back is retired with it.
 - **The review labels are gone.** `effort:*`, `confidence:*`, and `review:has-minors` came from thrive's team queue, and nothing here needs them.
 - A human comment the agent missed is logged. A class of miss that reaches three gets a proposed fix, and a person approves each one.
@@ -225,7 +225,7 @@ Measured on main at `37cdbd28` before the change: the task list and the review r
 - **Review scope.** Every section of the plan was in scope. Review now reads the plan folder as its yardstick and raises no finding on it.
 - **Never-reviewed paths.** New. Hunter: "PRISM repo stuff should never be reviewed by the users repo."
 - **Labels.** The review labels are removed. Hunter: "the effort labels and review:minor labels was thrive only stuff, we dont need that."
-- **One review.** A self-review and a PR review become one review, before the PR opens. `prism-pr-review` moves to a deprecated folder, and its stop gate goes with it. Hunter: "PRISM doesn't need a PR reviewer and a reviewer."
+- **One review.** A self-review and a PR review become one review, before the PR opens. `prism-self-review` is renamed `prism-review`. `prism-pr-review` moves to a deprecated folder, and its stop gate goes with it. Hunter: "PRISM doesn't need a PR reviewer and a reviewer", and "one reviewer skill in the repo, still 2 rounds. they should be launched as sub-agents preferably."
 - **Reviewer tools.** A reviewer wrote the record line and fixed plan drift by hand. The review stage now gets no Edit and no Write, and a script writes the line.
 - **Merge.** The main session merged on a clean final pass with no `review:has-minors` label. The bar is now zero Critical and zero Major.
 - **Plan.** Task prose shrinks to two lines of gotchas, Decisions narrow to scope changes and open questions, and History and Sessions leave the template.
