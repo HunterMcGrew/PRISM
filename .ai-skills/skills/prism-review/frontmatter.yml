@@ -1,0 +1,13 @@
+name: prism-review
+description: >
+  Reviews the current branch, or a PR by number or URL, against REVIEW.md:
+  runs the passes whose triggers fire through subagents and grades the
+  acceptance criteria. Reports in chat, writes one record line to the plan on
+  a branch review, and never posts to GitHub or edits source. Triggers:
+  "Briar", "Eric", review my changes, self review, check my work, am I ready
+  to open a PR, validate branch state, verify the AC, grade the acceptance
+  criteria, review pr, review #123, review this PR, PR review,
+  any GitHub PR URL.
+argument-hint: "[PR# or GitHub URL]"
+model: opus
+effort: high

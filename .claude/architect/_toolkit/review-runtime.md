@@ -34,7 +34,7 @@ The ten pass files live in `.prism/review/`, one per pass in `REVIEW.md`'s table
 
 ## `reconcile.mjs`
 
-`reconcile.mjs <pr>` runs after an agent review. It replies to and resolves the agent's own threads whose lines changed, corrects the review labels, and reports what is still unclean. Every GitHub read and write goes through `gh api`, so it needs the `gh` login.
+`reconcile.mjs <pr>` runs after an agent review. It replies to and resolves the agent's own threads whose lines changed and reports what is still unclean. Every GitHub read and write goes through `gh api`, so it needs the `gh` login.
 
 **Arguments.** `--no-write` skips every write and reports each as `would ...`. `--json` prints the findings as one object with the same exit code, for a caller that should not parse prose. `--log <path>` overrides the misses log location. `--classes` prints the open miss classes and exits without touching GitHub.
 
@@ -51,11 +51,9 @@ The ten pass files live in `.prism/review/`, one per pass in `REVIEW.md`'s table
 
 **Agent comment or human comment.** A comment carrying `<!-- prism-agent -->` from a login that is not a bot reads as an agent's. The same line from any developer's login reads as an agent's too, so another developer's agent is neither a miss nor owed a reply. A human comment is one that is not agent-marked, not from a bot, and not the PR author's own note.
 
-**Why the login check gates every write.** The marker is plain text anyone can paste. So the runner asks `gh api user` which login it is, and it resolves a thread, checks for an earlier reply, or reads the summary the labels follow only for a marked comment from that login. Without it, a pasted marker could get a thread resolved or the labels changed.
+**Why the login check gates every write.** The marker is plain text anyone can paste. So the runner asks `gh api user` which login it is, and it resolves a thread or checks for an earlier reply only for a marked comment from that login. Without it, a pasted marker could get a thread resolved.
 
 **Threads.** An unresolved thread the agent opened, whose lines changed in a later commit, gets a reply `addressed in <sha>` and is then resolved, unless the last non-bot comment in it is a person's. That thread stays open and needs a reply, because the change may not have fixed what the person raised. A run whose resolve failed already posted the reply, so the next run does not post a second. The read goes through GraphQL first and falls back to the `ccr/` thread route when GitHub answers that GraphQL is not available from the session, which is also the route that resolves.
-
-**Labels.** It reads the verdict line in the agent's latest summary comment, `<!-- prism-verdict: state=<1|2|3> effort=<e> confidence=<c> -->`, and makes the PR's labels match. State 1 expects none. State 2 expects `effort:<e>` and `review:has-minors`. State 3 expects `effort:<e>` and `confidence:<c>`. It touches only the closed set: `effort:glance`, `effort:quick`, `effort:deep`, `confidence:high`, `confidence:needs-judgment`, `confidence:standards-only`, and `review:has-minors`. With no verdict line, or one it cannot read, it leaves every label alone.
 
 **PR body headings.** It reads `.prism/templates/pr-description.md` from the repo's top level and takes each `## ` heading after the template's `---` divider. A heading is required unless its placeholder says "Delete this section" or "Skip this section". The report lists the ones the PR body lacks.
 

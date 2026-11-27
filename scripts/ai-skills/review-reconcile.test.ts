@@ -1,7 +1,7 @@
 /**
  * Contract for `hooks/review/reconcile.mjs`: it tells agent comments from
  * human ones by the `<!-- prism-agent -->` marker, resolves addressed agent
- * threads, corrects the review labels, and reports what is still unclean.
+ * threads, and reports what is still unclean.
  * Every `gh` and `git` call is a fake over the recorded cases in
  * `review-reconcile.fixtures.json`, keyed by case name and then by the file
  * name a case would hold on disk.
@@ -24,7 +24,6 @@ import {
 	needsReply,
 	openClasses,
 	ownAddressed,
-	planLabels,
 	readLog,
 	readsAsAgent,
 	reconcile,
@@ -229,22 +228,6 @@ describe("marker logic", () => {
 		assert.equal(ownAddressed(opening, AGENT), false);
 	});
 
-	test("planLabels follows only a summary carrying both the marker and the runner's login", () => {
-		const verdict =
-			"<!-- code-review-pr-summary -->\n<!-- prism-verdict: state=3 effort=quick confidence=high -->";
-		const unmarked = comment(AGENT, verdict);
-		const marked = comment(AGENT, `<!-- prism-agent -->\n${verdict}`);
-
-		assert.equal(
-			planLabels([unmarked], [], AGENT).note,
-			"labels left alone: no verdict line"
-		);
-		assert.equal(
-			planLabels([marked], [], AGENT).note,
-			"labels checked against verdict state=3"
-		);
-	});
-
 	test("a bot's marked thread still needs a reply", () => {
 		const bot = comment("qodo-merge-pro[bot]", "<!-- prism-agent -->\nhi");
 
@@ -342,44 +325,6 @@ describe("marker logic", () => {
 	});
 });
 
-describe("planLabels over the closed review-label set", () => {
-	const summary = (verdict: string): Comment => ({
-		user: { login: AGENT, type: "User" },
-		body: `<!-- prism-agent -->\n<!-- code-review-pr-summary -->\n<!-- prism-verdict: ${verdict} -->`,
-	});
-
-	test("confidence:standards-only is removed when the verdict says confidence=high", () => {
-		const plan = planLabels(
-			[summary("state=3 effort=quick confidence=high")],
-			[{ name: "confidence:standards-only" }, { name: "effort:quick" }],
-			AGENT
-		);
-
-		assert.deepEqual(plan.remove, ["confidence:standards-only"]);
-		assert.deepEqual(plan.add, ["confidence:high"]);
-	});
-
-	test("a verdict of confidence=standards-only adds that label", () => {
-		const plan = planLabels(
-			[summary("state=3 effort=glance confidence=standards-only")],
-			[],
-			AGENT
-		);
-
-		assert.deepEqual(plan.add, ["effort:glance", "confidence:standards-only"]);
-	});
-
-	test("a label outside the closed set is never removed", () => {
-		const plan = planLabels(
-			[summary("state=1 effort=glance confidence=high")],
-			[{ name: "DX" }, { name: "effort:deep" }],
-			AGENT
-		);
-
-		assert.deepEqual(plan.remove, ["effort:deep"]);
-	});
-});
-
 describe("reconcile over recorded fixtures", () => {
 	test("own-addressed: replies with the marker and the sha, then resolves", () => {
 		const { result, writes } = runCase("own-addressed");
@@ -464,38 +409,6 @@ describe("reconcile over recorded fixtures", () => {
 		assert.deepEqual(urlsOf(result.findings.unlogged), [discussion(6001)]);
 	});
 
-	test("labels: state 3 swaps review labels and leaves QA Failed and DX alone", () => {
-		const { writes } = runCase("labels");
-
-		assert.deepEqual(writes, [
-			{
-				method: "DELETE",
-				route: `${ROUTE}/issues/${PR}/labels/effort:deep`,
-				fields: {},
-			},
-			{
-				method: "DELETE",
-				route: `${ROUTE}/issues/${PR}/labels/confidence:high`,
-				fields: {},
-			},
-			{
-				method: "POST",
-				route: `${ROUTE}/issues/${PR}/labels`,
-				fields: { "labels[]": ["effort:quick", "confidence:needs-judgment"] },
-			},
-		]);
-
-		const { writes: stateOneWrites } = runCase("labels-state-1");
-
-		assert.deepEqual(
-			stateOneWrites.map((write) => `${write.method} ${write.route}`),
-			[
-				`DELETE ${ROUTE}/issues/${PR}/labels/effort:deep`,
-				`DELETE ${ROUTE}/issues/${PR}/labels/confidence:high`,
-			]
-		);
-	});
-
 	test("body-missing-heading: a missing required heading is unclean, a missing optional one is not", () => {
 		const { result } = runCase("body-missing-heading");
 
@@ -567,13 +480,12 @@ describe("reconcile over recorded fixtures", () => {
 		);
 	});
 
-	test("forged-marker: the author's marked thread and summary get no writes", () => {
+	test("forged-marker: the author's marked thread gets no writes", () => {
 		const { result, writes } = runCase("forged-marker");
 
 		assert.deepEqual(writes, []);
 		assert.deepEqual(result.findings.needsReply, []);
 		assert.deepEqual(result.findings.unlogged, []);
-		assert.ok(result.actions.includes("labels left alone: no verdict line"));
 		assert.equal(result.code, 0);
 	});
 
@@ -583,7 +495,6 @@ describe("reconcile over recorded fixtures", () => {
 		assert.deepEqual(writes, []);
 		assert.deepEqual(result.findings.needsReply, []);
 		assert.deepEqual(result.findings.unlogged, []);
-		assert.ok(result.actions.includes("labels left alone: no verdict line"));
 		assert.equal(result.code, 0);
 	});
 

@@ -1,9 +1,0 @@
-name: prism-self-review
-description: >
-  Reviews the current branch against REVIEW.md, runs the passes whose triggers
-  fire through subagents, and grades the acceptance criteria. Reports in chat,
-  writes one record line to the plan, and never posts to GitHub. Triggers:
-  "Briar", review my changes, self review, check my work, am I ready to open a
-  PR, validate branch state, verify the AC, grade the acceptance criteria.
-model: sonnet
-effort: high

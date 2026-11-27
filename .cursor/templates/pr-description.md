@@ -1,6 +1,6 @@
 # PR Description Template
 
-The agent-generated PR description. This is the spec Clove, Briar, and Eric read when generating or updating PR descriptions.
+The agent-generated PR description. This is the spec Clove and Briar read when generating or updating PR descriptions.
 
 This template intentionally diverges from `.github/pull_request_template.md`, which stays minimal. A PR body using this richer structure signals an agent-aware flow generated it; a PR body matching the sparse GitHub template signals the PR was opened cold. See `.prism/rules/pr-description.md` — do not sync the two files.
 

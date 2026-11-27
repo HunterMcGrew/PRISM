@@ -24,7 +24,6 @@ export interface Pull {
 	user: { login: string };
 	body?: string | null;
 	head?: { sha: string };
-	labels?: { name: string }[];
 }
 
 export interface LogRow {
@@ -82,12 +81,6 @@ export function isAuthorNote(comment: Comment, pull: Pull): boolean;
 export function isHuman(comment: Comment, pull: Pull): boolean;
 export function needsReply(thread: Thread, pull: Pull): boolean;
 export function ownAddressed(thread: Thread, agentLogin: string): boolean;
-
-export function planLabels(
-	issueComments: Comment[],
-	labels: { name: string }[],
-	agentLogin: string
-): { remove: string[]; add: string[]; note: string };
 
 export function missingHeadings(body: string, template: string): string[];
 

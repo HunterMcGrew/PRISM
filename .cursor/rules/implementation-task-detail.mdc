@@ -111,8 +111,8 @@ The bad version leaves: which Tailwind classes? Which principles justify which c
 
 - **The plan stage** (`prism-plan`) — applies the bar when authoring tasks. The bar is a baseline for every task it writes.
 - **Pixel** (`prism-design`) — applies the bar when authoring mode 2 saved mock specs. Mode 1 inline sketches and mode 3 HTML mocks are exempt.
-- **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — flag tasks or specs that fail the bar during self-review and PR review.
+- **Briar** (`prism-review`) — flags tasks or specs that fail the bar during review.
 
 ## Severity
 
-Tasks or mock specs that fail the bar are at minimum **Major** in self-review and PR review. The cost compounds — every implementer who reads an under-specified task makes a judgment call that may diverge from the planner's intent, and the divergence shows up later as rework.
+Tasks or mock specs that fail the bar are at minimum **Major** in review. The cost compounds — every implementer who reads an under-specified task makes a judgment call that may diverge from the planner's intent, and the divergence shows up later as rework.

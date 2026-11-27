@@ -41,4 +41,4 @@ Every persona that creates files in `.prism/` applies this rule. Cite it when:
 - Adding install-template content
 - Reviewing a PR that introduces a new file in `.prism/` or `templates/install/.prism/`
 
-Briar and Eric flag any install-template addition that ships empty as Minor in review — apply the schema-required-stub test before accepting it.
+Briar flags any install-template addition that ships empty as Minor in review — apply the schema-required-stub test before accepting it.

@@ -60,8 +60,8 @@ const PERSONA_SCOPES: PersonaScope[] = [
 		files: [".claude/skills/prism-plan/SKILL.md"],
 	},
 	{
-		name: "eric",
-		files: [".claude/skills/prism-pr-review/SKILL.md"],
+		name: "briar",
+		files: [".claude/skills/prism-review/SKILL.md"],
 	},
 	{
 		name: "sage",
@@ -77,7 +77,7 @@ const EXPECTED_POSITIVES: ReadonlySet<string> = new Set([
 	"nora",
 	"zoe",
 	"winston",
-	"eric",
+	"briar",
 	"sage",
 ]);
 

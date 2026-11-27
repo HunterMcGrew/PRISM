@@ -1127,7 +1127,6 @@ const HOOK_RUNTIME_FILES = [
 	"env-keys.mjs",
 	"commit-gate.mjs",
 	"brief-gate.mjs",
-	"reconcile-gate.mjs",
 	"commit-gate/parse.mjs",
 	"commit-gate/checks.mjs",
 	"commit-gate/test-guard.mjs",
@@ -1165,7 +1164,6 @@ const HOOK_RUNTIME_ENTRY_POINTS = [
 	"secrets-gate.mjs",
 	"commit-gate.mjs",
 	"brief-gate.mjs",
-	"reconcile-gate.mjs",
 ];
 
 /**
@@ -1534,7 +1532,8 @@ export async function refreshHookRuntime(
  * end to end: `node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs"` (or
  * `git-gates.mjs`, `approve-guard.mjs`, `secrets-gate.mjs`, `commit-gate.mjs`, `brief-gate.mjs`, or
  * `reconcile-gate.mjs`, the other entry points) followed by PRISM's `--flag=value` arguments and
- * nothing else.
+ * nothing else. reconcile-gate stays in the alternation as a retired entry point, so an update
+ * recognizes and drops an old registration.
  *
  * Anchored at both ends on purpose. A substring test for the entry-point path
  * also claims a command that merely mentions it — a consumer's wrapper
@@ -1555,7 +1554,8 @@ export const PRISM_HOOK_COMMAND_PATTERN =
  * invocations, end to end — `node ".claude/hooks/hook.mjs"` (or
  * `git-gates.mjs`, `approve-guard.mjs`, `secrets-gate.mjs`, `commit-gate.mjs`, `brief-gate.mjs`, or
  * `reconcile-gate.mjs`, the other entry points) followed by PRISM's `--flag=value` arguments and
- * nothing else.
+ * nothing else. reconcile-gate stays in the alternation as a retired entry point, so an update
+ * recognizes and drops an old registration.
  * Anchored at both ends for the same reason `PRISM_HOOK_COMMAND_PATTERN` is: a loose match would claim
  * (and later delete) a consumer's own wrapper around the entry point.
  */
@@ -1626,6 +1626,9 @@ function mergeHookEventEntries(
  * consumer never had a registration file and removal leaves nothing to merge
  * in, no file is written — a repo that never received the hook stays
  * exactly as it was.
+ *
+ * PRISM-owned entries are also dropped from event keys only the target holds, so a registration the
+ * source retired leaves the consumer's file.
  */
 export async function mergeHookRegistration(
 	sourcePath: string,
@@ -1652,9 +1655,12 @@ export async function mergeHookRegistration(
 	) as { hooks?: Record<string, unknown> };
 
 	const mergedHooks = { ...targetSettings.hooks };
-	for (const [eventName, sourceEntries] of Object.entries(
-		sourceSettings.hooks
-	)) {
+	const eventNames = new Set([
+		...Object.keys(sourceSettings.hooks),
+		...Object.keys(targetSettings.hooks ?? {}),
+	]);
+	for (const eventName of eventNames) {
+		const sourceEntries = sourceSettings.hooks[eventName] ?? [];
 		mergedHooks[eventName] = mergeHookEventEntries(
 			targetSettings.hooks?.[eventName],
 			deliver ? sourceEntries : [],

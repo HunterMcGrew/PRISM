@@ -291,10 +291,10 @@ test("isUnrelatedToTicket: true when the basename appears nowhere in the plan te
 
 test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a shared basename mentioned for a different skill does not clear the file", () => {
 	const planText =
-		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-self-review/shared.md`.\n";
+		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-review/shared.md`.\n";
 	assert.equal(
 		isUnrelatedToTicket(
-			".ai-skills/skills/prism-self-review/shared.md",
+			".ai-skills/skills/prism-review/shared.md",
 			planText
 		),
 		false
@@ -744,13 +744,13 @@ test("skill-body basename collision: naming one skill's shared.md in the plan do
 					"",
 					"## Implementation Tasks",
 					"",
-					"1. Edit `.ai-skills/skills/prism-self-review/shared.md`.",
+					"1. Edit `.ai-skills/skills/prism-review/shared.md`.",
 					"",
 				].join("\n")
 			);
 			await writeFile(
 				tempRoot,
-				".ai-skills/skills/prism-self-review/shared.md",
+				".ai-skills/skills/prism-review/shared.md",
 				"Body.\n"
 			);
 			await writeFile(
@@ -763,7 +763,7 @@ test("skill-body basename collision: naming one skill's shared.md in the plan do
 			const result = await evaluateSpecScopeLint(
 				tempRoot,
 				[
-					".ai-skills/skills/prism-self-review/shared.md",
+					".ai-skills/skills/prism-review/shared.md",
 					".ai-skills/skills/prism-plan/shared.md",
 				],
 				branchName

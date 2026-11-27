@@ -104,12 +104,6 @@ function claudeRows(command: (script: string, flags: string) => string): HookRow
 			matcher: "startup|resume|compact",
 			command: command("hook.mjs", "--tool=claude --event=SessionStart"),
 		},
-		{
-			event: "SubagentStop",
-			matcher: "^prism-pr-review$",
-			command: command("reconcile-gate.mjs", "--tool=claude --event=SubagentStop"),
-			timeout: 120,
-		},
 	];
 }
 
@@ -196,12 +190,6 @@ const CODEX_ROWS: HookRow[] = [
 		event: "SubagentStart",
 		command: codexTemplate("brief-gate.mjs", "--tool=codex --event=SubagentStart"),
 		timeout: 21,
-	},
-	{
-		event: "SubagentStop",
-		matcher: "^prism-pr-review$",
-		command: codexTemplate("reconcile-gate.mjs", "--tool=codex --event=SubagentStop"),
-		timeout: 120,
 	},
 ];
 

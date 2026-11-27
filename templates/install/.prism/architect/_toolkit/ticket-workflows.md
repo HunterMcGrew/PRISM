@@ -33,7 +33,7 @@ On a plan folder, the workflow rule's stage order replaces the sequences under C
 ### Feature (typical)
 
 ```
-Nora → Mira → [Pixel] → the spec stage → the plan stage → Clove → Briar → [Eric] → [Sage/Eli/Reese]
+Nora → Mira → [Pixel] → the spec stage → the plan stage → Clove → Briar → [Sage/Eli/Reese]
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement, creates the branch, summarizes requirements
@@ -43,13 +43,12 @@ Nora → Mira → [Pixel] → the spec stage → the plan stage → Clove → Br
 5. **The plan stage** (`prism-plan`) builds the implementation tasks; Winston gives a fit verdict when asked
 6. **Clove** implements, writes tests, updates the plan
 7. **Briar** self-reviews the branch
-8. **Eric** reviews the PR (optional — for team PRs)
-9. **Sage/Eli/Reese** generate release artifacts as needed
+8. **Sage/Eli/Reese** generate release artifacts as needed
 
 ### Bug
 
 ```
-Nora (verify + scaffold + AC) → Clove (confirm root cause, then fix) → Briar → [Eric] → [Reese]
+Nora (verify + scaffold + AC) → Clove (confirm root cause, then fix) → Briar → [Reese]
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement, verifies the bug, scaffolds bug report with root cause + suspected fix + AC, syncs AC to the tracker
@@ -60,7 +59,7 @@ Nora (verify + scaffold + AC) → Clove (confirm root cause, then fix) → Briar
 ### Improvement
 
 ```
-Nora → Mira → the spec stage → the plan stage → Clove → Briar → [Eric]
+Nora → Mira → the spec stage → the plan stage → Clove → Briar
 ```
 
 1. **Nora** fetches the ticket, reviews priority and triage placement
@@ -98,10 +97,10 @@ Clove → Pixel → Clove
 
 Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes.
 
-**UX Concern from Review** — Briar or Eric surfaces a UX problem, not just a code problem:
+**UX Concern from Review** — Briar surfaces a UX problem, not just a code problem:
 
 ```
-Briar/Eric → Pixel → the spec stage → the plan stage → Clove → Briar → Eric
+Briar → Pixel → the spec stage → the plan stage → Clove → Briar
 ```
 
 Pixel specs the fix (mode 2). The spec stage reads the design, and the plan stage plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without the plan stage.
@@ -156,7 +155,7 @@ Sasha (`prism-debug`) builds a feedback loop, finds the root cause, and changes 
 
 ## PR Identifier Flexibility
 
-PR-related skills (Eric, Briar, Reese, Sage when scoped to a PR) accept any of: PR number (`#1234`), full GitHub URL (`https://github.com/<org>/<repo>/pull/1234`), or branch name (`<author>/<ticket-id>-...`). All resolve via `gh` to the same underlying PR. When no PR exists for a branch, fall back to `git diff origin/${DEFAULT_BRANCH}..<branch>`.
+PR-related skills (Briar, Reese, Sage when scoped to a PR) accept any of: PR number (`#1234`), full GitHub URL (`https://github.com/<org>/<repo>/pull/1234`), or branch name (`<author>/<ticket-id>-...`). All resolve via `gh` to the same underlying PR. When no PR exists for a branch, fall back to `git diff origin/${DEFAULT_BRANCH}..<branch>`.
 
 **Why:** the originating PRs (Reese mode dispatch and PR-context skills) standardized this so users don't have to remember per-skill input grammar. Different skills had different expectations historically; consolidating reduces friction.
 
