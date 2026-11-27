@@ -89,9 +89,11 @@ interface BuildClaudeAgentMarkdownArgs {
 	anchorContent?: Record<string, string>;
 	claudeSkillMarkdown: string;
 	description: string;
+	gated?: boolean;
 	preloads?: string[];
 	skillId: string;
 	tokenMap: Map<string, string>;
+	tools?: string;
 }
 
 /**
@@ -124,6 +126,8 @@ export const CLAUDE_AGENT_MODEL_DEFAULTS = new Map<string, string>([
 	["prism-architect", "opus"],
 ]);
 const DEFAULT_CLAUDE_AGENT_MODEL = "sonnet";
+const TOOL_NAME_PATTERN = /^[A-Z][A-Za-z]*$/;
+const MCP_TOOL_PATTERN = /^mcp__\S+$/;
 
 export const GENERATED_MARKDOWN_HEADER_LINE =
 	"<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->";
@@ -213,15 +217,26 @@ export function buildCodexAgentToml({
  * `description`, `model`) followed by the generated Claude SKILL.md body — so a
  * persona loads its full persona when spawned as a subagent. The `model` is the per-persona default from
  * CLAUDE_AGENT_MODEL_DEFAULTS, falling back to the cheaper worker tier.
+ *
+ * A gated role also gets the skill's tools list, which Claude Code reads as
+ * the agent's tool allowlist, and a gated role with no list throws.
  */
 export function buildClaudeAgentMarkdown({
 	anchorContent,
 	claudeSkillMarkdown,
 	description,
+	gated,
 	preloads,
 	skillId,
 	tokenMap,
+	tools,
 }: BuildClaudeAgentMarkdownArgs): string {
+	if (gated && tools === undefined) {
+		throw new Error(
+			`Gated role '${skillId}' declares no tools in .ai-skills/skills/${skillId}/frontmatter.yml.`
+		);
+	}
+
 	const header = [
 		GENERATED_MARKDOWN_HEADER_LINE,
 		`<!-- Source: .ai-skills/skills/${skillId} -->`,
@@ -241,6 +256,9 @@ export function buildClaudeAgentMarkdown({
 		`name: ${skillId}`,
 		`description: ${JSON.stringify(substitutedDescription)}`,
 		`model: ${model}`,
+		...(gated && tools !== undefined
+			? [`tools: ${parseToolsField(skillId, tools).join(", ")}`]
+			: []),
 		...(preloads?.length
 			? ["skills:", ...preloads.map((id) => `  - ${id}`)]
 			: []),
@@ -248,6 +266,40 @@ export function buildClaudeAgentMarkdown({
 	].join("\n");
 
 	return `${frontmatter}\n\n${header}\n\n${claudeSkillMarkdown.trim()}\n`;
+}
+
+/**
+ * Parses a skill's one-line tools list and throws, naming the skill, on a malformed one.
+ */
+export function parseToolsField(skillId: string, value: string): string[] {
+	if (value.trim() === "") {
+		throw new Error(`Skill '${skillId}' declares an empty tools list.`);
+	}
+
+	const names = value.split(",").map((name) => name.trim());
+	const seen = new Set<string>();
+
+	for (const name of names) {
+		if (name === "") {
+			throw new Error(
+				`Skill '${skillId}' has an empty entry in its tools list.`
+			);
+		}
+
+		if (seen.has(name)) {
+			throw new Error(`Skill '${skillId}' lists tool '${name}' twice.`);
+		}
+
+		if (!TOOL_NAME_PATTERN.test(name) && !MCP_TOOL_PATTERN.test(name)) {
+			throw new Error(
+				`Skill '${skillId}' lists '${name}', which is neither a tool name nor an mcp__ name.`
+			);
+		}
+
+		seen.add(name);
+	}
+
+	return names;
 }
 
 async function loadSkillSource(
@@ -280,6 +332,9 @@ async function loadSkillSource(
 			`Description for skill '${skillId}' is ${description.length} characters. Keep frontmatter descriptions under ${MAX_FRONTMATTER_DESCRIPTION_LENGTH} characters so Codex skill discovery can expose the skill.`
 		);
 	}
+
+	const tools = frontmatterMap.get("tools");
+	if (tools !== undefined) parseToolsField(skillId, tools);
 
 	const sharedBody = (await fs.readFile(sharedPath, "utf8")).trim();
 	const claudeBody = ((await readFileIfExists(claudePath)) ?? "").trim();
@@ -723,9 +778,11 @@ export async function generatePlatformSkills(
 				anchorContent,
 				claudeSkillMarkdown: claudeMarkdown,
 				description,
+				gated: roleDefinition.gated,
 				preloads: roleDefinition.preloads,
 				skillId,
 				tokenMap,
+				tools: skillSource.frontmatterMap.get("tools"),
 			});
 			await writeFileIfChanged(
 				path.join(targetRoots.claudeAgents, `${skillId}.md`),
