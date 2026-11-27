@@ -47,8 +47,8 @@ Each criterion cites the spec requirement it grades as `(REQ-n)`.
   - Evidence (machine): `grep -c 'Bookkeeping findings are recorded' .prism/rules/followup-scope.md` prints 0 and `grep -c 'Spec content never rides an unrelated ticket' .prism/rules/followup-scope.md` prints at least 1.
 - [ ] **AC-19** Given `.prism/spec/adrs/_toolkit/`, When listed, Then `0087-one-review-replaces-the-pr-reviewer-and-labels.md` exists, ADR-0011 and ADR-0078 each carry an `> Amended by [ADR-0087]` status line, and the ADR index lists 0087. (REQ-25)
   - Evidence (machine): `pnpm prism:crossref-lint` exits 0 and `grep -c 'ADR-0087' .prism/spec/adrs/_toolkit/0011-eric-never-approves-prs.md .prism/spec/adrs/_toolkit/0078-main-session-holds-merge-authority-and-the-conductor-is-retired.md` prints 1 for each.
-- [ ] **AC-20** Given Claude Code, When the main session dispatches `prism-review` and it launches one pass subagent, Then whether the inner call returned is recorded in `hook-runtime.md` and under `## Verification` here, with Codex recorded as unprobed. (REQ-26)
-  - Evidence (human): the person reads the recorded probe result and its transcript excerpt.
+- [ ] **AC-20** Given Claude Code, When a headless `claude -p` session dispatches `prism-review` and it launches one subagent, Then whether the inner call returned is recorded in `hook-runtime.md` under `### Nested dispatch` and in the part 1 PR body, with Codex recorded as unprobed. (REQ-26)
+  - Evidence (machine): `grep -n 'Nested dispatch' .prism/architect/_toolkit/hook-runtime.md` prints the heading, and the paragraph under it quotes the probe's final output line, `PROBE inner=pong` or `PROBE inner=failed: <reason>`.
 - [ ] **AC-21** Given each part's head, When CI runs, Then `pnpm prism:check` passes on both platforms. (REQ-27)
   - Evidence (machine): the PR's check rollup shows the `prism:check` job green on ubuntu and windows.
 
@@ -124,7 +124,7 @@ New `node:test` file in the style of `scripts/ai-skills/brief-gate.test.ts` (rep
 Make each edit in the canonical and, for the four curated twins listed in `files`, the same edit in the twin. Line numbers are at `ceab998d`.
 
 - `skill-routing.md`: line 20 Eric row → `| **Eric** | \`prism-review\` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |`; line 23 Briar row → `\`prism-review\``; line 67 → `Any PR review phrase goes to \`prism-review\`, because the built-in ...` (drop "(Eric)"); line 75 → `Briar reviews and never ships. Asked to create a PR, she routes back to the author, ...` (rest unchanged).
-- `branch-plan.md`: line 42 bullet → `- **Review of a PR by number** (\`prism-review <pr>\`): note "no plan found" and proceed without one, because the PR may be someone else's branch, and write nothing.`; line 137 `(Clove, Briar, Eric)` → `(Clove, Briar)`; lines 198 and 236 `after the final PR review` → `after the final review`; line 389 `Add entries here via the \`prism-self-review\` or \`prism-pr-review\` skills.` → `Add entries here via the \`prism-review\` skill.`; line 436 `prism-self-review` → `prism-review`.
+- `branch-plan.md`: line 42 bullet → `- **Review of a PR by number** (\`prism-review <pr>\`): note "no plan found" and proceed without one, because the PR may be someone else's branch, and write nothing.`; line 137 `(Clove, Briar, Eric)` → `(Clove, Briar)`; line 198 `after the final PR review` → `after the final review`; line 236: `after the final PR review` → `after the final review`, and replace `The review covers the whole PR per \`REVIEW.md\`, and its intent-scope pass (\`.prism/review/intent-scope.md\`) still fixes other plan drift outside \`## Tasks\` in place and lists what it edited. A stale task is reported as a Minor, and \`intent.md\` is never edited.` with `The review reads the plan files as its yardstick and raises no finding on their prose, per \`REVIEW.md\`.`, and `once the final PR review is recorded` → `once the final review is recorded`; line 389 `Add entries here via the \`prism-self-review\` or \`prism-pr-review\` skills.` → `Add entries here via the \`prism-review\` skill.`; line 436 `prism-self-review` → `prism-review`.
 - `git-conventions.md` line 73: remove `Eric, ` from the reader list. Lines 112 and 118 stay for part 2.
 - `followup-scope.md` line 55 `noted by Briar or Eric` → `noted by Briar`; line 98 → `- **Briar** (\`prism-review\`) — when surfacing ...` (rest unchanged).
 - `code-standards.md` line 39: `the \`prism-self-review\` and \`prism-pr-review\` skills` → `the \`prism-review\` skill`.
@@ -182,17 +182,18 @@ Each curated twin gets the same edit as its canonical.
 - depends on: T1
 
 - `prism-implement/shared.md` line 1: `review its own work (\`prism-self-review\`)` → `(\`prism-review\`)` (keep any other wording). Line 44: `non-trivial PR-review finding` → `non-trivial PR finding`. Line 56: `then propose \`prism-self-review\` in this session, or \`review pr #<n>\` in a fresh chat.` → `then propose \`prism-review\`.`
-- `prism-retro/shared.md` line 18: `It runs after PR review` → `It runs after review`. Line 25: replace the reference to the PR reviewer's comments with `the PR's comments, reviews, and check rollup` (already present) and drop any `prism-pr-review` wording. Line 32: drop `and PR review` from the stage list. Line 42: describe the misses log as `the rows the session logged after each push`.
+- `prism-retro/shared.md` line 18: `It runs after PR review` → `It runs after review`. Line 25: replace `Read all three PR surfaces and merge them, because none alone is complete: issue comments hold the PR reviewer's findings, since it files no review object.` with `Read all three PR surfaces and merge them, because none alone is complete: human reviewers use issue comments, review objects, and inline threads interchangeably.` Line 32: `(the intent, spec, and plan stages, then challenge, implement, verify, review, and PR review)` → `(the intent, spec, and plan stages, then challenge, implement, verify, and review)`. Line 42: describe the misses log as `the rows the session logged after each push`.
 - `prism-forge-skill/shared.md` line 15 (the ID-namespace bullet): change the example skill ID `prism-self-review` to `prism-review`, leaving the rest of the line as is.
 
 ### T9: Part 1 — sweep the scripts and their fixtures
 
-- files: scripts/ai-skills/verify-manifest-coverage.ts, scripts/ai-skills/bootstrap-from-claude.ts, scripts/ai-skills/persona-voice.test.ts, scripts/ai-skills/spec-scope-lint.test.ts
+- files: scripts/ai-skills/verify-manifest-coverage.ts, scripts/ai-skills/verify-manifest-coverage.test.ts, scripts/ai-skills/bootstrap-from-claude.ts, scripts/ai-skills/persona-voice.test.ts, scripts/ai-skills/spec-scope-lint.test.ts
 - proof: node --test scripts/ai-skills/verify-manifest-coverage.test.ts scripts/ai-skills/persona-voice.test.ts scripts/ai-skills/spec-scope-lint.test.ts
 - depends on: T6
-- behavior change: `persona-voice.test.ts` drops the Eric tone test (line 128) because the Eric skill is retired; `spec-scope-lint.test.ts` fixture paths move from `prism-self-review`/`prism-pr-review` to `prism-review` because the old directories no longer exist.
+- behavior change: `persona-voice.test.ts` drops the Eric tone test (line 128) because the Eric skill is retired; `verify-manifest-coverage.test.ts`'s `findMissingCoverage` cases key on `briar` instead of `eric` (lines 220, 232, 239) to match the renamed fixture; `spec-scope-lint.test.ts` fixture paths move from `prism-self-review`/`prism-pr-review` to `prism-review` because the old directories no longer exist.
 
 - `verify-manifest-coverage.ts` lines 63–64: the `eric` fixture becomes `briar` with path `.claude/skills/prism-review/SKILL.md`; update the matching `EXPECTED_POSITIVES` entry. It depends on T6 because the routes it checks change there.
+- `verify-manifest-coverage.test.ts` lines 220 and 232: the `eric:` keys become `briar:`; line 239 `startsWith("eric ")` → `startsWith("briar ")`.
 - `bootstrap-from-claude.ts`: map `thrive-code-review-self` → `prism-review`; delete the `thrive-code-review-pr` row.
 - `persona-voice.test.ts`: delete the Eric test at line 128.
 - `spec-scope-lint.test.ts`: replace `.ai-skills/skills/prism-self-review/` and `.ai-skills/skills/prism-pr-review/` in fixture paths with `.ai-skills/skills/prism-review/`.
@@ -217,14 +218,20 @@ Run `pnpm prism:build`. It rewrites the host copies and the non-curated seed mir
 
 ### T12: Part 1 — run the live nested-dispatch probe
 
-- files: .prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md, .prism/plans/prism-553/plan.md
+- files: .prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/hook-runtime.md, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md
 - proof: grep -n 'Nested dispatch' .prism/architect/_toolkit/hook-runtime.md && pnpm prism:check
 - depends on: T11
 
-Run by the main session on Claude Code, not by a build subagent, because a build subagent is already one layer down. After T11, start a fresh Claude Code session so the new `prism-review` agent file loads. Dispatch `prism-review` with a one-line brief: `Probe only: launch one Agent subagent with the prompt "reply with the word pong", report whether it returned and what it said, review nothing, write nothing.` Record:
+Run unattended by the main session after T11, so the regenerated `.claude/agents/prism-review.md` exists. A build subagent cannot run it, because it is already one layer down. The main session already showed general-purpose → general-purpose nesting works on 2026-11-27T07:54Z; this repeats the check with `prism-review` as the middle layer. From the repo root, run:
 
-- under `## Verification` in this plan: `- nested-dispatch probe (Claude Code, <date>, <model>): inner call <returned "pong" | refused: <error text> | Agent tool absent>`, and `- nested-dispatch probe (Codex): unprobed`.
-- in `hook-runtime.md` and its curated twin, a `### Nested dispatch` paragraph under the Brief gate section: what the probe showed on Claude Code, that Codex is unprobed, and that where a dispatched review cannot launch subagents it sweeps the passes itself and prints the same coverage line (REQ-26).
+```bash
+claude -p --allowedTools Agent --output-format text "Use the Agent tool to dispatch the prism-review subagent with exactly this prompt: 'Probe only. Review nothing and write no file. Use the Agent tool once to launch a general-purpose subagent with the prompt: Reply with exactly the word pong. Then reply with exactly one line: PROBE inner=<that subagent's reply>, or PROBE inner=failed: <the error or the reason no Agent tool was available>.' Then print the prism-review subagent's reply verbatim and nothing else."
+```
+
+Pass is a last stdout line of exactly `PROBE inner=pong`. `PROBE inner=failed: ...`, a missing `PROBE` line, or a non-zero exit is a failed probe. Record it either way; a failure does not fail the task. Record:
+
+- in `hook-runtime.md` and its curated twin, a `### Nested dispatch` paragraph under the Brief gate section: the date (Central time), the command above in short form, the final output line verbatim, that Codex is unprobed, and that where a dispatched review cannot launch subagents it sweeps the passes itself and prints the same coverage line (REQ-26).
+- in the part 1 PR body, one line with the same final output line. The PR stage writes it when it opens the PR. Do not record it under `## Verification`, because an empty `## Verification` is what starts the verify stage.
 
 Then run `pnpm prism:build` to refresh the three host copies and `pnpm prism:check`.
 
@@ -234,12 +241,14 @@ Then run `pnpm prism:build` to refresh the three host copies and `pnpm prism:che
 - proof: grep -n '## Release proof' .prism/plans/prism-553/plan.md
 - depends on: T12
 
-Follow the release-proof pattern in `.prism/plans/prism-550/plan.md` (its T9 and its `## Release proof` section). In a scratch dir: `git worktree add <tmp>/old 37cdbd28`, `pnpm pack` there and here; make a consumer repo, `prism adopt` from the old pack with all three hosts, add a consumer `SubagentStop` entry `{ "matcher": "^my-agent$", "hooks": [{ "type": "command", "command": "node scripts/mine.mjs" }] }` to its `.claude/settings.json`, then `prism update` from the branch pack. Record each command and its output under a `## Release proof` section appended to this plan, checking AC-6's list:
+Follow the release-proof pattern in `.prism/plans/prism-550/plan.md` (its T9 and its `## Release proof` section). In a scratch dir: `git worktree add <tmp>/old 37cdbd28`, `pnpm pack` there and here; make a consumer repo with `git init`, run `prism init` then `prism adopt` from the old pack with all three hosts, add a consumer `SubagentStop` entry `{ "matcher": "^my-agent$", "hooks": [{ "type": "command", "command": "node scripts/mine.mjs" }] }` to its `.claude/settings.json`, then `prism update` from the branch pack. Record each command and its output under a `## Release proof` section appended to this plan, checking AC-6's list:
 
 - `ls .claude/skills .cursor/skills .agents/skills | grep -E 'prism-(pr|self)-review'` prints nothing
 - `ls .claude/agents .codex/agents | grep -E 'prism-(pr|self)-review'` prints nothing
 - `node -e` over `.claude/settings.json` and `.codex/hooks.json` shows no `SubagentStop` entry whose command names `reconcile-gate`, and the consumer's `^my-agent$` entry present
 - `test ! -e .claude/hooks/reconcile-gate.mjs && test -e .claude/hooks/reconcile-gate.mjs.bak`
+- `test ! -e .prism/references/pr-review/github-writes.md && test ! -e .prism/architect/_toolkit/eric-review-modes.md`, and the same two paths under `.claude/`, `.codex/`, and `.cursor/` are absent
+- `prism doctor` exits 0. Record whether it warns about the consumer's own `.prism/architect/manifest.json` still routing `.claude/skills/prism-pr-review/**` (the live manifest is consumer-owned, so update leaves it). A warning there is recorded, not a failure.
 
 Remove the worktree and scratch dir after.
 
@@ -282,10 +291,10 @@ Write the test first. `record.mjs <plan.md> <report.json>` with the runtime mark
 
 - exits 2 with a message on a missing argument, unreadable or non-JSON report, `round` not 1 or 2, a missing `sha`, `passes` or `findings` not arrays, a finding without `severity` or `file`, a `part` without integer `k` and `m`, or a malformed config;
 - exits 1 writing nothing, naming each offending finding, when any finding's `file` is never-reviewed;
-- otherwise computes the verdict: `clean` when no finding has severity `critical` or `major` and every pass token starts with `swept — ` or `n/a: `; else `<crit> critical, <maj> major, <min> minor, <nit> nit`;
+- otherwise computes the verdict: `clean` when no finding with severity `critical` or `major` is open apart from findings with `kind: "decision"`, and every pass token starts with `swept — ` or `n/a: `; else `<crit> critical, <maj> major, <min> minor, <nit> nit`, where the counts leave out `kind: "decision"` findings. A finding's optional `kind` is the `REVIEW.md` finding kind, plus `decision` for a decision item;
 - appends `- review round <n> at <sha>[ (part <k> of <m>)]: <verdict>` as the last line of the `## Review` section (before the next `## ` heading), creating `## Review` at the end of the file when absent, and exits 0.
 
-Test cases: clean round; a bare `swept` makes it unclean; counts verdict; part marker; heading created; a never-reviewed finding exits 1 and leaves the file byte-identical; round 3 exits 2; a `- pr-review round 1 at abc1234: clean` line already under `## Review` is kept and the new line follows it.
+Test cases: clean round; a round whose only Major carries `kind: "decision"` is `clean`, and the same finding without that kind gives `0 critical, 1 major, 0 minor, 0 nit`; a bare `swept` makes it unclean; counts verdict; part marker; heading created; a never-reviewed finding exits 1 and leaves the file byte-identical; round 3 exits 2; a `- pr-review round 1 at abc1234: clean` line already under `## Review` is kept and the new line follows it.
 
 ### T17: Part 2 — add review/post.mjs
 
@@ -353,9 +362,9 @@ Add `review/ignore.mjs`, `review/record.mjs`, and `review/post.mjs` to `HOOK_RUN
 - proof: grep -n 'review/record.mjs' .ai-skills/skills/prism-review/shared.md .prism/templates/plan.md .prism/architect/_toolkit/review-runtime.md && grep -n 'Fix plan drift\|3-round' .ai-skills/skills/prism-review/shared.md ; test $? -eq 1
 - depends on: T16, T17, T19
 
-- `prism-review/shared.md` "Write the plan before the chat", plan-folder bullet → `- **On a plan folder,** write the round's report JSON to a temp file in the shape \`REVIEW.md\` names, run \`node ${HOOK_RUNTIME_DIR}/review/record.mjs <plan.md> <report.json>\`, and commit with \`node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "plan: review record" <plan.md>\`. Add \`part\` when the plan's Decisions declare a stack and this PR is not its last part. Exit 1 means a finding cites a never-reviewed path: drop it and record again. Findings and criterion grades go in the report, not the plan.` Delete the "Fix plan drift in place" bullet. "Report": `Ready for PR` verdict stays; append `Minors, decision items, and anything left after round 2 are listed for the PR body.` "Rounds and guardrails": `up to the 3-round cap per \`REVIEW.md\`` → `up to the two-round cap per \`REVIEW.md\``; `On a folder plan its only writes are the record line and the in-place plan-drift fixes` → `On a folder plan its only write is the record line`.
+- `prism-review/shared.md` "Write the plan before the chat", plan-folder bullet → `- **On a plan folder,** write the round's report JSON to a temp file in the shape \`REVIEW.md\` names, marking each decision item \`kind: "decision"\` so the verdict leaves it out, run \`node ${HOOK_RUNTIME_DIR}/review/record.mjs <plan.md> <report.json>\`, and commit with \`node ${HOOK_RUNTIME_DIR}/plan/commit.mjs "plan: review record" <plan.md>\`. Add \`part\` when the plan's Decisions declare a stack and this PR is not its last part. Exit 1 means a finding cites a never-reviewed path: drop it and record again. Findings and criterion grades go in the report, not the plan.` Delete the "Fix plan drift in place" bullet. "Report": `Ready for PR` verdict stays; append `Minors, decision items, and anything left after round 2 are listed for the PR body.` "Rounds and guardrails": `up to the 3-round cap per \`REVIEW.md\`` → `up to the two-round cap per \`REVIEW.md\``; `On a folder plan its only writes are the record line and the in-place plan-drift fixes` → `On a folder plan its only write is the record line`.
 - `.prism/templates/plan.md` `## Review` comment → `One line per review round, "- review round <n> at <sha>[ (part <k> of <m>)]: <verdict>", written by review/record.mjs per REVIEW.md.`
-- `review-runtime.md` (T10 already removed the labels text): add after the reconcile section: `The session runs \`reconcile.mjs <pr> --json\` after each push and logs each unlogged human comment, per \`.prism/references/shipping-flow.md\`.` Add three sections, `## review/ignore.mjs`, `## review/record.mjs`, `## review/post.mjs`, each stating the contract T15, T16, or T17 implements (arguments, exit codes, what it writes or posts) in the doc's existing voice. Update "Invocation" to name all five scripts. Leave the retro-line check section as is (child 13 rekeys it).
+- `review-runtime.md` (T10 already removed the labels text): add after the reconcile section: `The session runs \`reconcile.mjs <pr> --json\` after each push and logs each unlogged human comment, per \`.prism/references/shipping-flow.md\`.` Add three sections, `## review/ignore.mjs`, `## review/record.mjs`, `## review/post.mjs`, each stating the contract T15, T16, or T17 implements (arguments, exit codes, what it writes or posts) in the doc's existing voice. Update "Invocation" to name all five scripts. In the retro-line check's "Stacked tickets" paragraph, replace `[\`REVIEW.md\`](../../../REVIEW.md) gives the \`self-review\` lines the same marker and says a line whose \`<k>\` is less than \`<m>\` is never a final verdict.` with `[\`REVIEW.md\`](../../../REVIEW.md) gives the \`review round\` lines \`record.mjs\` writes the same marker and says a line whose \`<k>\` is less than \`<m>\` is never a final verdict.` Leave the rest of the section as is (child 13 rekeys it).
 
 ### T22: Part 2 — add ADR-0087 and amend 0011 and 0078
 
@@ -375,6 +384,16 @@ Run `pnpm prism:build`, then `pnpm prism:check`; fix a failure in the task that 
 
 ## Challenge
 
+- round 1: blocking 4
+  - T9 (blocking): `scripts/ai-skills/verify-manifest-coverage.test.ts` is not in `files` or `behavior change`, yet its `findMissingCoverage` cases (lines 220, 232) key on `eric`, so renaming the fixture to `briar` fails T9's own proof.
+  - T12 (blocking): writing probe lines under `## Verification` makes that section non-empty, so the resume table's verify row (`## Verification` empty) never fires and prism-verify's section is pre-filled with non-report lines; and "start a fresh Claude Code session" names no mechanism an unattended run can perform (headless `claude -p`, or a `[HITL]` tag).
+  - T16 (blocking): the report shape has no decision-item marker, so `record.mjs` counts a Critical or Major decision item as unclean while T19's `REVIEW.md` makes the round `clean` apart from decision items; T16 and T21 need one agreed field (such as `kind: "decision"`) excluded from the verdict.
+  - plan (blocking): `.prism/rules/branch-plan.md` line 236 still says the review "covers the whole PR" and that intent-scope "fixes other plan drift ... in place", which part 2 retires (REQ-15); no task edits it, and T4 only changes its "final PR review" wording.
+  - T8 (non-blocking): the `prism-retro` line 25 instruction ("replace ... with `the PR's comments, reviews, and check rollup` (already present)") gives no replacement text for "issue comments hold the PR reviewer's findings", and the line 32 drop leaves "verify, review, )" unspecified.
+  - plan (non-blocking): a consumer's live `manifest.json` (consumer-owned, never rewritten) keeps `.claude/skills/prism-pr-review/**` -> `_toolkit/eric-review-modes.md` after update, and doctor's empty-route warning may fire; T13 does not run `prism doctor` or check that the moved `.prism/` files and their host copies left the consumer, and it omits `prism init` before `prism adopt`.
+  - plan (non-blocking): `review-runtime.md` line 91 ("REVIEW.md gives the `self-review` lines the same marker") goes false after T19, and T21 leaves that section untouched.
+  - plan (non-blocking): nothing says part 1 goes to verify, review, and PR after T13 while T14 to T23 stay open, so the resume table's implement row keeps matching on part 1's branch.
+
 ## Decisions
 
 - **The stop-block emitters go with `readSubagentStop`.** `emitStopBlock` in `harnesses.mjs` and its `.d.mts` twin `emitBlockStop` have no caller but the reconcile gate, so T3 removes them beside `readSubagentStop`, which the spec names. This extends REQ-6 to the gate's other dead helpers. Rejected: keeping them, which leaves untested dead code in the delivered runtime.
@@ -384,6 +403,8 @@ Run `pnpm prism:build`, then `pnpm prism:check`; fix a failure in the task that 
 - **The label removal in `reconcile.mjs` ships in part 1, per the spec's Decision on it.** `reconcile-gate.test.ts`, which part 1 deletes, imports `reconcile.mjs`, so leaving the label task in part 2 formed a dependency cycle with part 1. With `prism-pr-review` retired in part 1, nothing writes a verdict line, so the label code is already dead there. T10 removes it and `review-runtime.md`'s labels text, T5 removes the schema's label text, and `REVIEW.md` and the `mainSessionMayMerge` description keep their label wording until part 2.
 - **Both parts merge on the 2026-11-27 bar.** Between the part 1 and part 2 merges, `git-conventions.md` "Who merges" still names the PR-review pass and the `review:has-minors` label, which nothing produces any more. The main session applies Hunter's 2026-11-27 ruling to both merges: the plan's final review line reads `clean` and CI is green on the head. Part 2 (T20) rewrites the rule text to match.
 - **`prism-forge-skill` joins the sweep, per the spec's Decision adding it to Affected systems.** Its ID-namespace bullet uses `prism-self-review` as an example, a live mention under requirement 13, so T8 changes it and T1's sweep test carries no allowlist entry for it.
+- **T4 fixes `branch-plan.md`'s review sentence in part 1.** Line 236 says the review "covers the whole PR" and that intent-scope fixes plan drift in place, which part 2's rulebook retires. A file belongs to one task, and T4 already owns `branch-plan.md`, so T4 rewrites the sentence to the part 2 behavior. The two parts merge back to back, so the rule leads the rulebook by one merge rather than trailing it.
+- **Part 1 ships from T13, not from the resume table.** After T13, part 1's verify, review, and PR stages run while T14–T23 are still open. The resume table would read "a task with no commit naming it" and send the session back to implement, so the session drives part 1's verify, review, and PR from this Decision, and part 2 resumes from T14 on its own branch.
 
 ## History
 
