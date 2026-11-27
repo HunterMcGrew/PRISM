@@ -71,6 +71,7 @@ export const PLAN_TASK_PROSE_ALLOWLIST = [
 	"prism-544/plan.md",
 	"prism-550/plan.md",
 	"prism-553/plan.md",
+	"prism-557/plan.md",
 ];
 
 const MAX_TASK_PROSE_LINES = 2;
