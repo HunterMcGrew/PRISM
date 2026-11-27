@@ -22,7 +22,7 @@ You never edit source and never fix a failure. You report it, and the build stag
 1. Read the brief: the plan folder and an optional base ref. The base is `origin/main` unless the brief names another.
 2. Read `plan.md` in full. When `## Verification` already holds a result, this is a re-run, so follow Re-running in place of steps 3 to 5.
 3. Run every check below, with each one's output in its own log file outside the repo.
-4. Write `## Verification`, run the checker, and fix your own section until it passes.
+4. Write `## Verification` through `record.mjs`, and fix your report until it exits 0.
 5. Commit `plan.md` and return the report.
 
 ## Checks
@@ -35,41 +35,38 @@ Run each command once and record that result. Rerunning a failure until it passe
 
 ## Writing the section
 
-Replace everything between the `## Verification` heading and the next `## ` heading, and touch no other section or frontmatter. The shape is fixed, because `check-report.mjs` parses it:
+`node scripts/ai-skills/hooks/verify/record.mjs <plan.md> <report.json>` writes the section. It replaces everything between the `## Verification` heading and the next `## ` heading, touches nothing else, and writes the shape `check-report.mjs` parses, so never edit the section by hand. Run `mktemp -d` once, then write the report with `cat > <dir>/verify-report.json <<'EOF'` as its own command, so the file sits outside the repo. Keep backticks and `$(` out of the JSON strings, because the write gate scans a heredoc body that holds either for paths:
 
-```md
-## Verification
-
-verdict: done
-base: <base sha>
-head: <HEAD sha>
-
-| check | result | evidence |
-| --- | --- | --- |
-| typecheck | fail | <log path> |
-| lint | pass | <log path> |
-| format | n/a: not configured | none |
-
-### Failures
-
-- typecheck: scripts/lib/parse.ts:42
+```json
+{
+  "verdict": "done",
+  "base": "8c53b07a",
+  "head": "1a2b3c4d",
+  "blocked": [],
+  "rows": [
+    { "check": "typecheck", "result": "fail", "evidence": "/tmp/verify/typecheck.log" },
+    { "check": "lint", "result": "pass", "evidence": "/tmp/verify/lint.log" }
+  ],
+  "failures": [{ "check": "typecheck", "file": "scripts/lib/parse.ts", "line": 42 }]
+}
 ```
 
-- **`result`** is exactly `pass`, `fail`, or `n/a: <reason>`. **`evidence`** is the check's log path.
-- **Failures** holds one `- <check>: <path>[:<line>]` line per failing file, where the path is the repo-relative file the output blames. When it names none, use the file that defines the command. With no failures the section says `- none`.
-- **`verdict: done`** means every configured check ran, whatever its result. **`verdict: blocked`** means at least one could not run. Its row reads `n/a: blocked`, and a `blocked: <check>: <why>` line under the verdict names it, one per check.
+- **`result`** is exactly `pass`, `fail`, or `n/a: <reason>`, and **`evidence`** is the check's log path.
+- **`failures`** holds one `{ "check", "file", "line" }` per failing file, `line` optional, where the file is the repo-relative path the output blames, or the file that defines the command when it names none. An empty array writes `- none`.
+- **`verdict: "done"`** means every configured check ran, whatever its result. **`verdict: "blocked"`** means at least one could not run: its row reads `n/a: blocked`, and `blocked` holds `{ "check", "why" }` for each, which the script writes as `blocked: <check>: <why>` lines.
+- A cell may not hold `|` or a line break.
 
-Then run `node scripts/ai-skills/hooks/verify/check-report.mjs <plan.md>` and fix your own section until it exits 0. A `blocked` verdict exits 1 on purpose, so a run that could not finish never passes, and for that case a clean report of the other rows is enough.
+`record.mjs` runs `check-report.mjs`'s checks over the new section before it writes. Exit 0 means the section is written. Exit 2 names the problem, or every problem in the finished section, and writes nothing, so fix the report and run it again. A `blocked` report is written, and `check-report.mjs` still fails it on purpose, so a run that could not finish never passes.
 
 ## Re-running after a later commit
 
 A commit made after the section was written, such as a review fix, can change what a check covers. Re-check only what it could have changed:
 
 1. Take `head:` from the section. The changed files are `git diff --name-only <recorded head>...HEAD`.
-2. Run the checks those files reach and rewrite their rows and their Failures and `blocked:` lines. A commit that touches only the plan folder reaches no check, any other source change reaches every configured check, and a change on the spec surface reaches `spec`.
-3. Every other row keeps its result and evidence. The verdict reads across all rows, `base:` keeps its value, and `head:` becomes the current HEAD.
+2. Run the checks those files reach. Read the current section and carry every row, Failures line, and `blocked:` line the changed files don't reach into the report unchanged, with the rerun checks' new rows, failures, and blocked entries beside them. A commit that touches only the plan folder reaches no check, any other source change reaches every configured check, and a change on the spec surface reaches `spec`.
+3. Every other row keeps its result and evidence. The verdict reads across all rows, `base:` keeps its value, and `head:` becomes the current HEAD. `record.mjs` always writes the whole section, so the report carries every row.
 
-When no changed file reaches a check, run nothing and update only `head:`, so the section still names the head it describes.
+When no changed file reaches a check, run nothing and hand `record.mjs` the carried rows with the current HEAD as `head`.
 
 ## Commit and report
 
@@ -80,6 +77,7 @@ Report to the session in about ten lines: the verdict, the base and head SHAs, e
 ## Definition of Done
 
 - [ ] Every configured check has a row, and every unconfigured one reads `n/a: not configured`
+- [ ] `## Verification` was written only by `record.mjs`
 - [ ] Every `fail` row has a Failures line with a repo-relative path
 - [ ] The verdict matches the rows, and each blocked check has a `blocked:` line
 - [ ] On a re-run, only the checks the changed files reach ran, and `head:` names the current HEAD
