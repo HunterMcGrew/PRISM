@@ -90,10 +90,10 @@ Recount at build time, and add `prism-557/plan.md` when child 11 merged first, p
 ### T4: Part 1 — map the implement agent to inherit
 
 - files: scripts/ai-skills/claude-agent-def.test.ts, scripts/ai-skills/generate-skills.ts, scripts/ai-skills/role-preloads.test.ts
-- proof: pnpm exec tsx --test --test-name-pattern="maps prism-implement to inherit" scripts/ai-skills/claude-agent-def.test.ts && pnpm exec tsx --test scripts/ai-skills/role-preloads.test.ts
+- proof: pnpm exec tsx --test scripts/ai-skills/claude-agent-def.test.ts && pnpm exec tsx --test scripts/ai-skills/role-preloads.test.ts
 - proof fails on main: yes
 - depends on: none
-- behavior change: line 77 asserted `prism-implement` had no default model, and now asserts it maps to `inherit`, because REQ-14 moves the builder to the session's model; `role-preloads.test.ts` line 56 drops `model: sonnet\n` from its regex, so it checks preloads only and stops pinning the implement agent's model.
+- behavior change: line 77 asserted `prism-implement` had no default model, and now asserts it maps to `inherit`, because REQ-14 moves the builder to the session's model; the line-57 test's worker case (lines 64 to 72) builds `prism-docs` with description `Eli.` instead of `prism-implement`, so its `sonnet` assertion and title stay true; `role-preloads.test.ts` line 56 drops `model: sonnet\n` from its regex, so it checks preloads only and stops pinning the implement agent's model.
 
 Name the new cases "maps prism-implement to inherit" and "generated prism-implement agent inherits the session model".
 The generated-file case passes only after T14 rebuilds the agent files.
@@ -108,11 +108,11 @@ Keep and cut the parts the spec's Task-detail rule and ADR part names, and make 
 
 ### T6: Part 1 — supersede the task half of ADR-0033
 
-- files: .prism/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .prism/spec/adrs/_toolkit/0033-implementation-task-detail.md, .prism/spec/adrs/_toolkit/README.md, templates/install/.prism/spec/adrs/_toolkit/README.md, .ai-skills/definitions/seed-curation.json
+- files: .prism/spec/adrs/_toolkit/0088-folder-plan-tasks-carry-fields-and-two-gotcha-lines.md, .prism/spec/adrs/_toolkit/0033-implementation-task-detail.md, .prism/spec/adrs/_toolkit/README.md, .ai-skills/definitions/seed-curation.json
 - proof: pnpm prism:crossref-lint && grep -c '0088-' .ai-skills/definitions/seed-curation.json
 - depends on: T5
 
-Add the ADR as one exact path in `excluded` beside 0087, and in both READMEs add the 0088 row and mark 0033's row superseded in part.
+Add the ADR as one exact path in `excluded` beside 0087, add its README row, and end 0033's row summary with "Task half superseded in part by ADR-0088." as 0023's row does.
 If 0088 is taken when this task runs, take the next free number and record the rename as an `amended:` line on this task.
 
 ### T7: Part 1 — drop the build report's history line
@@ -144,6 +144,7 @@ The Clove flat-plan bullet in `pr-description.md` keeps its History trigger.
 - depends on: none
 
 The retro's date-range target also reads `## History` today, so it walks each plan's commits in the range instead, and `iris.md` lines 11 and 22 follow.
+In `prism-handoff/shared.md`, lines 12 and 47 both say flat plan, and on a folder plan line 47's conflict rule names `plan.md`'s Decisions and task commits.
 
 ### T11: Part 1 — scope Decisions to scope changes and open questions
 
@@ -183,7 +184,7 @@ A changed path missing from this list goes in the build report as `unlisted:`, a
 - depends on: T14
 
 On part 2's branch, cut from `main` after part 1 squash-merges, add `Part 1 shipped in #<n>.` to the end of the first paragraph under `## Tasks`.
-Commit it as `T1-T15: Record part 1 as shipped` through `plan/commit.mjs`, per the stacked-ticket note in `plan-chain-scripts.md`.
+Commit it as `T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T23: Record part 1 as shipped` through `plan/commit.mjs`, per the stacked-ticket note in `plan-chain-scripts.md`.
 
 ### T16: Part 2 — refuse an intent without its Approach lines
 
@@ -262,6 +263,13 @@ round 1: blocking 3
   - T15 (non-blocking): after T14 lands on part 1's branch, `bundles.mjs` reports T15 ready, because it depends only on T14, so the session builds part 2 on part 1's branch. The plan names no stop point.
   - AC-13 (non-blocking): the `flat` check is a line-level grep with no count, so a file passes whether or not its mention was scoped.
   - plan (non-blocking): `.prism/rules/branch-plan.md` line 322 tells every plan to note a resolved open question in `## History`, which is false for a folder plan after REQ-1. The file is outside Affected systems.
+
+round 2: blocking 1
+  - T15 (blocking): its subject `T1-T15` marks T1 to T15 done, but T23 belongs to part 1 and sits outside that range, and `parseSubject` has no form that joins a range with a list. After part 1 squash-merges, T23 reads open on part 2's branch, so `bundles.mjs` re-dispatches it, `commit.mjs` refuses the unchanged path, and the run ends `blocked`. Use the list form `T1,T2,...,T15,T23: Record part 1 as shipped`.
+  - T4 (non-blocking): `claude-agent-def.test.ts` line 72 builds `prism-implement` and asserts `sonnet`, and the test at line 57 is titled "other personas to sonnet". Both break under REQ-14. The task's `behavior change` names only line 77, and its `--test-name-pattern` proof skips line 72, so only T14's `prism:check` would catch it. Name line 72 in `behavior change`.
+  - T6 (non-blocking): `templates/install/.prism/spec/adrs/_toolkit/README.md` holds no ADR rows, because numbered ADRs never ship, so "add the 0088 row" there would cite an unshipped ADR. Drop that file from T6.
+  - T10 (non-blocking): `prism-handoff/shared.md` line 47 also says the plan's `## History` wins on a conflict, and the task names only line 12. AC-13 fails on line 47 until it says flat plan.
+  - AC-13 (non-blocking): line 11 of `docs/ai-skills/iris.md` already says "flat plan", so the grep passes on it before and after the edit.
 
 ## Decisions
 
