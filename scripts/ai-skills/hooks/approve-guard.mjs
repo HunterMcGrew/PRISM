@@ -66,9 +66,12 @@
 // paths it names, judged by realpath like a read-only command but denied on
 // any leading assignment. It passes only as the whole command, with no second
 // segment, subshell, or substitution, because an earlier segment can change
-// directory or set the environment in ways the guard can't follow. A node
-// option before the script, a lookalike copy, or any other segment beside it
-// is judged as any other `node` run. A test runner such as `node --test` runs
+// directory or set the environment in ways the guard can't follow. The script
+// word must hold a `/` and not start with `-`, because node reads a word like
+// `-r`, `--no-warnings`, `-`, or `inspect` as an option or subcommand whatever
+// it resolves to on disk, while `./-r` is a file. A node option before the
+// script, a lookalike copy, or any other segment beside it is judged as any
+// other `node` run. A test runner such as `node --test` runs
 // its file operands, so naming approve.mjs there is still denied.
 // A read-only segment is still denied when a leading assignment names the
 // script (`GIT_PAGER=…`), or when it names the script outside a heredoc body
@@ -1059,6 +1062,10 @@ function runsCommitScript(segment, index, context) {
 	if (segment[index].text !== "node" || !script || script.op || script.body)
 		return false;
 	if (!PLAIN_WORD.test(script.text)) return false;
+	// Node reads a word like `-r`, `--no-warnings`, `-`, or `inspect` as an
+	// option or subcommand, so its realpath says nothing about what runs. A
+	// spelled path such as `./-r` is always a file.
+	if (script.text.startsWith("-") || !script.text.includes("/")) return false;
 
 	try {
 		return (

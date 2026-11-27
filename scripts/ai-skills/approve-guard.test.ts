@@ -630,6 +630,38 @@ for (const command of COMMIT_MULTI_SEGMENT_DENIES) {
 	});
 }
 
+// Node reads each of these words as an option or a subcommand, never as a
+// script path, so a link by that name to the real commit script still lets
+// node run approve.mjs.
+const COMMIT_OPTION_WORD_DENIES: [string, string][] = [
+	["--no-warnings", `node --no-warnings ${APPROVE_COMMAND_PATH} p`],
+	["-r", `node -r ${COMMIT_PATH} ${APPROVE_COMMAND_PATH} p`],
+	["-", `node - ${APPROVE_COMMAND_PATH} p`],
+	["inspect", `node inspect ${APPROVE_COMMAND_PATH} p`],
+];
+
+for (const [link, command] of COMMIT_OPTION_WORD_DENIES) {
+	test(`execution arm denies a commit-script link node reads as an option: ${link}`, (t) => {
+		const root = makeRepo();
+		if (!tryLink(COMMIT_PATH, path.join(root, link)))
+			return t.skip("symlinks need privilege on this Windows host");
+
+		assertExecDenied("claude", shell.claude(command, root));
+	});
+}
+
+test("execution arm passes a dash-named commit-script link spelled as a path", (t) => {
+	const root = makeRepo();
+	if (!tryLink(COMMIT_PATH, path.join(root, "--no-warnings")))
+		return t.skip("symlinks need privilege on this Windows host");
+
+	for (const tool of TOOLS)
+		assertPasses(
+			tool,
+			shell[tool](`node ./--no-warnings "chore: Fix" ${APPROVE_REL}`, root)
+		);
+});
+
 test("execution arm denies a lookalike commit script outside the runtime", () => {
 	const root = makeRepo();
 	place(root, COMMIT_REL, "// a copy the agent wrote\n");
