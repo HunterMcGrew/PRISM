@@ -2,7 +2,9 @@
 title: Lean plan and intent — cut History, Sessions, and task prose, add the Approach lines
 ticket: https://github.com/HunterMcGrew/PRISM/issues/558
 stage: plan
-status: draft
+status: approved
+approved_by: auto
+approved_at: 2026-11-27
 ---
 
 ## Acceptance Criteria
