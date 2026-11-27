@@ -34,7 +34,7 @@ Each criterion cites the spec requirement it grades as `(REQ-n)`.
 - [ ] **AC-12** Given `.prism/rules/session-orientation.md`, When Battery Persistence and the Closing battery's last line are read, Then a folder plan runs both batteries and writes no `open:` or `close:` line, and a flat plan keeps them. (REQ-12)
   - Evidence (machine): `grep -c 'folder plan' .prism/rules/session-orientation.md` prints at least 2.
 - [ ] **AC-13** Given `prism-retro`, `prism-handoff`, the Iris row and rule 3 of `skills-ecosystem.md` and its twin, the plan-authoring `## History` row and its twin, `writing-a-plan.md`, `docs/ai-skills/iris.md`, and `compact-handoff.mjs`, When read, Then the retro reads no `## History`, and every other mention of `## History` is scoped to flat plans. (REQ-13, architect fold-in)
-  - Evidence (machine): `grep -c '## History' .ai-skills/skills/prism-retro/shared.md` prints 0, and `grep -h '## History' .ai-skills/skills/prism-handoff/shared.md docs/ai-skills/iris.md .prism/architect/_toolkit/skills-ecosystem.md templates/install/.prism/architect/_toolkit/skills-ecosystem.md .prism/architect/_toolkit/plan-authoring.md templates/install/.prism/architect/_toolkit/plan-authoring.md .prism/architect/guides/writing-a-plan.md scripts/ai-skills/hooks/compact-handoff.mjs | grep -vc flat` prints 0, and the open-question variant's History sentence in `.prism/rules/branch-plan.md` and its twin names a flat plan.
+  - Evidence (machine): `grep -c '## History' .ai-skills/skills/prism-retro/shared.md` prints 0, and `grep -h '## History' .ai-skills/skills/prism-handoff/shared.md docs/ai-skills/iris.md .prism/architect/_toolkit/skills-ecosystem.md templates/install/.prism/architect/_toolkit/skills-ecosystem.md .prism/architect/_toolkit/plan-authoring.md templates/install/.prism/architect/_toolkit/plan-authoring.md .prism/architect/guides/writing-a-plan.md scripts/ai-skills/hooks/compact-handoff.mjs | grep -vc flat` prints 0, `grep -c 'plan with a .## History. line' docs/ai-skills/iris.md` prints 0, and the open-question variant's History sentence in `.prism/rules/branch-plan.md` and its twin names a flat plan.
 - [ ] **AC-14** Given `CLAUDE_AGENT_MODEL_DEFAULTS`, When the implement agent is built, Then `.claude/agents/prism-implement.md` reads `model: inherit`, and a test fails when that file names another model. (REQ-14)
   - Evidence (machine): `pnpm exec tsx --test scripts/ai-skills/claude-agent-def.test.ts` passes, and `grep -c '^model: inherit$' .claude/agents/prism-implement.md` prints 1.
 - [ ] **AC-15** Given a plan whose `## Challenge` round lines start with `- `, When `auto-approve.mjs` runs, Then it reads them the same as bare lines, for approval and for the round-1-carried refusal. (REQ-15)
@@ -68,6 +68,7 @@ Later groups print as tasks finish. The script added two import edges: T1 and T1
 - proof: pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts
 - proof fails on main: yes
 - depends on: none
+- behavior change: the expected plan heading list drops `History` and `Sessions` (lines 64 and 65), because REQ-1 removes both sections from the template.
 
 ### T2: Part 1 — cut History, Sessions, and task prose from the plan template
 
@@ -83,6 +84,7 @@ The new Tasks comment drops the pointer to the task-detail rule's file, exact ch
 - proof: pnpm exec tsx --test scripts/ai-skills/plan-folder-citations.test.ts scripts/ai-skills/plan-tasks.test.ts
 - proof fails on main: yes
 - depends on: none
+- behavior change: `runPlanFolderCheck` gains a third parameter, `taskProseAllowlist = PLAN_TASK_PROSE_ALLOWLIST`, and returns `staleTaskProseAllowlist` beside `staleAllowlist`, so every temp-root call (lines 153, 181, 207, 224, 237, 268, 280, 292, 305) passes `[]` as the third argument and expects `staleTaskProseAllowlist: []`, and the repo-wide case at line 42 also asserts `staleTaskProseAllowlist` is empty.
 
 Seed `PLAN_TASK_PROSE_ALLOWLIST` with the plans over the cap at `c6f9027c`: `prism-516`, `prism-520`, `prism-522`, `prism-530`, `prism-537`, `prism-544`, `prism-550`, `prism-553`, each as `<folder>/plan.md`.
 Recount at build time, and add `prism-557/plan.md` when child 11 merged first, per the spec's race Decision.
@@ -90,7 +92,7 @@ Recount at build time, and add `prism-557/plan.md` when child 11 merged first, p
 ### T4: Part 1 — map the implement agent to inherit
 
 - files: scripts/ai-skills/claude-agent-def.test.ts, scripts/ai-skills/generate-skills.ts, scripts/ai-skills/role-preloads.test.ts
-- proof: pnpm exec tsx --test scripts/ai-skills/claude-agent-def.test.ts && pnpm exec tsx --test scripts/ai-skills/role-preloads.test.ts
+- proof: pnpm exec tsx --test --test-name-pattern="^(?!generated prism-implement agent)" scripts/ai-skills/claude-agent-def.test.ts && pnpm exec tsx --test scripts/ai-skills/role-preloads.test.ts
 - proof fails on main: yes
 - depends on: none
 - behavior change: line 77 asserted `prism-implement` had no default model, and now asserts it maps to `inherit`, because REQ-14 moves the builder to the session's model; the line-57 test's worker case (lines 64 to 72) builds `prism-docs` with description `Eli.` instead of `prism-implement`, so its `sonnet` assertion and title stay true; `role-preloads.test.ts` line 56 drops `model: sonnet\n` from its regex, so it checks preloads only and stops pinning the implement agent's model.
@@ -209,8 +211,8 @@ Read the section through `sectionBody` and test the none form with `NONE_WITH_RE
 - proof: pnpm exec tsx --test scripts/ai-skills/plan-templates.test.ts
 - depends on: T17
 
-Copy the three label lines from the spec's Approach lines part, with its comment folded onto one line and other template comments trimmed as needed.
-`prism-intent` loads 113 lines at `c6f9027c` against the 120 cap, so this task and T19 together add no more than 7.
+Copy the three label lines from the spec's Approach lines part with its comment on one line, and fold the four-line `## Proposed outcome` comment onto one line.
+`prism-intent` loads 113 of 120 lines at `c6f9027c`, so this task and T19 together add no more than 7 net.
 
 ### T19: Part 2 — interview for the Approach lines
 
@@ -247,11 +249,12 @@ A changed path missing from this list goes in the build report as `unlisted:`.
 
 ### T23: Part 1 — scope the open-question History note to flat plans
 
-- files: .prism/rules/branch-plan.md, templates/install/.prism/rules/branch-plan.md
-- proof: grep -n 'open question closed' .prism/rules/branch-plan.md templates/install/.prism/rules/branch-plan.md
+- files: .prism/rules/branch-plan.md, templates/install/.prism/rules/branch-plan.md, templates/install/AGENTS.md.tmpl
+- proof: grep -n 'History\|Sessions' .prism/rules/branch-plan.md templates/install/.prism/rules/branch-plan.md templates/install/AGENTS.md.tmpl
 - depends on: none
 
-Only the Open-question Decision variant's "note in `## History`" sentence changes, in the canonical and the curated twin.
+In `branch-plan.md` and its twin, scope to a flat plan: the step 4 History lines, the close step's History entry, the open-question note, and the Sessions and History maintenance bullets.
+The `Plan File Template` section is already flat-only; `AGENTS.md.tmpl` line 102 gains "on a flat plan".
 
 ## Challenge
 
@@ -271,6 +274,15 @@ round 2: blocking 1
   - T10 (non-blocking): `prism-handoff/shared.md` line 47 also says the plan's `## History` wins on a conflict, and the task names only line 12. AC-13 fails on line 47 until it says flat plan.
   - AC-13 (non-blocking): line 11 of `docs/ai-skills/iris.md` already says "flat plan", so the grep passes on it before and after the edit.
 
+round 3: blocking 3
+  - T1 (blocking): it removes the `"History",` and `"Sessions",` lines from the expected heading list in `scripts/ai-skills/plan-templates.test.ts`. The commit gate's weakened-tests check (`hooks/commit-gate/test-guard.mjs`) denies removing a base line from a test file unless the task lists the file and carries `- behavior change:`, and `prism-implement` may never edit `plan.md`, so the build ends `blocked`. Add `- behavior change: the expected plan heading list drops History and Sessions, because REQ-1 removes both sections from the template`.
+  - T3 (blocking): it adds a task-prose allowlist and a stale report to `runPlanFolderCheck`, but nine existing tests in `plan-folder-citations.test.ts` assert the exact result shape (`assert.deepEqual(await runPlanFolderCheck(root, ...), { violations, staleAllowlist })` at lines 153, 181, 207, 224, 237, 268, 280, 292, 305-306). A new result field breaks them, and a default allowlist makes all 8 real entries stale in temp roots, so existing lines must change and T3 has no `behavior change`. Add one, and pin the design: a third optional `taskProseAllowlist` parameter defaulting to the real list, a separate stale field, existing temp-root calls passing `[]`, and the repo-wide case asserting the new stale field is empty.
+  - T4 (blocking): its proof runs all of `claude-agent-def.test.ts`, which includes the new case reading generated `.claude/agents/prism-implement.md`, and T4 does not regenerate it, so the case fails until T14 rebuilds. Make the proof a `--test-name-pattern` that excludes the generated-file case, for example `'^(?!generated prism-implement agent)'`, and keep `role-preloads.test.ts`. T14's `pnpm prism:check` runs the full suite.
+  - plan / T23 (non-blocking): `.prism/rules/branch-plan.md` is an always-on rule, and its Maintenance Expectations still say "Append to `## Sessions` at session start and close" and "Append new entries to `## History`", with the History-appending text near lines 103-115 also general. T23 scopes only line 322. Extend T23 and its curated twin to scope those lines to "on a flat plan".
+  - plan (non-blocking): `templates/install/.prism/AGENTS.md.tmpl` line 102 (Task Management item 3) says "update `## History` after meaningful changes", reaches consumers, and contradicts REQ-1. Scope it to flat plans or drop it; the file sits inside `templates/install/**`, which is in Affected systems.
+  - AC-13 (non-blocking, repeat of round 2): `docs/ai-skills/iris.md` line 11 already holds "flat" beside `## History`, so the `grep -vc flat` evidence passes without T10's iris edit. Grade iris line 22 separately, for example `grep -c 'plan with a \`## History\` line' docs/ai-skills/iris.md` prints 0.
+  - T18 (non-blocking): it adds about 8 lines (heading, blank, one-line comment, blank, three labels, trailing blank) against the task's own cap of 7 for T18 and T19 together, and `prism-intent` is at 113 of 120. Name the template comment to trim.
+
 ## Decisions
 
 - **The plan stage ran as a subagent.** The session's context was long after children 10 and 11, so the main session dispatched this stage with the worktree and folder. Rejected: running it in the session, which would have pushed the session toward compaction mid-epic.
@@ -279,4 +291,5 @@ round 2: blocking 1
 - **This plan has no History or Sessions section and keeps every task to two lines.** REQ-1 removes both sections and nothing in the resume table reads them, and the spec says this plan is written to the cap so the lint needs no allowlist entry for it.
 - **The Approach comment folds onto one line to keep `prism-intent` under the cap.** The skill loads its body plus the intent template, 113 lines before this change, and the spec's six-line comment plus the skill text would cross 120. The spec also says the skill stays under the cap, and the three labels and the `none — <why>` rule are what approval reads, so the comment shrinks and the labels don't. Rejected: a reasoned overage in `skill-loaded-lines.test.ts`, which sits outside Affected systems and spends the cap's slack on comment text.
 - **Round 1 added T23 and two files, both through `prism-architect`.** `role-preloads.test.ts` pins the implement agent's model and `branch-plan.md` tells every plan to log a resolved open question in `## History`, and both go false with this child. The architect's verdict was proceed for both and it added them to the spec's Affected systems. T23 is appended rather than renumbered, because task IDs are permanent once committed.
+- **Round 3 widened T23 to the rest of `branch-plan.md` and the consumer `AGENTS.md.tmpl`.** Both tell every plan to append `## History` or `## Sessions` lines, which REQ-1 makes false for a folder plan. Both sit inside Affected systems, and this is the same kind of change the architect cleared in round 1, a doc this child makes false, so it is recorded here and not sent back to the architect.
 - **The ADR number is fixed at 0088 in the task files.** A `files` entry must be a real path, so the plan can't defer the number. Child 11 adds no ADR, so 0088 is free unless another merge takes it first, and T6 carries the rename path.
