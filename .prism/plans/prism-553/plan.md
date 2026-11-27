@@ -468,6 +468,23 @@ round 5: clean
 
 ## Verification
 
+verdict: done
+base: ceab998dc06b6ebbcfd512c194b660a9cf2751ca
+head: ab9fc7a8a12b535c5ce80c82118924df6c2557fe
+
+| check | result | evidence |
+| --- | --- | --- |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify-ab9fc7a8/typecheck.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify-ab9fc7a8/lint.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify-ab9fc7a8/test.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify-ab9fc7a8/build.log |
+| format | n/a: not configured | none |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify-ab9fc7a8/spec.log |
+
+### Failures
+
+- none
+
 ## Release proof
 
 Run 2026-11-27 at 2:59 AM Central. Two tarballs, both `huntermcgrew-prism-1.0.0.tgz`: the old one packed with `pnpm pack` from a worktree at `37cdbd28` (sha256 `e045aa45…`), and the new one from this branch at `5d85b848` (sha256 `afc51c50…`). They share a name and version, so each was installed with `npm install --prefix` into its own directory instead of through `npx`, whose cache could serve one for the other. The new tarball holds no path matching `prism-(pr|self)-review`, and the old one holds 10.
