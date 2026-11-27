@@ -535,6 +535,10 @@ The old-tree worktree and the scratch directory were removed after the run.
   - **nit, bug** — `scripts/ai-skills/routing-coverage.test.ts:103` relaxed "exactly once" to "at least once, one row per persona", which also passes an ID duplicated in one row or in a row plus the onboarding section. Fix: also assert occurrences equal distinct rows plus at most one onboarding hit. Declinable; the Decision on the routing-coverage test chose this shape.
   - **nit, nitpick** — `.prism/rules/branch-plan.md:137` (and twin) dropped Eric from the list but the next sentence still says "Eric PR-reviews against it" as a current cost. Fix: end the sentence at Briar.
   - **nit, nitpick** — `.ai-skills/skills/prism-review/shared.md:1` still opens "Reviews the current branch against `REVIEW.md`"; the body now takes a PR too. Fix: add "or a PR by number or URL".
+- self-review round 2 at 5d562281 (part 1 of 2): clean
+  - Exit per the spec's exit-rule Decision and the 2026-11-27 ruling: zero Critical, zero Major. Three round 1 Minors stay open for the PR body, as the round 1 fix-list Decision lists them: the `prism:retro-line` sentence in `branch-plan.md`, the widened `mergeHookRegistration` key handling, and the branch-name form in `ticket-workflows.md`. The routing-coverage nit is declined, per the Decision on that test.
+  - fixed: the ADR-0087 citation (5bd53921); the no-subagent fallback, PR inventory, and line-1 PR input in `prism-review` (f7073921); the Eric clause in `branch-plan.md` (f46521ae); the Codex `SubagentStop` retirement test (5d562281), whose fixture matches `templates/install/.codex/hooks.json` at `ceab998d`.
+  - Criteria: AC-1, AC-2, AC-3, AC-4, AC-5, AC-7, AC-8, AC-9, AC-10, AC-20 met at 5d562281 (`one-review`, `update-retire-review`, `brief-gate`, `routing-coverage` tests pass; the AC-2, AC-8, and AC-20 greps print as required). AC-6 met by `## Release proof`. AC-21 awaits the PR's CI; `pnpm prism:check` passes locally at 5d562281. AC-11 to AC-19 n/a (part 2).
 
 ## PR Readiness
 
