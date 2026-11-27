@@ -27,6 +27,8 @@ Run this battery once, immediately after startup completes and before any of the
 
 The opening battery's answers don't stay in the transcript — they compress to one line appended to the branch plan's `## Sessions` section (see `.prism/rules/branch-plan.md`), in an `open:` clause. The closing battery re-reads that line and diffs the finished work against the opening `Bounds` answer — Closing Q1 (Scope boundary) is that diff. When the closing battery finishes, append its verdict to the same line as a `close:` clause: `scope held` if the work matched the opening Bounds, or `drifted — <why>` if it didn't.
 
+On a folder plan, the batteries still run, but the `open:` and `close:` lines are not written, because a plan folder has no `## Sessions` section. The closing battery's Scope boundary diff reads the opening Bounds from the session's own opening answer instead.
+
 ## Closing Re-Orientation Battery
 
 Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
@@ -36,7 +38,7 @@ Run this battery once, immediately before declaring the work complete and report
 3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?
 
-Append the `close:` verdict to the same `## Sessions` line from the opening battery (see Battery Persistence above) before stopping.
+On a flat plan, append the `close:` verdict to the same `## Sessions` line from the opening battery before stopping. A folder plan has no such line, so nothing is appended (see Battery Persistence above).
 
 ## Mid-flight Re-anchors
 

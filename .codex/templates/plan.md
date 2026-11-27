@@ -15,7 +15,6 @@ Leave status at draft. Only the auto-approval script, or the approval script aft
 
 <!--
 One task per heading. Task IDs are appended and never renumbered, so a citation to T3 stays true.
-Each task also meets the bar in .prism/rules/implementation-task-detail.md: the file path, the exact change, the verification command, and the sequence.
 Above the first task, record the parallel groups the bundle check (plan/bundles.mjs in the hook runtime) prints, one line per group, such as "Group 1: T1, T2". Rerun it after any task change.
 
 ### T1: <summary>
@@ -27,7 +26,7 @@ Above the first task, record the parallel groups the bundle check (plan/bundles.
 - behavior change: <only when an existing test changes, say what and why>
 
 "proof fails on main" is optional. Add it when the proof is a test that fails before this task lands.
-Below the fields, describe the specific change in prose: the exact edit, its insertion point, or the new file's content outline.
+Below the fields, write at most two lines of gotchas: what the builder would otherwise get wrong. The plan-folder lint counts them.
 -->
 
 ## Challenge
@@ -37,17 +36,10 @@ Below the fields, describe the specific change in prose: the exact edit, its ins
 ## Decisions
 
 <!--
-One entry per decision. Lead each entry with a bold title, then the reason.
+One entry per scope change or open question. Lead each entry with a bold title, then the reason.
+A routine implementation choice goes in the commit message, not here.
 At close, add a verdict line under each entry: "→ promoted to <path>" or "→ no promotion needed (<reason>)".
 -->
-
-## History
-
-<!-- Append-only, oldest first: "- YYYY-MM-DD [branch-name]: <what changed and why>", three sentences at most. -->
-
-## Sessions
-
-<!-- One line per working session. -->
 
 ## Verification
 

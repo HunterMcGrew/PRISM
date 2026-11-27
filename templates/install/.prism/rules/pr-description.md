@@ -62,7 +62,7 @@ The PR body describes current scope — what's shipping right now — not the sc
 
 **Two enforcement moments:**
 
-- **The PR stage** — on a folder-plan branch, the sync step of `.prism/references/shipping-flow.md` rewrites the agent-owned sections before each push when the plan's `## History` has entries past the last PR-body write. Silent. Mentioned in the closing line (one line: "PR #N body synced to current scope").
+- **The PR stage** — on a folder-plan branch, the sync step of `.prism/references/shipping-flow.md` rewrites the agent-owned sections before each push when the commits the push carries, or a scope change recorded in the Decisions of `spec.md` or `plan.md`, add something the body doesn't describe. Silent. Mentioned in the closing line (one line: "PR #N body synced to current scope").
 - **Clove** — on a flat-plan branch, in the shipping flow, when pushing to a branch with an existing PR and the plan's `## History` has new entries past the last PR-body write, rewrite the agent-owned sections before push. Silent. Mentioned in the two-path closing.
 
 **Section ownership:**
