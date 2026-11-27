@@ -225,3 +225,22 @@ round 2: clean
 - **The report trigger fires on every folder plan recorded so far.** Challenge round 1 found that prism-530, 537, 544, 550, 553, 557, and 558 each hold at least one review line that is not `clean`, so on today's record `Retro: none — no trigger` would never be written and the report would run every time. The spec reads the intent's "a review asked for changes" literally, and the third amendment's two-round, zero-Major exit should make clean first rounds more common from here, so the trigger stays as specified. Hunter should expect the report on most tickets until that shows up in the record. AC-15 grades whichever path this ticket's own close takes, and AC-7's phrase greps lean on it for behavior. Rejected: keying the review reason on the last line only, which would hide a review that asked for changes and is a change to the intent's wording.
 - **`docs/what-prism-writes.md` is left for child 16.** It lists the delivered runtime files and goes stale when T5 adds three, but it sits outside this child's Affected systems. Child 16's docs sweep covers the pages the earlier children changed, as the spec's Decision on `docs/parameterization.md` already routes.
 - **The merge rule names merge-bar.mjs in part 2, not part 1.** Part 1 adds the script and documents it in `review-runtime.md`, and part 2's T12 changes the rule text. Until part 2 merges, the session's merge bar is the existing sentence, which a bare `clean` already meets. Rejected: editing `git-conventions.md` in part 1, which would put an always-on rule into the scripts PR the spec keeps rule-free.
+
+## Verification
+
+verdict: done
+base: 02e9aeb0
+head: a57e3caf
+
+| check | result | evidence |
+| --- | --- | --- |
+| typecheck | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/typecheck.log |
+| lint | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/lint.log |
+| test | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/test.log |
+| build | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/build.log |
+| format | n/a: not configured | part 1 of 2, T1-T7: none |
+| spec | pass | part 1 of 2, T1-T7: /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/verify/spec.log |
+
+### Failures
+
+- none
