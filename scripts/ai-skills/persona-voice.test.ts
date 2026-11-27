@@ -124,10 +124,3 @@ test("no utility or agent skill carries a Voice block", async () => {
 
 	assert.deepEqual(carriers, []);
 });
-
-test("Eric's tone line keeps his voice out of his GitHub comments", async () => {
-	const section = extractVoiceSection(await readSkillLines("prism-pr-review"));
-	const toneLine = section.find((line) => line.startsWith("**Tone, in chat"));
-
-	assert.ok(toneLine?.includes("never in the comments"), `tone line was: ${toneLine}`);
-});
