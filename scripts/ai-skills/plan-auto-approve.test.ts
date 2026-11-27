@@ -207,6 +207,38 @@ describe("passing plans", () => {
 		assert.equal(readPlan(folder), before);
 	});
 
+	test("round lines written as list items approve", () => {
+		const folder = copyFixture("clean");
+		editPlan(folder, (text) =>
+			text.replace(
+				"round 1: clean\nround 2: clean\n",
+				"- round 1: clean\n- round 2: clean\n"
+			)
+		);
+
+		assert.equal(autoApprove({ folder, today: TODAY }).code, 0);
+		assert.equal(approvalLines(readPlan(folder)).approved_by, "auto");
+	});
+
+	test("a list-item round 1 that carries findings is refused with the line after its dash", () => {
+		const folder = copyFixture("clean");
+		const before = editedPlan(folder, (text) =>
+			text.replace(
+				"round 1: clean\nround 2: clean\n",
+				"- round 1: carried 1\n- round 2: clean\n"
+			)
+		);
+
+		const result = autoApprove({ folder, today: TODAY });
+
+		assert.equal(result.code, 1);
+		assert.equal(
+			result.message,
+			'auto-approve: challenge failed: "round 1: carried 1" carries findings before round 4, and only a confirm round may'
+		);
+		assert.equal(readPlan(folder), before);
+	});
+
 	test("an already approved plan passes without being rewritten", () => {
 		const folder = copyFixture("clean");
 		editPlan(folder, (text) =>
