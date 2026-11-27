@@ -1,7 +1,7 @@
 <!-- prism:review — prism update refreshes this file while this line is here. Delete the line to keep your own version. -->
 # Review
 
-How a review runs in this repo. Both `prism-self-review` and `prism-pr-review` read this file. It holds severity, the finding shape, the coverage line, the exit rule, and the passes. A pass is a checklist, not a separate run. Pass files live in `.prism/review/`, not under `.prism/references/`.
+How a review runs in this repo. `prism-review` reads this file. It holds severity, the finding shape, the coverage line, the exit rule, and the passes. A pass is a checklist, not a separate run. Pass files live in `.prism/review/`, not under `.prism/references/`.
 
 ## Severity
 
@@ -9,10 +9,10 @@ How a review runs in this repo. Both `prism-self-review` and `prism-pr-review` r
 | ------------ | -------------------------------------------------------------------------------- | ----------------------- |
 | **Critical** | Will cause production bugs, data loss, security issues, or crashes               | Must fix before merge   |
 | **Major**    | Significant problem — wrong approach, missing edge case, accessibility violation, departure from an architect doc | Fix before the exit     |
-| **Minor**    | Real improvement — naming, small optimization, documentation                     | Fix before the exit     |
+| **Minor**    | Real improvement — naming, small optimization, documentation                     | Fix in the rounds       |
 | **nit**      | Real but optional improvement                                                    | Fix or decline          |
 
-A Minor no longer rides to a follow-up. The exit rule below holds the review until it is fixed.
+A Minor no longer rides to a follow-up. It is fixed inside the rounds when it can be, and it never earns a round of its own.
 
 **Impact times likelihood sets severity, not the bug class.** A null reference in a rarely called admin function is lower severity than the same bug in the inventory display, because the blast radius differs.
 
@@ -49,8 +49,6 @@ Each finding carries these parts:
 
 **One cause is one finding.** Compose it at the location where the fix lands, and list every other site under it. Splitting per location leaves each piece reading smaller than the defect, and then nothing states the defect.
 
-**In `plan.md`, name a rule by its path and its heading in plain words, with no section sign.** Files in a plan folder move and get renamed, so a section sign points into a heading that may vanish, and a finding copied from a PR comment drops the sign before it lands under `## Review`.
-
 Quote the command rather than describing its scope — `grep -rn 'orientation-battery' .ai-skills/`, not "searched the skills tree." Prefer the narrowest stable token over a phrase, because a phrase probe wraps at a line break and comes back clean against a defect sitting right there.
 
 **Why both lines:** a reviewer who finds one instance has no reason to look for its siblings, and with nothing recorded, a reviewer who swept and one who didn't produce identical output. `Class` is what makes the sweep possible, since you can grep for a pattern but not for an instance. This is the review-side form of `.prism/rules/code-standards.md` § Removal and rename completeness.
@@ -59,11 +57,9 @@ Quote the command rather than describing its scope — `grep -rn 'orientation-ba
 
 A reviewer may read outside the diff. A finding names a diff line that causes it. Anything else is an observation: it goes on one line under "Out of scope" per the exit rule below, and `.prism/rules/followup-scope.md` picks its vehicle if it needs one.
 
-## The whole PR is in scope
+## The plan is the yardstick
 
-The review covers the whole PR, not only the diff: the PR body when a PR exists, its labels, and every section of the plan, meaning `intent.md`, `spec.md`, and `plan.md`. Each describes the change rather than sitting inside it, so none shows up in the file list, and each can be wrong about the diff in a way only the review catches. Plan drift is reconciled as `.prism/review/intent-scope.md` § Plan drift is reconciled, not reported says. A label that says something false about the PR is a finding.
-
-**Stale PR body prose is a nit.** Body text that drifted from the branch never blocks the PR, never counts toward the exit rule's Minors, and never adds `review:has-minors`. The PR stage rewrites the body on its next push, per `.prism/references/shipping-flow.md` § The flow, so stale prose costs a sync rather than a fix round.
+The review reads `intent.md`, `spec.md`, and `plan.md` to judge the diff and raises no finding on their prose. The PR body is never reviewed. Published docs, code comments, and the changelog earn a finding only when they are wrong about the code. Paths `reviewIgnore` names are never reviewed, and `review/record.mjs` refuses a finding that cites one.
 
 ## Coverage line
 
@@ -78,7 +74,7 @@ Each round reports exactly one token per pass:
 **The reason on `not reached` is one of two kinds.**
 
 - **Pass-bounded** — the reason names this round: time, diff size, an exhausted budget. A later round can reach the pass, so the status is pending.
-- **Structural** — the reason names this diff: the pass can't run on this PR at all. It reads the same on round 1 and round 3, so it is terminal. "No `intent.md` and no `## Acceptance Criteria` in `plan.md`" is structural.
+- **Structural** — the reason names this diff: the pass can't run on this PR at all. It reads the same on round 1 and round 2, so it is terminal. "No `intent.md` and no `## Acceptance Criteria` in `plan.md`" is structural.
 
 **Why three tokens:** collapse `n/a` and `not reached` into one and an incomplete round reads as clean, because the reader can no longer tell a decided skip from an unrun check.
 
@@ -90,37 +86,32 @@ Filtering by severity is a separate, later pass over what the sweep collected, n
 
 ## Exit rule
 
-The exit rule is zero Critical, Major, or Minor findings apart from decision items, every nit fixed or declined with a reason, and every pass reading `swept` or `n/a`.
+The exit rule is zero Critical and zero Major findings apart from decision items, with every pass reading `swept` or `n/a`.
 
-A Minor whose every cited line falls in bookkeeping content gates nothing, per `.prism/rules/followup-scope.md` § Bookkeeping findings are recorded, not gated. It is recorded, and the exit rule does not wait on it.
-
-**A decision item is a finding only the person can settle,** such as a design tradeoff or a change to one of their rulings. Record it with its options and a recommendation, and let the run continue to the PR, where `prism-pr-review` posts it as an inline comment. It goes under "Still open". Stopping mid-run for it stalls the whole workflow on a call the person can make just as well on the draft PR.
+**A decision item is a finding only the person can settle,** such as a design tradeoff or a change to one of their rulings. Record it with its options and a recommendation, and let the run continue to the PR, where the session posts it as an inline comment through `review/post.mjs`. It goes under "Still open". Stopping mid-run for it stalls the whole workflow on a call the person can make just as well on the draft PR.
 
 **An observation outside the ticket is not a finding.** It goes on one line under "Out of scope", with no severity and no ask, because nothing in this PR acts on it.
 
 A declined nit carries its reason on one line.
+
+**What is left after round 2.** Minors, decision items, and any Critical or Major still open are listed in the PR body. A Critical or Major is also posted inline through `review/post.mjs`, and the run goes on.
 
 **Verdict cap.** While any pass is unfinished — `not reached`, or a bare `swept` — the review reports no unqualified ready label. The best available verdict names the pass and the check still owed. This caps the label, not the review: a round that reached eight passes still reports its eight passes' findings.
 
 ## Rounds and range
 
 - **Range.** Docs and citations, and Regressions, cover the full PR range every round. The other passes cover the new-commit diff, and widen only when a finding needs it.
-- **Where the new-commit diff starts.** It starts after the review's own last round. In PR review, when anyone has reviewed the PR on GitHub more recently than that, it starts at the commit the latest review was left on instead, because everything before it has already been read. Find that commit with `gh api repos/<owner>/<repo>/pulls/<pr>/reviews`, as the `commit_id` of the last entry, whoever left it. `<owner>` and `<repo>` are `github.owner` and `github.repo` in `.ai-skills/config.json`. With no GitHub review and no earlier round, the run reviews the full PR.
-- **Rounds.** At most 3 finding rounds. A finding still open after round 3 goes to the PR the same way a decision item does, never held for a reply.
+- **Where the new-commit diff starts.** It starts after the review's own last round.
+- **Rounds.** At most two rounds. What is left after round 2 goes to the PR body, per the exit rule.
 - **Subagents.** The parent splits files and passes across subagents within the limits in the workflow rule, `.prism/rules/workflow.md`. It removes duplicate findings, and it confirms every subagent finding against the file before reporting it.
 - **Subagent briefs don't steer.** Each brief carries a one-line TL;DR, such as "review PR #N" or "review the commits since `<sha>`", plus the pinned range, the subagent's files or passes, and hard limits. It never says which angles to check, what to conclude, or what to skip. Grouping files or passes per subagent is fine, because the grouping is the brief. **Why:** a subagent handed a hypothesis tends to return it confirmed, and one told what to skip never reports what sits there.
-- **Record.** Each review stage writes one line per round under `## Review` in `plan.md`. When a later run confirms a fix, it marks that finding `fixed <sha>`. A legacy flat plan records under `## Review Issues` instead.
-  - `- self-review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>`
-  - `- pr-review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>`
-  - `- pr-review confirm at <short sha>[ (part <k> of <m>)]: <verdict>`, for the one confirm pass past the 3-round cap
-
-  `<verdict>` is `clean`, or the open counts as `<crit> critical, <maj> major, <min> minor, <nit> nit`.
+- **Record.** The session records each round with `node ${HOOK_RUNTIME_DIR}/review/record.mjs <plan.md> <report.json>`, which writes `- review round <n> at <short sha>[ (part <k> of <m>)]: <verdict>` under `## Review` and nothing else. `<verdict>` is `clean` or `<crit> critical, <maj> major, <min> minor, <nit> nit`. A legacy flat plan records under `## Review Issues` instead. Older `self-review` and `pr-review` lines stay valid wherever a script reads them.
 
   On a stacked ticket, every PR shares one plan folder, so a line written on a PR that is not the last carries ` (part <k> of <m>)` after the sha, where `<k>` is that PR's place in the stack and `<m>` is the stack's size, and a line whose `<k>` is less than `<m>` is never a final verdict.
 
-**When a round is `clean`.** A round's verdict is `clean` exactly when the exit rule holds at the end of that round, with the bookkeeping exemption above. So decision items, nits fixed or declined with a reason, and Minors whose every cited line is bookkeeping content per `.prism/rules/followup-scope.md` leave it `clean`. Any other open Critical, Major, or Minor, a nit neither fixed nor declined, or a pass reading `not reached` or a bare `swept` makes the verdict the open counts, which count only those blocking items.
+**When a round is `clean`.** A round's verdict is `clean` exactly when zero Critical and zero Major are open apart from decision items and every pass reads `swept — …` or `n/a: …`.
 
-**The final verdicts.** The PR review is final when its last line is `clean` or is the confirm line. Until then fixes and another round are coming, so the retro is not due. The self-review is final when its last `self-review` line is `clean` or is round 3. Until then the author fixes and self-review runs again, so the PR stage is not due.
+**The final verdicts.** The review is final when its last line is `clean` or is round 2.
 
 ### After a fix
 
@@ -128,11 +119,8 @@ Fixes are new code, so every fix commit is verified and reviewed before the run 
 
 1. **Re-verify before the next push.** When a commit made after `## Verification` changes a file a verify check covers, verify runs again before the push. That means source, tests, and any spec-surface file. The verify stage decides which checks re-run, and it writes the new head into `## Verification`.
 2. **Re-review the fix commits.** The review runs again with the commits since its last round as the new-commit diff. Under the cap, that run is the next finding round.
-3. **Past the cap, the confirm pass.** When the fixes follow round 3, the same run is a confirm pass, and it doesn't count against the cap. It reviews only the fix commits, plus the two full-range passes above. It marks each prior finding the fixes close as `fixed <sha>`. In PR review it also resolves those threads and applies the labels for the new gate state. It reads the fix commits as new code, under every pass whose trigger they meet. A new finding goes to the PR as an open item, the same as one left after round 3. A new Critical or Major strips the review labels like on any run, and it never starts a round 4.
 
-**The last run is the final pass over the final diff.** Whether it is a round or the confirm pass, it pins the head the PR ships, and its full-range passes read the whole PR there. The retro runs after it, so it grades the final labels. In the local review, PR review's first round plays this part, because it reads the whole PR cold.
-
-**Why one confirm pass rather than more rounds:** without it, fixes made after round 3 are pushed unreviewed, the threads stay open, and the labels describe the tree before the fix. Extra finding rounds rarely find what the first three missed, so the pass confirms and reads the fixes without reopening the loop.
+**The last round is the final pass over the final diff.** It pins the head the PR ships, and its full-range passes read the whole PR there. The retro runs after it.
 
 ## When a review pauses
 
@@ -145,7 +133,7 @@ A review pauses to ask the person only when the diff, or the fix a finding needs
 
 A file outside the plan is a scope change the person can veto, per the workflow rule. A dependency, a shared type, and a public API need a heads-up before they change, per `.prism/rules/code-standards.md` § General. Destructive git can discard work nobody can get back. A dispatched review with no route to the person returns the question in its report, and the session asks.
 
-**A review never pauses on a finding, at any severity.** Findings go to the PR, per the exit rule. A loop at its 3-round cap is not a pause either, because what is left goes to the PR as an open item.
+**A review never pauses on a finding, at any severity.** Findings go to the PR, per the exit rule. A loop at its two-round cap is not a pause either, because what is left goes to the PR as an open item.
 
 ## The passes
 
