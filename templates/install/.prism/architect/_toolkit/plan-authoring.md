@@ -34,13 +34,13 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | `## Goal`                                     | The plan stage, Nora                                                   | All                                         |
 | `## User Stories`                             | No current writer (legacy flat plans only)                             | The plan stage, Clove, Eli                  |
 | `### Story Map` (under `## User Stories`, epic plans) | No current writer (legacy flat plans only)                     | The plan stage, Nora                        |
-| `## Decisions`                                | The plan stage, `prism-retro` (verdicts on a folder plan)              | All                                         |
+| `## Decisions` (on a folder plan, scope changes and open questions only; a routine implementation choice is a commit) | The plan stage, `prism-retro` (verdicts on a folder plan)              | All                                         |
 | `## Implementation Tasks`                     | The plan stage                                                         | Clove                                       |
 | `## Acceptance Criteria`                      | The intent stage (generates), the plan stage (generates, for an epic child), Briar (validates/updates), Nora (bug AC) | Clove, Briar                                |
 | `## Acceptance Criteria` → the ticket tracker | The intent stage (on a yes), Clove (on change), Briar (on change), Nora (on demand), never on a DX ticket | —                                           |
 | AC Sync Log                                   | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
 | `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | The plan stage, Clove                       |
-| `## History`                                  | All (append-only)                                                      | All                                         |
+| `## History` (flat plans only)                | All (append-only)                                                      | All                                         |
 | `## Debugged Issues`                          | Clove (creates and marks fixed; any implementer may write it)          | Clove, Briar                                |
 | `## Verification`                             | `prism-verify`                                                         | Briar, Iris                                 |
 | `## Review`                                   | `prism-review` (one record line per round)                             | Clove, Iris                                 |
