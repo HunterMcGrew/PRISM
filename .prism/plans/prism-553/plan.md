@@ -2,7 +2,9 @@
 title: One review — rename self-review, retire the PR reviewer and labels
 ticket: https://github.com/HunterMcGrew/PRISM/issues/553
 stage: plan
-status: draft
+status: approved
+approved_by: auto
+approved_at: 2026-11-27
 ---
 
 ## Acceptance Criteria
