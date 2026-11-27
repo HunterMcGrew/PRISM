@@ -62,6 +62,18 @@
 // count. A segment that names approve.mjs is denied unless its command word is
 // on `READ_ONLY_COMMANDS`, so `git add plan/approve.mjs`, `grep
 // approve.mjs`, and commit or PR heredocs that mention the command go through.
+// So does `node <this runtime's plan/commit.mjs> …`, which only commits the
+// paths it names, judged by realpath like a read-only command but denied on
+// any leading assignment when the segment names approve.mjs. It passes only as
+// the whole command, with no second segment, subshell, or substitution,
+// because an earlier segment can change directory or set the environment in
+// ways the guard can't follow. The script
+// word must hold a `/` and not start with `-`, because node reads a word like
+// `-r`, `--no-warnings`, `-`, or `inspect` as an option or subcommand whatever
+// it resolves to on disk, while `./-r` is a file. A node option before the
+// script, a lookalike copy, or any other segment beside it is judged as any
+// other `node` run. A test runner such as `node --test` runs
+// its file operands, so naming approve.mjs there is still denied.
 // A read-only segment is still denied when a leading assignment names the
 // script (`GIT_PAGER=…`), or when it names the script outside a heredoc body
 // and writes a file, which is how `cat approve.mjs > x.mjs` copies it.
@@ -136,7 +148,8 @@
 // which carries no agent marker and may give approve.mjs a terminal; edits to
 // this guard or to the harness settings files that register it, including the
 // copy in the checkout the payload's `cwd` points into, which this guard hands
-// the event to. approve.mjs
+// the event to; edits to plan/commit.mjs, which the commit pass trusts by
+// path. approve.mjs
 // refuses without a terminal and inside an agent session unless it holds a
 // token, which catches accidental runs only.
 //
@@ -314,6 +327,7 @@ const CHAT_APPROVE_COMMAND =
 const PLAIN_WORD = /^(?:[A-Za-z]:)?[\w./-]+$/;
 const SELF = fileURLToPath(import.meta.url);
 const APPROVE_SCRIPT = path.resolve(path.dirname(SELF), "plan/approve.mjs");
+const COMMIT_SCRIPT = path.resolve(path.dirname(SELF), "plan/commit.mjs");
 const ARTIFACT_PLACEHOLDER = "<artifact>";
 
 /**
@@ -539,6 +553,7 @@ function main(argv, stdin) {
 		const { runsApprove, patches } = inspectCommand(harness.command(payload), {
 			checksShellPatches: harness.checksShellPatches,
 			shadowed: false,
+			cwd,
 		});
 		if (runsApprove) {
 			if (!allowsChatApproval(harness, payload, cwd))
@@ -817,6 +832,8 @@ function isChatApproveCommand(command, cwd) {
  * @property {boolean} shadowed
  * @property {(word: string) => boolean} [names]
  * @property {RegExp} [unreadable]
+ * @property {string} [cwd]
+ * @property {boolean} [oneSegment]
  */
 
 /** @typedef {{ runsApprove: boolean, patches: string[] }} Inspection */
@@ -891,16 +908,21 @@ function holdsCarriageReturn(text, unreadable) {
  */
 function inspectItems(items, substitutions, context) {
 	const shadowed = context.shadowed || shadowsCommands(items);
-	const inner = { ...context, shadowed };
+	const segments = splitSegments(items);
+	const oneSegment =
+		context.oneSegment !== false &&
+		substitutions.length === 0 &&
+		segments.length === 1;
+	const inner = { ...context, shadowed, oneSegment };
 	let runsApprove = substitutions.some(
-		(text) => inspectCommand(text, inner).runsApprove
+		(text) => inspectCommand(text, { ...inner, oneSegment: false }).runsApprove
 	);
 	/** @type {string[]} */
 	const patches = [];
 	/** @type {Group[]} */
 	const groups = [{ kind: null, tainted: false, named: false }];
 
-	for (const { segment, separator } of splitSegments(items)) {
+	for (const { segment, separator } of segments) {
 		trackCompounds(segment, groups);
 		const group = groups[groups.length - 1];
 		if (segment.length > 0) {
@@ -1003,6 +1025,11 @@ function judgeSegment(segment, tainted, context) {
 		runsApprove =
 			assignments.some((text) => namesWord(text)) ||
 			((names || tainted) && writesFile(segment));
+	} else if (runsCommitScript(segment, index, context)) {
+		// When the segment names approve.mjs, any assignment fails closed, since
+		// `NODE_OPTIONS` can load a module that runs the script it names.
+		runsApprove =
+			(names || tainted) && (assignments.length > 0 || writesFile(segment));
 	} else if (filter) {
 		runsApprove =
 			names ||
@@ -1015,6 +1042,40 @@ function judgeSegment(segment, tainted, context) {
 	}
 
 	return { runsApprove, names: names || bodyNames };
+}
+
+/**
+ * True when a segment is `node <this runtime's plan/commit.mjs> ...`, with no
+ * node option before the script, which only stages and commits the paths it
+ * is given. It counts only as the whole command, because an earlier segment
+ * can change directory or set the environment in ways the guard can't follow,
+ * and the script path resolves against the payload's `cwd`.
+ *
+ * @param {Item[]} segment
+ * @param {number} index
+ * @param {Context} context
+ * @returns {boolean}
+ */
+function runsCommitScript(segment, index, context) {
+	const script = segment[index + 1];
+	if (context.shadowed || !context.oneSegment || context.cwd === undefined)
+		return false;
+	if (segment[index].text !== "node" || !script || script.op || script.body)
+		return false;
+	if (!PLAIN_WORD.test(script.text)) return false;
+	// Node reads a word like `-r`, `--no-warnings`, `-`, or `inspect` as an
+	// option or subcommand, so its realpath says nothing about what runs. A
+	// spelled path such as `./-r` is always a file.
+	if (script.text.startsWith("-") || !script.text.includes("/")) return false;
+
+	try {
+		return (
+			realpathSync.native(path.resolve(context.cwd, script.text)) ===
+			realpathSync.native(COMMIT_SCRIPT)
+		);
+	} catch {
+		return false;
+	}
 }
 
 /**
