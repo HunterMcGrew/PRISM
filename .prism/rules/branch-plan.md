@@ -39,7 +39,7 @@ When looking for an existing plan:
 4. If not found, scan all plan files for a matching `## Ticket` field, and each plan folder's chain files for a matching `ticket:` frontmatter line.
 5. If still not found:
    - **implement / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
-   - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
+   - **Review of a PR by number** (`prism-review <pr>`): note "no plan found" and proceed without one, because the PR may be someone else's branch, and write nothing.
 
 A folder resolves to its latest-stage file (`plan.md`, else `spec.md`, `design.md`, `intent.md`), and `.prism/archived/` never resolves as a live plan. `.prism/references/plan-lookup.md` holds the same steps as a checklist for skills that resolve a plan.
 
@@ -134,7 +134,7 @@ The plan should remain easy to scan.
 
 The brevity default in step 5 is correct for routine entries. Verified fixes and non-trivial decisions are the exception — they use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance.
 
-**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
+**Why:** Conclusions look scannable, but downstream personas (Clove, Briar) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, and Briar self-reviews against the same gap. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
 
 **How to apply:** When the plan stage (`prism-plan`) records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 
@@ -195,7 +195,7 @@ The close ceremony runs in two phases: **reflect**, then **close**.
 
 **Close** promotes lasting Decisions (consuming any `## Promotion cautions` from the reflect phase — a Decision the execution record refuted is promoted as corrected or demoted to a lesson, never promoted unchanged), runs the verdict gate, records the retro verdict line, and marks the plan closed. Steps 1–2 below are the close phase; their content is unchanged from before the restructure.
 
-**Universal gate — every plan close, not just epics.** Every plan (ticket and epic) records a retro verdict line beside `> Closed:`: `> Retro: <path>` or `> Retro: declined — <one-line reason>`. The nudge is universal; declining is always legitimate; the decline is visible and recorded so the skip has teeth. The theater risk a universal gate raises — heavyweight synthesis on a one-line bugfix — is answered by **grain**, not by exempting trivial plans from the gate: an exemption would re-open the silent-skip hole the gate exists to close. A folder plan differs: the retro is its fixed last stage with no declined form, because a run that goes on without the person has nobody to decline it. `prism-retro` runs after the final PR review and writes the `Retro:` line under `## PR Readiness` and the `> Closed:` line. `pnpm prism:retro-line` fails a folder plan whose final PR-review verdict is recorded while that line is empty.
+**Universal gate — every plan close, not just epics.** Every plan (ticket and epic) records a retro verdict line beside `> Closed:`: `> Retro: <path>` or `> Retro: declined — <one-line reason>`. The nudge is universal; declining is always legitimate; the decline is visible and recorded so the skip has teeth. The theater risk a universal gate raises — heavyweight synthesis on a one-line bugfix — is answered by **grain**, not by exempting trivial plans from the gate: an exemption would re-open the silent-skip hole the gate exists to close. A folder plan differs: the retro is its fixed last stage with no declined form, because a run that goes on without the person has nobody to decline it. `prism-retro` runs after the final review and writes the `Retro:` line under `## PR Readiness` and the `> Closed:` line. `pnpm prism:retro-line` fails a folder plan whose final PR-review verdict is recorded while that line is empty.
 
 **Why declinable, not enforced:** On a flat plan, PRISM cannot force a retro to run involuntarily — no scheduler, personas never auto-invoke each other, and hook enforcement was deliberately reverted. What the gate can replicate is CI's real property: skipping is a visible, recorded override, not a silent omission. The gate is a human-declinable nudge. Promotion-without-relitigation is the defect the reflect phase fixes — today's ceremony, unrestructured, could promote a decision the work itself disproved.
 
@@ -233,7 +233,7 @@ Before promoting decisions and marking the plan closed (steps 1–2 above), ever
 
 **Why:** Without an explicit verdict, decisions get promoted mentally, the plan closes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
 
-**How to apply:** On a folder plan, `prism-retro` writes every verdict after the final PR review, and on a flat plan the plan stage runs this gate during plan close. A missing verdict is not a reviewer finding, because the review writes no Decision verdict and reports none missing. The review covers the whole PR per `REVIEW.md`, and its intent-scope pass (`.prism/review/intent-scope.md`) still fixes other plan drift outside `## Tasks` in place and lists what it edited. A stale task is reported as a Minor, and `intent.md` is never edited. A missing `> Retro:` line under § Before Closing above is no reviewer finding either, and on a folder plan `pnpm prism:retro-line` fails the plan once the final PR review is recorded with the line empty.
+**How to apply:** On a folder plan, `prism-retro` writes every verdict after the final review, and on a flat plan the plan stage runs this gate during plan close. A missing verdict is not a reviewer finding, because the review writes no Decision verdict and reports none missing. The review reads the plan files as its yardstick and raises no finding on their prose, per `REVIEW.md`. A missing `> Retro:` line under § Before Closing above is no reviewer finding either, and on a folder plan `pnpm prism:retro-line` fails the plan once the final review is recorded with the line empty.
 
 ---
 
@@ -386,7 +386,7 @@ The inline tag on `Root cause` and the explicit `Confidence` field carry the sam
 
 ## Review Issues
 
-Add entries here via the `prism-self-review` or `prism-pr-review` skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
+Add entries here via the `prism-review` skill. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
 
 ### <short issue title>
 
@@ -433,7 +433,7 @@ Dead code, debug artifacts, stray comments found during review.
 
 ## PR Readiness
 
-Living checklist — updated every time `prism-self-review` runs. Reflects current state.
+Living checklist — updated every time `prism-review` runs. Reflects current state.
 
 - [ ] No critical or major issues
 - [ ] Types correct — no `any`, no unsafe `as`

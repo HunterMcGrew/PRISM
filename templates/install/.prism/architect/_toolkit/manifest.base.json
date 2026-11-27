@@ -44,7 +44,6 @@
 		"_toolkit/ticket-workflows.md",
 		"_toolkit/closing-messages.md"
 	],
-	".ai-skills/skills/prism-pr-review/**": "_toolkit/eric-review-modes.md",
 	".ai-skills/skills/prism-audit/**": "_toolkit/worktree-hygiene.md",
 	"scripts/ai-skills/**": [
 		"_toolkit/spec-editing.md",

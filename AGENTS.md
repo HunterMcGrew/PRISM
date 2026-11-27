@@ -46,14 +46,14 @@ load: always
 
 A plan folder, `.prism/plans/<ticket>/`, runs one of two sizes, standard or epic, and standard is the default. The agent proposes the size in `intent.md`, and the person approves it with the intent.
 
-- **Standard:** intent → design when needed → spec → plan → challenge twice → implement → verify → review → PR → PR review → retro. A standard ticket may ship as one PR or as a stack of dependent PRs.
+- **Standard:** intent → design when needed → spec → plan → challenge twice → implement → verify → review → PR → retro. A standard ticket may ship as one PR or as a stack of dependent PRs.
 - **Epic:** work split into several parts under one tracker parent. `epic-<ticket>/` holds `intent.md` and `spec.md`, and no `plan.md`. A child's folder holds `spec.md` and `plan.md` and no intent: its spec's `epic:` line names the epic folder, whose approved intent covers it. From its spec on, a child runs the standard stages.
 
-**Limits.** At most 20 subagents run at once, and at most 3 of them write, each on files no other writer touches. A stage runs at most 3 rounds, and one `blocked` bundle is re-dispatched at most 2 times. When a plan challenge's round 3 still blocks, the plan stage fixes the findings and runs one confirm round, which doesn't count against the 3. That round lets the plan through: a finding still blocking is fixed, or recorded as an open-question Decision and listed in the PR body and the closing summary. A finding holds the plan only when it is major, meaning its fix would change the intent or its foundation: an acceptance criterion, the spec's approach or Affected systems, a shared type, a public API, or a dependency. A major finding goes to `prism-architect` first, and the person is asked only when its verdict confirms the change is intent-level. A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref, or the PR for a PR review), the worktree path, and the report shape, in 15 lines or fewer. Anything longer goes into `plan.md` first.
+**Limits.** At most 20 subagents run at once, and at most 3 of them write, each on files no other writer touches. A stage runs at most 3 rounds, and one `blocked` bundle is re-dispatched at most 2 times. When a plan challenge's round 3 still blocks, the plan stage fixes the findings and runs one confirm round, which doesn't count against the 3. That round lets the plan through: a finding still blocking is fixed, or recorded as an open-question Decision and listed in the PR body and the closing summary. A finding holds the plan only when it is major, meaning its fix would change the intent or its foundation: an acceptance criterion, the spec's approach or Affected systems, a shared type, a public API, or a dependency. A major finding goes to `prism-architect` first, and the person is asked only when its verdict confirms the change is intent-level. A brief to a gated subagent names what that stage reads (the plan folder with the task IDs, round, or base ref), the worktree path, and the report shape, in 15 lines or fewer. Anything longer goes into `plan.md` first.
 
 **Approval.** `intent.md` always needs the person's approval, and an epic's covers its children. `design.md` needs it when the intent says so, and `plan.md` needs it when `auto-approve.mjs` exits 1. The person approves by saying `approve` or `approved` in chat, alone, with a path to name the file, or in a sentence, though not in a question, a negation, a hedge such as `if` or `want`, or quoted text. An approved file keeps its approval through an edit that only writes down the person's own ruling, in their words. So does `plan.md` through any edit outside `## Tasks`, and a change to its tasks goes back through `auto-approve.mjs --check` and reaches the person only when that fails. Any other edit to an approved file is approved again the same way. The agent asks for an approval once, after every pending edit to that file has landed, because a later edit voids the ask. The approve-guard prompt hook records the approval with no time limit, and the agent then runs exactly `node scripts/ai-skills/hooks/plan/approve.mjs <artifact>` as its own command, which stamps `approved_via: chat`. The script refuses a file that changed after the approve message. Without a chat approval, the script refuses inside an agent session or without a terminal, and the hook denies the run. An agent runs the script only after an approve message, once per message, and never writes the approval fields or the approval token. A chain script that exits 2 has a usage or config error, so the stage reports its message and stops, and never turns it into an approval ask.
 
-**Advancing.** An approved intent sets the run's goal: every stage done, with the draft PR open, reviewed, and retro'd, and CI green on its last push. Once the intent is approved, the run goes on without the person, and each finished stage starts the next from the resume table below without asking. After every push, run `node scripts/ai-skills/hooks/plan/watch-ci.mjs <pr>` in the background. On exit 1, fix it and push again, at most 3 times, then put it on the PR like any open item. Exit 8 (timeout) and exit 3 (unreadable PR) go on the PR too. The run stops short of the goal only where going on would build something unapproved or can't work: an approval named above, a plan challenge finding that `prism-architect` confirms is intent-level, a `blocked` report, and a second `needs-replan` on one task. A review pauses to ask only on the four pause triggers in `REVIEW.md`. Review findings never stop the run. A call only the person can make, and anything the review stages can't fix in 3 rounds, goes to the draft PR as an inline comment and is listed in the closing summary. After review fixes are pushed, dispatch `prism-pr-review` again per `shipping-flow.md`. Past the 3-round cap that run is the confirm pass, per `REVIEW.md`. Merging follows `Who merges` in `git-conventions.md`.
+**Advancing.** An approved intent sets the run's goal: every stage done, with the draft PR open, reviewed, and retro'd, and CI green on its last push. Once the intent is approved, the run goes on without the person, and each finished stage starts the next from the resume table below without asking. After every push, run `node scripts/ai-skills/hooks/plan/watch-ci.mjs <pr>` in the background. On exit 1, fix it and push again, at most 3 times, then put it on the PR like any open item. Exit 8 (timeout) and exit 3 (unreadable PR) go on the PR too. The run stops short of the goal only where going on would build something unapproved or can't work: an approval named above, a plan challenge finding that `prism-architect` confirms is intent-level, a `blocked` report, and a second `needs-replan` on one task. A review pauses to ask only on the four pause triggers in `REVIEW.md`. Review findings never stop the run. A call only the person can make, and anything the review can't fix in its rounds, is listed in the PR body and the closing summary. Merging follows `Who merges` in `git-conventions.md`.
 
 **Scope changes.** Later stages find work the intent didn't name. A change that follows from the approved outcome, such as extending a ruling to a sibling case or updating a doc the change makes false, goes ahead as a `## Decisions` entry in `spec.md` or `plan.md`. Anything else, such as a change to what a user sees beyond that outcome or a new system, goes to `prism-architect` as a subagent for a fit verdict. A `proceed` or `proceed with changes` verdict goes ahead the same way, with the verdict in the entry. A change that contradicts one of the person's rulings, or changes an acceptance criterion, goes to `prism-architect` first too, and the architect forwards it to the person. The person is asked mid-run only when the build can't go on without the answer: a change the architect forwards, or a `don't proceed` verdict on work a task depends on. That question is asked on its own, never inside an approval. Everything else stays an open item: an open-question Decision per `Open-question Decision variant` in `branch-plan.md`, listed in the PR body and the closing summary. Every scope change since the intent is listed at each stop and in the PR body, so the person can still veto one.
 
@@ -94,9 +94,8 @@ history: <one `## History` line>
 | standard, `plan.md` not approved, challenge rounds 1 and 2 done | plan approval (`auto-approve.mjs`, then the person on exit 1, or a stop on exit 2) |
 | standard, a task with no commit naming it | implement |
 | standard, `## Verification` empty | verify: dispatch `prism-verify` |
-| standard, no final self-review line under `## Review` | review: run `prism-self-review` against `REVIEW.md` |
+| standard, no final review line under `## Review` | review: dispatch `prism-review` as a fresh subagent with a path brief, on `modelTiers.overrides.briar` when set |
 | standard, no PR | PR: follow `.prism/references/shipping-flow.md` |
-| standard, PR open with no final PR-review verdict under `## Review` | PR review: dispatch `prism-pr-review` per `shipping-flow.md` |
 | standard, `Retro:` line empty under `## PR Readiness` | retro: run `prism-retro`, which writes the line and commits `retro: <summary>`, then push |
 | epic, a child in `## Children` not merged | the next unmerged child per `## Merge order`: `prism-spec` writes its spec in its own folder |
 | epic, every child in `## Children` merged, no `## Retro` in `spec.md` | retro: run `prism-retro`, which appends `## Retro` to `spec.md` |
@@ -124,10 +123,10 @@ A persona's own name always routes to it.
 | **Clove** | `prism-implement` | "fix this", "implement", "add a feature", "make this work", starts editing files or writing code directly |
 | **Winston** | `prism-architect` | "Winston", "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
 | **Sasha** | `prism-debug` | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior |
-| **Eric** | `prism-pr-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
+| **Eric** | `prism-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
 | **Nora** | `prism-start-ticket` | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID |
 | **Mira** | `prism-intent` | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements", "Mira" |
-| **Briar** | `prism-self-review` | "review my changes", "is this ready for PR", "self-review", "check my work" |
+| **Briar** | `prism-review` | "review my changes", "is this ready for PR", "self-review", "check my work" |
 | **Pixel** | `prism-design` | "what should this look like", "I don't have a mock", "how should I lay this out", "propose a UI", "what should the empty state look like" |
 | **Reese** | `prism-qa-plan` | "QA plan for <release / sprint / PR / hotfix>", "release checklist for <tags>", "verify this bug fix", "retest", "what should QA test", any two version tags, a GitHub compare URL, a single PR or a list of PRs |
 | **Sage** | `prism-changelog` | "generate changelog", "release notes", "what changed between <tag1> and <tag2>", any two git tags |
@@ -171,7 +170,7 @@ Utility skills have no persona and run in the invoking voice.
 - On a match, say "This looks like [domain] work — bringing in [Persona]," then invoke the skill.
 - A request outside the invoked skill's scope hands off per [`skills-ecosystem.md`](../architect/_toolkit/skills-ecosystem.md).
 - No match (general questions, git operations, simple lookups) is handled directly.
-- **Override the built-in `/review`.** Any PR review phrase goes to `prism-pr-review` (Eric), because the built-in doesn't know this project's conventions, architect context, or plan system.
+- **Override the built-in `/review`.** Any PR review phrase goes to `prism-review`, because the built-in doesn't know this project's conventions, architect context, or plan system.
 
 **Skip auto-routing** for trivial tasks (a rename, a quick git command, formatting), when the user says "don't use a skill" or "just do it", and when a skill session is already active, so skills don't nest.
 
@@ -179,7 +178,7 @@ Utility skills have no persona and run in the invoking voice.
 
 The authoring persona owns the shipping step, which is commit, push, and open the PR, with no prompt before pushing. Clove ships code, Eli ships docs, and Sage and Reese ship their own artifact PRs. Release PRs stay with the team lead. On a folder-plan branch, the session's PR stage pushes and opens the draft PR for code and docs together, while `prism-implement` and `prism-docs` only commit. Flat-plan branches keep the authoring persona shipping.
 
-Briar and Eric review and never ship. Asked to create a PR, they route back to the author, which keeps the review's adversarial edge and avoids iteration-loop ambiguity. The decision and its tradeoffs are in the authors-ship-reviewers-review ADR under `.prism/spec/adrs/_toolkit/`.
+Briar reviews and never ships. Asked to create a PR, she routes back to the author, which keeps the review's adversarial edge and avoids iteration-loop ambiguity. The decision and its tradeoffs are in the authors-ship-reviewers-review ADR under `.prism/spec/adrs/_toolkit/`.
 
 One narrow exception: a reviewer commits its plan-only commit, limited to the plan's files and verified mechanically, per `branch-plan.md` § Landing a plan-only commit. On a folder plan the session's PR stage pushes it. Everything else in a reviewer's tree stays the author's to ship.
 
@@ -473,7 +472,7 @@ When looking for an existing plan:
 4. If not found, scan all plan files for a matching `## Ticket` field, and each plan folder's chain files for a matching `ticket:` frontmatter line.
 5. If still not found:
    - **implement / architect / self-review**: ask the user which ticket this work is for, then create a new plan. These skills write into the plan (review issues, debugged issues, PR readiness) and need somewhere to persist findings.
-   - **PR review**: note "no plan found" and proceed without one. PR review runs in a worktree on someone else's branch — creating a plan there would cause merge conflicts. All PR review findings go into the GitHub PR comment instead.
+   - **Review of a PR by number** (`prism-review <pr>`): note "no plan found" and proceed without one, because the PR may be someone else's branch, and write nothing.
 
 A folder resolves to its latest-stage file (`plan.md`, else `spec.md`, `design.md`, `intent.md`), and `.prism/archived/` never resolves as a live plan. `.prism/references/plan-lookup.md` holds the same steps as a checklist for skills that resolve a plan.
 
@@ -568,7 +567,7 @@ The plan should remain easy to scan.
 
 The brevity default in step 5 is correct for routine entries. Verified fixes and non-trivial decisions are the exception — they use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance.
 
-**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
+**Why:** Conclusions look scannable, but downstream personas (Clove, Briar) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, and Briar self-reviews against the same gap. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
 
 **How to apply:** When the plan stage (`prism-plan`) records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 
@@ -629,7 +628,7 @@ The close ceremony runs in two phases: **reflect**, then **close**.
 
 **Close** promotes lasting Decisions (consuming any `## Promotion cautions` from the reflect phase — a Decision the execution record refuted is promoted as corrected or demoted to a lesson, never promoted unchanged), runs the verdict gate, records the retro verdict line, and marks the plan closed. Steps 1–2 below are the close phase; their content is unchanged from before the restructure.
 
-**Universal gate — every plan close, not just epics.** Every plan (ticket and epic) records a retro verdict line beside `> Closed:`: `> Retro: <path>` or `> Retro: declined — <one-line reason>`. The nudge is universal; declining is always legitimate; the decline is visible and recorded so the skip has teeth. The theater risk a universal gate raises — heavyweight synthesis on a one-line bugfix — is answered by **grain**, not by exempting trivial plans from the gate: an exemption would re-open the silent-skip hole the gate exists to close. A folder plan differs: the retro is its fixed last stage with no declined form, because a run that goes on without the person has nobody to decline it. `prism-retro` runs after the final PR review and writes the `Retro:` line under `## PR Readiness` and the `> Closed:` line. `pnpm prism:retro-line` fails a folder plan whose final PR-review verdict is recorded while that line is empty.
+**Universal gate — every plan close, not just epics.** Every plan (ticket and epic) records a retro verdict line beside `> Closed:`: `> Retro: <path>` or `> Retro: declined — <one-line reason>`. The nudge is universal; declining is always legitimate; the decline is visible and recorded so the skip has teeth. The theater risk a universal gate raises — heavyweight synthesis on a one-line bugfix — is answered by **grain**, not by exempting trivial plans from the gate: an exemption would re-open the silent-skip hole the gate exists to close. A folder plan differs: the retro is its fixed last stage with no declined form, because a run that goes on without the person has nobody to decline it. `prism-retro` runs after the final review and writes the `Retro:` line under `## PR Readiness` and the `> Closed:` line. `pnpm prism:retro-line` fails a folder plan whose final PR-review verdict is recorded while that line is empty.
 
 **Why declinable, not enforced:** On a flat plan, PRISM cannot force a retro to run involuntarily — no scheduler, personas never auto-invoke each other, and hook enforcement was deliberately reverted. What the gate can replicate is CI's real property: skipping is a visible, recorded override, not a silent omission. The gate is a human-declinable nudge. Promotion-without-relitigation is the defect the reflect phase fixes — today's ceremony, unrestructured, could promote a decision the work itself disproved.
 
@@ -667,7 +666,7 @@ Before promoting decisions and marking the plan closed (steps 1–2 above), ever
 
 **Why:** Without an explicit verdict, decisions get promoted mentally, the plan closes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
 
-**How to apply:** On a folder plan, `prism-retro` writes every verdict after the final PR review, and on a flat plan the plan stage runs this gate during plan close. A missing verdict is not a reviewer finding, because the review writes no Decision verdict and reports none missing. The review covers the whole PR per `REVIEW.md`, and its intent-scope pass (`.prism/review/intent-scope.md`) still fixes other plan drift outside `## Tasks` in place and lists what it edited. A stale task is reported as a Minor, and `intent.md` is never edited. A missing `> Retro:` line under § Before Closing above is no reviewer finding either, and on a folder plan `pnpm prism:retro-line` fails the plan once the final PR review is recorded with the line empty.
+**How to apply:** On a folder plan, `prism-retro` writes every verdict after the final review, and on a flat plan the plan stage runs this gate during plan close. A missing verdict is not a reviewer finding, because the review writes no Decision verdict and reports none missing. The review reads the plan files as its yardstick and raises no finding on their prose, per `REVIEW.md`. A missing `> Retro:` line under § Before Closing above is no reviewer finding either, and on a folder plan `pnpm prism:retro-line` fails the plan once the final review is recorded with the line empty.
 
 ---
 
@@ -820,7 +819,7 @@ The inline tag on `Root cause` and the explicit `Confidence` field carry the sam
 
 ## Review Issues
 
-Add entries here via the `prism-self-review` or `prism-pr-review` skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
+Add entries here via the `prism-review` skill. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
 
 ### <short issue title>
 
@@ -867,7 +866,7 @@ Dead code, debug artifacts, stray comments found during review.
 
 ## PR Readiness
 
-Living checklist — updated every time `prism-self-review` runs. Reflects current state.
+Living checklist — updated every time `prism-review` runs. Reflects current state.
 
 - [ ] No critical or major issues
 - [ ] Types correct — no `any`, no unsafe `as`
@@ -1100,7 +1099,7 @@ The implementation skill, `prism-implement`, builds inside the same local frame.
 
 When removing or renaming a concept — a function, type, config key, rule section, anything other code or docs reference — sweep every reference by searching the tree for the old name. Compiler errors and the diff are not the sweep: the compiler only sees code it type-checks, and the diff only shows files you already touched. The reference you missed lives in a file the change never opened — docs, templates, string literals, generated mirrors, sibling configs.
 
-**Why:** a removal that leaves dangling references ships a claim that the concept still exists, and every later reader pays for the confusion. Diff-bounded review can't catch it either — the unfixed file never appears in the diff — so the author's tree-wide search is the only gate that sees the whole repo (the reviewer-side check lives in the `prism-self-review` and `prism-pr-review` skills).
+**Why:** a removal that leaves dangling references ships a claim that the concept still exists, and every later reader pays for the confusion. Diff-bounded review can't catch it either — the unfixed file never appears in the diff — so the author's tree-wide search is the only gate that sees the whole repo (the reviewer-side check lives in the `prism-review` skill).
 
 A changed *behavior* has the same reach as a rename but no token to grep. When a fix changes a documented predicate — a safety condition, a validation rule, a state-transition guard — the prose describing it elsewhere shares no symbol with the code, so no search surfaces it, and the drift stays invisible until a reader acts on the stale description. Reconcile every prose home of the predicate in the same review pass as the code change, especially always-on docs whose readers can reintroduce by hand the exact bug the code just closed. This is distinct from mirror sync: `pnpm prism:build` keeps a rule's mirrors byte-identical to their source but cannot detect that the source's *meaning* drifted from the code it specifies. thrive#2196 is the concrete case: a worktree classifier's GREEN predicate was hardened to a commit-containment check while the rule describing it still read the looser pre-fix version, live for a full review pass until PR review caught the mismatch.
 
@@ -1207,8 +1206,7 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 - prism-plan
 - prism-implement (Clove)
-- prism-pr-review (Eric)
-- prism-self-review (Briar)
+- prism-review (Briar)
 - prism-docs (Eli)
 - prism-design (Pixel)
 - prism-qa-plan (Reese)
@@ -1276,7 +1274,7 @@ If the proposed scope fails any of these, Nora asks the user to narrow it before
 
 - A specific refactor, surfaced during review, that's larger than the local frame defined by [`.prism/rules/code-standards.md` § Refactor scope](./code-standards.md).
 - A separate bug discovered while implementing the originating ticket — recorded in the plan's `## Debugged Issues`, not silently fixed inline.
-- A documentation gap noted by Briar or Eric that isn't load-bearing for the current PR.
+- A documentation gap noted by Briar that isn't load-bearing for the current PR.
 - A design follow-up Pixel flagged as out-of-scope for the current mock spec.
 - A test coverage gap the originating ticket couldn't reach without scope creep.
 
@@ -1319,7 +1317,7 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 
 - **Nora** (`prism-start-ticket`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
 - **Winston** (`prism-architect`) — before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
-- **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
+- **Briar** (`prism-review`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 
 ---
@@ -1398,7 +1396,7 @@ End the command with `-- <paths>` naming the files this commit changes. The comm
 
 Default to one clean commit per unit of work. Three exceptions earn multiple commits on a branch:
 
-- **Multi-task work** — when the plan's `## Implementation Tasks` has multiple distinct tasks, commit as each completes: one commit per bundle on a folder plan, and per task on a flat plan. Branch-level `git log` is read by Briar, Eric, and human reviewers during development — readable commit boundaries help review, even though `main` only sees the squash (§ Merge Strategy).
+- **Multi-task work** — when the plan's `## Implementation Tasks` has multiple distinct tasks, commit as each completes: one commit per bundle on a folder plan, and per task on a flat plan. Branch-level `git log` is read by Briar and human reviewers during development — readable commit boundaries help review, even though `main` only sees the squash (§ Merge Strategy).
 - **Post-review follow-ups** — review fixes and `lessons.md` appends are separate commits, not amends to the prior commit. The reviewer diffs what changed since their last pass; an amend hides it.
 - **User-requested mid-implementation commits** — if the user asks for one, honor it without prompting again.
 
@@ -1518,7 +1516,7 @@ Every persona that creates files in `.prism/` applies this rule. Cite it when:
 - Adding install-template content
 - Reviewing a PR that introduces a new file in `.prism/` or `templates/install/.prism/`
 
-Briar and Eric flag any install-template addition that ships empty as Minor in review — apply the schema-required-stub test before accepting it.
+Briar flags any install-template addition that ships empty as Minor in review — apply the schema-required-stub test before accepting it.
 
 ---
 

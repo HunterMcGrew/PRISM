@@ -65,7 +65,7 @@ const GATED_ROLES = new Set([
 	"prism-verify",
 	"prism-implement",
 	"prism-docs",
-	"prism-pr-review",
+	"prism-review",
 ]);
 
 // One or two qualifiers (`the`, `all`, `previous`) must precede the noun, as in

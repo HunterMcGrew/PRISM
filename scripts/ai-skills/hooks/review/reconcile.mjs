@@ -6,9 +6,8 @@
  * `node <hook-runtime>/review/reconcile.mjs <pr> [--log <path>] [--no-write] [--classes] [--json]`.
  *
  * It replies to and resolves the agent's own threads whose lines changed,
- * holding back a thread where a person has the last word. It corrects the
- * review labels against the summary comment's `prism-verdict` line, and
- * reports what is still unclean: threads that need a reply, human comments
+ * holding back a thread where a person has the last word, and it reports
+ * what is still unclean: threads that need a reply, human comments
  * not yet in the review-misses log, required PR body headings that are
  * missing, log lines that don't parse, and a PR with more than 100 review
  * threads, which it doesn't page through. It exits 0 only when nothing is
@@ -20,7 +19,7 @@
  * A marked comment from any non-bot login reads as an agent's when comments
  * are classified, so another dev's agent is neither a miss nor owed a reply.
  * Every write also needs the login `gh api user` returns, so anyone else
- * pasting the marker can't get a thread resolved or the labels changed.
+ * pasting the marker can't get a thread resolved.
  *
  * The log at `.prism/metrics/review-misses.jsonl` is append-only JSON lines.
  * A miss row is `{"pr","reviewer","file","summary","class","nearest_pass",
@@ -35,20 +34,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const AGENT_MARKER = "<!-- prism-agent -->";
-const SUMMARY_MARKER = "<!-- code-review-pr-summary -->";
-const VERDICT_LINE =
-	/<!--\s*prism-verdict:\s*state=(\S+)\s+effort=(\S+)\s+confidence=(\S+)\s*-->/;
 const GRAPHQL_BLOCKED =
 	"GitHub GraphQL is not available from Claude Code sessions";
-const REVIEW_LABELS = new Set([
-	"effort:glance",
-	"effort:quick",
-	"effort:deep",
-	"confidence:high",
-	"confidence:needs-judgment",
-	"confidence:standards-only",
-	"review:has-minors",
-]);
 const OPTIONAL_SECTION = /Delete this section|Skip this section/i;
 const EXCERPT_LENGTH = 200;
 const OPEN_CLASS_THRESHOLD = 3;
@@ -90,7 +77,6 @@ const RESOLVE_MUTATION = `mutation($id: ID!) {
  *   user: { login: string },
  *   body?: string | null,
  *   head?: { sha: string },
- *   labels?: { name: string }[],
  * }} Pull
  * @typedef {{ class?: unknown, resolved?: unknown, nearest_pass?: unknown, comment?: unknown }} LogRow
  * @typedef {{ line: number, error: string }} BadLine
@@ -236,25 +222,6 @@ export function reconcile({
 		);
 	}
 
-	const labelPlan = planLabels(issueComments, pull.labels ?? [], agentLogin);
-	actions.push(labelPlan.note);
-	for (const label of labelPlan.remove) {
-		run(`remove label ${label}`, [
-			"-X",
-			"DELETE",
-			`${base}/issues/${pr}/labels/${label}`,
-		]);
-	}
-
-	if (labelPlan.add.length > 0) {
-		run(`add labels ${labelPlan.add.join(", ")}`, [
-			"-X",
-			"POST",
-			`${base}/issues/${pr}/labels`,
-			...labelPlan.add.flatMap((label) => ["-f", `labels[]=${label}`]),
-		]);
-	}
-
 	const log = readLog(logPath);
 	findings.badLines = log.badLines;
 	const logged = new Set(log.rows.map((row) => row.comment).filter(Boolean));
@@ -290,7 +257,7 @@ export function reconcile({
 
 /**
  * True for a marked comment from this runner's own login, the gate on every
- * write: a thread resolve, a reply check, and the summary the labels follow.
+ * write: a thread resolve and a reply check.
  *
  * @param {Comment} comment
  * @param {string} agentLogin
@@ -401,73 +368,6 @@ function awaitsAnswerToPerson(thread, agentLogin) {
 	const last = later.filter((comment) => !isBot(comment)).at(-1);
 
 	return Boolean(last && !readsAsAgent(last));
-}
-
-// --- Labels ---
-
-/**
- * Returns `{ remove, add, note }` for the closed review-label set, read
- * against the verdict line in the agent's latest summary comment. No other
- * label is touched.
- *
- * @param {Comment[]} issueComments
- * @param {{ name: string }[]} labels
- * @param {string} agentLogin
- * @returns {{ remove: string[], add: string[], note: string }}
- */
-export function planLabels(issueComments, labels, agentLogin) {
-	const summary = issueComments
-		.filter(
-			(comment) =>
-				isAgent(comment, agentLogin) &&
-				(comment.body ?? "").includes(SUMMARY_MARKER)
-		)
-		.at(-1);
-	const verdict = summary ? VERDICT_LINE.exec(summary.body ?? "") : null;
-	if (!verdict) {
-		return { remove: [], add: [], note: "labels left alone: no verdict line" };
-	}
-
-	const [line, state = "", effort = "", confidence = ""] = verdict;
-	const expected = expectedLabels(state, effort, confidence);
-	if (!expected) {
-		return {
-			remove: [],
-			add: [],
-			note: `labels left alone: unreadable verdict line ${line}`,
-		};
-	}
-
-	const current = labels.map((label) => label.name);
-
-	return {
-		remove: current.filter(
-			(name) => REVIEW_LABELS.has(name) && !expected.includes(name)
-		),
-		add: expected.filter((name) => !current.includes(name)),
-		note: `labels checked against verdict state=${state}`,
-	};
-}
-
-/**
- * @param {string} state
- * @param {string} effort
- * @param {string} confidence
- * @returns {string[] | null}
- */
-function expectedLabels(state, effort, confidence) {
-	if (state === "1") return [];
-
-	/** @type {string[] | null} */
-	let expected = null;
-	if (state === "2") expected = [`effort:${effort}`, "review:has-minors"];
-	if (state === "3")
-		expected = [`effort:${effort}`, `confidence:${confidence}`];
-	if (!expected || !expected.every((name) => REVIEW_LABELS.has(name))) {
-		return null;
-	}
-
-	return expected;
 }
 
 // --- PR body ---

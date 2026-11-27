@@ -19,8 +19,6 @@ export interface HookPayload {
 	hook_event_name?: string;
 	agent_type?: string;
 	prompt?: string;
-	last_assistant_message?: string;
-	stop_hook_active?: boolean;
 }
 
 export interface HarnessSpec {
@@ -39,12 +37,6 @@ export interface HarnessSpec {
 	subagentDispatch: (
 		payload: HookPayload
 	) => { type?: string; prompt?: string } | null;
-	/** What a subagent's stop event carries, or `null` on a host with no such event. */
-	subagentStop: (
-		payload: HookPayload
-	) => { agentType?: string; message?: string; active?: boolean } | null;
-	/** The reply that sends a stopping subagent back to work; `null` on a host with none. */
-	emitBlockStop: (reason: string) => unknown;
 }
 
 export function extractPatchFilePaths(command: string | undefined): string[];

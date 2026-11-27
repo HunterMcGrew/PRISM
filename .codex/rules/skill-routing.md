@@ -13,10 +13,10 @@ A persona's own name always routes to it.
 | **Clove** | `prism-implement` | "fix this", "implement", "add a feature", "make this work", starts editing files or writing code directly |
 | **Winston** | `prism-architect` | "Winston", "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
 | **Sasha** | `prism-debug` | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior |
-| **Eric** | `prism-pr-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
+| **Eric** | `prism-review` | "review pr", "review #123", "review this PR", "PR review", shares a PR URL or number |
 | **Nora** | `prism-start-ticket` | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID |
 | **Mira** | `prism-intent` | "write the intent", "define the scope", "grill me", "what are the requirements", "write user stories", "flesh out the requirements", "Mira" |
-| **Briar** | `prism-self-review` | "review my changes", "is this ready for PR", "self-review", "check my work" |
+| **Briar** | `prism-review` | "review my changes", "is this ready for PR", "self-review", "check my work" |
 | **Pixel** | `prism-design` | "what should this look like", "I don't have a mock", "how should I lay this out", "propose a UI", "what should the empty state look like" |
 | **Reese** | `prism-qa-plan` | "QA plan for <release / sprint / PR / hotfix>", "release checklist for <tags>", "verify this bug fix", "retest", "what should QA test", any two version tags, a GitHub compare URL, a single PR or a list of PRs |
 | **Sage** | `prism-changelog` | "generate changelog", "release notes", "what changed between <tag1> and <tag2>", any two git tags |
@@ -60,7 +60,7 @@ Utility skills have no persona and run in the invoking voice.
 - On a match, say "This looks like [domain] work — bringing in [Persona]," then invoke the skill.
 - A request outside the invoked skill's scope hands off per [`skills-ecosystem.md`](../architect/_toolkit/skills-ecosystem.md).
 - No match (general questions, git operations, simple lookups) is handled directly.
-- **Override the built-in `/review`.** Any PR review phrase goes to `prism-pr-review` (Eric), because the built-in doesn't know this project's conventions, architect context, or plan system.
+- **Override the built-in `/review`.** Any PR review phrase goes to `prism-review`, because the built-in doesn't know this project's conventions, architect context, or plan system.
 
 **Skip auto-routing** for trivial tasks (a rename, a quick git command, formatting), when the user says "don't use a skill" or "just do it", and when a skill session is already active, so skills don't nest.
 
@@ -68,6 +68,6 @@ Utility skills have no persona and run in the invoking voice.
 
 The authoring persona owns the shipping step, which is commit, push, and open the PR, with no prompt before pushing. Clove ships code, Eli ships docs, and Sage and Reese ship their own artifact PRs. Release PRs stay with the team lead. On a folder-plan branch, the session's PR stage pushes and opens the draft PR for code and docs together, while `prism-implement` and `prism-docs` only commit. Flat-plan branches keep the authoring persona shipping.
 
-Briar and Eric review and never ship. Asked to create a PR, they route back to the author, which keeps the review's adversarial edge and avoids iteration-loop ambiguity. The decision and its tradeoffs are in the authors-ship-reviewers-review ADR under `.prism/spec/adrs/_toolkit/`.
+Briar reviews and never ships. Asked to create a PR, she routes back to the author, which keeps the review's adversarial edge and avoids iteration-loop ambiguity. The decision and its tradeoffs are in the authors-ship-reviewers-review ADR under `.prism/spec/adrs/_toolkit/`.
 
 One narrow exception: a reviewer commits its plan-only commit, limited to the plan's files and verified mechanically, per `branch-plan.md` § Landing a plan-only commit. On a folder plan the session's PR stage pushes it. Everything else in a reviewer's tree stays the author's to ship.

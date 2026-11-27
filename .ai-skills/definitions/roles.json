@@ -46,15 +46,10 @@
 		},
 		{ "id": "prism-debug", "persona": "Sasha", "routing": "auto" },
 		{
-			"id": "prism-pr-review",
-			"persona": "Eric",
+			"id": "prism-review",
+			"persona": "Briar",
 			"routing": "auto",
 			"gated": true
-		},
-		{
-			"id": "prism-self-review",
-			"persona": "Briar",
-			"routing": "auto"
 		},
 		{
 			"id": "prism-retro",

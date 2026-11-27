@@ -52,7 +52,7 @@ If the proposed scope fails any of these, Nora asks the user to narrow it before
 
 - A specific refactor, surfaced during review, that's larger than the local frame defined by [`.prism/rules/code-standards.md` § Refactor scope](./code-standards.md).
 - A separate bug discovered while implementing the originating ticket — recorded in the plan's `## Debugged Issues`, not silently fixed inline.
-- A documentation gap noted by Briar or Eric that isn't load-bearing for the current PR.
+- A documentation gap noted by Briar that isn't load-bearing for the current PR.
 - A design follow-up Pixel flagged as out-of-scope for the current mock spec.
 - A test coverage gap the originating ticket couldn't reach without scope creep.
 
@@ -95,5 +95,5 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 
 - **Nora** (`prism-start-ticket`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
 - **Winston** (`prism-architect`) — before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
-- **Briar** (`prism-self-review`) and **Eric** (`prism-pr-review`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
+- **Briar** (`prism-review`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.

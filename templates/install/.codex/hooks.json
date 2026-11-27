@@ -101,18 +101,6 @@
 					}
 				]
 			}
-		],
-		"SubagentStop": [
-			{
-				"matcher": "^prism-pr-review$",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "node \".claude/hooks/reconcile-gate.mjs\" --tool=codex --event=SubagentStop",
-						"timeout": 120
-					}
-				]
-			}
 		]
 	}
 }

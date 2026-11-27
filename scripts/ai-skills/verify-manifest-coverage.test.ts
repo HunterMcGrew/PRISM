@@ -217,7 +217,7 @@ test("findMissingCoverage: empty when every expected positive has skills-ecosyst
 		nora: ["_toolkit/skills-ecosystem.md", "_toolkit/spec-editing.md"],
 		zoe: ["_toolkit/skills-ecosystem.md"],
 		winston: ["_toolkit/skills-ecosystem.md"],
-		eric: ["_toolkit/skills-ecosystem.md"],
+		briar: ["_toolkit/skills-ecosystem.md"],
 		sage: ["_toolkit/skills-ecosystem.md"],
 		fallthrough: [],
 	};
@@ -229,14 +229,14 @@ test("findMissingCoverage: reports each expected positive that is missing the do
 		nora: ["_toolkit/skills-ecosystem.md"],
 		zoe: ["_toolkit/spec-editing.md"],
 		winston: ["_toolkit/skills-ecosystem.md"],
-		eric: [],
+		briar: [],
 		sage: ["_toolkit/skills-ecosystem.md"],
 		fallthrough: [],
 	};
 	const failures = findMissingCoverage(result);
 	assert.equal(failures.length, 2);
 	assert.ok(failures.some((message) => message.startsWith("zoe ")));
-	assert.ok(failures.some((message) => message.startsWith("eric ")));
+	assert.ok(failures.some((message) => message.startsWith("briar ")));
 });
 
 test("collectRoutedDocs: flattens the single-doc and multi-doc route forms", () => {
