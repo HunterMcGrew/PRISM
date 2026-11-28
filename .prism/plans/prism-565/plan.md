@@ -7,6 +7,8 @@ approved_by: auto
 approved_at: 2026-11-27
 ---
 
+> Closed: 2026-11-27
+
 ## Acceptance Criteria
 
 Child 13 of the Kitchen Line epic (#499), from its `## Children` row 13 and `spec.md`. Each criterion names the part that builds it and cites the spec requirement it grades as `(REQ-n)`. Part 1's review grades only part 1's criteria.
@@ -224,13 +226,20 @@ round 2: clean
 ## Decisions
 
 - **This child ships as a two-PR stack, cut after T7.** The spec proposes the cut and the work spans well over 10 files once generated copies count. Part 1 (the reader, both scripts, the rekeyed lint, delivery, and their architect-doc entries) works alone: the old retro still writes `Retro: <report path>`, which the rekeyed lint passes. Part 2 (the skill split, template, rules, ADR, docs, compaction text) needs the trigger script to exist. Rejected: one PR, past the size where review gets painful, and cutting the lint into part 2, which would leave part 1's merge bar and trigger with no doc saying what the retro line now means.
+  - → no promotion needed (the cut line is specific to this ticket's files; the stacked commit form is already in the Tasks and subjects part of `plan-chain-scripts.md`)
 - **Part 1 ships from T7, not from the resume table.** After T7, part 1's verify, review, and PR stages run while T8 to T17 are still open, and the resume table would read an uncommitted task and send the session back to implement. The session drives part 1's verify, review, and PR from this Decision, part 2 resumes from T8 on a branch cut from `main`, and the retro runs once, after part 2's review. Rejected: running the close step on part 1, which would close a plan with half its tasks open.
+  - → no promotion needed (a ticket-specific routing call; the resume-table gap for a stack's earlier part is an open action item in the PRISM-557 retro)
 - **No ADR for the merge-bar tie, confirmed.** Applied `.prism/references/triple-gated-adr-criterion.md` as the spec asks: the tie is one script and one sentence in `git-conventions.md`, reversible by editing both, so the hard-to-reverse gate does not fire. `git-conventions.md` and `review-runtime.md` carry the rule.
+  - → no promotion needed (the call is to write no ADR; the rule it keeps out of one lives in `git-conventions.md` and the review/merge-bar.mjs part of `review-runtime.md`)
 - **The report trigger fires on every folder plan recorded so far.** Challenge round 1 found that prism-530, 537, 544, 550, 553, 557, and 558 each hold at least one review line that is not `clean`, so on today's record `Retro: none — no trigger` would never be written and the report would run every time. The spec reads the intent's "a review asked for changes" literally, and the third amendment's two-round, zero-Major exit should make clean first rounds more common from here, so the trigger stays as specified. Hunter should expect the report on most tickets until that shows up in the record. AC-15 grades whichever path this ticket's own close takes, and AC-7's phrase greps lean on it for behavior. Rejected: keying the review reason on the last line only, which would hide a review that asked for changes and is a change to the intent's wording.
+  - → promoted to ADR-0089 (its Consequences carry the trigger firing on every recorded plan; the retro reran the script on prism-530, 537, 544, 550, 553, 557, 558, and 565, and all exit 0)
 - **`docs/what-prism-writes.md` is left for child 16.** It lists the delivered runtime files and goes stale when T5 adds three, but it sits outside this child's Affected systems. Child 16's docs sweep covers the pages the earlier children changed, as the spec's Decision on `docs/parameterization.md` already routes.
+  - → no promotion needed (an ordering call between children; the retro's first action item adds this child's pages to epic row 16, which does not name them today)
 - **The merge rule names merge-bar.mjs in part 2, not part 1.** Part 1 adds the script and documents it in `review-runtime.md`, and part 2's T12 changes the rule text. Until part 2 merges, the session's merge bar is the existing sentence, which a bare `clean` already meets. Rejected: editing `git-conventions.md` in part 1, which would put an always-on rule into the scripts PR the spec keeps rule-free.
 - **Part 1's three review-round-2 leftovers are fixed in part 2.** Round 2 is the review cap, so #566 listed them as open items: `review-runtime.md`'s merge-bar exit-2 list omits a failed `git log` or `git diff-tree`, the symlinked-invocation test in `plan-retro-trigger.test.ts` has no Windows EPERM skip, and no test covers the exemption for a commit that changes no files. They ship as `T2 fix`, `T3 fix`, and `T6 fix` commits, because they finish part 1's own tasks. Rejected: a separate follow-up PR, which would cost a third review cycle for three small edits in files this ticket owns.
+  - → no promotion needed (a ticket-specific cost call; the three fixes shipped as `T2 fix`, `T3 fix`, and `T6 fix`)
 - **AC-13's seed-twin evidence reads `##`, not `###`.** Its Evidence runs `awk '/^### Compaction arms/...'` over `templates/install/.prism/architect/_toolkit/hook-runtime.md`, which titles the section `## Compaction arms`, so that half matches nothing on any tree. The review grades AC-13's seed half with `^## Compaction arms`. The criterion's statement is unchanged and only its command was wrong, the same typo T15's proof carried. Rejected: rewriting the criterion's Evidence line, because agents propose criterion changes and don't make them.
+  - → no promotion needed (a one-off evidence typo; the class is the existing lesson "AC evidence commands are code" in `.prism/lessons.md`)
 
 ## Verification
 
@@ -257,3 +266,7 @@ head: abffc0f9
 - review round 2 at 4913fb07 (part 1 of 2): clean
 - review round 1 at fd06d94a (part 2 of 2): clean
 - review round 2 at 0b7b91fd (part 2 of 2): clean
+
+## PR Readiness
+
+Retro: .prism/retros/prism-499/prism-565.md
