@@ -107,7 +107,7 @@ It exits 0 for `small`, 1 for `standard`, and 2 on a usage error, a `<base>` wit
 
 Measured against the default branch, a branch stacked on another feature branch counts the parent's lines as its own, so it reads `standard`. A small ticket is one commit range off the default branch.
 
-**Outgrowing.** A small ticket that reads `standard` goes on as a standard one. The session sets `size: standard` in `intent.md`, asks the person once for a fresh `approve`, and commits the intent. It then deletes the small `plan.md` with a plain `rm` and commits the deletion through `commit.mjs` as a `plan:` commit, because an approved file can't be edited. `git rm` first fails: the path is gone from the index, so `commit.mjs`'s `git add` exits 128. The approve guard judges edits to a chain file's approval lines and commands that name `approve.mjs`, so the removal passes. The resume table's `no spec.md` row then runs the spec stage, and the plan stage writes a full `plan.md`.
+**Outgrowing.** A small ticket that reads `standard` goes on as a standard one. The session sets `size: standard` in `intent.md`, asks the person once for a fresh `approve`, and commits the intent. It then deletes the small `plan.md` with a plain `rm` and commits the deletion through `commit.mjs` as a `plan:` commit, because the approve guard denies a change to an approved file's approval lines. `git rm` first fails: the path is gone from the index, so `commit.mjs`'s `git add` exits 128. The approve guard judges edits to a chain file's approval lines and commands that name `approve.mjs`, so the removal passes. The resume table's `no spec.md` row then runs the spec stage, and the plan stage writes a full `plan.md`.
 
 ## Stop paths
 
