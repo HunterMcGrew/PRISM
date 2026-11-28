@@ -2,8 +2,8 @@
 // A copy carrying this line is PRISM's own and is replaced in place; one without it
 // is the consumer's own file and is backed up to `.bak` before being replaced.
 /**
- * The commit gate's stops and config checks, and the context every check
- * reads.
+ * The commit gate's config, size, and stops checks, and the context every
+ * check reads.
  *
  * Each check returns null to pass or `{ reason, remedy }` to deny, with a
  * one-line remedy. The gate never judges a commit's subject: any message
@@ -18,8 +18,11 @@
  * branch with no plan all skip the stop-path and weakened-test checks. The
  * stops check's flag denies run on every branch and read nothing from the
  * config. Its stop-path half runs wherever a task list exists to read. The
- * weakened-tests check lives in `test-guard.mjs`. The entry point runs config,
- * weakened tests, and stops in that order.
+ * weakened-tests check lives in `test-guard.mjs`. The size check runs only on
+ * a folder-plan branch whose intent, read from the would-be tree, says
+ * `size: small`, and judges the diff from the merge base with
+ * `origin/<defaultBranch>` to that tree through `plan/size.mjs`. The entry
+ * point runs config, size, weakened tests, and stops in that order.
  *
  * `loadContext` reads `.ai-skills/config.json` before it looks for a plan,
  * because the plan lookup needs `ticketPrefix` and a plan skipped on a config
@@ -40,18 +43,26 @@
  *   change, since the gate reads no other manifest format
  * - a detached HEAD has no branch name to read a ticket from, so it reads as
  *   having no plan and skips the stop-path and weakened-test checks
+ * - a small branch with no `origin/<defaultBranch>` ref has no base to measure
+ *   from, so the size check passes it
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
+import { readFrontmatter } from "../plan/frontmatter.mjs";
 import { CHAIN_FILES, resolvePlan } from "../plan/lookup.mjs";
-import { matchStopPath, resolveStopPaths } from "../plan/stop-paths.mjs";
+import {
+	classifyDiff,
+	readChangedFiles,
+	resolveSizeOptions,
+} from "../plan/size.mjs";
+import { matchStopPath } from "../plan/stop-paths.mjs";
 import { parseSubject, parseTasks, readPlanConfig } from "../plan/tasks.mjs";
 import {
 	claimsFile,
 	NO_TASK_REASON,
 	NO_TASK_REMEDY,
-	resolveTestGlobs,
+	SMALL_TICKET_REMEDY,
 } from "./test-guard.mjs";
 import { runGit } from "./tree.mjs";
 
@@ -74,6 +85,8 @@ import { runGit } from "./tree.mjs";
  * @property {boolean} noTaskNamed True when the plan holds tasks and the subject names none.
  * @property {StopPaths | null} stopPaths Null when the config couldn't be read.
  * @property {string[]} testGlobs
+ * @property {string | null} docsRoot `documentation.location` as a path prefix, or null.
+ * @property {boolean} smallIntent True when the plan folder's intent in the would-be tree says `size: small`.
  * @property {string} defaultBranch
  * @property {string | null} configError The message of the config error, or null.
  */
@@ -139,6 +152,7 @@ const DENY_TEXT = {
 };
 
 export const CONFIG_CHECK = { name: "config", run: checkConfig };
+export const SIZE_CHECK = { name: "size", run: checkSize };
 export const STOPS_CHECK = { name: "stops", run: checkStops };
 
 /**
@@ -157,7 +171,9 @@ export const STOPS_CHECK = { name: "stops", run: checkStops };
  * subject as `parseSubject` reads it, or null, and `namedTasks` are the tasks a
  * task or fix subject names that the plan holds. `noTaskNamed` is true when the
  * plan holds tasks and the subject names none, which every check that asks for
- * a task subject reads, so none restates the test.
+ * a task subject reads, so none restates the test. `smallIntent` reads the
+ * intent from the would-be tree, so a commit that sets `size: standard` is
+ * judged as standard and an uncommitted edit to the intent changes nothing.
  *
  * @param {{ repoRoot: string, commit: Commit, index: WouldBeIndex }} options
  * @returns {Context}
@@ -187,6 +203,8 @@ export function loadContext({ repoRoot, commit, index }) {
 		paths: readChangedPaths(repoRoot, index),
 		stopPaths: settings.stopPaths,
 		testGlobs: settings.testGlobs,
+		docsRoot: settings.docsRoot,
+		smallIntent: readSmallIntent(repoRoot, planFolder, index),
 		defaultBranch: settings.defaultBranch,
 		configError: settings.configError,
 	};
@@ -213,6 +231,42 @@ function checkConfig(ctx) {
 	return ctx.configError
 		? { reason: ctx.configError, remedy: CONFIG_REMEDY }
 		: null;
+}
+
+/**
+ * Denies a commit on a small branch that takes the branch's diff past the
+ * small limits, quoting `size.mjs`'s reasons. The base is the merge base with
+ * `origin/<defaultBranch>` and has no HEAD fallback, since measuring from HEAD
+ * would read only this commit. A missing ref, or any error while measuring,
+ * passes, because a size the gate can't measure is no reason to block.
+ *
+ * @param {Context} ctx
+ * @returns {CheckResult | null}
+ */
+function checkSize(ctx) {
+	if (!ctx.smallIntent || !ctx.stopPaths) return null;
+
+	try {
+		const mergeBase = runGit(
+			ctx.repoRoot,
+			["merge-base", "HEAD", `origin/${ctx.defaultBranch}`],
+			{ fallback: null }
+		);
+		if (!mergeBase) return null;
+
+		const { size, reasons } = classifyDiff(
+			readChangedFiles(ctx.repoRoot, mergeBase, ctx.index.treeHash),
+			{ testGlobs: ctx.testGlobs, stopPaths: ctx.stopPaths, docsRoot: ctx.docsRoot }
+		);
+		if (size === "small") return null;
+
+		return {
+			reason: `The intent says size: small, and this commit takes the branch past the small limits (${reasons.join("; ")}).`,
+			remedy: SMALL_TICKET_REMEDY,
+		};
+	} catch {
+		return null;
+	}
 }
 
 /**
@@ -339,16 +393,18 @@ function sortKeys(value) {
 /**
  * The config values the checks read, or `configError` when one can't be read.
  * `readPlanConfig` throws on a file that exists but doesn't parse, and
- * `resolveStopPaths` and `resolveTestGlobs` throw on a value they reject.
+ * `resolveSizeOptions` throws on a `stopPaths` or `testGlobs` value that
+ * `resolveStopPaths` or `resolveTestGlobs` rejects.
  *
  * @param {string} repoRoot
- * @returns {{ ticketPrefix: string | null, defaultBranch: string, stopPaths: StopPaths | null, testGlobs: string[], configError: string | null }}
+ * @returns {{ ticketPrefix: string | null, defaultBranch: string, stopPaths: StopPaths | null, testGlobs: string[], docsRoot: string | null, configError: string | null }}
  */
 function readSettings(repoRoot) {
 	try {
 		const config = readPlanConfig(repoRoot);
 		const defaultBranch = config?.["defaultBranch"];
 		const ticketPrefix = config?.["ticketPrefix"];
+		const { stopPaths, testGlobs, docsRoot } = resolveSizeOptions(config);
 
 		return {
 			ticketPrefix: typeof ticketPrefix === "string" ? ticketPrefix : null,
@@ -356,10 +412,9 @@ function readSettings(repoRoot) {
 				typeof defaultBranch === "string" && defaultBranch
 					? defaultBranch
 					: FALLBACK_BRANCH,
-			stopPaths: resolveStopPaths(
-				/** @type {Parameters<typeof resolveStopPaths>[0]} */ (config)
-			),
-			testGlobs: resolveTestGlobs(config),
+			stopPaths,
+			testGlobs,
+			docsRoot,
 			configError: null,
 		};
 	} catch (error) {
@@ -368,9 +423,31 @@ function readSettings(repoRoot) {
 			defaultBranch: FALLBACK_BRANCH,
 			stopPaths: null,
 			testGlobs: [],
+			docsRoot: null,
 			configError: error instanceof Error ? error.message : String(error),
 		};
 	}
+}
+
+/**
+ * True when the plan folder's `intent.md` in the would-be tree says
+ * `size: small`. Off a folder-plan branch, or with no intent in that tree, it
+ * is false.
+ *
+ * @param {string} repoRoot
+ * @param {string | null} planFolder
+ * @param {WouldBeIndex} index
+ */
+function readSmallIntent(repoRoot, planFolder, index) {
+	if (!planFolder) return false;
+
+	const folder = path.relative(repoRoot, planFolder).split(path.sep).join("/");
+	const text = runGit(repoRoot, ["show", `${index.treeHash}:${folder}/intent.md`], {
+		fallback: null,
+		trim: false,
+	});
+
+	return text !== null && readFrontmatter(text)?.fields["size"] === "small";
 }
 
 /**

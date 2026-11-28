@@ -121,6 +121,7 @@ function planText(tasks = TASKS): string {
  * unwritten, "epic" swaps the folder for one holding a spec.md only, "flat"
  * gives the branch a flat plan for PRISM-8, and "none" gives it no plan. The
  * base is `origin/<defaultBranch>`.
+ * `kind` "small" gives the folder a small intent and a plan with no tasks.
  */
 function createRepo({
 	kind = "full",
@@ -146,6 +147,13 @@ function createRepo({
 		write(repo, SPEC, "---\nticket: PRISM-9\n---\n");
 	} else if (kind === "flat") {
 		write(repo, ".prism/plans/prism-8.md", "# PRISM-8\n\n- [ ] Fix a\n");
+	} else if (kind === "small") {
+		write(repo, `${PLAN_DIR}/intent.md`, intentText().replace("size: standard", "size: small"));
+		write(
+			repo,
+			PLAN,
+			`---\ntitle: Test\nticket: PRISM-9\nstage: plan\n${APPROVAL}\n---\n\n## Verification\n\n## Review\n\n## PR Readiness\n\nRetro:\n`
+		);
 	} else if (kind !== "none") {
 		write(repo, `${PLAN_DIR}/intent.md`, intentText());
 	}
@@ -235,6 +243,17 @@ test("a removal on a commit that names no task says so and asks for a task subje
 		assert.match(denied.remedy, /-m or a heredoc/);
 		assert.doesNotMatch(denied.remedy, /behavior change/);
 	}
+});
+
+test("on a small branch, a removed test line's deny names going on as a standard ticket as its remedy", () => {
+	const repo = createRepo({ kind: "small" });
+	removeLine(repo, TEST_FILE, "\t\tassert.ok(true);");
+
+	const denied = runCheck(repo, commitMjs("PRISM-9: Trim a", TEST_FILE));
+	assertDeny(denied, /src\/a\.test\.mjs loses 1 line/);
+	assert.match(denied.remedy, /size: standard/);
+	assert.match(denied.remedy, /approve/);
+	assert.doesNotMatch(denied.remedy, /behavior change/);
 });
 
 test("passes the same removal on a task that lists the file with behavior change", () => {

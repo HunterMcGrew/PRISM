@@ -18,6 +18,8 @@
  * folder. A named task that lists the file, or amends it onto its list, and
  * carries `behavior change:` permits the removal. A branch with a flat plan or
  * no plan skips the check, because it has nowhere to record a behavior change.
+ * On a small branch the deny keeps its reason and names going on as a standard
+ * ticket as its remedy, since a small plan has no task to carry the line.
  * The test files are the `testGlobs` config key, which `resolveTestGlobs`
  * reads, and `DEFAULT_TEST_GLOBS` when it is absent.
  *
@@ -65,6 +67,10 @@ export const NO_TASK_REASON =
 	"the commit's subject names no task the plan holds";
 export const NO_TASK_REMEDY =
 	'Name the task in the subject as "T<n>: <summary>", passed with -m or a heredoc in this command, because a -F file written in the same command is not there when the gate reads it.';
+// A small ticket has no tasks to carry `behavior change:` and no room past its
+// limits, so both its denies send it on as a standard ticket.
+export const SMALL_TICKET_REMEDY =
+	'Go on as a standard ticket: set "size: standard" in the plan folder\'s intent.md and ask the person for a fresh approve.';
 
 export const TEST_GUARD_CHECK = {
 	name: "weakened tests",
@@ -122,17 +128,17 @@ function checkWeakenedTests(ctx) {
 
 		const label = change.to ? `${change.from} (now ${change.to})` : change.from;
 		const lines = `${removed} line${removed === 1 ? "" : "s"}`;
-		if (ctx.noTaskNamed) {
-			return {
-				reason: `${label} loses ${lines}, and ${NO_TASK_REASON}.`,
-				remedy: NO_TASK_REMEDY,
-			};
-		}
+		const result = ctx.noTaskNamed
+			? {
+					reason: `${label} loses ${lines}, and ${NO_TASK_REASON}.`,
+					remedy: NO_TASK_REMEDY,
+				}
+			: {
+					reason: `${label} loses ${lines}, and the plan doesn't record a behavior change for it.`,
+					remedy: `Restore the removed lines, or add "- behavior change: <what and why>" under the task that lists ${change.from}. Make that edit in its own command, before the commit, since the gate reads the plan before the command runs.`,
+				};
 
-		return {
-			reason: `${label} loses ${lines}, and the plan doesn't record a behavior change for it.`,
-			remedy: `Restore the removed lines, or add "- behavior change: <what and why>" under the task that lists ${change.from}. Make that edit in its own command, before the commit, since the gate reads the plan before the command runs.`,
-		};
+		return ctx.smallIntent ? { ...result, remedy: SMALL_TICKET_REMEDY } : result;
 	}
 
 	return null;
