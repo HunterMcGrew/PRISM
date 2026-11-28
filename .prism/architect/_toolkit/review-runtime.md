@@ -122,7 +122,7 @@ The session runs `reconcile.mjs <pr> --json` after each push and logs each unlog
 
 **Repo and git.** It finds the repo root by walking up from the plan's real directory to `.git`, and runs `git` as argument arrays with no shell. It reads only local git and the plan.
 
-**Exit codes.** 0 when the bar holds, with nothing printed. 1 with one reason per failure on stdout, a reviewed sha that names no commit included. 2 on a usage error, an unreadable plan, a plan in no repo, a `--head` that names no commit, and a `git` it cannot run.
+**Exit codes.** 0 when the bar holds, with nothing printed. 1 with one reason per failure on stdout, a reviewed sha that names no commit included. 2 on a usage error, an unreadable plan, a plan in no repo, a `--head` that names no commit, a `git` it cannot run, and a `git log` over the range or a `git diff-tree` on a commit that fails.
 
 ## `review/post.mjs`
 
