@@ -182,7 +182,7 @@ The close ceremony runs in two phases: **reflect**, then **close**.
 
 **Why declinable, not enforced:** On a flat plan, PRISM cannot force a retro to run involuntarily — no scheduler, personas never auto-invoke each other, and hook enforcement was deliberately reverted. What the gate can replicate is CI's real property: skipping is a visible, recorded override, not a silent omission. The gate is a human-declinable nudge. Promotion-without-relitigation is the defect the reflect phase fixes — today's ceremony, unrestructured, could promote a decision the work itself disproved.
 
-**Placement:** the pre-merge-on-final-branch placement above stands for the reflect phase too — the retro report rides the final PR as a committed file. At epic grain, earlier children are fully merge-settled by close time; only the final child's main-CI is approximated by its PR CI, and the charter-coverage table names this approximation explicitly.
+**Placement:** the pre-merge-on-final-branch placement above stands for the reflect phase too — when a retro report runs, it rides the final PR as a committed file. At epic grain, earlier children are fully merge-settled by close time; only the final child's main-CI is approximated by its PR CI, and the charter-coverage table names this approximation explicitly.
 
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
