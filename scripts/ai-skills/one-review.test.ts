@@ -173,11 +173,11 @@ test("routes review phrases to prism-review", () => {
 test("drops the PR-review stage", () => {
 	const workflow = readRepoFile(".prism/rules/workflow.md");
 	const lines = workflow.split("\n");
-	const noPrRowIndex = lines.findIndex((line) => line.startsWith("| standard, no PR |"));
+	const noPrRowIndex = lines.findIndex((line) => line.startsWith("| small or standard, no PR |"));
 
 	assert.ok(workflow.includes("verify → review → PR → retro"));
 	assert.ok(!lines.some((line) => /PR review: dispatch/.test(line)));
-	assert.ok(noPrRowIndex > 0, "workflow.md has no `| standard, no PR |` row");
+	assert.ok(noPrRowIndex > 0, "workflow.md has no `| small or standard, no PR |` row");
 	assert.ok(lines[noPrRowIndex - 1].includes("prism-review"), `review row: ${lines[noPrRowIndex - 1]}`);
 
 	const shippingFlow = readRepoFile(".prism/references/shipping-flow.md");

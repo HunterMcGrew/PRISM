@@ -102,6 +102,7 @@ scripts/ai-skills/commit-gate-test-guard.test.ts
 scripts/ai-skills/plan-approve.test.ts
 scripts/ai-skills/plan-templates.test.ts
 scripts/ai-skills/plan-runtime-delivery.test.ts
+scripts/ai-skills/one-review.test.ts
 docs/workflow.md
 templates/install/**
 AGENTS.md
@@ -116,11 +117,23 @@ CLAUDE.md
 ## Decisions
 
 - **Only added lines in product code count toward the 100-line limit.** Hunter ruled on 2026-11-28: only added lines in product code count ("Just added code implementation"). The limit measures how much new code a ticket asks a reviewer to read, and a deleted line adds nothing to read, so a cleanup that removes code stays small. A product file with no added lines, such as a deleted file or a pure-deletion edit, counts toward no limit, because it adds no code; a stop-path file still counts first, and a binary product file still adds its `lines:` reason. Rejected: added plus deleted, as `git diff --numstat` reports, which reads a 60-line rewrite as 120; and the larger of added and deleted per file, which still charges a deletion-heavy file for code it removed.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **A small ticket keeps no Decisions section in its template.** The epic's Third amendment lists Verification, Review, and PR Readiness, and a scope change that big is not small. A Decisions section the session adds on need serves the rare case without a heading every small plan carries empty. Rejected: shipping the heading in `plan-small.md`, which adds a section the epic row does not name.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **A small ticket needs Design `not needed`.** The small flow has no design stage, so a `needed` or `supplement` line would never run one. The approval script refuses it. Rejected: ignoring the line, which approves an intent whose own Design promise nothing keeps.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **An outgrown small ticket removes its `plan.md` and restarts as standard.** The record file the small ticket carried holds no tasks, so it cannot become a standard plan by editing, and the approve guard denies an edit that changes its approval lines. Removing it makes the standard resume rows fire without a new row. Considered: a resume row keyed on a `plan.md` with no Tasks heading. Rejected, because it keeps a second plan shape alive for one transition. The verify and review records of the abandoned attempt describe a smaller tree, so nothing is lost by dropping them.
+  - Corrected on promotion: the removal is a plain `rm` and not `git rm`, because `git rm` leaves `commit.mjs` a path its `git add` can't find.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **The size check runs second in the commit gate.** Its reasons name the real cause on an outgrown branch, where the stops check would ask for a task that does not exist. Considered: running it last. Rejected, for the misleading stop-path message.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`
 - **The merge base is measured against `origin/<defaultBranch>`, and a branch stacked on another feature branch reads as standard.** The parent's lines count as this branch's. A small ticket is one commit range off the default branch, so a stack is not small. A branch with no such ref skips the gate arm and exits 2 from the CLI, because a guess at the base would approve or deny on the wrong range.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **The small resume row keys on a ticket-subject commit.** A small branch holds only `plan:` commits and ticket-subject commits, so one ticket-subject commit means the build started. The ticket form is the one `tasks.mjs` already reads from `ticketPrefix`, so no new parser is needed.
+  - → promoted to `.prism/rules/workflow.md`
 - **No ADR for the small size.** The epic spec's Decisions record the size's removal and its return, and the arm reverses by deleting one check and one script. This spec did not search the ADRs for a ruling on sizes, so the plan stage does that and applies `.prism/references/triple-gated-adr-criterion.md` before it confirms there is nothing to write.
+  - → no promotion needed (the plan stage ran the ADR search and recorded it in plan.md's Decisions)
+- **`one-review.test.ts` follows the PR resume row's rename.** Its "drops the PR-review stage" case finds the PR row by its `| standard, no PR |` prefix, and REQ-11 renames that row to `small or standard`. The test pins the same row under its new name, so this follows from the approved outcome and is not a new behavior. Found by T7's full-suite run during part 2's build.
+  - → no promotion needed (the test follows the row rename, and the row text is in workflow.md)
 - **`docs/what-prism-writes.md` and the stale stage list in `docs/workflow.md` are left for child 16.** The inventory page lists delivered runtime files and the stage list still names the retired reviewer. Child 16's sweep covers the pages the earlier children changed. This child edits only the Sizes paragraph of `docs/workflow.md`. Epic row 16 does not name either page, so the closing summary asks for the row to be extended.
+  - → no promotion needed (epic row 16's docs sweep owns both pages, and the PR body lists them as open items)

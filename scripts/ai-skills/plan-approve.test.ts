@@ -536,14 +536,14 @@ test("refuses size: epic outside an epic-*/ folder", async () => {
 	);
 });
 
-for (const size of ["small", "short", "normal", ""]) {
-	test(`refuses size "${size}", which is outside standard and epic`, async () => {
+for (const size of ["short", "normal", ""]) {
+	test(`refuses size "${size}", which is outside small, standard, and epic`, async () => {
 		const file = placeFile(
 			makeTempDir(),
 			".prism/plans/acme-1/intent.md",
 			buildIntent({ size })
 		);
-		await assertRefused(file, {}, /size must be standard or epic/);
+		await assertRefused(file, {}, /size must be small, standard, or epic/);
 	});
 }
 
@@ -1209,4 +1209,132 @@ test("the CLI refuses a token that names a different draft", () => {
 	const child = runClaudeCli(root, ".prism/plans/acme-1/intent.md");
 	assert.equal(child.status, 1);
 	assert.match(child.stderr, /names .*acme-2[\\/]intent\.md, not this file/);
+});
+
+// --- Small intents ---
+
+const PLAN_SMALL_TEMPLATE = fileURLToPath(
+	new URL("../../.prism/templates/plan-small.md", import.meta.url)
+);
+
+/** A repo root holding the shipped plan-small.md and a small intent in `folder`. */
+function placeSmallIntent(
+	folder = "acme-1",
+	intent = buildIntent({ size: "small" })
+): { root: string; file: string; plan: string } {
+	const root = makeTempDir();
+	placeFile(
+		root,
+		".prism/templates/plan-small.md",
+		readFileSync(PLAN_SMALL_TEMPLATE, "utf8")
+	);
+	const file = placeFile(root, `.prism/plans/${folder}/intent.md`, intent);
+
+	return { root, file, plan: path.join(root, `.prism/plans/${folder}/plan.md`) };
+}
+
+/** `file` with forward slashes, the form approve.mjs hands to `write` on every OS. */
+function toPosix(file: string): string {
+	return file.split(path.sep).join("/");
+}
+
+test("approving a small intent writes plan.md from plan-small.md with the intent's title, ticket, and approval lines", async () => {
+	const { file, plan } = placeSmallIntent();
+	const result = await run(file);
+	assert.equal(result.code, 0, result.message);
+	assert.deepEqual(result.writes.sort(), [file, plan].map(toPosix).sort());
+
+	const text = readFileSync(plan, "utf8");
+	const fields = readFrontmatter(text)?.fields ?? {};
+	assert.equal(fields.title, "Fast search");
+	assert.equal(fields.ticket, "ACME-1");
+	assert.equal(fields.stage, "plan");
+	assert.equal(fields.status, "approved");
+	assert.equal(fields.approved_by, "Hunter McGrew");
+	assert.equal(fields.approved_at, "2026-11-01");
+	assert.equal(fields.approved_via, undefined);
+	assert.match(text, /^## Verification$/m);
+	assert.match(text, /^## Review$/m);
+	assert.match(text, /^## PR Readiness$/m);
+	assert.match(text, /^Retro:$/m);
+	assert.doesNotMatch(text, /^## Tasks/m);
+});
+
+test("a chat approval of a small intent stamps the same approval lines, approved_via included, on plan.md", async () => {
+	const { file, plan } = placeSmallIntent();
+	const result = await runChat(file);
+	assert.equal(result.code, 0, result.message);
+
+	const intentFields = readFrontmatter(readFileSync(file, "utf8"))?.fields ?? {};
+	const planFields = readFrontmatter(readFileSync(plan, "utf8"))?.fields ?? {};
+	for (const key of ["status", "approved_by", "approved_at", "approved_via"]) {
+		assert.equal(planFields[key], intentFields[key], key);
+	}
+	assert.equal(planFields.approved_via, "chat");
+});
+
+test("refuses size: small in an epic-*/ folder and writes nothing", async () => {
+	const { file, plan } = placeSmallIntent("epic-acme-1");
+	await assertRefused(file, {}, /size: small/);
+	assert.equal(existsSync(plan), false);
+});
+
+for (const design of ["needed — a new settings screen", "supplement — one new state"]) {
+	test(`refuses a small intent whose Design reads "${design}"`, async () => {
+		const { file, plan } = placeSmallIntent(
+			"acme-1",
+			buildIntent({ size: "small", sections: { Design: design } })
+		);
+		await assertRefused(file, {}, /size: small needs a Design line of "not needed"/);
+		assert.equal(existsSync(plan), false);
+	});
+}
+
+test("refuses a small intent when plan-small.md is missing, writing neither file", async () => {
+	const root = makeTempDir();
+	const file = placeFile(
+		root,
+		".prism/plans/acme-1/intent.md",
+		buildIntent({ size: "small" })
+	);
+	await assertRefused(file, {}, /plan-small\.md/);
+	assert.equal(existsSync(path.join(root, ".prism/plans/acme-1/plan.md")), false);
+});
+
+test("re-approving a small intent leaves an existing plan.md byte-for-byte unchanged", async () => {
+	const { file, plan } = placeSmallIntent(
+		"acme-1",
+		buildIntent({
+			size: "small",
+			status: "status: approved\napproved_by: Ada\napproved_at: 2026-10-01",
+		})
+	);
+	const existing =
+		"---\ntitle: Fast search\nstage: plan\nstatus: approved\n---\n\n## Review\n\n- review round 1 at abc1234: clean\n";
+	writeFileSync(plan, existing);
+
+	const result = await run(file);
+	assert.equal(result.code, 0, result.message);
+	assert.deepEqual(result.writes, [toPosix(file)]);
+	assert.equal(readFileSync(plan, "utf8"), existing);
+});
+
+test("approves a small intent even with no template when plan.md already exists", async () => {
+	const root = makeTempDir();
+	const file = placeFile(
+		root,
+		".prism/plans/acme-1/intent.md",
+		buildIntent({ size: "small" })
+	);
+	const plan = placeFile(root, ".prism/plans/acme-1/plan.md", "kept\n");
+	const result = await run(file);
+	assert.equal(result.code, 0, result.message);
+	assert.equal(readFileSync(plan, "utf8"), "kept\n");
+});
+
+test("approving a standard intent beside plan-small.md creates no plan.md", async () => {
+	const { file, plan } = placeSmallIntent("acme-1", buildIntent());
+	const result = await run(file);
+	assert.equal(result.code, 0, result.message);
+	assert.equal(existsSync(plan), false);
 });

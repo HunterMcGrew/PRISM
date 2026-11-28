@@ -3,7 +3,7 @@ title: "The PRISM Workflow"
 description: "How work moves from intent to merged PR in PRISM: the plan folder, its stages, and where you step in."
 category: "workflow"
 audience: "developer-user"
-last_updated: "2026-11-20"
+last_updated: "2026-11-28"
 ---
 
 # The PRISM Workflow
@@ -45,7 +45,7 @@ Stages commit their own work. The session pushes and opens the PR for them.
 
 ## Sizes
 
-Standard is the default: one plan folder, the stages above, shipped as one PR or a stack of dependent PRs. An epic is work split into several parts under one tracker parent. Its folder holds `intent.md` and `spec.md`, and each child gets its own folder that runs the standard stages from its spec onward. The intent proposes the size, and your approval of the intent confirms it.
+A ticket runs one of three sizes: small, standard, or epic. Standard is the default: one plan folder, the stages above, shipped as one PR or a stack of dependent PRs. A small ticket is code-only work that fits `size.mjs`'s limits, at most 100 added lines of product code and one new product file, all in one area, with no change to a dependency manifest or another stop path. It skips the spec, plan, and challenge stages: approving its intent writes a `plan.md` with no tasks, and the session builds it, then verify, review, the PR, and the retro run as usual. If the work outgrows the limits, it goes on as a standard ticket after you approve the intent again. An epic is work split into several parts under one tracker parent. Its folder holds `intent.md` and `spec.md`, and each child gets its own folder that runs the standard stages from its spec onward. The intent proposes the size, and your approval of the intent confirms it.
 
 ## Picking up where a session left off
 

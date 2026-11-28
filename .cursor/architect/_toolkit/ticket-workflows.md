@@ -75,7 +75,7 @@ Nora → Mira → the spec stage → the plan stage → Clove → Briar
 Clove → Briar
 ```
 
-When the fix is obvious and scoped, skip straight to implementation.
+On a plan folder, this shortcut is the `small` size, per `.prism/rules/workflow.md`: the intent still runs and the person approves it, then Clove builds in the session, and verify, review, the PR, and the retro follow, with no spec, plan stage, or challenge. On a legacy flat plan, when the fix is obvious and scoped, skip straight to implementation.
 
 ### Documentation integration
 
@@ -133,7 +133,7 @@ Sasha (`prism-debug`) builds a feedback loop, finds the root cause, and changes 
 ## Epic vs Story
 
 - **Default to story.** Most tickets are stories.
-- **On a plan folder,** the intent stage proposes the size, `standard` or `epic`, with its reason, and the person approves it with the intent. An epic is an `epic-<ticket>/` folder holding `intent.md` and `spec.md` and no `plan.md`, per `.prism/rules/workflow.md`. Approving the epic's intent approves its children, so a child's folder holds `spec.md` and `plan.md` and no intent. The child spec's `epic:` line names the epic folder, its acceptance criteria live in its `plan.md`, auto-approval reads the epic's intent, and the task script starts its commit range at the child's spec.
+- **On a plan folder,** the intent stage proposes the size, `small`, `standard`, or `epic`, with its reason, and the person approves it with the intent. A small ticket is code-only work within `size.mjs`'s limits, built in the session with no spec, plan stage, or challenge (§ Shortcut — small fix, known scope). An epic is an `epic-<ticket>/` folder holding `intent.md` and `spec.md` and no `plan.md`, per `.prism/rules/workflow.md`. Approving the epic's intent approves its children, so a child's folder holds `spec.md` and `plan.md` and no intent. The child spec's `epic:` line names the epic folder, its acceptance criteria live in its `plan.md`, auto-approval reads the epic's intent, and the task script starts its commit range at the child's spec.
 - **On a legacy flat plan,** promote to epic when there are more than 5 implementation tasks and they cross system boundaries (frontend + backend + infrastructure, or multiple unrelated components). An epic plan uses the filename `epic-<name>.md` and contains a `## Stories` section referencing individual story plans.
 
 See ADR-0012 for the threshold rationale.

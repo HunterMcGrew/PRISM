@@ -7,6 +7,8 @@ approved_by: auto
 approved_at: 2026-11-27
 ---
 
+> Closed: 2026-11-28
+
 ## Acceptance Criteria
 
 Child 14 of the Kitchen Line epic (#499), from its `## Children` row 14 and `spec.md`. Each criterion names the part that builds it and cites the spec requirement it grades as `(REQ-n)`. Part 1's review grades only part 1's criteria.
@@ -119,6 +121,8 @@ The test copies the template into a temp plan folder and runs both record script
 - proof: npx tsx --test scripts/ai-skills/plan-approve.test.ts scripts/ai-skills/approve-guard.test.ts && pnpm prism:check-types
 - proof fails on main: yes
 - depends on: T7
+- behavior change: `approve.mjs` accepts `size: small`, so the case asserting `small` is refused drops it from its list, and that loop's name and regex follow the new `size must be small, standard, or epic` refusal.
+- amended: scripts/ai-skills/plan-approve.test.ts: the commit gate's weakened-tests check denied T8's first commit, because REQ-5 reverses an existing assertion.
 
 Write `plan.md` through the same injected `write` the intent stamp uses, after every refusal has run, so a missing template refuses with neither file written; skip the copy when `plan.md` already exists.
 The plan's approval lines are the ones `stampApproval` writes on the intent in that run, `approved_via` included.
@@ -142,27 +146,31 @@ The build lands as one ticket-subject commit made last, after the size check, be
 
 ### T11: Part 2 — add the small size to the workflow and git conventions
 
-- files: .prism/rules/workflow.md, .prism/rules/git-conventions.md
-- proof: grep -c '^| small or standard' .prism/rules/workflow.md && grep -n 'small' .prism/rules/git-conventions.md && pnpm prism:crossref-lint
+- files: .prism/rules/workflow.md, .prism/rules/git-conventions.md, scripts/ai-skills/one-review.test.ts
+- proof: grep -c '^| small or standard' .prism/rules/workflow.md && grep -n 'small' .prism/rules/git-conventions.md && pnpm prism:crossref-lint && npx tsx --test scripts/ai-skills/one-review.test.ts
 - depends on: T6
+- behavior change: `one-review.test.ts`'s "drops the PR-review stage" case finds the PR resume row by the `| small or standard, no PR |` prefix REQ-11 gives it, in place of `| standard, no PR |`.
+- amended: scripts/ai-skills/one-review.test.ts: T7's full-suite run found the case still keyed on the old row text, so a `T11 fix` commit updates its prefix and failure message.
 
 Keep the resume rows in their order and place the small row after the `no spec.md` row and before the verify row; the Design row needs no size, since `approve.mjs` refuses a small intent whose Design line is not `not needed`.
 Both rules load every session, so keep the additions to the sizes list, the resume rows, and one subject bullet in each.
 
 ### T12: Part 2 — document the small plan, the approval copy, and three sizes
 
-- files: .prism/architect/_toolkit/plan-chain-scripts.md, .prism/architect/_toolkit/ticket-workflows.md, templates/install/.prism/architect/_toolkit/ticket-workflows.md, docs/workflow.md
-- proof: grep -n 'plan-small.md' .prism/architect/_toolkit/plan-chain-scripts.md && grep -c 'small' .prism/architect/_toolkit/ticket-workflows.md templates/install/.prism/architect/_toolkit/ticket-workflows.md docs/workflow.md && pnpm prism:crossref-lint
+- files: .prism/architect/_toolkit/plan-chain-scripts.md, .prism/architect/_toolkit/ticket-workflows.md, templates/install/.prism/architect/_toolkit/ticket-workflows.md, docs/workflow.md, .prism/architect/_toolkit/hook-runtime.md, templates/install/.prism/architect/_toolkit/hook-runtime.md
+- proof: grep -n 'plan-small.md' .prism/architect/_toolkit/plan-chain-scripts.md && grep -c 'small' .prism/architect/_toolkit/ticket-workflows.md templates/install/.prism/architect/_toolkit/ticket-workflows.md docs/workflow.md && grep -c 'trusts `size:`' .prism/architect/_toolkit/hook-runtime.md templates/install/.prism/architect/_toolkit/hook-runtime.md && pnpm prism:crossref-lint
 - depends on: T8
+- amended: .prism/architect/_toolkit/hook-runtime.md: the size bullet in the Commit gate section, canonical and twin, gains a sentence saying the gate trusts `size:` as written per the Decision "The approve guard lets an unapproved `size:` flip through".
 
 `docs/workflow.md` changes only its Sizes paragraph, per the spec's Decision leaving the stale stage list to child 16.
 `ticket-workflows.md`'s "Shortcut — small fix, known scope" section, canonical and twin, points at the small size on a plan folder, so the two names don't read as two flows.
 
 ### T13: Part 2 — regenerate the outputs
 
-- files: .claude/templates/plan-small.md, .codex/templates/plan-small.md, .cursor/templates/plan-small.md, templates/install/.prism/templates/plan-small.md, .claude/templates/intent.md, .codex/templates/intent.md, .cursor/templates/intent.md, templates/install/.prism/templates/intent.md, .claude/skills/prism-intent/SKILL.md, .cursor/skills/prism-intent/SKILL.md, .claude/agents/prism-intent.md, .codex/agents/prism-intent.toml, .claude/skills/prism-implement/SKILL.md, .cursor/skills/prism-implement/SKILL.md, .claude/agents/prism-implement.md, .codex/agents/prism-implement.toml, .claude/rules/workflow.md, .codex/rules/workflow.md, .cursor/rules/workflow.mdc, templates/install/.prism/rules/workflow.md, .claude/rules/git-conventions.md, .codex/rules/git-conventions.md, .cursor/rules/git-conventions.mdc, templates/install/.prism/rules/git-conventions.md, .claude/architect/_toolkit/ticket-workflows.md, .codex/architect/_toolkit/ticket-workflows.md, .cursor/architect/_toolkit/ticket-workflows.md, .claude/architect/_toolkit/plan-chain-scripts.md, .codex/architect/_toolkit/plan-chain-scripts.md, .cursor/architect/_toolkit/plan-chain-scripts.md, templates/install/.prism/architect/_toolkit/plan-chain-scripts.md, AGENTS.md, .codex/config.toml
+- files: .claude/templates/plan-small.md, .codex/templates/plan-small.md, .cursor/templates/plan-small.md, templates/install/.prism/templates/plan-small.md, .claude/templates/intent.md, .codex/templates/intent.md, .cursor/templates/intent.md, templates/install/.prism/templates/intent.md, .claude/skills/prism-intent/SKILL.md, .cursor/skills/prism-intent/SKILL.md, .claude/agents/prism-intent.md, .codex/agents/prism-intent.toml, .claude/skills/prism-implement/SKILL.md, .cursor/skills/prism-implement/SKILL.md, .claude/agents/prism-implement.md, .codex/agents/prism-implement.toml, .claude/rules/workflow.md, .codex/rules/workflow.md, .cursor/rules/workflow.mdc, templates/install/.prism/rules/workflow.md, .claude/rules/git-conventions.md, .codex/rules/git-conventions.md, .cursor/rules/git-conventions.mdc, templates/install/.prism/rules/git-conventions.md, .claude/architect/_toolkit/ticket-workflows.md, .codex/architect/_toolkit/ticket-workflows.md, .cursor/architect/_toolkit/ticket-workflows.md, .claude/architect/_toolkit/plan-chain-scripts.md, .codex/architect/_toolkit/plan-chain-scripts.md, .cursor/architect/_toolkit/plan-chain-scripts.md, templates/install/.prism/architect/_toolkit/plan-chain-scripts.md, AGENTS.md, .codex/config.toml, .claude/architect/_toolkit/hook-runtime.md, .codex/architect/_toolkit/hook-runtime.md, .cursor/architect/_toolkit/hook-runtime.md
 - proof: pnpm prism:build && npx tsx --test scripts/ai-skills/skill-loaded-lines.test.ts && pnpm prism:check
 - depends on: T7, T8, T9, T10, T11, T12
+- amended: .claude/architect/_toolkit/hook-runtime.md: T12 now edits the canonical `hook-runtime.md`, so T13 regenerates its three host copies.
 
 A `prism-intent` load over 120 is fixed by cutting text in T9's files, never by an allowlist entry.
 
@@ -182,32 +190,62 @@ round 2: clean
   - T1 (non-blocking): the `.prism/**` record exemption (round 1's fix) and `--tree` appear in no AC evidence, so review cannot grade them; add a `.prism/metrics` case and a `--tree` case to AC-1's evidence, and say what an absent `documentation.location` does (no docs root, `.md` still a doc).
   - T2 (non-blocking): `checks.mjs`'s header says "config, weakened tests, and stops in that order" and never says "three checks", so the header edit is the order sentence there and "three checks" only in `commit-gate.mjs` lines 9 and 39.
 
+round 3: blocking 1
+  - T8 (blocking): the Decision "T8 confirms the approve guard stops an unapproved `size:` flip" has the builder record its result in `plan.md`, which is not in T8's `files`, so the report would carry `unlisted: plan.md` and read as `needs-replan`; it also routes a gap to `prism-architect`, which a builder subagent cannot dispatch. Have T8 report the result in its build report's `checks:` line and the session write the Decision and dispatch the architect. Expect a gap: `approvalLines` reads only `status`, `approved_by`, and `approved_at` (`plan/frontmatter.mjs` `APPROVAL_KEYS`), so the guard's frontmatter arm lets a `size:` edit through.
+  - plan (non-blocking): part 2's branch carries part 1's `## Verification` record and its `review round 1 ... (part 1 of 2): clean` line, so after T13 the resume table sees both stages as done and goes to the PR; add a Decision that part 2's verify and review are dispatched regardless, and that the retro's `Retro:` line waits on part 2's review.
+  - T11 (non-blocking): the amended `one-review.test.ts` fix has no open task, because T11 reads `done`, and the case fails at HEAD (`workflow.md has no | standard, no PR | row`); T13's proof does not run it. Name who commits it (the session, as `T11 fix:`) and that it lands before verify.
+
+round 4: resolved 1
+  - T8 (non-blocking): the `size:` flip check lives only in the Decision, and T8's `proof` runs `approve-guard.test.ts`, which has no `size:` case, so the builder's `checks:` line can report the check only from a hand-run payload; fine as written, but the session should expect that line to name the payload it ran.
+
+round 5: blocking 1
+  - T12 (blocking): the amendment put the section sign in prose on two lines, T12's `amended:` line and the size-flip Decision, so `pnpm prism:plan-citations` fails with `section-citation` at `plan.md:161` and `plan.md:210`, and T13's `pnpm prism:check` proof cannot pass; wrap each citation in a backtick span or name the section in words.
+  - T12 (non-blocking): its proof's `grep -c 'approve guard'` already prints a count on `main` for both files, so it cannot fail when the size-flip sentence is missing; grep for a phrase the new sentence carries, and add that grep to AC-12's evidence so review can grade it.
+
+round 6: resolved 1
+  - T12 (non-blocking): AC-12's evidence still lacks the `trusts \`size:\`` grep that T12's proof now runs, and `grep -c` over two files exits 0 when only one file matches, so a missing sentence in the seed twin passes; name the grep in AC-12 and check each file on its own, or have review grade the twin by eye.
+
 ## Decisions
 
 - **This child ships as a two-PR stack, cut after T5.** The work spans well over 10 files once generated copies count, and part 1 works alone: no intent can say `size: small` until T8, so the gate arm is dormant and every stage runs as it does today. Part 1 is `size.mjs`, the commit gate arm, delivery, and the architect-doc entries; part 2 is everything else. Rejected: one PR, past the size where review gets painful.
+  - → no promotion needed (ticket-tactical: the cut was sized for this ticket, and the stack's effect on task reading is already in plan-chain-scripts.md's Tasks and subjects paragraph)
 - **Part 1 ships from T5, not from the resume table.** After T5, part 1's verify, review, and PR stages run while T6 to T13 are open, and the resume table would read an uncommitted task and send the session back to implement. The session drives part 1's verify, review, and PR from this Decision, part 2 resumes from T6 on a branch cut from `main`, and the retro runs once, after part 2's review. Rejected: running the close step on part 1, which would close a plan with half its tasks open.
+  - → no promotion needed (stack handling for this ticket only; the missing stack row in the resume table is an epic-level item the PRISM-557 retro already carries)
 - **Only added lines in product code count toward the 100-line limit.** Hunter ruled on 2026-11-28: only added lines in product code count. Deleted lines don't, and neither do tests, docs, plans, lockfiles, or config. The limit measures new code a reviewer has to read, and a deletion adds none, so T1's classifier sums added lines only and a product file with no added lines counts toward no limit (a stop path and a binary product file still count). Rejected: added plus deleted, as `git diff --numstat` reports, which reads a 60-line rewrite as 120; and the larger of added and deleted per file, which still charges a file for code it removed.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **The weakened-tests remedy on a small branch rides part 1.** It is commit gate code that reads the `smallIntent` flag T2 adds, and `hook-runtime.md`'s commit-gate text in T4 describes both small-branch behaviors in one place. Like the size check, it is dormant until part 2. Rejected: moving it to part 2, which would leave part 1's architect doc describing a gate whose small-branch remedy still points at a task that cannot exist.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`
 - **The approve guard lets `git rm` remove an approved small `plan.md`.** The spec asked the plan stage to check this first. A `PreToolUse` payload carrying `git rm -q .prism/plans/prism-568/plan.md`, run through `approve-guard.mjs --tool=claude` on 2026-11-27, printed nothing and exited 0: the frontmatter arm judges file edits only, and the execution arm judges commands naming `approve.mjs`. So Outgrowing stays as the spec designs it. No guard test is added, because `approve-guard.test.ts` sits outside Affected systems.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **`prism-intent` fits under the cap by rewriting in place.** Measured with `measureSkillLoad` on 2026-11-27, the skill loads 118 lines, `intent.md` included. The template's `size:` comment, the skill's Size bullet, and its approval paragraph each already exist, so T9 rewrites those lines rather than adding new ones. Rejected: an allowlist entry, which REQ-16 rules out.
+  - → no promotion needed (a measurement for this ticket, and skill-loaded-lines.test.ts holds the cap)
 - **No ADR for the small size, confirmed.** No ADR under `.prism/spec/adrs/_toolkit/` mentions `size: small` or the sizes, and applying `.prism/references/triple-gated-adr-criterion.md`, the size fails the hard-to-reverse gate: deleting one check and one script removes it, as the epic spec's own Decisions record. `workflow.md` and `plan-chain-scripts.md` carry the rule.
+  - → no promotion needed (it records the ADR search, and the rule lives in workflow.md and plan-chain-scripts.md)
 - **Every `.prism/**` path off the stop paths counts as a record, not product code.** Challenge round 1 found that the close step commits `.prism/metrics/review-misses.jsonl`, which REQ-2's classes read as a new product file in a second area, so the gate would deny a small ticket's own retro commit and tell it to go standard. `.prism/` holds PRISM's plans, records, and spec, none of it product code, so this follows from the intent's "product code" and extends REQ-2's plans class to its parent folder. A stop path under `.prism/` still counts first. Rejected: exempting only `.prism/metrics/**`, which leaves `audit-state.json` and the next record file to hit the same deny.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **`REVIEW.md`'s file-outside-the-plan pause trigger is left as it reads.** On a small ticket there is no task list or Affected systems, so the review reads the intent's outcome and acceptance criteria as the yardstick, as the spec's flow says. `REVIEW.md` sits outside Affected systems, and a small diff is one area by construction, so the trigger has little to fire on. Rejected: editing `REVIEW.md` here, which is a scope change for a case the size limits already narrow.
+  - → no promotion needed (REVIEW.md is unchanged by design, so there is no new text to promote)
+- **The approve guard lets an unapproved `size:` flip through, and this child documents the gap.** Part 1's review (#570) asked whether the guard stops it. T8's probe, run through `approve-guard.mjs --tool=claude --event=PreToolUse` on an approved `size: small` intent, showed an Edit or Write from `size: small` to `standard` exits 0 with no output, while a `status:` edit is denied. The frontmatter arm compares only the approval lines (`APPROVAL_KEYS` in `plan/frontmatter.mjs`), so any edit to an approved file's body, its acceptance criteria included, already passes the same way. `prism-architect` ruled to proceed with changes and called it not intent-level. T12 adds one or two sentences to the size bullet in the Commit gate section of `hook-runtime.md`: the gate trusts `size:` as written, and the control is the person reading the intent's diff. The general fix, a hash of the approved text stamped by `approve.mjs` and checked by the guard or the gate, goes to a standalone follow-up ticket, because it covers every approved chain file and touches files outside this child. Rejected: comparing against the approval stamp, because `approved_at` is a date, so a same-day re-approve during Outgrowing looks identical to no re-approve. Also rejected: a guard rule allowing `size:` edits only with a demotion to draft, which changes the guard's model for one key while body edits stay open.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`
+- **Part 2's verify and review run on part 2's own head.** Part 2's branch carries part 1's `## Verification` record and its `(part 1 of 2)` review line, so the resume table would read both stages as done. The session dispatches verify and review for part 2 after T13 anyway, and the `Retro:` line waits on part 2's review. Rejected: clearing part 1's records, which are the durable record of the merged #570.
+  - → no promotion needed (stack-specific, and the same resume-table gap as the second Decision)
+- **The session commits T11's `one-review.test.ts` fix as `T11 fix:` before verify.** `tasks.mjs` reads T11 as done, so no bundle would pick up the amendment, and T13's proof doesn't run that test.
+  - → no promotion needed (one-time sequencing on this branch)
 
 ## Verification
 
 verdict: done
-base: 50ed40ca
-head: 28bcc6dd
+base: 9aca8b54
+head: 80acae36
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/check-types.log |
-| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/test.log |
-| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/crossref-lint.log |
+| typecheck | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/p2b-check-types.log |
+| test | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/p2b-test.log |
+| lint | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/p2b-crossref-lint.log |
 | format | n/a: not configured | none |
-| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/build.log |
-| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/check.log |
+| build | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/p2b-build.log |
+| spec | pass | /tmp/claude-1000/-home-zibbix-Projects-PRISM/b0840a51-e844-4baa-b46e-ea88566ea84b/scratchpad/p2b-check.log |
 
 ### Failures
 
@@ -216,7 +254,9 @@ head: 28bcc6dd
 ## Review
 
 - review round 1 at ea512f91 (part 1 of 2): clean
+- review round 1 at ed27e4a4: clean
+- review round 2 at 035275ee: clean
 
 ## PR Readiness
 
-Retro:
+Retro: .prism/retros/prism-499/prism-568.md

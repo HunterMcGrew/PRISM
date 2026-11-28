@@ -14,6 +14,11 @@
  * approval lines, so an approved intent edited later goes back through the
  * person rather than keeping a stamp for text they never read.
  *
+ * Approving a `size: small` intent also writes its `plan.md` from
+ * `.prism/templates/plan-small.md`, with the intent's title, ticket, and the
+ * approval lines this run stamps, because a small ticket has no plan stage to
+ * write one. An existing `plan.md` is left as it is.
+ *
  * Inside an agent session (a Claude Code or Codex marker in the environment)
  * or without a terminal on stdin, it runs only on an unused token from the same session that names the same file,
  * when the person named one. The token never expires, but a file whose text
@@ -56,7 +61,7 @@ import {
  * @property {string} message
  */
 
-const SIZES = new Set(["standard", "epic"]);
+const SIZES = new Set(["small", "standard", "epic"]);
 // Every host's agent marker, so an agent session never reads as a person at a terminal.
 const AGENT_MARKERS = [
 	"CLAUDECODE",
@@ -73,6 +78,7 @@ const REQUIRED_INTENT_SECTIONS = [
 // The reason has to sit on the same line as "none", after a dash, colon, or comma.
 const NONE_WITH_REASON = /^none[ \t]*[—–:,-][ \t]*\S/i;
 const APPROACH_LABELS = ["Chosen", "Rejected", "Unknown"];
+const PLAN_SMALL_TEMPLATE = ".prism/templates/plan-small.md";
 
 /**
  * Runs every refusal and check, asks for confirmation, then writes the
@@ -170,10 +176,27 @@ export async function approve({
 
 	const { fields } = block;
 	let designLine = "-";
+	/** @type {{ path: string, text: string } | null} */
+	let smallPlan = null;
 	if (stage === "intent") {
 		const problem = checkIntent(text, fields, folder);
 		if (problem) return refuse(problem);
 		designLine = (sectionBody(text, "Design") ?? "").split("\n")[0] ?? "";
+
+		const planPath = path.posix.join(path.posix.dirname(absolute), "plan.md");
+		if (fields.size === "small" && !existsSync(planPath)) {
+			const template = path.posix.join(
+				absolute.slice(0, chain.index),
+				PLAN_SMALL_TEMPLATE
+			);
+			if (!existsSync(template)) {
+				return refuse(
+					`size: small writes plan.md from ${PLAN_SMALL_TEMPLATE}, and ${template} is missing. Nothing was written.`
+				);
+			}
+
+			smallPlan = { path: planPath, text: readFileSync(template, "utf8") };
+		}
 	}
 
 	if (stage === "design") {
@@ -209,6 +232,18 @@ export async function approve({
 	const via = viaChat ? "chat" : null;
 	const draft = reapproves ? clearApproval(text) : text;
 	write(absolute, stampApproval(draft, approver, today, via));
+	if (smallPlan) {
+		write(
+			smallPlan.path,
+			stampApproval(
+				fillSmallPlan(smallPlan.text, fields),
+				approver,
+				today,
+				via
+			)
+		);
+	}
+
 	if (reapproves) {
 		return {
 			code: 0,
@@ -225,6 +260,27 @@ export async function approve({
  */
 function refuse(reason) {
 	return { code: 1, message: `approve.mjs: ${reason}` };
+}
+
+/**
+ * Returns the plan-small.md text with the intent's title and ticket filled in.
+ *
+ * @param {string} template
+ * @param {Record<string, string>} fields
+ * @returns {string}
+ */
+function fillSmallPlan(template, fields) {
+	const titled = replaceFrontmatterLine(
+		template,
+		"title",
+		`title: ${fields.title ?? ""}`
+	);
+
+	return replaceFrontmatterLine(
+		titled,
+		"ticket",
+		`ticket: ${fields.ticket ?? ""}`
+	);
 }
 
 /**
@@ -343,11 +399,16 @@ function comparablePath(file) {
  */
 function checkIntent(text, fields, folder) {
 	if (!SIZES.has(fields["size"] ?? "")) {
-		return `size must be standard or epic, not "${fields.size ?? ""}".`;
+		return `size must be small, standard, or epic, not "${fields.size ?? ""}".`;
 	}
 
-	if (fields["size"] === "epic" && !folder.toLowerCase().startsWith("epic-")) {
+	const inEpicFolder = folder.toLowerCase().startsWith("epic-");
+	if (fields["size"] === "epic" && !inEpicFolder) {
 		return `size: epic belongs only in an epic-*/ folder, and this one is ${folder}/.`;
+	}
+
+	if (fields["size"] === "small" && inEpicFolder) {
+		return `size: small doesn't belong in an epic-*/ folder, and this one is ${folder}/.`;
 	}
 
 	for (const heading of REQUIRED_INTENT_SECTIONS) {
@@ -379,6 +440,14 @@ function checkIntent(text, fields, folder) {
 	);
 	if (!design || !(design[2] ?? "").replace(/^[\s—–:,.-]+/, "")) {
 		return '## Design must open with "needed", "supplement", or "not needed", then a reason.';
+	}
+
+	// A small ticket runs no design stage, so a design its intent promises would never happen.
+	if (
+		fields["size"] === "small" &&
+		(design[1] ?? "").toLowerCase() !== "not needed"
+	) {
+		return 'size: small needs a Design line of "not needed", because a small ticket has no design stage. Use size: standard for a ticket that needs design.';
 	}
 
 	return checkApproach(sectionBody(text, "Approach"));

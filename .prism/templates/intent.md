@@ -12,7 +12,7 @@ Copy this file to .prism/plans/<ticket>/intent.md as is, then fill each section.
 Frontmatter:
 - title: a short name for the work.
 - ticket: the ticket ID or URL from your tracker. Plan lookup reads this line.
-- size: standard or epic. Use epic only inside an epic-<id>/ folder, for work split into several stories under one tracker parent.
+- size: small, standard, or epic. Use small only for code-only work with no design whose diff fits the small limits: at most 100 added product lines, one new product file, one area, and no stop path. Use epic only inside an epic-<id>/ folder, for work split into several stories under one tracker parent.
 - Leave status at draft. Only the approval script changes it, after the person approves.
 
 The approval script reads the section headings below by name, so keep them exactly as written.

@@ -44,8 +44,9 @@ load: always
 
 # Workflow
 
-A plan folder, `.prism/plans/<ticket>/`, runs one of two sizes, standard or epic, and standard is the default. The agent proposes the size in `intent.md`, and the person approves it with the intent.
+A plan folder, `.prism/plans/<ticket>/`, runs one of three sizes, small, standard, or epic, and standard is the default. The agent proposes the size in `intent.md`, and the person approves it with the intent.
 
+- **Small:** code-only work within `size.mjs`'s limits: intent → implement in the session → verify → review → PR → retro. Its `plan.md` comes from `plan-small.md` and holds no tasks. A `standard` report from `size.mjs` makes it standard.
 - **Standard:** intent → design when needed → spec → plan → challenge twice → implement → verify → review → PR → retro. A standard ticket may ship as one PR or as a stack of dependent PRs.
 - **Epic:** work split into several parts under one tracker parent. `epic-<ticket>/` holds `intent.md` and `spec.md`, and no `plan.md`. A child's folder holds `spec.md` and `plan.md` and no intent: its spec's `epic:` line names the epic folder, whose approved intent covers it. From its spec on, a child runs the standard stages.
 
@@ -63,10 +64,11 @@ A plan folder, `.prism/plans/<ticket>/`, runs one of two sizes, standard or epic
 - `T3 fix: <summary>` for a review fix to a task that is already done
 - `plan: <summary>` for plan-only commits
 - `retro: <summary>` for the retro's promotions
+- `PRISM-NNNN: <summary>` for a small ticket's build
 
 Legacy flat-plan branches keep `PRISM-NNNN:`.
 
-**Build report.** The implement and docs stages end with this report, and the session checks that one arrived before routing it.
+**Build report.** The implement and docs stages of a standard ticket end with this report, and the session checks that one arrived before routing it.
 
 ```
 verdict: done | needs-replan | blocked
@@ -87,15 +89,16 @@ checks: <each check run and its result>
 | --- | --- |
 | intent draft | grill or approve |
 | Design line `needed` or `supplement`, and `design.md` missing or draft with approval required | design |
-| no `spec.md` | spec |
+| standard or epic, no `spec.md` | spec |
 | standard, no `plan.md` | plan |
 | standard, `## Challenge` missing round 1 or 2 | plan (finish the challenge rounds) |
 | standard, `plan.md` not approved, challenge rounds 1 and 2 done | plan approval (`auto-approve.mjs`, then the person on exit 1, or a stop on exit 2) |
 | standard, a task with no commit naming it | implement |
-| standard, `## Verification` empty | verify: dispatch `prism-verify` |
-| standard, no final review line under `## Review` | review: dispatch `prism-review` as a fresh subagent with a path brief, on `modelTiers.overrides.briar` when set |
-| standard, no PR | PR: follow `.prism/references/shipping-flow.md` |
-| standard, `Retro:` line empty under `## PR Readiness` | retro: run `prism-retro`, whose close step writes the line and commits `retro: <summary>`, with a report only when `retro-trigger.mjs` exits 0, then push |
+| small, no ticket-subject commit since the approving commit | implement, in the session |
+| small or standard, `## Verification` empty | verify: dispatch `prism-verify` |
+| small or standard, no final review line under `## Review` | review: dispatch `prism-review` as a fresh subagent with a path brief, on `modelTiers.overrides.briar` when set |
+| small or standard, no PR | PR: follow `.prism/references/shipping-flow.md` |
+| small or standard, `Retro:` line empty under `## PR Readiness` | retro: run `prism-retro`, whose close step writes the line and commits `retro: <summary>`, with a report only when `retro-trigger.mjs` exits 0, then push |
 | epic, a child in `## Children` not merged | the next unmerged child per `## Merge order`: `prism-spec` writes its spec in its own folder |
 | epic, every child in `## Children` merged, no `## Retro` in `spec.md` | retro: run `prism-retro`, which appends `## Retro` to `spec.md` |
 
@@ -1331,12 +1334,13 @@ Variants:
 
 ### Folder-plan branches
 
-On a branch with a plan folder, the task ID carries the ticket, so the subject adds no ticket prefix. One bundle is one commit.
+On a branch with a plan folder, the task ID carries the ticket, so the subject adds no ticket prefix, except on a small ticket, which has no task IDs. One bundle is one commit.
 
 - `T3: <summary>`, `T3-T5: <summary>`, or `T11,T15,T22: <summary>` for task work
 - `T3 fix: <summary>` for a review fix to a task that is already done
 - `plan: <summary>` for plan-only commits, which stage only files inside the plan folder
 - `retro: <summary>` for the retro's promotions, which stage only the retro's paths
+- `PRISM-NNNN: <summary>` for a small ticket
 
 ### Body
 
