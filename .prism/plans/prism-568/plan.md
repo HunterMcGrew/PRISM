@@ -2,7 +2,9 @@
 title: Small size
 ticket: https://github.com/HunterMcGrew/PRISM/issues/568
 stage: plan
-status: draft
+status: approved
+approved_by: auto
+approved_at: 2026-11-27
 ---
 
 ## Acceptance Criteria
