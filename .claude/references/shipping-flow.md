@@ -11,7 +11,7 @@ This flow runs on every `git push`, not once per session. A fix-up commit after 
 ## The flow
 
 1. **Verify.** When a commit since `## Verification` touches a file those checks cover, on the first push as well as a later one, re-dispatch `prism-verify` on the new head first, per the After a fix part of `REVIEW.md`. A push that skips it ships checks that describe the tree before the fix. With no such commit, run nothing beyond the verify row: the verify stage already ran every check on the committed tree.
-2. **Commit** anything still uncommitted, except `.prism/metrics/review-misses.jsonl`, which the retro's `retro:` commit carries. Once `Retro:` is filled, commit the log alone with `node scripts/ai-skills/hooks/plan/commit.mjs "retro: log review misses" .prism/metrics/review-misses.jsonl`. Commit per `.prism/rules/git-conventions.md`, with the subject form for the work, a body that explains why, and HEREDOC formatting.
+2. **Commit** anything still uncommitted, except `.prism/metrics/review-misses.jsonl`, which the retro's close step carries in its `retro:` commit. The close step runs on every folder plan, and the retro report only on a trigger. Once `Retro:` is filled, commit the log alone with `node scripts/ai-skills/hooks/plan/commit.mjs "retro: log review misses" .prism/metrics/review-misses.jsonl`. Commit per `.prism/rules/git-conventions.md`, with the subject form for the work, a body that explains why, and HEREDOC formatting.
 3. **Find the PR.** Check whether one exists for the branch:
 
    ```bash
@@ -44,4 +44,4 @@ Every agent PR opens as a draft and stays one. GitHub blocks merging a draft, so
 
 After the push, say one line: "PR #<number> is open as a draft." Include the number from step 3 or from `gh pr create`. If step 4 synced the body, add "PR #<number> body synced to current scope." before it.
 
-Then run `node scripts/ai-skills/hooks/review/reconcile.mjs <pr> --json`. For each human comment it reports as not yet logged, append one miss row to `.prism/metrics/review-misses.jsonl` in the shape `.prism/architect/_toolkit/review-runtime.md` gives under "The misses log", naming the nearest pass. The log is committed by the retro, per step 2.
+Then run `node scripts/ai-skills/hooks/review/reconcile.mjs <pr> --json`. For each human comment it reports as not yet logged, append one miss row to `.prism/metrics/review-misses.jsonl` in the shape `.prism/architect/_toolkit/review-runtime.md` gives under "The misses log", naming the nearest pass. The log is committed by the retro's close step, per step 2.

@@ -51,6 +51,6 @@ checks: <each check run and its result>
 | standard, `## Verification` empty | verify: dispatch `prism-verify` |
 | standard, no final review line under `## Review` | review: dispatch `prism-review` as a fresh subagent with a path brief, on `modelTiers.overrides.briar` when set |
 | standard, no PR | PR: follow `.prism/references/shipping-flow.md` |
-| standard, `Retro:` line empty under `## PR Readiness` | retro: run `prism-retro`, which writes the line and commits `retro: <summary>`, then push |
+| standard, `Retro:` line empty under `## PR Readiness` | retro: run `prism-retro`, whose close step writes the line and commits `retro: <summary>`, with a report only when `retro-trigger.mjs` exits 0, then push |
 | epic, a child in `## Children` not merged | the next unmerged child per `## Merge order`: `prism-spec` writes its spec in its own folder |
 | epic, every child in `## Children` merged, no `## Retro` in `spec.md` | retro: run `prism-retro`, which appends `## Retro` to `spec.md` |

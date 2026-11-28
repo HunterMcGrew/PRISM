@@ -115,7 +115,7 @@ Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the ha
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
 
-The main session may flip a PR ready and squash-merge it when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the plan's last review line under `## Review` reads `clean`, and CI is green on the head. The flag is the gate: absent or false means the human merges. A team opts in by setting the flag by hand; installs leave it absent. A reviewer or a subagent never merges, whatever the flag says.
+The main session may flip a PR ready and squash-merge it when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review bar holds at the PR head, and CI is green on that head. On a folder plan the bar is `node ${HOOK_RUNTIME_DIR}/review/merge-bar.mjs <plan.md> --head <PR head sha>` exiting 0: the last review line is a bare `clean` whose sha is that head or an ancestor of it, with only `retro:` and plan-folder commits after it. On a flat plan it is the plan's last review line under `## Review` reading `clean`. The flag is the gate: absent or false means the human merges. A team opts in by setting the flag by hand; installs leave it absent. A reviewer or a subagent never merges, whatever the flag says.
 
 ---
 
