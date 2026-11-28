@@ -189,6 +189,9 @@ round 3: blocking 1
   - plan (non-blocking): part 2's branch carries part 1's `## Verification` record and its `review round 1 ... (part 1 of 2): clean` line, so after T13 the resume table sees both stages as done and goes to the PR; add a Decision that part 2's verify and review are dispatched regardless, and that the retro's `Retro:` line waits on part 2's review.
   - T11 (non-blocking): the amended `one-review.test.ts` fix has no open task, because T11 reads `done`, and the case fails at HEAD (`workflow.md has no | standard, no PR | row`); T13's proof does not run it. Name who commits it (the session, as `T11 fix:`) and that it lands before verify.
 
+round 4: resolved 1
+  - T8 (non-blocking): the `size:` flip check lives only in the Decision, and T8's `proof` runs `approve-guard.test.ts`, which has no `size:` case, so the builder's `checks:` line can report the check only from a hand-run payload; fine as written, but the session should expect that line to name the payload it ran.
+
 ## Decisions
 
 - **This child ships as a two-PR stack, cut after T5.** The work spans well over 10 files once generated copies count, and part 1 works alone: no intent can say `size: small` until T8, so the gate arm is dormant and every stage runs as it does today. Part 1 is `size.mjs`, the commit gate arm, delivery, and the architect-doc entries; part 2 is everything else. Rejected: one PR, past the size where review gets painful.
