@@ -28,6 +28,7 @@ On a branch with a plan folder, the task ID carries the ticket, so the subject a
 - `T3 fix: <summary>` for a review fix to a task that is already done
 - `plan: <summary>` for plan-only commits, which stage only files inside the plan folder
 - `retro: <summary>` for the retro's promotions, which stage only the retro's paths
+- `${TICKET_PREFIX}-NNNN: <summary>` for a small ticket, which has no task IDs
 
 ### Body
 
