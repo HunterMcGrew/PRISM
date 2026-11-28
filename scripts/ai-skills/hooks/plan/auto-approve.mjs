@@ -54,9 +54,10 @@ import { parseTasks, readPlanConfig } from "./tasks.mjs";
  * @typedef {import("./tasks.mjs").Task} Task
  * @typedef {[condition: string, detail: string][]} Failures
  * @typedef {{ code: number, message: string }} AutoApproveResult
+ * @typedef {{ number: number, line: string, kind: string }} ChallengeRound
  */
 
-const ROUND_LINE =
+export const ROUND_LINE =
 	/^round (\d+): (clean|resolved \d+|carried \d+|blocking \d+)$/;
 // Rounds 1 to 3 are the fix loop, so the first confirm round is round 4.
 const FIRST_CONFIRM_ROUND = 4;
@@ -389,13 +390,18 @@ function checkAffectedSystems(tasks, specPath) {
 }
 
 /**
+ * Returns every `## Challenge` round line that matches `ROUND_LINE`, in file
+ * order, with `line` holding the text after any leading `- `.
+ *
+ * Planners write round lines bare or as list items, and both mean the same
+ * round, so every reader of the section strips the dash here.
+ *
  * @param {string} text
- * @returns {Failures}
+ * @returns {ChallengeRound[]}
  */
-function checkChallenge(text) {
-	const rounds = (sectionBody(text, "Challenge") ?? "")
+export function readChallengeRounds(text) {
+	return (sectionBody(text, "Challenge") ?? "")
 		.split("\n")
-		// Planners write round lines bare or as list items, and both mean the same round.
 		.map((line) => ROUND_LINE.exec(line.trimEnd().replace(/^- /, "")))
 		.filter((match) => match !== null)
 		.map((match) => ({
@@ -403,6 +409,14 @@ function checkChallenge(text) {
 			line: match[0],
 			kind: match[2] ?? "",
 		}));
+}
+
+/**
+ * @param {string} text
+ * @returns {Failures}
+ */
+function checkChallenge(text) {
+	const rounds = readChallengeRounds(text);
 	const numbers = rounds.map((round) => round.number);
 
 	if (new Set(numbers).size !== numbers.length) {

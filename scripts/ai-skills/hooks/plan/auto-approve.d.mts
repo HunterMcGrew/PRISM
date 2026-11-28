@@ -5,6 +5,16 @@ export interface AutoApproveResult {
 	message: string;
 }
 
+export interface ChallengeRound {
+	number: number;
+	line: string;
+	kind: string;
+}
+
+export const ROUND_LINE: RegExp;
+
+export function readChallengeRounds(text: string): ChallengeRound[];
+
 export function autoApprove(input: {
 	folder: string;
 	check?: boolean;

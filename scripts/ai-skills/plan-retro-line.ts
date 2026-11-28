@@ -6,23 +6,18 @@ import { sectionBody } from "./hooks/plan/frontmatter.mjs";
 import { isDirectCliEntry } from "./lib/cli-entry";
 
 /**
- * Fails a folder plan whose PR review has given its final verdict while its
- * `Retro:` line is still empty.
+ * Fails a closed folder plan whose `Retro:` line is empty or names no file.
  *
- * The retro is the fixed last stage of a folder plan, so a plan that reached
- * its final PR-review verdict and carries no retro line was left unfinished.
+ * A plan is checked once it carries a dated `> Closed: <date>` line before its
+ * first `##` heading, because the close step writes that line and the `Retro:`
+ * line together. A value with no whitespace, backticks stripped, is read as a
+ * path from the repo root and must name a regular file. A value holding
+ * whitespace is not a path, so `none — no trigger` and older prose lines pass.
+ * Review lines are never read.
+ *
  * Only live folder plans are read: `.prism/archived/`, epic folders, and flat
  * plans are skipped, because their retro stays declinable or lives in a
  * different file.
- *
- * The final verdict is the last `pr-review` line under `## Review`, and it is
- * final when that line is a `confirm` line or a `round` line whose verdict
- * reads exactly `clean`. A round with open counts means fixes and another
- * round are coming, so the retro is not due yet.
- *
- * A stacked ticket's earlier PRs carry ` (part <k> of <m>)` after the sha. A
- * last line whose `k` is less than `m` is not final, because every PR in a
- * stack shares one plan folder and a later PR is still to be reviewed.
  *
  * This is PRISM's own lint, run by `prism:check`. It is not delivered to a
  * consumer.
@@ -30,14 +25,13 @@ import { isDirectCliEntry } from "./lib/cli-entry";
 
 const PLANS_ROOT = ".prism/plans";
 
-const PR_REVIEW_LINE =
-	/^\s*-\s*pr-review (round \d+|confirm) at \S+(?: \(part (\d+) of (\d+)\))?:\s*(.*)$/;
+const CLOSED_LINE = /^>\s*Closed:\s*\d{4}-\d{2}-\d{2}/;
 
 const RETRO_LINE = /^>?\s*Retro:/;
 
 /**
- * Returns the repo-relative path of each live folder plan whose final
- * PR-review verdict is recorded and whose `Retro:` line is missing or empty,
+ * Returns the repo-relative path of each closed live folder plan whose
+ * `Retro:` line is missing, empty, or a single token naming no regular file,
  * sorted.
  */
 export async function findEmptyRetroLines(repoRoot: string): Promise<string[]> {
@@ -46,7 +40,7 @@ export async function findEmptyRetroLines(repoRoot: string): Promise<string[]> {
 	for (const planPath of await findFolderPlans(repoRoot)) {
 		const text = await fs.readFile(path.join(repoRoot, planPath), "utf8");
 
-		if (hasFinalPrReviewVerdict(text) && retroValue(text) === "") {
+		if (holdsClosedLine(text) && !(await acceptsRetroValue(repoRoot, retroValue(text)))) {
 			failing.push(planPath);
 		}
 	}
@@ -86,22 +80,34 @@ async function findFolderPlans(repoRoot: string): Promise<string[]> {
 	return plans;
 }
 
-function hasFinalPrReviewVerdict(text: string): boolean {
-	const lines = (sectionBody(text, "Review") ?? "")
-		.split("\n")
-		.map((line) => PR_REVIEW_LINE.exec(line))
-		.filter((match): match is RegExpExecArray => match !== null);
-	const last = lines.at(-1);
+function holdsClosedLine(text: string): boolean {
+	for (const line of text.split("\n")) {
+		if (/^##\s/.test(line)) {
+			return false;
+		}
 
-	if (last === undefined) {
+		if (CLOSED_LINE.test(line)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+async function acceptsRetroValue(repoRoot: string, value: string): Promise<boolean> {
+	if (value === "") {
 		return false;
 	}
 
-	if (last[2] !== undefined && Number(last[2]) < Number(last[3])) {
-		return false;
+	if (/\s/.test(value)) {
+		return true;
 	}
 
-	return last[1] === "confirm" || (last[4] ?? "").trim() === "clean";
+	try {
+		return (await fs.stat(path.join(repoRoot, value.replaceAll("`", "")))).isFile();
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -122,7 +128,7 @@ async function main(): Promise<void> {
 	const failing = await findEmptyRetroLines(repoRoot);
 
 	for (const planPath of failing) {
-		console.error(`plan-retro-line: ${planPath}: PR review recorded and Retro: is empty`);
+		console.error(`plan-retro-line: ${planPath}: closed and Retro: is empty or names no file`);
 	}
 
 	if (failing.length > 0) {

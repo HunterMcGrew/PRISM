@@ -1,6 +1,6 @@
 # Review Runtime
 
-The review rulebook an install carries and the scripts a review or verify run calls: how [`REVIEW.md`](../../../REVIEW.md) and its pass files reach a repo and who owns them, and what `reconcile.mjs`, `ignore.mjs`, `record.mjs`, `post.mjs`, `check-report.mjs`, `verify/record.mjs`, and the retro-line check promise. How the hook runtime reaches an install is [`hook-runtime.md`](./hook-runtime.md). The plan-folder scripts, `watch-ci.mjs` among them, are [`plan-chain-scripts.md`](./plan-chain-scripts.md).
+The review rulebook an install carries and the scripts a review or verify run calls: how [`REVIEW.md`](../../../REVIEW.md) and its pass files reach a repo and who owns them, and what `reconcile.mjs`, `ignore.mjs`, `record.mjs`, `lines.mjs`, `merge-bar.mjs`, `post.mjs`, `check-report.mjs`, `verify/record.mjs`, and the retro-line check promise. How the hook runtime reaches an install is [`hook-runtime.md`](./hook-runtime.md). The plan-folder scripts, `watch-ci.mjs` and `retro-trigger.mjs` among them, are [`plan-chain-scripts.md`](./plan-chain-scripts.md).
 
 ---
 
@@ -91,6 +91,39 @@ The session runs `reconcile.mjs <pr> --json` after each push and logs each unlog
 
 **Exit codes.** 0 when the line is written, and the line is printed. 1 for a never-reviewed path. 2 on a missing argument, an unreadable plan or report, a report that is not valid JSON or not in the shape above (an empty `passes`, a malformed `sha`, and a `part` out of range included), a `.ai-skills/config.json` that exists but does not parse, and a malformed `reviewIgnore`.
 
+## review/lines.mjs
+
+`lines.mjs` is the one reader of the record lines under a plan's `## Review`. It is imported, not run: `plan/retro-trigger.mjs` and `merge-bar.mjs` both read review lines through it, so the two scripts judge the same lines.
+
+**What it reads.** `readReviewLines(text)` takes the section through `sectionBody` in `plan/frontmatter.mjs`, so HTML comments are removed, the section ends at the next `#` or `##` heading outside a code fence, and `## Review Issues` is not `## Review`. It returns each record line in file order as `{ kind, round, sha, part, verdict, line }`. A record line is `- <prefix> round <n> at <sha>` or `- <prefix> confirm at <sha>`, then an optional ` (part <k> of <m>)`, a colon, and the verdict. The prefix is `review`, or the older `self-review` and `pr-review`. `kind` is `round` or `confirm`, `round` is null on a confirm line, `part` is `{ k, m }` or null, the verdict is trimmed, and `line` is the record text without its leading dash. The sha is any run of characters with no space or colon, and is not checked as hex.
+
+**A line that doesn't match is skipped, not an error.** Prose or notes in the section never break a reader, and a plan with no `## Review` returns an empty list.
+
+**The writer and the reader agree through one test.** `REVIEW.md` owns the grammar, `record.mjs` writes it, and `review-lines.test.ts` feeds a line `record.mjs` just wrote back through the reader and checks the round, sha, part, and verdict it was given.
+
+## review/merge-bar.mjs
+
+`merge-bar.mjs <plan.md> [--head <ref>]` checks that a plan's last review record line still holds at the head about to merge. `--head` defaults to `HEAD`. The PR's head sha is the right value to pass, because the local checkout may be behind the PR.
+
+**The tests, in order.** It reads the last record line through `lines.mjs` and prints every failing reason, one per line:
+
+- **A record line exists.** With none, that is the only reason printed.
+- **The verdict is a bare `clean`.** `clean, 1 decision` fails, matching the rule in `REVIEW.md` that only a bare `clean` meets the merge bar.
+- **The sha resolves to a commit that is the head or an ancestor of it.** A sha that names no commit, or one the head can't reach, such as after a rebase dropped it, is printed and the check stops there.
+- **Every commit after the sha is exempt.** It walks every commit in `<sha>..<head>`, commits a merge brought in included, and names each one that is not exempt.
+
+**What is exempt.** A commit whose subject begins `retro:`, a commit whose every changed file sits under the plan's own folder, and a commit that changes no files. The plan folder is the plan's directory relative to the repo root, with `\` turned to `/` and a trailing `/`, so a sibling folder that shares the name as a prefix doesn't count as inside it. The `retro:` exemption exists because the retro commits its promotions into rules and architect docs after the final review, and the review never reads those writes as code. The plan-folder exemption covers `plan:` commits and verify re-runs. The subject is a convention and not a wall, since the commit gate does not judge subjects.
+
+**A merge commit after the sha always fails**, whatever its subject or files. A clean refresh from `main` and a conflict resolution that changed code look the same to this check, so a merge after the review costs another review round. Each failing reason names the commit by its first 8 characters and subject and says to run another round.
+
+**The part marker changes nothing.** A ` (part <k> of <m>)` line is checked like any other, because each part of a stack merges as its own PR.
+
+**Why a script and not a lint.** The lint runs in CI and sees no PR head, because the plan is committed on the branch and the head moves with every push. The answer is needed at merge time, with the head in hand. The check came from a review that recorded `clean` at one sha while three commits that changed source landed after it, and the merge rule then only asked that the last line read `clean`.
+
+**Repo and git.** It finds the repo root by walking up from the plan's real directory to `.git`, and runs `git` as argument arrays with no shell. It reads only local git and the plan.
+
+**Exit codes.** 0 when the bar holds, with nothing printed. 1 with one reason per failure on stdout, a reviewed sha that names no commit included. 2 on a usage error, an unreadable plan, a plan in no repo, a `--head` that names no commit, and a `git` it cannot run.
+
 ## `review/post.mjs`
 
 `post.mjs <pr> <file> <line> <body-file>` posts one inline comment on the PR's head commit. The session posts decision items and leftover Critical or Major findings through it, never through `gh` directly, so every agent comment carries the marker `reconcile.mjs` reads and none lands on a never-reviewed path.
@@ -144,11 +177,17 @@ It exits 0 when clean, 1 with one line per problem, and 2 on a usage error or an
 
 ## The retro-line check
 
-`plan-retro-line.ts` fails a live folder plan whose PR review has given its final verdict while the `Retro:` line under `## PR Readiness` is still empty. The retro is the fixed last stage of a folder plan, so a plan that got that far with no retro line was left unfinished.
+`plan-retro-line.ts` fails a closed live folder plan whose `Retro:` line under `## PR Readiness` is empty, absent, or names no file. The retro writes the `> Closed:` line and the `Retro:` line together, so a closed plan whose `Retro:` line says nothing usable was left unfinished.
 
-**What counts as a recorded PR review.** The last `- pr-review round <n> at <sha>: <verdict>` or `- pr-review confirm at <sha>: <verdict>` line under `## Review`. It is final when it is a `confirm` line, or a `round` line whose verdict is exactly `clean`. A round with open counts means fixes and another round are coming, so the retro is not due yet.
+**What counts as closed.** A `> Closed: <YYYY-MM-DD>` line before the plan's first `## ` heading. A plan with no such line passes, whatever its `Retro:` line holds. The check reads no review line.
 
-**Stacked tickets.** Every PR in a stack shares one plan folder. A record line written on a PR that is not the last carries ` (part <k> of <m>)` after the sha, as in `- pr-review round 2 at <sha> (part 1 of 2): clean`, and the check skips a last line whose `<k>` is less than `<m>`. A line with no marker, or with `<k>` equal to `<m>`, counts as above. [`REVIEW.md`](../../../REVIEW.md) gives the `review round` lines `record.mjs` writes the same marker and says a line whose `<k>` is less than `<m>` is never a final verdict.
+**What the `Retro:` value must be.** The check reads the text after the colon of the last `Retro:` line under `## PR Readiness`, trimmed:
+
+- **Empty or absent** fails.
+- **A single token**, with no whitespace, is read as a path from the repo root once backticks are stripped, and fails unless it names a regular file.
+- **A value holding whitespace** passes and is not read as a path, so `none — no trigger` and the prose lines on older plans pass.
+
+**What it can't see.** It cannot tell whether `none — no trigger` is true, and a retro that never ran leaves no `> Closed:` line for it to key on. The resume table is what sends a session to the retro.
 
 **Why only folder plans.** It reads `.prism/plans/<name>/plan.md` and skips epic folders, flat plans, and `.prism/archived/`. The retro of an epic or a flat plan stays declinable or lives in a different file, so an empty line there is not a defect.
 
@@ -156,4 +195,4 @@ It exits 0 when clean, 1 with one line per problem, and 2 on a usage error or an
 
 ## Invocation
 
-In a consumer, the commands are `node .claude/hooks/review/reconcile.mjs`, `node .claude/hooks/review/record.mjs`, `node .claude/hooks/review/post.mjs`, `node .claude/hooks/verify/check-report.mjs`, and `node .claude/hooks/verify/record.mjs`. `review/ignore.mjs` is imported by `review/record.mjs` and `post.mjs`, not run. `verify/record.mjs` imports `check-report.mjs`. In PRISM's own tree the same files sit under `scripts/ai-skills/hooks/` in place of `.claude/hooks/`. All of these are zero-dependency `.mjs` files with a `.d.mts` sidecar, they carry the runtime ownership marker, and `HOOK_RUNTIME_FILES` delivers them with the rest of the runtime ([`hook-runtime.md`](./hook-runtime.md)). None needs the executable bit. `reconcile.mjs` and `post.mjs` need `gh` signed in, and `review/record.mjs`, `verify/record.mjs`, and `check-report.mjs` read only local files.
+In a consumer, the commands are `node .claude/hooks/review/reconcile.mjs`, `node .claude/hooks/review/record.mjs`, `node .claude/hooks/review/merge-bar.mjs`, `node .claude/hooks/review/post.mjs`, `node .claude/hooks/verify/check-report.mjs`, and `node .claude/hooks/verify/record.mjs`. `review/ignore.mjs` is imported by `review/record.mjs` and `post.mjs`, not run. `review/lines.mjs` is imported by `merge-bar.mjs` and `plan/retro-trigger.mjs`, not run. `verify/record.mjs` imports `check-report.mjs`. In PRISM's own tree the same files sit under `scripts/ai-skills/hooks/` in place of `.claude/hooks/`. All of these are zero-dependency `.mjs` files with a `.d.mts` sidecar, they carry the runtime ownership marker, and `HOOK_RUNTIME_FILES` delivers them with the rest of the runtime ([`hook-runtime.md`](./hook-runtime.md)). None needs the executable bit. `reconcile.mjs` and `post.mjs` need `gh` signed in, `review/record.mjs`, `verify/record.mjs`, and `check-report.mjs` read only local files, and `merge-bar.mjs` reads only the plan and local git.
