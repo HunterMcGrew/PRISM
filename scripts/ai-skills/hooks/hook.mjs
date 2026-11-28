@@ -1409,9 +1409,25 @@ export function formatDenyMessage(
 	docPrefix = ARCHITECT_DIR_PREFIX
 ) {
 	const remedies = unreadDocs
-		.map((doc) => `cat ${docPrefix}${doc}`)
+		.map((doc) => `cat ${quoteShellWord(`${docPrefix}${doc}`)}`)
 		.join("\n");
 	return `You're working on \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}\n${DENY_CREDIT_NOTE}`;
+}
+
+/**
+ * Single-quotes a remedy operand that would otherwise split into several
+ * shell words, such as an absolute path through a directory with a space.
+ *
+ * A word already made of path characters stays bare, so the common remedy
+ * reads as it always has. A word holding a `'` stays bare too, because it
+ * cannot be single-quoted without a backslash, and a backslash is outside the
+ * read-safe class, so no spelling of it earns credit.
+ *
+ * @param {string} word
+ * @returns {string}
+ */
+function quoteShellWord(word) {
+	return /^[\w./@+=,:~-]+$/.test(word) || word.includes("'") ? word : `'${word}'`;
 }
 
 /**

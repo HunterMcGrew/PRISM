@@ -1722,6 +1722,37 @@ test("runPreToolUseArm: from a subdirectory cwd, the printed remedy is spelled s
 	});
 });
 
+test("runPreToolUseArm: a remedy path carrying a space is single-quoted and still clears the gate", async () => {
+	await withTempRepo(async (tempRoot) => {
+		const repoRoot = path.join(tempRoot, "with space");
+		const { target } = await seedGateRepo(repoRoot);
+		const subdirectory = path.join(repoRoot, "src");
+		await fs.mkdir(subdirectory, { recursive: true });
+		const payload = writePayload(repoRoot, target, { cwd: subdirectory });
+
+		const remedy =
+			denyReason(await runPreToolUseArm("claude", HARNESSES.claude, payload))?.split(
+				"\n"
+			)[1] ?? "";
+		assert.equal(
+			remedy,
+			`cat '${toShellPath(path.join(repoRoot, ".prism", "architect"))}/${GATE_DOC}'`
+		);
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: subdirectory,
+				tool_name: "Bash",
+				tool_input: { command: remedy },
+			})
+		);
+		assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, payload), null);
+	});
+});
+
 test("runPreToolUseArm: a nested worktree whose manifest will not parse does not cancel the outer checkout's deny", async () => {
 	await withTempRepo(async (outerRoot) => {
 		await seedGateRepo(outerRoot);
