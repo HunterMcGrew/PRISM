@@ -54,6 +54,7 @@ The report skeletons for `prism-retro`, one per grain. The skill owns the paths,
 
 **Target:** <plan-path>
 **Grain:** per-pr
+**Trigger:** <each reason `retro-trigger.mjs` printed, such as `review: <line>`, `challenge: round <n>`, or `amended: T<n>`, separated by semicolons>
 **Generated:** <YYYY-MM-DD>
 **Graded at:** <sha of the PR head commit the evidence was read against>
 

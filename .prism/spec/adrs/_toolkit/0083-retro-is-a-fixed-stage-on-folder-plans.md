@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-11-19
 ---
 
+> Amended by [ADR-0089](./0089-the-close-step-always-runs-and-the-retro-report-runs-on-a-trigger.md): the close step below still always runs, and the retro report now runs only when `retro-trigger.mjs` finds a trigger, with `Retro: none — no trigger` otherwise. `prism:retro-line` keys on a dated `> Closed:` line, because nothing writes a final PR-review record line since ADR-0087.
+
 ## Context
 
 [ADR-0068](./0068-retro-charter-and-two-grain-cadence.md) made the retro a visible nudge that a person may decline. It rejected a mandatory gate, because forced retros on trivial tickets were the theater risk and hook enforcement had been tried and reverted.

@@ -219,11 +219,21 @@ describe("refusals", () => {
 		assert.match(run("a", "b").stderr, /Usage: retro-trigger\.mjs/);
 	});
 
-	test("a symlinked invocation still runs as a command", () => {
+	test("a symlinked invocation still runs as a command", (t) => {
 		const root = mkdtempSync(path.join(os.tmpdir(), "retro-trigger-link-"));
 		tempRoots.push(root);
 		const link = path.join(root, "retro-trigger.mjs");
-		symlinkSync(SCRIPT, link);
+		try {
+			symlinkSync(SCRIPT, link);
+		} catch (error) {
+			if (process.platform === "win32" && (error as NodeJS.ErrnoException).code === "EPERM") {
+				t.skip("creating a symlink needs a privilege this Windows runner lacks");
+
+				return;
+			}
+
+			throw error;
+		}
 
 		const result = spawnSync(process.execPath, [link, makeFolder(buildPlan())], {
 			encoding: "utf8",

@@ -3,7 +3,7 @@ title: "PRISM Personas"
 description: "What each persona does, when to call them, and what they hand off."
 category: "personas"
 audience: "developer-user"
-last_updated: "2026-11-19"
+last_updated: "2026-11-27"
 ---
 
 # PRISM Personas
@@ -239,7 +239,7 @@ These stages carry no persona and no voice. A person approves the intent and the
 
 ### Iris — retrospective facilitator (`prism-retro`)
 
-**What she does:** Compares a plan's stated intent with the execution record (merged diffs, PR threads, CI) against a six-question charter, at a light per-ticket grain or a full epic grain. Every finding cites its evidence. Writes the report to `.prism/retros/` and offers action items to Nora. On a folder plan she is the fixed last stage: she runs after PR review without being asked, writes the Decision verdicts, the `Retro:` and `> Closed:` lines, and the lessons exits, and commits them. She also proposes a fix for each open review-miss class. On a flat plan she stays optional and read-only.
+**What she does:** Compares a plan's stated intent with the execution record (merged diffs, PR threads, CI) against a six-question charter, at a light per-ticket grain or a full epic grain. Every finding cites its evidence. Writes the report to `.prism/retros/` and offers action items to Nora. On a folder plan she runs after the final review without being asked, and her close step always runs: she writes the Decision verdicts, the `Retro:` and `> Closed:` lines, and the lessons exits, commits them, and proposes a fix for each open review-miss class. A ticket's report runs only when `retro-trigger.mjs` finds a reason, such as a review round that asked for changes, and an epic's report always runs. On a flat plan she stays optional and read-only.
 
 **When to call:** "Iris, retro this epic." or "What went well on PRISM-1234?"
 
