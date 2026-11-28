@@ -4,11 +4,12 @@
 // is the consumer's own file and is backed up to `.bak` before being replaced.
 //
 // The commit gate. An agent commit that sweeps a sibling's staged files, weakens
-// a test, changes a stop path no task lists, or bypasses a hook costs a review
-// round to find. The gate never judges a commit's subject: any message passes.
-// This hook reads the first commit out of a shell command and runs three checks
-// against the tree that commit would produce: config, weakened tests, and
-// stops, in that order. A commit is a `git commit` or a
+// a test, changes a stop path no task lists, outgrows a small ticket, or
+// bypasses a hook costs a review round to find. The gate never judges a
+// commit's subject: any message passes. This hook reads the first commit out of
+// a shell command and runs four checks against the tree that commit would
+// produce: config, size, weakened tests, and stops, in that order. A commit is
+// a `git commit` or a
 // `node <runtime>/plan/commit.mjs "<subject>" <paths>` call, which every
 // folder-plan stage commits through. One script serves Claude Code and Codex,
 // and each registration passes `--tool=<harness>`, which picks how
@@ -36,7 +37,7 @@
 // no paths. Otherwise it denies a named path that takes the whole repo, such as
 // `.` at the root or `'*'`, with the `-a` reason. A glob that matches
 // everything another way, such as `?*`, is a known miss. It then builds the
-// would-be index in a temp file, runs the three checks, and denies on the first
+// would-be index in a temp file, runs the four checks, and denies on the first
 // failure. A `commit.mjs` call builds the index with `--literal-pathspecs`, as
 // the script commits. It never stages anything in the shared index.
 //
@@ -50,7 +51,12 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CONFIG_CHECK, loadContext, STOPS_CHECK } from "./commit-gate/checks.mjs";
+import {
+	CONFIG_CHECK,
+	loadContext,
+	SIZE_CHECK,
+	STOPS_CHECK,
+} from "./commit-gate/checks.mjs";
 import {
 	readCommit,
 	readKillSwitch,
@@ -72,7 +78,7 @@ const HOOK_NAME = "commit-gate";
 const MANIFEST = ".prism/architect/manifest.json";
 /** @type {Decision} */
 const PASS = Object.freeze({ decision: "pass" });
-const GATE_CHECKS = [CONFIG_CHECK, TEST_GUARD_CHECK, STOPS_CHECK];
+const GATE_CHECKS = [CONFIG_CHECK, SIZE_CHECK, TEST_GUARD_CHECK, STOPS_CHECK];
 const IN_PROGRESS_HEADS = ["MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"];
 // `$(git rev-parse --show-toplevel)` or its backtick form, with any spacing
 // and an optional `2>/dev/null`.

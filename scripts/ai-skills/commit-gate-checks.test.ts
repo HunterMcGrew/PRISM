@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import {
 	CONFIG_CHECK,
 	loadContext,
+	SIZE_CHECK,
 	STOPS_CHECK,
 } from "./hooks/commit-gate/checks.mjs";
 import type { Context } from "./hooks/commit-gate/checks.mjs";
@@ -261,8 +262,10 @@ function assertDeny(
 test("the checks are named rather than numbered", () => {
 	assert.equal(STOPS_CHECK.name, "stops");
 	assert.equal(CONFIG_CHECK.name, "config");
+	assert.equal(SIZE_CHECK.name, "size");
 	for (const check of [STOPS_CHECK, CONFIG_CHECK])
 		assert.equal(Object.hasOwn(check, "id"), false);
+	assert.equal(Object.hasOwn(SIZE_CHECK, "id"), false);
 });
 
 // --- loadContext ---
@@ -280,6 +283,42 @@ test("loadContext reads the folder plan and the would-be paths", () => {
 		);
 		assert.deepEqual(ctx.paths, ["src/a.mjs"]);
 		assert.equal(ctx.configError, null);
+	});
+});
+
+test("loadContext reads smallIntent from the intent in the would-be tree, never the working copy", () => {
+	const repo = createRepo();
+	const intent = `${PLAN_DIR}/intent.md`;
+	write(repo, intent, read(repo, intent).replace("size: standard", "size: small"));
+
+	withContext(repo, "git commit -m 'x' -- src/a.mjs", (ctx) => {
+		assert.equal(ctx.smallIntent, false);
+	});
+	withContext(repo, `git commit -m 'x' -- ${intent}`, (ctx) => {
+		assert.equal(ctx.smallIntent, true);
+	});
+});
+
+test("loadContext reads no small intent off a folder-plan branch", () => {
+	const repo = createRepo({ kind: "flat" });
+	change(repo, "src/a.mjs");
+
+	withContext(repo, "git commit -m 'PRISM-8: x' -- src/a.mjs", (ctx) => {
+		assert.equal(ctx.smallIntent, false);
+	});
+});
+
+test("loadContext reads documentation.location as a docs root with no trailing slash, or null when unset", () => {
+	const set = createRepo({ config: { ticketPrefix: "PRISM", documentation: { location: "./docs/" } } });
+	change(set, "src/a.mjs");
+	withContext(set, "git commit -m 'x' -- src/a.mjs", (ctx) => {
+		assert.equal(ctx.docsRoot, "docs");
+	});
+
+	const unset = createRepo();
+	change(unset, "src/a.mjs");
+	withContext(unset, "git commit -m 'x' -- src/a.mjs", (ctx) => {
+		assert.equal(ctx.docsRoot, null);
 	});
 });
 

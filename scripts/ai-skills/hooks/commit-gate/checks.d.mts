@@ -20,12 +20,19 @@ export interface Context {
 	noTaskNamed: boolean;
 	stopPaths: StopPaths | null;
 	testGlobs: string[];
+	docsRoot: string | null;
+	smallIntent: boolean;
 	defaultBranch: string;
 	configError: string | null;
 }
 
 export const CONFIG_CHECK: {
 	name: "config";
+	run: (ctx: Context) => CheckResult | null;
+};
+
+export const SIZE_CHECK: {
+	name: "size";
 	run: (ctx: Context) => CheckResult | null;
 };
 

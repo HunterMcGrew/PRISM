@@ -13,6 +13,7 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 - **`plan/auto-approve.mjs`** approves a folder plan when every condition holds. It also exports the challenge round pattern, `ROUND_LINE`, and `readChallengeRounds`, the one reader of `## Challenge` round lines.
 - **`plan/retro-trigger.mjs`** says whether a folder plan's retro writes a report (§ Retro trigger).
 - **`plan/stop-paths.mjs`** holds the dependency and contract path lists and the matcher for them.
+- **`plan/size.mjs`** says whether a branch's diff still fits the small size (§ Size). The commit gate's size check imports its reader and classifier, so the script and the gate judge a diff the same way.
 - **`plan/commit.mjs`** commits exactly the named paths.
 - **`plan/approve.mjs`** stamps a chain file's approval lines for a person, after a keypress in their terminal or, inside an agent session, on a chat approval token in place of the keypress. It stamps `intent.md`, `design.md`, and `plan.md` and never `spec.md`, and it refuses a file whose text changed after the person said `approve`.
 - **`plan/chat-approval.mjs`** holds the chat approval token's file name, the prompt parser, and the hash of every chain artifact, plus the helpers that find, read, and take the token. The approve guard writes the token and `approve.mjs` takes it ([`hook-runtime.md`](./hook-runtime.md) § Approve guard).
@@ -21,7 +22,7 @@ Every module is zero-dependency `.mjs` with a `.d.mts` sidecar for PRISM's own `
 
 ## Invocation
 
-In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Skill and rule text spells that directory with the `HOOK_RUNTIME_DIR` token, which renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. It comes from `hookRuntimeDir` in `.ai-skills/config.json`, which a consumer never sets. Only `tasks`, `bundles`, `auto-approve`, `approve`, `commit`, `watch-ci`, and `retro-trigger` are commands. The rest are imported, and `retro-trigger.mjs` imports `auto-approve.mjs` too. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `watch-ci.mjs` adds 8 and 3 to those. `commit.mjs` passes any other git failure through with git's code. A `.ai-skills/config.json` that exists but does not parse is a config error, exit 2, for every command that reads it except `watch-ci.mjs`, so a typo in a config that sets `stopPaths` can't fall back to the default paths and approve a plan the configured ones would stop. `watch-ci.mjs` reads the file only for `ci.requiredCheck` and treats one that does not parse as absent, which makes it wait only until the head has a check and none is pending, with the late-check gap above, instead of for one named check.
+In a consumer, run `node .claude/hooks/plan/<name>.mjs`. In PRISM's own tree, run `node scripts/ai-skills/hooks/plan/<name>.mjs`. Skill and rule text spells that directory with the `HOOK_RUNTIME_DIR` token, which renders as `scripts/ai-skills/hooks` in PRISM and `.claude/hooks` in a consumer. It comes from `hookRuntimeDir` in `.ai-skills/config.json`, which a consumer never sets. Only `tasks`, `bundles`, `auto-approve`, `approve`, `commit`, `watch-ci`, `retro-trigger`, and `size` are commands. The rest are imported, `retro-trigger.mjs` imports `auto-approve.mjs` too, and the commit gate imports `size.mjs`. A command exits 0 on success, 2 on a usage or config error, and 1 when one of its own conditions fails. `watch-ci.mjs` adds 8 and 3 to those. `commit.mjs` passes any other git failure through with git's code. A `.ai-skills/config.json` that exists but does not parse is a config error, exit 2, for every command that reads it except `watch-ci.mjs`, so a typo in a config that sets `stopPaths` can't fall back to the default paths and approve a plan the configured ones would stop. `watch-ci.mjs` reads the file only for `ci.requiredCheck` and treats one that does not parse as absent, which makes it wait only until the head has a check and none is pending, with the late-check gap above, instead of for one named check.
 
 ## Templates
 
@@ -90,6 +91,19 @@ When every condition holds, the script rewrites the `status: draft` line to `sta
 - **`amended: T<n>`** for each task whose `amended` list is not empty.
 
 It exits 0 when any reason holds, and 1 with nothing printed when none does. It exits 2 on a usage error, a folder with no `plan.md`, a `plan.md` it cannot read, and a task list `parseTasks` throws on.
+
+## Size
+
+`size.mjs <base> [--tree <treeish>]` measures the diff from the merge base of `<base>` and HEAD to the working tree, where an untracked file git doesn't ignore reads as a new file, or to `<treeish>` with `--tree`. It prints `small` or `standard`, then one reason line per limit that is over, in the order lines, new files, areas, stop paths. A diff is small when all of these hold:
+
+- **Lines.** At most 100 added product lines. Only added lines count, because a deletion adds no code for a reviewer to read. A binary product file is over this limit on its own, because its size is unknown.
+- **New files.** At most one new product file. A rename or a copy is not a new file.
+- **Areas.** Every product file sits in one area: its directory cut to the first two segments, or `.` for a file at the root.
+- **Stop paths.** No changed file is on a stop path (§ Stop paths). A stop path counts before the classes below, so a `package.json` edit is never small.
+
+A file is product code unless it is a test (the `testGlobs` the commit gate reads), a doc (any `.md`, or anything under `documentation.location`), a lockfile (a `.lock` or `.lockb` name, or `go.sum`), a config file (`.json`, `.yaml`, `.yml`, or `.toml`), or any path under `.prism/`. Everything under `.prism/` is plans, records, and spec, so the retro's `.prism/metrics/` commit can't push a small ticket over. A product file with no added line, such as a deleted file, counts toward no limit.
+
+It exits 0 for `small`, 1 for `standard`, and 2 on a usage error, a `<base>` with no merge base with HEAD, a `--tree` value that names no tree, a directory outside a repo, and a config that does not parse or holds a `stopPaths` or `testGlobs` value those readers reject. The commit gate calls the same reader with its would-be tree in place of `--tree` ([`hook-runtime.md`](./hook-runtime.md) § Commit gate).
 
 ## Stop paths
 
