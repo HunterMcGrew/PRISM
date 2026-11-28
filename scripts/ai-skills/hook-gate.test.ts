@@ -1692,6 +1692,33 @@ test("runPostToolUseArm: a cd into a nested worktree before the cat credits the 
 	});
 });
 
+test("runPreToolUseArm: a nested worktree whose manifest will not parse does not cancel the outer checkout's deny", async () => {
+	await withTempRepo(async (outerRoot) => {
+		await seedGateRepo(outerRoot);
+		const nestedArchitectDir = path.join(outerRoot, NESTED_WORKTREE, ".prism", "architect");
+		await fs.mkdir(nestedArchitectDir, { recursive: true });
+		await fs.writeFile(path.join(nestedArchitectDir, "manifest.json"), "{ not json", "utf8");
+
+		const command = `rm ${toShellPath(path.join(outerRoot, NESTED_WORKTREE, "x"))} ${toShellPath(path.join(outerRoot, "src", "a.ts"))}`;
+		const reason = denyReason(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				JSON.stringify({
+					session_id: "session-1",
+					cwd: outerRoot,
+					tool_name: "Bash",
+					tool_input: { command },
+				})
+			)
+		);
+		assert.ok(
+			reason?.startsWith("You're working on `src/a.ts`."),
+			`expected the outer route's deny, got ${reason}`
+		);
+	});
+});
+
 test("runPreToolUseArm: a nested worktree's manifest never narrows what the outer checkout's manifest gates", async () => {
 	await withTempRepo(async (outerRoot) => {
 		await seedGateRepo(outerRoot);

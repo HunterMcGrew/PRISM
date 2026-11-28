@@ -1350,9 +1350,9 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 			// `cat` reaches inside a nested worktree credits that worktree's
 			// state (`resolveGateRoots`).
 			for (const root of await resolveGateRoots(cwdRoot, cwd, filePath)) {
-				const nag = await resolveArchitectNag(root, filePath, scopeId, {
-					credit,
-				});
+				const nag = await judgeRoot(root, cwdRoot, null, () =>
+					resolveArchitectNag(root, filePath, scopeId, { credit })
+				);
 				if (nag === null) {
 					continue;
 				}
@@ -1493,13 +1493,18 @@ export async function runPreToolUseArm(tool, spec, rawStdin) {
 				: spec.filePaths(payload);
 		const gateTargets = await resolveGateTargets(cwdRoot, cwd, candidatePaths);
 		const routedTargets =
-			kind === "shell" ? await filterRoutedTargets(gateTargets) : gateTargets;
+			kind === "shell"
+				? await filterRoutedTargets(cwdRoot, gateTargets)
+				: gateTargets;
 
 		const reason =
 			(await resolveDenyReason(cwd, cwdRoot, scopeId, routedTargets)) ??
 			(kind === "write"
-				? await resolveSpeedBumpPerRoot(scopeId, routedTargets, (filePath) =>
-						spec.editContent(payload, filePath)
+				? await resolveSpeedBumpPerRoot(
+						cwdRoot,
+						scopeId,
+						routedTargets,
+						(filePath) => spec.editContent(payload, filePath)
 					)
 				: null);
 		if (reason === null) {
@@ -1542,6 +1547,34 @@ async function resolveGateRoots(cwdRoot, cwd, filePath) {
 }
 
 /**
+ * Runs `judge` against one root, returning `skipped` when a root other than
+ * the session's throws, such as on a nested manifest that is not valid JSON.
+ *
+ * A throw from any root reaches the arm's catch, which allows the whole call,
+ * so one broken nested manifest would cancel the session root's deny on every
+ * other path in the same command. The session's own root still throws,
+ * because that is the behavior every gate had before nested roots existed.
+ *
+ * @template T
+ * @param {string} root
+ * @param {string | null} cwdRoot
+ * @param {T} skipped
+ * @param {() => Promise<T>} judge
+ * @returns {Promise<T>}
+ */
+async function judgeRoot(root, cwdRoot, skipped, judge) {
+	if (root === cwdRoot) {
+		return judge();
+	}
+
+	try {
+		return await judge();
+	} catch {
+		return skipped;
+	}
+}
+
+/**
  * Pairs each candidate path with every root it is judged against
  * (`resolveGateRoots`), in input order.
  *
@@ -1567,16 +1600,20 @@ async function resolveGateTargets(cwdRoot, cwd, filePaths) {
  * path-shaped token in a command and a per-token check would re-read the
  * manifest once per token.
  *
+ * @param {string | null} cwdRoot
  * @param {{root: string, filePath: string}[]} targets
  * @returns {Promise<{root: string, filePath: string}[]>}
  */
-async function filterRoutedTargets(targets) {
+async function filterRoutedTargets(cwdRoot, targets) {
 	const routed = [];
 	for (const root of new Set(targets.map((target) => target.root))) {
 		const rootPaths = targets
 			.filter((target) => target.root === root)
 			.map((target) => target.filePath);
-		for (const filePath of await filterRoutedPaths(root, rootPaths)) {
+		const routedPaths = await judgeRoot(root, cwdRoot, [], () =>
+			filterRoutedPaths(root, rootPaths)
+		);
+		for (const filePath of routedPaths) {
 			routed.push({ root, filePath });
 		}
 	}
@@ -1605,7 +1642,9 @@ async function filterRoutedTargets(targets) {
  */
 async function resolveDenyReason(cwd, cwdRoot, scopeId, targets) {
 	for (const { root, filePath } of targets) {
-		const unreadDocs = await resolveUnreadDocs(root, filePath, scopeId);
+		const unreadDocs = await judgeRoot(root, cwdRoot, [], () =>
+			resolveUnreadDocs(root, filePath, scopeId)
+		);
 		if (unreadDocs.length === 0) {
 			continue;
 		}
@@ -1645,17 +1684,20 @@ function spellDocPrefixFrom(cwd, root) {
  * Runs the umbrella speed bump once per root, each against its own manifest
  * and state, returning the first stop.
  *
+ * @param {string | null} cwdRoot
  * @param {string} scopeId
  * @param {{root: string, filePath: string}[]} targets
  * @param {(filePath: string) => string} readEditText
  * @returns {Promise<string | null>}
  */
-async function resolveSpeedBumpPerRoot(scopeId, targets, readEditText) {
+async function resolveSpeedBumpPerRoot(cwdRoot, scopeId, targets, readEditText) {
 	for (const root of new Set(targets.map((target) => target.root))) {
 		const edits = targets
 			.filter((target) => target.root === root)
 			.map(({ filePath }) => ({ filePath, editText: readEditText(filePath) }));
-		const reason = await resolveUmbrellaSpeedBump(root, scopeId, edits);
+		const reason = await judgeRoot(root, cwdRoot, null, () =>
+			resolveUmbrellaSpeedBump(root, scopeId, edits)
+		);
 		if (reason !== null) {
 			return reason;
 		}
