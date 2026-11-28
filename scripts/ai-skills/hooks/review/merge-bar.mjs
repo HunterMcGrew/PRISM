@@ -7,11 +7,12 @@
  *
  * The bar holds when that line reads a bare `clean`, its sha is the head or an
  * ancestor of it, and every commit after the sha is exempt: its subject begins
- * `retro:`, or every file it changes sits under the plan's folder. A merge
- * commit after the sha is never exempt, because a clean refresh and a conflict
- * resolution that changed code look the same from here. Exits 0 when the bar
- * holds, 1 printing one reason per failure, and 2 on a usage error, an
- * unreadable plan, an unknown `--head`, no repo, or a git call that fails.
+ * `retro:`, every file it changes sits under the plan's folder, or it changes
+ * no files. A merge commit after the sha is never exempt, because a clean
+ * refresh and a conflict resolution that changed code look the same from here.
+ * Exits 0 when the bar holds, 1 printing one reason per failure, and 2 on a
+ * usage error, an unreadable plan, an unknown `--head`, no repo, or a git call
+ * that fails.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
