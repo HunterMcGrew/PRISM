@@ -184,6 +184,11 @@ round 2: clean
   - T1 (non-blocking): the `.prism/**` record exemption (round 1's fix) and `--tree` appear in no AC evidence, so review cannot grade them; add a `.prism/metrics` case and a `--tree` case to AC-1's evidence, and say what an absent `documentation.location` does (no docs root, `.md` still a doc).
   - T2 (non-blocking): `checks.mjs`'s header says "config, weakened tests, and stops in that order" and never says "three checks", so the header edit is the order sentence there and "three checks" only in `commit-gate.mjs` lines 9 and 39.
 
+round 3: blocking 1
+  - T8 (blocking): the Decision "T8 confirms the approve guard stops an unapproved `size:` flip" has the builder record its result in `plan.md`, which is not in T8's `files`, so the report would carry `unlisted: plan.md` and read as `needs-replan`; it also routes a gap to `prism-architect`, which a builder subagent cannot dispatch. Have T8 report the result in its build report's `checks:` line and the session write the Decision and dispatch the architect. Expect a gap: `approvalLines` reads only `status`, `approved_by`, and `approved_at` (`plan/frontmatter.mjs` `APPROVAL_KEYS`), so the guard's frontmatter arm lets a `size:` edit through.
+  - plan (non-blocking): part 2's branch carries part 1's `## Verification` record and its `review round 1 ... (part 1 of 2): clean` line, so after T13 the resume table sees both stages as done and goes to the PR; add a Decision that part 2's verify and review are dispatched regardless, and that the retro's `Retro:` line waits on part 2's review.
+  - T11 (non-blocking): the amended `one-review.test.ts` fix has no open task, because T11 reads `done`, and the case fails at HEAD (`workflow.md has no | standard, no PR | row`); T13's proof does not run it. Name who commits it (the session, as `T11 fix:`) and that it lands before verify.
+
 ## Decisions
 
 - **This child ships as a two-PR stack, cut after T5.** The work spans well over 10 files once generated copies count, and part 1 works alone: no intent can say `size: small` until T8, so the gate arm is dormant and every stage runs as it does today. Part 1 is `size.mjs`, the commit gate arm, delivery, and the architect-doc entries; part 2 is everything else. Rejected: one PR, past the size where review gets painful.
