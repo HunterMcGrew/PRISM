@@ -210,6 +210,18 @@ test("exempts a later commit that changes only files under the plan folder", () 
 	});
 });
 
+test("exempts a later commit that changes no files", () => {
+	withRepo(({ commit, writePlan }) => {
+		const reviewed = commit("T1: Add a", { "src/a.ts": "a\n" });
+		commit("T2: Record nothing", {});
+		const plan = writePlan([`- review round 1 at ${short(reviewed)}: clean`]);
+
+		const result = runBar([plan]);
+
+		assert.equal(result.status, 0, result.stdout + result.stderr);
+	});
+});
+
 test("does not exempt a commit touching a sibling folder that shares the plan folder's prefix", () => {
 	withRepo(({ commit, writePlan }) => {
 		const reviewed = commit("T1: Add a", { "src/a.ts": "a\n" });
