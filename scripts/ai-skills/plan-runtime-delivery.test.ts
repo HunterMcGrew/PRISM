@@ -56,6 +56,7 @@ const PLAN_RUNTIME_FILES = [
 	".claude/hooks/plan/approve.mjs",
 	".claude/hooks/plan/chat-approval.mjs",
 	".claude/hooks/plan/watch-ci.mjs",
+	".claude/hooks/plan/size.mjs",
 	".claude/hooks/review/reconcile.mjs",
 	".claude/hooks/verify/check-report.mjs",
 	".claude/hooks/secrets-gate.mjs",

@@ -1152,6 +1152,7 @@ const HOOK_RUNTIME_FILES = [
 	"plan/approve.mjs",
 	"plan/chat-approval.mjs",
 	"plan/watch-ci.mjs",
+	"plan/size.mjs",
 	"plan/retro-trigger.mjs",
 	"review/reconcile.mjs",
 	"review/ignore.mjs",
