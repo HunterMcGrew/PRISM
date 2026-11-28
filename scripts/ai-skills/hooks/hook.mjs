@@ -1401,6 +1401,8 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
  *
  * @param {string} relativePath
  * @param {string[]} unreadDocs
+ * @param {string} [docPrefix] the architect directory as a `cat` run from the
+ *   session's cwd spells it, ending in `/`
  * @returns {string}
  */
 export function formatDenyMessage(
