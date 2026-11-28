@@ -631,7 +631,7 @@ The close ceremony runs in two phases: **reflect**, then **close**.
 
 **Why declinable, not enforced:** On a flat plan, PRISM cannot force a retro to run involuntarily — no scheduler, personas never auto-invoke each other, and hook enforcement was deliberately reverted. What the gate can replicate is CI's real property: skipping is a visible, recorded override, not a silent omission. The gate is a human-declinable nudge. Promotion-without-relitigation is the defect the reflect phase fixes — today's ceremony, unrestructured, could promote a decision the work itself disproved.
 
-**Placement:** the pre-merge-on-final-branch placement above stands for the reflect phase too — the retro report rides the final PR as a committed file. At epic grain, earlier children are fully merge-settled by close time; only the final child's main-CI is approximated by its PR CI, and the charter-coverage table names this approximation explicitly.
+**Placement:** the pre-merge-on-final-branch placement above stands for the reflect phase too — when a retro report runs, it rides the final PR as a committed file. At epic grain, earlier children are fully merge-settled by close time; only the final child's main-CI is approximated by its PR CI, and the charter-coverage table names this approximation explicitly.
 
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
@@ -1424,7 +1424,7 @@ Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the ha
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
 
-The main session may flip a PR ready and squash-merge it when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review bar holds at the PR head, and CI is green on that head. On a folder plan the bar is `node scripts/ai-skills/hooks/review/merge-bar.mjs <plan.md> --head <PR head sha>` exiting 0: the last review line is a bare `clean` whose sha is that head or an ancestor of it, with only `retro:` and plan-folder commits after it. On a flat plan it is the plan's last review line under `## Review` reading `clean`. The flag is the gate: absent or false means the human merges. A team opts in by setting the flag by hand; installs leave it absent. A reviewer or a subagent never merges, whatever the flag says.
+The main session may flip a PR ready and squash-merge it when `features.mainSessionMayMerge: true` is set in `.ai-skills/config.json`, the review bar holds at the PR head, and CI is green on that head. On a folder plan the bar is `node scripts/ai-skills/hooks/review/merge-bar.mjs <plan.md> --head <PR head sha>` exiting 0: the last review line is a bare `clean` whose sha is that head or an ancestor of it, with only `retro:` commits, plan-folder commits, and commits that change no files after it. On a flat plan it is the plan's last review line under `## Review` reading `clean`. The flag is the gate: absent or false means the human merges. A team opts in by setting the flag by hand; installs leave it absent. A reviewer or a subagent never merges, whatever the flag says.
 
 ---
 
