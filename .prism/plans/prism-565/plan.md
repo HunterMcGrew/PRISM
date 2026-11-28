@@ -236,16 +236,16 @@ round 2: clean
 
 verdict: done
 base: fe39c308
-head: 96dbe912
+head: abffc0f9
 
 | check | result | evidence |
 | --- | --- | --- |
-| typecheck | pass | part 2 of 2, T8-T17 and T2, T3, T6 fixes: local run, log not kept |
-| lint | pass | part 2 of 2, T8-T17 and T2, T3, T6 fixes: local run, log not kept |
-| test | pass | part 2 of 2, T8-T17 and T2, T3, T6 fixes: local run, log not kept |
-| build | pass | part 2 of 2, T8-T17 and T2, T3, T6 fixes: local run, log not kept |
-| format | n/a: not configured | part 2 of 2, T8-T17 and T2, T3, T6 fixes: none |
-| spec | pass | part 2 of 2, T8-T17 and T2, T3, T6 fixes: local run, log not kept |
+| typecheck | pass | part 2 of 2, re-run: local run, log not kept |
+| lint | pass | part 2 of 2, re-run: local run, log not kept |
+| test | pass | part 2 of 2, re-run: local run, log not kept |
+| build | pass | part 2 of 2, re-run: local run, log not kept |
+| format | n/a: not configured | none |
+| spec | pass | part 2 of 2, re-run: local run, log not kept |
 
 ### Failures
 
