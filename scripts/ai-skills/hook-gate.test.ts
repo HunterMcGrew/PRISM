@@ -1753,6 +1753,61 @@ test("runPreToolUseArm: a remedy path carrying a space is single-quoted and stil
 	});
 });
 
+/**
+ * Denies `target` from `cwd`, runs the printed remedy from the same `cwd`,
+ * and asserts the remedy was spelled absolute and cleared the gate.
+ */
+async function assertAbsoluteRemedyClears(
+	cwd: string,
+	target: string,
+	docRoot: string
+): Promise<void> {
+	const payload = writePayload(cwd, target);
+	const remedy =
+		denyReason(await runPreToolUseArm("claude", HARNESSES.claude, payload))?.split(
+			"\n"
+		)[1] ?? "";
+	assert.equal(
+		remedy,
+		`cat ${toShellPath(path.join(docRoot, ".prism", "architect"))}/${GATE_DOC}`
+	);
+
+	await runPostToolUseArm(
+		"claude",
+		HARNESSES.claude,
+		JSON.stringify({
+			session_id: "session-1",
+			cwd,
+			tool_name: "Bash",
+			tool_input: { command: remedy },
+		})
+	);
+	assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, payload), null);
+}
+
+test("runPreToolUseArm: from a cwd under no manifest, the path's own root gates it and the remedy is absolute", async () => {
+	await withTempRepo(async (tempRoot) => {
+		const repoRoot = path.join(tempRoot, "repo");
+		const outsideCwd = path.join(tempRoot, "elsewhere");
+		await fs.mkdir(outsideCwd, { recursive: true });
+		const { target } = await seedGateRepo(repoRoot);
+
+		await assertAbsoluteRemedyClears(outsideCwd, target, repoRoot);
+	});
+});
+
+test("runPreToolUseArm: from inside a nested worktree, an outer-checkout path is gated with an absolute remedy", async () => {
+	await withTempRepo(async (outerRoot) => {
+		const worktreeRoot = await seedNestedWorktree(outerRoot);
+
+		await assertAbsoluteRemedyClears(
+			worktreeRoot,
+			path.join(outerRoot, "src", "index.ts"),
+			outerRoot
+		);
+	});
+});
+
 test("runPreToolUseArm: a nested worktree whose manifest will not parse does not cancel the outer checkout's deny", async () => {
 	await withTempRepo(async (outerRoot) => {
 		await seedGateRepo(outerRoot);
