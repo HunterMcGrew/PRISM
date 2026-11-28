@@ -7,6 +7,8 @@ approved_by: auto
 approved_at: 2026-11-27
 ---
 
+> Closed: 2026-11-28
+
 ## Acceptance Criteria
 
 Child 14 of the Kitchen Line epic (#499), from its `## Children` row 14 and `spec.md`. Each criterion names the part that builds it and cites the spec requirement it grades as `(REQ-n)`. Part 1's review grades only part 1's criteria.
@@ -206,17 +208,29 @@ round 6: resolved 1
 ## Decisions
 
 - **This child ships as a two-PR stack, cut after T5.** The work spans well over 10 files once generated copies count, and part 1 works alone: no intent can say `size: small` until T8, so the gate arm is dormant and every stage runs as it does today. Part 1 is `size.mjs`, the commit gate arm, delivery, and the architect-doc entries; part 2 is everything else. Rejected: one PR, past the size where review gets painful.
+  - → no promotion needed (ticket-tactical: the cut was sized for this ticket, and the stack's effect on task reading is already in plan-chain-scripts.md's Tasks and subjects paragraph)
 - **Part 1 ships from T5, not from the resume table.** After T5, part 1's verify, review, and PR stages run while T6 to T13 are open, and the resume table would read an uncommitted task and send the session back to implement. The session drives part 1's verify, review, and PR from this Decision, part 2 resumes from T6 on a branch cut from `main`, and the retro runs once, after part 2's review. Rejected: running the close step on part 1, which would close a plan with half its tasks open.
+  - → no promotion needed (stack handling for this ticket only; the missing stack row in the resume table is an epic-level item the PRISM-557 retro already carries)
 - **Only added lines in product code count toward the 100-line limit.** Hunter ruled on 2026-11-28: only added lines in product code count. Deleted lines don't, and neither do tests, docs, plans, lockfiles, or config. The limit measures new code a reviewer has to read, and a deletion adds none, so T1's classifier sums added lines only and a product file with no added lines counts toward no limit (a stop path and a binary product file still count). Rejected: added plus deleted, as `git diff --numstat` reports, which reads a 60-line rewrite as 120; and the larger of added and deleted per file, which still charges a file for code it removed.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **The weakened-tests remedy on a small branch rides part 1.** It is commit gate code that reads the `smallIntent` flag T2 adds, and `hook-runtime.md`'s commit-gate text in T4 describes both small-branch behaviors in one place. Like the size check, it is dormant until part 2. Rejected: moving it to part 2, which would leave part 1's architect doc describing a gate whose small-branch remedy still points at a task that cannot exist.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`
 - **The approve guard lets `git rm` remove an approved small `plan.md`.** The spec asked the plan stage to check this first. A `PreToolUse` payload carrying `git rm -q .prism/plans/prism-568/plan.md`, run through `approve-guard.mjs --tool=claude` on 2026-11-27, printed nothing and exited 0: the frontmatter arm judges file edits only, and the execution arm judges commands naming `approve.mjs`. So Outgrowing stays as the spec designs it. No guard test is added, because `approve-guard.test.ts` sits outside Affected systems.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **`prism-intent` fits under the cap by rewriting in place.** Measured with `measureSkillLoad` on 2026-11-27, the skill loads 118 lines, `intent.md` included. The template's `size:` comment, the skill's Size bullet, and its approval paragraph each already exist, so T9 rewrites those lines rather than adding new ones. Rejected: an allowlist entry, which REQ-16 rules out.
+  - → no promotion needed (a measurement for this ticket, and skill-loaded-lines.test.ts holds the cap)
 - **No ADR for the small size, confirmed.** No ADR under `.prism/spec/adrs/_toolkit/` mentions `size: small` or the sizes, and applying `.prism/references/triple-gated-adr-criterion.md`, the size fails the hard-to-reverse gate: deleting one check and one script removes it, as the epic spec's own Decisions record. `workflow.md` and `plan-chain-scripts.md` carry the rule.
+  - → no promotion needed (it records the ADR search, and the rule lives in workflow.md and plan-chain-scripts.md)
 - **Every `.prism/**` path off the stop paths counts as a record, not product code.** Challenge round 1 found that the close step commits `.prism/metrics/review-misses.jsonl`, which REQ-2's classes read as a new product file in a second area, so the gate would deny a small ticket's own retro commit and tell it to go standard. `.prism/` holds PRISM's plans, records, and spec, none of it product code, so this follows from the intent's "product code" and extends REQ-2's plans class to its parent folder. A stop path under `.prism/` still counts first. Rejected: exempting only `.prism/metrics/**`, which leaves `audit-state.json` and the next record file to hit the same deny.
+  - → promoted to `.prism/architect/_toolkit/plan-chain-scripts.md`
 - **`REVIEW.md`'s file-outside-the-plan pause trigger is left as it reads.** On a small ticket there is no task list or Affected systems, so the review reads the intent's outcome and acceptance criteria as the yardstick, as the spec's flow says. `REVIEW.md` sits outside Affected systems, and a small diff is one area by construction, so the trigger has little to fire on. Rejected: editing `REVIEW.md` here, which is a scope change for a case the size limits already narrow.
+  - → no promotion needed (REVIEW.md is unchanged by design, so there is no new text to promote)
 - **The approve guard lets an unapproved `size:` flip through, and this child documents the gap.** Part 1's review (#570) asked whether the guard stops it. T8's probe, run through `approve-guard.mjs --tool=claude --event=PreToolUse` on an approved `size: small` intent, showed an Edit or Write from `size: small` to `standard` exits 0 with no output, while a `status:` edit is denied. The frontmatter arm compares only the approval lines (`APPROVAL_KEYS` in `plan/frontmatter.mjs`), so any edit to an approved file's body, its acceptance criteria included, already passes the same way. `prism-architect` ruled to proceed with changes and called it not intent-level. T12 adds one or two sentences to the size bullet in the Commit gate section of `hook-runtime.md`: the gate trusts `size:` as written, and the control is the person reading the intent's diff. The general fix, a hash of the approved text stamped by `approve.mjs` and checked by the guard or the gate, goes to a standalone follow-up ticket, because it covers every approved chain file and touches files outside this child. Rejected: comparing against the approval stamp, because `approved_at` is a date, so a same-day re-approve during Outgrowing looks identical to no re-approve. Also rejected: a guard rule allowing `size:` edits only with a demotion to draft, which changes the guard's model for one key while body edits stay open.
+  - → promoted to `.prism/architect/_toolkit/hook-runtime.md`
 - **Part 2's verify and review run on part 2's own head.** Part 2's branch carries part 1's `## Verification` record and its `(part 1 of 2)` review line, so the resume table would read both stages as done. The session dispatches verify and review for part 2 after T13 anyway, and the `Retro:` line waits on part 2's review. Rejected: clearing part 1's records, which are the durable record of the merged #570.
+  - → no promotion needed (stack-specific, and the same resume-table gap as the second Decision)
 - **The session commits T11's `one-review.test.ts` fix as `T11 fix:` before verify.** `tasks.mjs` reads T11 as done, so no bundle would pick up the amendment, and T13's proof doesn't run that test.
+  - → no promotion needed (one-time sequencing on this branch)
 
 ## Verification
 
@@ -245,4 +259,4 @@ head: 80acae36
 
 ## PR Readiness
 
-Retro:
+Retro: .prism/retros/prism-499/prism-568.md
