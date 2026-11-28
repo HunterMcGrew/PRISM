@@ -24,7 +24,7 @@ A plan folder, `.prism/plans/<ticket>/`, runs one of three sizes, small, standar
 
 Legacy flat-plan branches keep `PRISM-NNNN:`.
 
-**Build report.** The implement and docs stages end with this report, and the session checks that one arrived before routing it.
+**Build report.** The implement and docs stages of a standard ticket end with this report, and the session checks that one arrived before routing it.
 
 ```
 verdict: done | needs-replan | blocked
