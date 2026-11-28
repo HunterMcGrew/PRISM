@@ -1233,11 +1233,16 @@ function placeSmallIntent(
 	return { root, file, plan: path.join(root, `.prism/plans/${folder}/plan.md`) };
 }
 
+/** `file` with forward slashes, the form approve.mjs hands to `write` on every OS. */
+function toPosix(file: string): string {
+	return file.split(path.sep).join("/");
+}
+
 test("approving a small intent writes plan.md from plan-small.md with the intent's title, ticket, and approval lines", async () => {
 	const { file, plan } = placeSmallIntent();
 	const result = await run(file);
 	assert.equal(result.code, 0, result.message);
-	assert.deepEqual(result.writes.sort(), [file, plan].sort());
+	assert.deepEqual(result.writes.sort(), [file, plan].map(toPosix).sort());
 
 	const text = readFileSync(plan, "utf8");
 	const fields = readFrontmatter(text)?.fields ?? {};
@@ -1310,7 +1315,7 @@ test("re-approving a small intent leaves an existing plan.md byte-for-byte uncha
 
 	const result = await run(file);
 	assert.equal(result.code, 0, result.message);
-	assert.deepEqual(result.writes, [file]);
+	assert.deepEqual(result.writes, [toPosix(file)]);
 	assert.equal(readFileSync(plan, "utf8"), existing);
 });
 
