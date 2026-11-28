@@ -31,7 +31,8 @@ export function resolveTargets(
 
 export function formatDenyMessage(
 	relativePath: string,
-	unreadDocs: string[]
+	unreadDocs: string[],
+	docPrefix?: string
 ): string;
 
 export function runPreToolUseArm(

@@ -1566,6 +1566,296 @@ test("runPreToolUseArm: positive control — with the deny broken, leg 3 fails",
 	}
 });
 
+// --- Nested worktrees ---
+
+const NESTED_WORKTREE = ".claude/worktrees/w";
+const NESTED_TARGET = `${NESTED_WORKTREE}/.prism/plans/x/plan.md`;
+const NESTED_DOC_REMEDY = `cat ${NESTED_WORKTREE}/.prism/architect/${GATE_DOC}`;
+
+/**
+ * Seeds an outer checkout whose manifest routes nothing under the nested
+ * worktree, and a worktree under `.claude/worktrees/w` whose own manifest
+ * routes its plan files. Returns the worktree root.
+ */
+async function seedNestedWorktree(outerRoot: string): Promise<string> {
+	await seedGateRepo(outerRoot);
+	const worktreeRoot = path.join(outerRoot, NESTED_WORKTREE);
+	await seedManifestAndDoc(
+		worktreeRoot,
+		{ ".prism/plans/**": GATE_DOC },
+		GATE_DOC,
+		"Spec editing constraints go here."
+	);
+	return worktreeRoot;
+}
+
+test("runPreToolUseArm: a write into a nested worktree from the outer checkout is gated by the worktree's own manifest", async () => {
+	await withTempRepo(async (outerRoot) => {
+		await seedNestedWorktree(outerRoot);
+
+		const reason = denyReason(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(outerRoot, path.join(outerRoot, NESTED_TARGET))
+			)
+		);
+		assert.equal(
+			reason,
+			`You're working on \`${NESTED_TARGET}\`. Read its governing docs in full first, then retry:\n` +
+				`${NESTED_DOC_REMEDY}\n${DENY_CREDIT_NOTE}`,
+			"the remedy names the worktree's doc as the outer cwd spells it"
+		);
+	});
+});
+
+test("runPreToolUseArm: a shell write into a nested worktree from the outer checkout is gated", async () => {
+	await withTempRepo(async (outerRoot) => {
+		await seedNestedWorktree(outerRoot);
+
+		const reason = denyReason(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				JSON.stringify({
+					session_id: "session-1",
+					cwd: outerRoot,
+					tool_name: "Bash",
+					tool_input: { command: `rm ${NESTED_TARGET}` },
+				})
+			)
+		);
+		assert.ok(reason?.includes(NESTED_DOC_REMEDY), `expected a deny, got ${reason}`);
+	});
+});
+
+test("runPreToolUseArm: a nested-worktree write clears on credit in the worktree's state, not the outer checkout's", async () => {
+	await withTempRepo(async (outerRoot) => {
+		const worktreeRoot = await seedNestedWorktree(outerRoot);
+		const payload = writePayload(outerRoot, path.join(outerRoot, NESTED_TARGET));
+
+		await saveRouteState(outerRoot, "session-1", { read: [GATE_DOC], announced: [] });
+		assert.ok(
+			await runPreToolUseArm("claude", HARNESSES.claude, payload),
+			"reading the outer checkout's copy of the doc does not clear the worktree's gate"
+		);
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: outerRoot,
+				tool_name: "Bash",
+				tool_input: { command: NESTED_DOC_REMEDY },
+			})
+		);
+		assert.deepEqual(
+			(await loadRouteState(worktreeRoot, "session-1")).read,
+			[GATE_DOC],
+			"the printed remedy credits the worktree's state"
+		);
+		assert.equal(
+			await runPreToolUseArm("claude", HARNESSES.claude, payload),
+			null,
+			"the printed remedy clears the gate"
+		);
+	});
+});
+
+test("runPostToolUseArm: a cd into a nested worktree before the cat credits the worktree's state", async () => {
+	await withTempRepo(async (outerRoot) => {
+		const worktreeRoot = await seedNestedWorktree(outerRoot);
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: outerRoot,
+				tool_name: "Bash",
+				tool_input: {
+					command: `cd ${NESTED_WORKTREE} && cat .prism/architect/${GATE_DOC}`,
+				},
+			})
+		);
+
+		assert.deepEqual((await loadRouteState(worktreeRoot, "session-1")).read, [GATE_DOC]);
+		assert.equal(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(outerRoot, path.join(outerRoot, NESTED_TARGET))
+			),
+			null
+		);
+	});
+});
+
+test("runPreToolUseArm: from a subdirectory cwd, the printed remedy is spelled so it clears from that cwd", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		const subdirectory = path.join(repoRoot, "src");
+		await fs.mkdir(subdirectory, { recursive: true });
+		const payload = writePayload(repoRoot, target, { cwd: subdirectory });
+
+		const reason = denyReason(
+			await runPreToolUseArm("claude", HARNESSES.claude, payload)
+		);
+		const remedy = reason?.split("\n")[1] ?? "";
+		assert.equal(
+			remedy,
+			`cat ${toShellPath(path.join(repoRoot, ".prism", "architect"))}/${GATE_DOC}`
+		);
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: subdirectory,
+				tool_name: "Bash",
+				tool_input: { command: remedy },
+			})
+		);
+		assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, payload), null);
+	});
+});
+
+test("runPreToolUseArm: a remedy path carrying a space is single-quoted and still clears the gate", async () => {
+	await withTempRepo(async (tempRoot) => {
+		const repoRoot = path.join(tempRoot, "with space");
+		const { target } = await seedGateRepo(repoRoot);
+		const subdirectory = path.join(repoRoot, "src");
+		await fs.mkdir(subdirectory, { recursive: true });
+		const payload = writePayload(repoRoot, target, { cwd: subdirectory });
+
+		const remedy =
+			denyReason(await runPreToolUseArm("claude", HARNESSES.claude, payload))?.split(
+				"\n"
+			)[1] ?? "";
+		assert.equal(
+			remedy,
+			`cat '${toShellPath(path.join(repoRoot, ".prism", "architect"))}/${GATE_DOC}'`
+		);
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: subdirectory,
+				tool_name: "Bash",
+				tool_input: { command: remedy },
+			})
+		);
+		assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, payload), null);
+	});
+});
+
+/**
+ * Denies `target` from `cwd`, runs the printed remedy from the same `cwd`,
+ * and asserts the remedy was spelled absolute and cleared the gate.
+ */
+async function assertAbsoluteRemedyClears(
+	cwd: string,
+	target: string,
+	docRoot: string
+): Promise<void> {
+	const payload = writePayload(cwd, target);
+	const remedy =
+		denyReason(await runPreToolUseArm("claude", HARNESSES.claude, payload))?.split(
+			"\n"
+		)[1] ?? "";
+	assert.equal(
+		remedy,
+		`cat ${toShellPath(path.join(docRoot, ".prism", "architect"))}/${GATE_DOC}`
+	);
+
+	await runPostToolUseArm(
+		"claude",
+		HARNESSES.claude,
+		JSON.stringify({
+			session_id: "session-1",
+			cwd,
+			tool_name: "Bash",
+			tool_input: { command: remedy },
+		})
+	);
+	assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, payload), null);
+}
+
+test("runPreToolUseArm: from a cwd under no manifest, the path's own root gates it and the remedy is absolute", async () => {
+	await withTempRepo(async (tempRoot) => {
+		const repoRoot = path.join(tempRoot, "repo");
+		const outsideCwd = path.join(tempRoot, "elsewhere");
+		await fs.mkdir(outsideCwd, { recursive: true });
+		const { target } = await seedGateRepo(repoRoot);
+
+		await assertAbsoluteRemedyClears(outsideCwd, target, repoRoot);
+	});
+});
+
+test("runPreToolUseArm: from inside a nested worktree, an outer-checkout path is gated with an absolute remedy", async () => {
+	await withTempRepo(async (outerRoot) => {
+		const worktreeRoot = await seedNestedWorktree(outerRoot);
+
+		await assertAbsoluteRemedyClears(
+			worktreeRoot,
+			path.join(outerRoot, "src", "index.ts"),
+			outerRoot
+		);
+	});
+});
+
+test("runPreToolUseArm: a nested worktree whose manifest will not parse does not cancel the outer checkout's deny", async () => {
+	await withTempRepo(async (outerRoot) => {
+		await seedGateRepo(outerRoot);
+		const nestedArchitectDir = path.join(outerRoot, NESTED_WORKTREE, ".prism", "architect");
+		await fs.mkdir(nestedArchitectDir, { recursive: true });
+		await fs.writeFile(path.join(nestedArchitectDir, "manifest.json"), "{ not json", "utf8");
+
+		const command = `rm ${toShellPath(path.join(outerRoot, NESTED_WORKTREE, "x"))} ${toShellPath(path.join(outerRoot, "src", "a.ts"))}`;
+		const reason = denyReason(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				JSON.stringify({
+					session_id: "session-1",
+					cwd: outerRoot,
+					tool_name: "Bash",
+					tool_input: { command },
+				})
+			)
+		);
+		assert.ok(
+			reason?.startsWith("You're working on `src/a.ts`."),
+			`expected the outer route's deny, got ${reason}`
+		);
+	});
+});
+
+test("runPreToolUseArm: a nested worktree's manifest never narrows what the outer checkout's manifest gates", async () => {
+	await withTempRepo(async (outerRoot) => {
+		await seedGateRepo(outerRoot);
+		await seedManifestAndDoc(
+			path.join(outerRoot, "src", "fixture"),
+			{ "docs/**": GATE_DOC },
+			GATE_DOC,
+			"Fixture constraints go here."
+		);
+
+		assert.ok(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(outerRoot, path.join(outerRoot, "src", "fixture", "index.ts"))
+			),
+			"the outer `src/**` route still gates a path under a nested manifest"
+		);
+	});
+});
+
 test("runPreToolUseArm: a two-doc deny is cleared by its own remedy pasted as one call", async () => {
 	// Twelve of this repo's own routes name two or more docs. The message
 	// renders one `cat` per line, and a model that pastes those lines into a
