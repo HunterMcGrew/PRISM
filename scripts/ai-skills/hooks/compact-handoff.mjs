@@ -13,13 +13,17 @@
  *   from disk, so the summary copies those facts instead of recalling them.
  * - `SessionStart` with source `compact`: returns a note that lands in the
  *   compacted context, telling the session to re-read the branch plan and
- *   write unrecorded decisions into it. A compact does not re-run a skill's
+ *   write unrecorded decisions into its `## Decisions`. On a flat plan it
+ *   also adds a `## History` line, and on a plan folder it writes only
+ *   scope changes and open questions, because a routine implementation
+ *   choice already lives in a commit. A compact does not re-run a skill's
  *   startup, so nothing else prompts that re-read.
  *
  * A hook cannot run a model turn, so it cannot write session state into the
  * plan before the summary is made. The template has the summary carry
  * unrecorded decisions in full instead, and the post-compact note has the
- * session write them down first.
+ * session write them down first, on a plan folder only the
+ * scope changes and open questions among them.
  *
  * Text the user types after `/compact` reaches the summarizer alongside this
  * template, so the template does not repeat it. That was observed in one live
