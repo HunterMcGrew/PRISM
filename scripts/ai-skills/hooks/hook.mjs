@@ -1325,7 +1325,7 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 		}
 
 		const cwd = payload.cwd ?? process.cwd();
-		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
+		const cwdRoot = await findRepoRoot(cwd);
 
 		// Every path the payload names, not just the first. `resolveTargets`
 		// returns an array because one Codex `apply_patch` blob can carry several
@@ -1346,15 +1346,20 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 				break;
 			}
 
-			const nag = await resolveArchitectNag(repoRoot, filePath, scopeId, {
-				credit,
-			});
-			if (nag === null) {
-				continue;
-			}
+			// Judged against the root the path sits in as well, so a doc a
+			// `cat` reaches inside a nested worktree credits that worktree's
+			// state (`resolveGateRoots`).
+			for (const root of await resolveGateRoots(cwdRoot, cwd, filePath)) {
+				const nag = await judgeRoot(root, cwdRoot, null, () =>
+					resolveArchitectNag(root, filePath, scopeId, { credit })
+				);
+				if (nag === null) {
+					continue;
+				}
 
-			announcements.push(nag);
-			remainingBytes -= Buffer.byteLength(nag, "utf8") + 1;
+				announcements.push(nag);
+				remainingBytes -= Buffer.byteLength(nag, "utf8") + 1;
+			}
 		}
 
 		if (announcements.length === 0) {
@@ -1396,13 +1401,35 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
  *
  * @param {string} relativePath
  * @param {string[]} unreadDocs
+ * @param {string} [docPrefix] the architect directory as a `cat` run from the
+ *   session's cwd spells it, ending in `/`
  * @returns {string}
  */
-export function formatDenyMessage(relativePath, unreadDocs) {
+export function formatDenyMessage(
+	relativePath,
+	unreadDocs,
+	docPrefix = ARCHITECT_DIR_PREFIX
+) {
 	const remedies = unreadDocs
-		.map((doc) => `cat ${ARCHITECT_DIR_PREFIX}${doc}`)
+		.map((doc) => `cat ${quoteShellWord(`${docPrefix}${doc}`)}`)
 		.join("\n");
 	return `You're working on \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}\n${DENY_CREDIT_NOTE}`;
+}
+
+/**
+ * Single-quotes a remedy operand that would otherwise split into several
+ * shell words, such as an absolute path through a directory with a space.
+ *
+ * A word already made of path characters stays bare, so the common remedy
+ * reads as it always has. A word holding a `'` stays bare too, because it
+ * cannot be single-quoted without a backslash, and a backslash is outside the
+ * read-safe class, so no spelling of it earns credit.
+ *
+ * @param {string} word
+ * @returns {string}
+ */
+function quoteShellWord(word) {
+	return /^[\w./@+=,:~-]+$/.test(word) || word.includes("'") ? word : `'${word}'`;
 }
 
 /**
@@ -1476,23 +1503,26 @@ export async function runPreToolUseArm(tool, spec, rawStdin) {
 		}
 
 		const cwd = payload.cwd ?? process.cwd();
-		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
+		const cwdRoot = await findRepoRoot(cwd);
 
 		const candidatePaths =
 			kind === "shell"
-				? await resolveShellCandidatePaths(repoRoot, cwd, payload)
+				? resolveShellCandidatePaths(cwd, payload)
 				: spec.filePaths(payload);
+		const gateTargets = await resolveGateTargets(cwdRoot, cwd, candidatePaths);
+		const routedTargets =
+			kind === "shell"
+				? await filterRoutedTargets(cwdRoot, gateTargets)
+				: gateTargets;
 
 		const reason =
-			(await resolveDenyReason(repoRoot, scopeId, candidatePaths)) ??
+			(await resolveDenyReason(cwd, cwdRoot, scopeId, routedTargets)) ??
 			(kind === "write"
-				? await resolveUmbrellaSpeedBump(
-						repoRoot,
+				? await resolveSpeedBumpPerRoot(
+						cwdRoot,
 						scopeId,
-						candidatePaths.map((filePath) => ({
-							filePath,
-							editText: spec.editContent(payload, filePath),
-						}))
+						routedTargets,
+						(filePath) => spec.editContent(payload, filePath)
 					)
 				: null);
 		if (reason === null) {
@@ -1510,7 +1540,107 @@ export async function runPreToolUseArm(tool, spec, rawStdin) {
 }
 
 /**
- * The deny reason for a list of candidate paths, or `null` when every one of
+ * The repo roots a path is judged against: the root the session's working
+ * directory sits in, and the root the path itself sits in when that differs.
+ *
+ * A worktree nested under `.claude/worktrees/<name>/` carries its own
+ * manifest, and from the outer checkout its paths relativize to
+ * `.claude/worktrees/<name>/...`, which no route matches. Judging the path
+ * against its own root as well gates it the same as from inside the worktree,
+ * and credits a doc read there to the worktree's state. The working
+ * directory's root stays in the list so a nested manifest can only add gates,
+ * never remove one the outer manifest already applies.
+ *
+ * @param {string | null} cwdRoot
+ * @param {string} cwd
+ * @param {string} filePath
+ * @returns {Promise<string[]>}
+ */
+async function resolveGateRoots(cwdRoot, cwd, filePath) {
+	const ownRoot = await findRepoRoot(
+		path.dirname(path.resolve(cwdRoot ?? cwd, filePath))
+	);
+
+	return [...new Set([cwdRoot, ownRoot])].filter((root) => root !== null);
+}
+
+/**
+ * Runs `judge` against one root, returning `skipped` when a root other than
+ * the session's throws, such as on a nested manifest that is not valid JSON.
+ *
+ * A throw from any root reaches the arm's catch, which allows the whole call,
+ * so one broken nested manifest would cancel the session root's deny on every
+ * other path in the same command. The session's own root still throws,
+ * because that is the behavior every gate had before nested roots existed.
+ *
+ * @template T
+ * @param {string} root
+ * @param {string | null} cwdRoot
+ * @param {T} skipped
+ * @param {() => Promise<T>} judge
+ * @returns {Promise<T>}
+ */
+async function judgeRoot(root, cwdRoot, skipped, judge) {
+	if (root === cwdRoot) {
+		return judge();
+	}
+
+	try {
+		return await judge();
+	} catch {
+		return skipped;
+	}
+}
+
+/**
+ * Pairs each candidate path with every root it is judged against
+ * (`resolveGateRoots`), in input order.
+ *
+ * @param {string | null} cwdRoot
+ * @param {string} cwd
+ * @param {string[]} filePaths
+ * @returns {Promise<{root: string, filePath: string}[]>}
+ */
+async function resolveGateTargets(cwdRoot, cwd, filePaths) {
+	const targets = [];
+	for (const filePath of filePaths) {
+		for (const root of await resolveGateRoots(cwdRoot, cwd, filePath)) {
+			targets.push({ root, filePath });
+		}
+	}
+
+	return targets;
+}
+
+/**
+ * Narrows gate targets to the ones a route in their own root's manifest
+ * matches. Batched per root, because the shell arm asks about every
+ * path-shaped token in a command and a per-token check would re-read the
+ * manifest once per token.
+ *
+ * @param {string | null} cwdRoot
+ * @param {{root: string, filePath: string}[]} targets
+ * @returns {Promise<{root: string, filePath: string}[]>}
+ */
+async function filterRoutedTargets(cwdRoot, targets) {
+	const routed = [];
+	for (const root of new Set(targets.map((target) => target.root))) {
+		const rootPaths = targets
+			.filter((target) => target.root === root)
+			.map((target) => target.filePath);
+		const routedPaths = await judgeRoot(root, cwdRoot, [], () =>
+			filterRoutedPaths(root, rootPaths)
+		);
+		for (const filePath of routedPaths) {
+			routed.push({ root, filePath });
+		}
+	}
+
+	return routed;
+}
+
+/**
+ * The deny reason for a list of gate targets, or `null` when every one of
  * them is clear. This is the one rule both arms run; they differ only in how
  * their candidate list is produced.
  *
@@ -1518,20 +1648,77 @@ export async function runPreToolUseArm(tool, spec, rawStdin) {
  * reading, so naming one path's docs is what it can act on, and a multi-path
  * call surfaces its next gate on the next attempt.
  *
- * @param {string} repoRoot
+ * Every doc is spelled from the working directory, because that is where the
+ * `cat` remedy runs, and its credit lands in the state of the root the doc
+ * sits in.
+ *
+ * @param {string} cwd
+ * @param {string | null} cwdRoot
  * @param {string} scopeId
- * @param {string[]} filePaths
+ * @param {{root: string, filePath: string}[]} targets
  * @returns {Promise<string | null>}
  */
-async function resolveDenyReason(repoRoot, scopeId, filePaths) {
-	for (const filePath of filePaths) {
-		const unreadDocs = await resolveUnreadDocs(repoRoot, filePath, scopeId);
+async function resolveDenyReason(cwd, cwdRoot, scopeId, targets) {
+	for (const { root, filePath } of targets) {
+		const unreadDocs = await judgeRoot(root, cwdRoot, [], () =>
+			resolveUnreadDocs(root, filePath, scopeId)
+		);
 		if (unreadDocs.length === 0) {
 			continue;
 		}
 
-		const relativePath = toRepoRelativePath(repoRoot, filePath) ?? filePath;
-		return formatDenyMessage(relativePath, unreadDocs);
+		const relativePath =
+			toRepoRelativePath(cwdRoot ?? root, filePath) ?? filePath;
+		return formatDenyMessage(
+			relativePath,
+			unreadDocs,
+			spellDocPrefixFrom(cwd, root)
+		);
+	}
+
+	return null;
+}
+
+/**
+ * The architect directory of `root` as a `cat` run in `cwd` spells it,
+ * `/`-joined: relative when `root` sits under `cwd`, absolute otherwise.
+ *
+ * @param {string} cwd
+ * @param {string} root
+ * @returns {string}
+ */
+function spellDocPrefixFrom(cwd, root) {
+	const architectDir = path.resolve(root, ARCHITECT_DIR_PREFIX);
+	const relative = path.relative(cwd, architectDir);
+	const spelled =
+		relative.startsWith("..") || path.isAbsolute(relative)
+			? architectDir
+			: relative;
+
+	return `${spelled.split(path.sep).join("/")}/`;
+}
+
+/**
+ * Runs the umbrella speed bump once per root, each against its own manifest
+ * and state, returning the first stop.
+ *
+ * @param {string | null} cwdRoot
+ * @param {string} scopeId
+ * @param {{root: string, filePath: string}[]} targets
+ * @param {(filePath: string) => string} readEditText
+ * @returns {Promise<string | null>}
+ */
+async function resolveSpeedBumpPerRoot(cwdRoot, scopeId, targets, readEditText) {
+	for (const root of new Set(targets.map((target) => target.root))) {
+		const edits = targets
+			.filter((target) => target.root === root)
+			.map(({ filePath }) => ({ filePath, editText: readEditText(filePath) }));
+		const reason = await judgeRoot(root, cwdRoot, null, () =>
+			resolveUmbrellaSpeedBump(root, scopeId, edits)
+		);
+		if (reason !== null) {
+			return reason;
+		}
 	}
 
 	return null;
@@ -1539,34 +1726,29 @@ async function resolveDenyReason(repoRoot, scopeId, filePaths) {
 
 /**
  * A shell command's candidate paths: every path-shaped token it names that a
- * proof of read-only-ness does not clear, narrowed to the ones a manifest
- * route matches. Tokens resolve against the command's own working directory,
- * the same way `resolveTargets` resolves a shell read. Arguments after a
- * literal `cd` also resolve against the directory it moved to
- * (`resolveArgumentsAfterCd`). Without that, `cd scripts && tee hooks/x.mjs`
- * resolves its target to `hooks/x.mjs`, which no route matches.
+ * proof of read-only-ness does not clear. Tokens resolve against the command's
+ * own working directory, the same way `resolveTargets` resolves a shell read.
+ * Arguments after a literal `cd` also resolve against the directory it moved
+ * to (`resolveArgumentsAfterCd`). Without that, `cd scripts && tee
+ * hooks/x.mjs` resolves its target to `hooks/x.mjs`, which no route matches.
  *
- * `filterRoutedPaths` runs before `resolveDenyReason` rather than being left
- * to it, because a command names many tokens and the batched form costs one
- * manifest load instead of one per token.
- *
- * @param {string} repoRoot
  * @param {string} cwd
  * @param {import("./harnesses.mjs").HookPayload} payload
- * @returns {Promise<string[]>}
+ * @returns {string[]}
  */
-async function resolveShellCandidatePaths(repoRoot, cwd, payload) {
+function resolveShellCandidatePaths(cwd, payload) {
 	const command = payload.tool_input?.command;
 	const unproven = parseUnprovenShellPaths(command);
 	if (unproven.length === 0) {
 		return [];
 	}
 
-	const candidates = new Set([
-		...unproven.map((target) => path.resolve(cwd, target)),
-		...resolveArgumentsAfterCd(normalizeShellSeparators(command ?? ""), cwd),
-	]);
-	return filterRoutedPaths(repoRoot, [...candidates]);
+	return [
+		...new Set([
+			...unproven.map((target) => path.resolve(cwd, target)),
+			...resolveArgumentsAfterCd(normalizeShellSeparators(command ?? ""), cwd),
+		]),
+	];
 }
 
 /**
