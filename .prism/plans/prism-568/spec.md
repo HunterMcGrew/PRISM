@@ -102,6 +102,7 @@ scripts/ai-skills/commit-gate-test-guard.test.ts
 scripts/ai-skills/plan-approve.test.ts
 scripts/ai-skills/plan-templates.test.ts
 scripts/ai-skills/plan-runtime-delivery.test.ts
+scripts/ai-skills/one-review.test.ts
 docs/workflow.md
 templates/install/**
 AGENTS.md
@@ -123,4 +124,5 @@ CLAUDE.md
 - **The merge base is measured against `origin/<defaultBranch>`, and a branch stacked on another feature branch reads as standard.** The parent's lines count as this branch's. A small ticket is one commit range off the default branch, so a stack is not small. A branch with no such ref skips the gate arm and exits 2 from the CLI, because a guess at the base would approve or deny on the wrong range.
 - **The small resume row keys on a ticket-subject commit.** A small branch holds only `plan:` commits and ticket-subject commits, so one ticket-subject commit means the build started. The ticket form is the one `tasks.mjs` already reads from `ticketPrefix`, so no new parser is needed.
 - **No ADR for the small size.** The epic spec's Decisions record the size's removal and its return, and the arm reverses by deleting one check and one script. This spec did not search the ADRs for a ruling on sizes, so the plan stage does that and applies `.prism/references/triple-gated-adr-criterion.md` before it confirms there is nothing to write.
+- **`one-review.test.ts` follows the PR resume row's rename.** Its "drops the PR-review stage" case finds the PR row by its `| standard, no PR |` prefix, and REQ-11 renames that row to `small or standard`. The test pins the same row under its new name, so this follows from the approved outcome and is not a new behavior. Found by T7's full-suite run during part 2's build.
 - **`docs/what-prism-writes.md` and the stale stage list in `docs/workflow.md` are left for child 16.** The inventory page lists delivered runtime files and the stage list still names the retired reviewer. Child 16's sweep covers the pages the earlier children changed. This child edits only the Sizes paragraph of `docs/workflow.md`. Epic row 16 does not name either page, so the closing summary asks for the row to be extended.

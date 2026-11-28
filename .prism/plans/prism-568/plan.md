@@ -142,9 +142,11 @@ The build lands as one ticket-subject commit made last, after the size check, be
 
 ### T11: Part 2 — add the small size to the workflow and git conventions
 
-- files: .prism/rules/workflow.md, .prism/rules/git-conventions.md
-- proof: grep -c '^| small or standard' .prism/rules/workflow.md && grep -n 'small' .prism/rules/git-conventions.md && pnpm prism:crossref-lint
+- files: .prism/rules/workflow.md, .prism/rules/git-conventions.md, scripts/ai-skills/one-review.test.ts
+- proof: grep -c '^| small or standard' .prism/rules/workflow.md && grep -n 'small' .prism/rules/git-conventions.md && pnpm prism:crossref-lint && npx tsx --test scripts/ai-skills/one-review.test.ts
 - depends on: T6
+- behavior change: `one-review.test.ts`'s "drops the PR-review stage" case finds the PR resume row by the `| small or standard, no PR |` prefix REQ-11 gives it, in place of `| standard, no PR |`.
+- amended: scripts/ai-skills/one-review.test.ts: T7's full-suite run found the case still keyed on the old row text, so a second `T11` commit updates its prefix and failure message.
 
 Keep the resume rows in their order and place the small row after the `no spec.md` row and before the verify row; the Design row needs no size, since `approve.mjs` refuses a small intent whose Design line is not `not needed`.
 Both rules load every session, so keep the additions to the sizes list, the resume rows, and one subject bullet in each.
