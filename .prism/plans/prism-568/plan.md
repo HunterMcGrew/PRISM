@@ -200,6 +200,9 @@ round 5: blocking 1
   - T12 (blocking): the amendment put the section sign in prose on two lines, T12's `amended:` line and the size-flip Decision, so `pnpm prism:plan-citations` fails with `section-citation` at `plan.md:161` and `plan.md:210`, and T13's `pnpm prism:check` proof cannot pass; wrap each citation in a backtick span or name the section in words.
   - T12 (non-blocking): its proof's `grep -c 'approve guard'` already prints a count on `main` for both files, so it cannot fail when the size-flip sentence is missing; grep for a phrase the new sentence carries, and add that grep to AC-12's evidence so review can grade it.
 
+round 6: resolved 1
+  - T12 (non-blocking): AC-12's evidence still lacks the `trusts \`size:\`` grep that T12's proof now runs, and `grep -c` over two files exits 0 when only one file matches, so a missing sentence in the seed twin passes; name the grep in AC-12 and check each file on its own, or have review grade the twin by eye.
+
 ## Decisions
 
 - **This child ships as a two-PR stack, cut after T5.** The work spans well over 10 files once generated copies count, and part 1 works alone: no intent can say `size: small` until T8, so the gate arm is dormant and every stage runs as it does today. Part 1 is `size.mjs`, the commit gate arm, delivery, and the architect-doc entries; part 2 is everything else. Rejected: one PR, past the size where review gets painful.
