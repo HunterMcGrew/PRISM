@@ -1630,9 +1630,9 @@ async function filterRoutedTargets(cwdRoot, targets) {
  * reading, so naming one path's docs is what it can act on, and a multi-path
  * call surfaces its next gate on the next attempt.
  *
- * A doc under a root other than the working directory's is spelled from the
- * working directory, because that is where the `cat` remedy runs, and its
- * credit lands in the state of the root the doc sits in.
+ * Every doc is spelled from the working directory, because that is where the
+ * `cat` remedy runs, and its credit lands in the state of the root the doc
+ * sits in.
  *
  * @param {string} cwd
  * @param {string | null} cwdRoot
@@ -1654,7 +1654,7 @@ async function resolveDenyReason(cwd, cwdRoot, scopeId, targets) {
 		return formatDenyMessage(
 			relativePath,
 			unreadDocs,
-			root === cwdRoot ? ARCHITECT_DIR_PREFIX : spellDocPrefixFrom(cwd, root)
+			spellDocPrefixFrom(cwd, root)
 		);
 	}
 

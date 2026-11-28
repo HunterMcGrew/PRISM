@@ -1692,6 +1692,36 @@ test("runPostToolUseArm: a cd into a nested worktree before the cat credits the 
 	});
 });
 
+test("runPreToolUseArm: from a subdirectory cwd, the printed remedy is spelled so it clears from that cwd", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		const subdirectory = path.join(repoRoot, "src");
+		await fs.mkdir(subdirectory, { recursive: true });
+		const payload = writePayload(repoRoot, target, { cwd: subdirectory });
+
+		const reason = denyReason(
+			await runPreToolUseArm("claude", HARNESSES.claude, payload)
+		);
+		const remedy = reason?.split("\n")[1] ?? "";
+		assert.equal(
+			remedy,
+			`cat ${toShellPath(path.join(repoRoot, ".prism", "architect"))}/${GATE_DOC}`
+		);
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: subdirectory,
+				tool_name: "Bash",
+				tool_input: { command: remedy },
+			})
+		);
+		assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, payload), null);
+	});
+});
+
 test("runPreToolUseArm: a nested worktree whose manifest will not parse does not cancel the outer checkout's deny", async () => {
 	await withTempRepo(async (outerRoot) => {
 		await seedGateRepo(outerRoot);
